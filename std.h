@@ -3,6 +3,7 @@
 #include <exception>
 #include <fstream>
 #include <iostream>
+#include <list>
 #include <map>
 #include <sstream>
 #include <string>
@@ -24,6 +25,7 @@ using std::ostream;
 using std::shared_ptr;
 using std::string;
 using std::stringstream;
+using std::list;
 using std::make_shared;
 using std::map;
 using std::max;

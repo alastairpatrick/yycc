@@ -1,7 +1,7 @@
 #include "std.h"
 #include "assoc_prec.h"
 #include "ast.h"
-#include "ctx.h"
+#include "ParseContext.h"
 #include "decl.h"
 #include "expr.h"
 #include "lex.yy.h"
@@ -329,7 +329,7 @@ struct Parser {
         if (parse_decl_specifiers(storage_class, type)) {
             while (token == TOK_IDENTIFIER || token == '(' || token == '*') {
                 auto declarator = parse_declarator(storage_class, type, false, list.empty(), location);
-                list.emplace_back(declarator);
+                list.push_back(declarator);
 
                 // No ';' after function definition. TODO: It should also be the only "declarator" in the
                 // declaration.
@@ -337,23 +337,38 @@ struct Parser {
 
                 consume(',');
             }
-        } else if (consume(TOK_RETURN)) {
-            list.emplace_back(make_shared<ReturnStatement>(parse_expr(0), location));
         } else {
-            list.emplace_back(parse_expr(0));
-        }
+            shared_ptr<DeclStatement> decl;
+            if (token == '{') {
+                decl = parse_compound_statement();
+            } else if (consume(TOK_RETURN)) {
+                decl = make_shared<ReturnStatement>(parse_expr(0), location);
+                require(';');
+            } else {
+                decl = parse_expr(0);
+                require(';');
+            }
 
-        require(';');
+            list.emplace_back(decl);
+        }
     }
 
     shared_ptr<CompoundStatement> parse_compound_statement() {
+        context.push_scope();
+
         Location loc;
         require('{', &loc);
 
         DeclStatementList list;
-        while (token && !consume('}')) {
+        while (token && token != '}') {
             parse_decl_or_statement(list);
         }
+
+        // Must pop scope before consuming '}' in case '}' is immediately followed by an identifier that the
+        // lexer must correctly identify as TOK_IDENTIFIER or TOK_TYPE_IDENTIFIER.
+        context.pop_scope();
+
+        require('}');
 
         return make_shared<CompoundStatement>(move(list), loc);
     }

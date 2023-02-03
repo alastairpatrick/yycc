@@ -10,7 +10,7 @@ using json = nlohmann::json;
 
 enum class TestType {
 	EXPR,
-	DECL,
+	STATEMENTS,
 };
 
 struct Test {
@@ -28,8 +28,8 @@ enum Section {
 };
 
 static const Test tests[] = {
-	{ "decl",				TestType::DECL },
-	{ "stmt",				TestType::DECL },
+	{ "decl",				TestType::STATEMENTS },
+	{ "stmt",				TestType::STATEMENTS },
 	{ "string_literal",		TestType::EXPR },
 	{ "lex",				TestType::EXPR },
 	{ "int_literal",		TestType::EXPR },

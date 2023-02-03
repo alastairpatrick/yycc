@@ -1,7 +1,7 @@
 %option yylineno
 
 %top {
-#include "ctx.h"
+#include "ParseContext.h"
 #include "location.h"
 #include "type.h"
 }

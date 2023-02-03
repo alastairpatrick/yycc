@@ -416,3 +416,17 @@ EXPECT_AST
     ["typedef", "Ss", "q"],
     ["var", [], "PNoq", "v"]
 ]]]]
+
+
+BEGIN Typedef goes out of scope immediately following block
+{
+    typedef long q;
+}
+q * p; // Identifier "q" immediately follows '}'
+EXPECT_AST
+[
+    ["block", [
+        ["typedef", "Ls", "q"]
+    ]],
+    ["*", "Nq", "Np"]
+]
