@@ -327,16 +327,23 @@ struct Parser {
         StorageClass storage_class = StorageClass::NONE;
         const Type* type = nullptr;
         if (parse_decl_specifiers(storage_class, type)) {
-            while (token == TOK_IDENTIFIER || token == '(' || token == '*') {
-                auto declarator = parse_declarator(storage_class, type, false, list.empty(), location);
-                list.push_back(declarator);
+            while (token && token != ';') {
+                auto decl = parse_declarator(storage_class, type, list.empty(), location);
+                auto is_function = dynamic_cast<Function*>(decl.get());
+                if (decl->identifier.empty()) {
+                    message(lexer.location()) << "error expected identifier\n";
+                } else {
+                    list.push_back(move(decl));
+                }
 
                 // No ';' after function definition. TODO: It should also be the only "declarator" in the
                 // declaration.
-                if (dynamic_cast<Function*>(declarator.get())) return;
+                if (is_function) return;
 
-                consume(',');
+                if (!consume(',')) break;
             }
+
+            require(';');
         } else {
             shared_ptr<DeclStatement> decl;
             if (token == '{') {
@@ -349,7 +356,7 @@ struct Parser {
                 require(';');
             }
 
-            list.emplace_back(decl);
+            list.push_back(move(decl));
         }
     }
 
@@ -386,12 +393,12 @@ struct Parser {
             storage_class = StorageClass::NONE;
         }
 
-        return parse_declarator(storage_class, type, true, false, location);        
+        return parse_declarator(storage_class, type, false, location);        
     }
 
-    shared_ptr<Decl> parse_declarator(StorageClass storage_class, const Type* declaration_type, bool allow_abstract, bool allow_function_def, const Location& location) {
+    shared_ptr<Decl> parse_declarator(StorageClass storage_class, const Type* declaration_type, bool allow_function_def, const Location& location) {
         if (consume('(')) {
-            auto result = parse_declarator(storage_class, declaration_type, allow_abstract, allow_function_def, location);
+            auto result = parse_declarator(storage_class, declaration_type, allow_function_def, location);
             require(')');
             return result;
         } else {
@@ -401,11 +408,7 @@ struct Parser {
             }
 
             string identifier = move(lexer.identifier);
-            if (allow_abstract) {
-                consume(TOK_IDENTIFIER);
-            } else {
-                require(TOK_IDENTIFIER);
-            }
+            if (!consume(TOK_IDENTIFIER)) identifier.clear();
 
             shared_ptr<Expr> initializer;
             if (consume('=')) {

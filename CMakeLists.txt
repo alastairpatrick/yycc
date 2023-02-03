@@ -14,6 +14,8 @@ add_library(lang_lib STATIC
     decl.h
     expr.cpp
     expr.h
+    ParseContext.cpp
+    Parser.cpp
     print.cpp
     print.h
     stmt.cpp

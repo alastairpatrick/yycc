@@ -10,28 +10,13 @@ struct ParseContext {
         unordered_set<string> types;
     };
 
-    ParseContext() {
-        push_scope();
-    }
+    ParseContext();
 
-    void set_is_type(const string& identifier) {
-        scopes.front().types.insert(identifier);
-    }
+    void set_is_type(const string& identifier);
+    bool is_type(const string& identifier) const;
 
-    bool is_type(const string& identifier) const {
-        for (auto& scope : scopes) {
-            if (scope.types.find(identifier) != scope.types.end()) return true;
-        }
-        return false;
-    }
-
-    void push_scope() {
-        scopes.emplace_front(Scope());
-    }
-
-    void pop_scope() {
-        scopes.pop_front();
-    }
+    void push_scope();
+    void pop_scope();
 
     list<Scope> scopes;
 };

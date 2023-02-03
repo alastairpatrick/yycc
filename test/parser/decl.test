@@ -258,9 +258,17 @@ EXPECT_AST
 BEGIN Declaration with missing declarator identifiers
 short,;
 EXPECT_MESSAGE
-:1:6: error unexpected token
+:1:6: error expected identifier
 EXPECT_AST
 []
+
+
+BEGIN Declarators must be separated by comma
+short a b;
+EXPECT_MESSAGE
+:1:9: error unexpected token
+EXPECT_AST
+[["var", [], "Ss", "a"]]
 
 
 BEGIN Pointer declarators
@@ -405,17 +413,17 @@ EXPECT_AST
 
 
 BEGIN Disambiguates between multiplication and variable declaration of pointer type
-void f() {
+{
     q * p; // "q" is not a type so this is multiplication.
     typedef short q;
     q * v; // now "q" is a type so this declares variable "v" with type "q*".
 }
 EXPECT_AST
-[["fun", [], "()V", "f", ["block", [
+[["block", [
     ["*", "Nq", "Np"],
     ["typedef", "Ss", "q"],
     ["var", [], "PNoq", "v"]
-]]]]
+]]]
 
 
 BEGIN Typedef goes out of scope immediately following block
