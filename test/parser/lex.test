@@ -1,0 +1,67 @@
+BEGIN Skips white space
+
+ 1 
+ 
+EXPECT_AST
+"Is1"
+
+
+BEGIN Skips single line comments
+// foo
+1 // bar
+// baz
+EXPECT_AST
+"Is1"
+
+
+BEGIN Skips multi-line comments
+/* bar */ 1 /* baz */
+EXPECT_AST
+"Is1"
+
+
+BEGIN Unterminated comment
+1 /* foo
+EXPECT_AST
+"Is1"
+EXPECT_MESSAGE
+:2:1: error unterminated comment
+
+
+BEGIN Skips unexpected character
+@ 1
+EXPECT_AST
+"Is1"
+EXPECT_MESSAGE
+:1:1: error unexpected character '@'
+
+
+BEGIN Tab is 8 characters for message purposes
+	@ 1
+EXPECT_MESSAGE
+:1:9: error unexpected character '@'
+
+
+BEGIN Skips line directive
+#line 1 // foo
+1
+#line 2 "foo.c"
+#line 3"foo.c"
+EXPECT_AST
+"Is1"
+
+
+BEGIN Line directive resets line
+1
+#line 7
+@
+EXPECT_MESSAGE
+:7:1: error unexpected character '@'
+
+
+BEGIN Line directive resets line and optionally filename
+1
+#line 7 "foo.c"
+@
+EXPECT_MESSAGE
+foo.c:7:1: error unexpected character '@'

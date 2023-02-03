@@ -1,0 +1,157 @@
+BEGIN Variable
+x
+EXPECT_AST
+"Nx"
+
+
+BEGIN Condition expression
+1 ? 2 : 3
+EXPECT_AST
+["?:", "Is1", "Is2", "Is3"]
+
+
+BEGIN Nested conditions
+1 ? 2 ? 3 : 4 : 5 ? 6 : 7
+EXPECT_AST
+["?:", "Is1"
+       , ["?:", "Is2", "Is3", "Is4"]
+       , ["?:", "Is5", "Is6", "Is7"]]
+
+
+BEGIN Condition with logical or
+1 || 2 ? 3 || 4 : 5 ? 6 : 7
+EXPECT_AST
+["?:", ["||", "Is1", "Is2"]
+       , ["||", "Is3", "Is4"]
+       , ["?:", "Is5", "Is6", "Is7"]]
+
+
+BEGIN Logical or expression
+1 || 2
+EXPECT_AST
+["||", "Is1", "Is2"]
+
+
+BEGIN Logical or left associative
+1 || 2 || 3
+EXPECT_AST
+["||", ["||", "Is1", "Is2"], "Is3"]
+
+
+BEGIN Logical and expression
+1 && 2
+EXPECT_AST
+["&&", "Is1", "Is2"]
+
+
+BEGIN Logical and left associative
+1 && 2 && 3
+EXPECT_AST
+["&&", ["&&", "Is1", "Is2"], "Is3"]
+
+
+BEGIN Logical and higher precedence than logical or
+1 || 2 && 3
+EXPECT_AST
+["||", "Is1", ["&&", "Is2", "Is3"]]
+
+
+BEGIN Add expression
+1 + 2
+EXPECT_AST
+["+", "Is1", "Is2"]
+
+
+BEGIN Add left associative
+1 + 2 + 3
+EXPECT_AST
+["+", ["+", "Is1", "Is2"]
+    , "Is3"]
+
+
+BEGIN Sub expression
+1 - 2
+EXPECT_AST
+["-", "Is1", "Is2"]
+
+
+BEGIN Sub left associative
+1 - 2 - 3
+EXPECT_AST
+["-", ["-", "Is1", "Is2"]
+    , "Is3"]
+
+
+BEGIN Mul expression
+1 * 2
+EXPECT_AST
+["*", "Is1", "Is2"]
+
+
+BEGIN Mul left associative
+1 * 2 * 3
+EXPECT_AST
+["*", ["*", "Is1", "Is2"]
+    , "Is3"]
+
+
+BEGIN Mul > additive precedence
+1 + 2 * 3
+EXPECT_AST
+["+", "Is1"
+    , ["*", "Is2", "Is3"]]
+
+
+BEGIN Div expression
+1 / 2
+EXPECT_AST
+["/", "Is1", "Is2"]
+
+
+BEGIN Div left associative
+1 / 2 / 3
+EXPECT_AST
+["/", ["/", "Is1", "Is2"]
+      , "Is3"]
+
+
+BEGIN Div > additive precedence
+1 + 2 / 3
+EXPECT_AST
+["+", "Is1"
+      , ["/", "Is2", "Is3"]]
+
+
+BEGIN Mod expression
+1 % 2
+EXPECT_AST
+["%", "Is1", "Is2"]
+
+
+BEGIN Mod left associative
+1 % 2 % 3
+EXPECT_AST
+["%", ["%", "Is1", "Is2"]
+      , "Is3"]
+
+
+BEGIN Mod > additive precedence
+1 + 2 % 3
+EXPECT_AST
+["+", "Is1"
+      , ["%", "Is2", "Is3"]]
+
+
+BEGIN Parentheses
+1 + ( 2 + 3 )
+EXPECT_AST
+["+", "Is1"
+      , ["+", "Is2", "Is3"]]
+
+
+BEGIN Error on EOF mid expression
+1 +
+EXPECT_MESSAGE
+:2:1: error unexpected end of file
+EXPECT_AST
+["+", "Is1", "Is0"]

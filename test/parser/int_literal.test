@@ -1,0 +1,139 @@
+﻿
+BEGIN Int decimal literal
+77
+EXPECT_AST
+"Is77"
+
+BEGIN Int hex literal (1)
+0x100
+EXPECT_AST
+"Is256"
+
+BEGIN Int hex literal (2)
+0X100
+EXPECT_AST
+"Is256"
+
+BEGIN Int octal literal
+0100
+EXPECT_AST
+"Is64"
+
+BEGIN Int binary literal (1)
+0b100
+EXPECT_AST
+"Is4"
+
+BEGIN Int binary literal (2)
+0B100
+EXPECT_AST
+"Is4"
+
+
+BEGIN Unsigned int literal (1)
+77U
+EXPECT_AST
+"Iu77"
+
+BEGIN Unsigned int literal (2)
+77u
+EXPECT_AST
+"Iu77"
+
+
+BEGIN Long int literal (1)
+77l
+EXPECT_AST
+"Ls77"
+
+BEGIN Long int literal (2)
+77L
+EXPECT_AST
+"Ls77"
+
+
+BEGIN Long long int literal (1)
+77ll
+EXPECT_AST
+"Ms77"
+
+BEGIN Long long int literal (2)
+77LL
+EXPECT_AST
+"Ms77"
+
+
+BEGIN Long unsigned int literal (1)
+77lu
+EXPECT_AST
+"Lu77"
+
+BEGIN Long unsigned int literal (2)
+77LU
+EXPECT_AST
+"Lu77"
+
+
+BEGIN Unsigned long int literal (1)
+77ul
+EXPECT_AST
+"Lu77"
+
+BEGIN Unsigned long int literal (2)
+77uL
+EXPECT_AST
+"Lu77"
+
+BEGIN Unsigned long int literal (3)
+77Ul
+EXPECT_AST
+"Lu77"
+
+BEGIN Unsigned long int literal (4)
+77UL
+EXPECT_AST
+"Lu77"
+
+
+BEGIN Unsigned long long int literal (1)
+77ull
+EXPECT_AST
+"Mu77"
+
+BEGIN Unsigned long long int literal (2)
+77uLL
+EXPECT_AST
+"Mu77"
+
+BEGIN Unsigned long long int literal (3)
+77Ull
+EXPECT_AST
+"Mu77"
+
+BEGIN Unsigned long long int literal (4)
+77ULL
+EXPECT_AST
+"Mu77"
+
+
+BEGIN Long long unsigned int literal (1)
+77llu
+EXPECT_AST
+"Mu77"
+
+BEGIN Long long unsigned int literal (2)
+77LLu
+EXPECT_AST
+"Mu77"
+
+BEGIN Long long unsigned int literal (3)
+77llU
+EXPECT_AST
+"Mu77"
+
+BEGIN Long long unsigned int literal (4)
+77LLU
+EXPECT_AST
+"Mu77"
+
+

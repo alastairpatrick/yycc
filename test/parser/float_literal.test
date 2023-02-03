@@ -1,0 +1,99 @@
+BEGIN Double, no decimal point, implictly positive exponent
+1e2
+EXPECT_AST
+"D100"
+
+BEGIN Double, no decimal point, explitly positive exponent
+1e+2
+EXPECT_AST
+"D100"
+
+BEGIN Double, no decimal point, explitly negative exponent
+125e-3
+EXPECT_AST
+"D0.125"
+
+BEGIN Double, no integer part, no exponent
+.125
+EXPECT_AST
+"D0.125"
+
+BEGIN Double, integer part, no exponent
+0.125
+EXPECT_AST
+"D0.125"
+
+BEGIN Double, no integer part, implicitly positive exponent
+.0125e1
+EXPECT_AST
+"D0.125"
+
+BEGIN Double, no integer part, explicitly positive exponent
+.0125e+1
+EXPECT_AST
+"D0.125"
+
+BEGIN Double, no integer part, explicitly negative exponent
+1.25e-1
+EXPECT_AST
+"D0.125"
+
+BEGIN Double, no integer part, implicitly positive exponent
+.1e1
+EXPECT_AST
+"D1"
+
+BEGIN Double, no integer part, explicitly positive exponent
+.1e+1
+EXPECT_AST
+"D1"
+
+BEGIN Double, integer part, explicitly negative exponent
+1.25e-1
+EXPECT_AST
+"D0.125"
+
+BEGIN Double, no fractional part, implicitly positive exponent
+1.e1
+EXPECT_AST
+"D10"
+
+BEGIN Double, no fractional part, explicitly positive exponent
+1.e+1
+EXPECT_AST
+"D10"
+
+BEGIN Double, no fractional part, explicitly negative exponent
+10.e-1
+EXPECT_AST
+"D1"
+
+BEGIN Hexadecimal float (1)
+0x0.1
+EXPECT_AST
+"D0.0625"
+
+BEGIN Hexadecimal float (1)
+0X0.1
+EXPECT_AST
+"D0.0625"
+
+BEGIN Float (1)
+1.0f
+EXPECT_AST
+"F1"
+
+BEGIN Float (2)
+1.0F
+EXPECT_AST
+"F1"
+
+BEGIN Float (1)
+1.0l
+EXPECT_AST
+"E1"
+
+BEGIN Float (2)
+1.0L
+EXPECT_AST
+"E1"

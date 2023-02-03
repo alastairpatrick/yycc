@@ -1,0 +1,145 @@
+﻿
+BEGIN UTF-8 4-byte string literal
+L"🌈"
+EXPECT_AST
+"SSu🌈"
+
+BEGIN Simple char literal
+'a'
+EXPECT_AST
+"Cd97"
+
+BEGIN \a char literal
+'\a'
+EXPECT_AST
+"Cd7"
+
+BEGIN \b char literal
+'\b'
+EXPECT_AST
+"Cd8"
+
+BEGIN \f char literal
+'\f'
+EXPECT_AST
+"Cd12"
+
+BEGIN \n char literal
+'\n'
+EXPECT_AST
+"Cd10"
+
+BEGIN \r char literal
+'\r'
+EXPECT_AST
+"Cd13"
+
+BEGIN \t char literal
+'\t'
+EXPECT_AST
+"Cd9"
+
+BEGIN \v char literal
+'\v'
+EXPECT_AST
+"Cd11"
+
+BEGIN \' char literal
+'\''
+EXPECT_AST
+"Cd39"
+
+BEGIN \" char literal
+'"'
+EXPECT_AST
+"Cd34"
+
+BEGIN \? char literal
+'\?'
+EXPECT_AST
+"Cd63"
+
+BEGIN \\ char literal
+'\\'
+EXPECT_AST
+"Cd92"
+
+BEGIN \xnn char literal
+'\x10'
+EXPECT_AST
+"Cd16"
+
+BEGIN \nnn char literal
+'\010'
+EXPECT_AST
+"Cd8"
+
+BEGIN \unnnn char literal
+L'\u0010'
+EXPECT_AST
+"Su16"
+
+BEGIN \Unnnnnnnn char literal
+L'\U00000010'
+EXPECT_AST
+"Su16"
+
+BEGIN UTF-8 2-byte char literal
+L'π'
+EXPECT_AST
+"Su960"
+
+BEGIN UTF-8 3-byte char literal
+L'€'
+EXPECT_AST
+"Su8364"
+
+BEGIN UTF-8 4-byte char literal
+L'🌈'
+EXPECT_AST
+"Su127752"
+
+BEGIN Empty string literal
+""
+EXPECT_AST
+"SCd"
+
+BEGIN String literal
+"abc"
+EXPECT_AST
+"SCdabc"
+
+BEGIN Wide string literal
+L"abc"
+EXPECT_AST
+"SSuabc"
+
+BEGIN \xnn string literal
+"\x10"
+EXPECT_AST
+"SCd\u0010"
+
+BEGIN \nnn string literal
+"\010"
+EXPECT_AST
+"SCd\b"
+
+BEGIN \unnnn string literal
+L"\u0010"
+EXPECT_AST
+"SSu\u0010"
+
+BEGIN \Unnnnnnnn string literal
+L"\U00000010"
+EXPECT_AST
+"SSu\u0010"
+
+BEGIN UTF-8 2-byte string literal
+L"π"
+EXPECT_AST
+"SSuπ"
+
+BEGIN UTF-8 3-byte string literal
+L"€"
+EXPECT_AST
+"SSu€"

@@ -1,0 +1,4 @@
+BEGIN Return statement
+return 7;
+EXPECT_AST
+[["return", "Is7"]]
