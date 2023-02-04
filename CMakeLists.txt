@@ -7,25 +7,25 @@ message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 
 add_library(lang_lib STATIC
     assoc_prec.c
-    "AST.cpp"
+    AST.cpp
     CompileContext.cpp
-    "Decl.cpp"
-    "Expr.cpp"
+    Decl.cpp
+    Expr.cpp
     ParseContext.cpp
     Parser.cpp
-    "Printable.cpp"
-    "Statement.cpp"
-    "Type.cpp"
+    Printable.cpp
+    Statement.cpp
+    Type.cpp
     TypeContext.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/lex.yy.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/Lexer.yy.cpp
 )
 
 add_custom_command(
-    DEPENDS reflex lex.l
-    OUTPUT  lex.yy.cpp lex.yy.h
+    DEPENDS reflex Lexer.l
+    OUTPUT  Lexer.yy.cpp Lexer.yy.h
     COMMAND reflex --header-file
-            -o ${CMAKE_CURRENT_BINARY_DIR}/lex.yy.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/lex.l
+            -o ${CMAKE_CURRENT_BINARY_DIR}/Lexer.yy.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/Lexer.l
 )
 
 target_include_directories(lang_lib
