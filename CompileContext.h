@@ -4,12 +4,12 @@
 #include "TypeContext.h"
 
 struct CompileContext {
-	static thread_local CompileContext* it;
+    static thread_local CompileContext* it;
 
-	CompileContext();
-	~CompileContext();
+    CompileContext();
+    ~CompileContext();
 
-	TypeContext type;
+    TypeContext type;
 };
 
 #endif

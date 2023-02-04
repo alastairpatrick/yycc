@@ -41,15 +41,15 @@ public:
 
     ostream& message(const Location& location);
 
-	IntegerSignedness int_signedness;
-	IntegerSize int_size;
-	unsigned long long int_lit;
+    IntegerSignedness int_signedness;
+    IntegerSize int_size;
+    unsigned long long int_lit;
 
-	FloatingPointSize float_size;
-	long double float_lit;
+    FloatingPointSize float_size;
+    long double float_lit;
 
-	bool string_wide;
-	std::string string_lit;  // UTF-8 with C string literal escape sequences expanded
+    bool string_wide;
+    std::string string_lit;  // UTF-8 with C string literal escape sequences expanded
 
     std::string identifier;  // UTF-8
 };
@@ -201,66 +201,66 @@ void Lexer::skip_comment() {
 }
 
 int Lexer::parse_int_lit(const char* text, int radix) {
-	char* p;
-	auto value = strtoull(text, &p, radix);
-	if (errno == ERANGE) {
-		// TODO: warn about truncation of int literal
-	}
+    char* p;
+    auto value = strtoull(text, &p, radix);
+    if (errno == ERANGE) {
+        // TODO: warn about truncation of int literal
+    }
 
-	auto signedness = IntegerSignedness::SIGNED;
-	int longs = 0;
-	for (; *p; ++p) {
-		char c = toupper(*p);
-		if (c == 'U') signedness = IntegerSignedness::UNSIGNED;
-		else if (c == 'L') ++longs;
-		else assert(false);
-	}
+    auto signedness = IntegerSignedness::SIGNED;
+    int longs = 0;
+    for (; *p; ++p) {
+        char c = toupper(*p);
+        if (c == 'U') signedness = IntegerSignedness::UNSIGNED;
+        else if (c == 'L') ++longs;
+        else assert(false);
+    }
 
-	assert(longs <= 2);
-	auto size = IntegerSize::INT;
-	if (longs >= 2) size = IntegerSize::LONG_LONG;
-	else if (longs == 1) size = IntegerSize::LONG;
+    assert(longs <= 2);
+    auto size = IntegerSize::INT;
+    if (longs >= 2) size = IntegerSize::LONG_LONG;
+    else if (longs == 1) size = IntegerSize::LONG;
 
-	// TODO: should be checking against target max value.
-	unsigned long long max_value;
-	if (size == IntegerSize::INT) {
-		max_value = UINT_MAX;
-	} else if (size == IntegerSize::LONG) {
-		max_value = ULONG_MAX;
-	} else {
-		max_value = ULLONG_MAX;
-	}
-	
-	if (value > max_value) {
-		// TODO: warn about truncation of int literal
-		value = max_value;
-	}
+    // TODO: should be checking against target max value.
+    unsigned long long max_value;
+    if (size == IntegerSize::INT) {
+        max_value = UINT_MAX;
+    } else if (size == IntegerSize::LONG) {
+        max_value = ULONG_MAX;
+    } else {
+        max_value = ULLONG_MAX;
+    }
+    
+    if (value > max_value) {
+        // TODO: warn about truncation of int literal
+        value = max_value;
+    }
 
-	int_lit = value;
-	int_signedness = signedness;
-	int_size = size;
+    int_lit = value;
+    int_signedness = signedness;
+    int_size = size;
 
-	return TOK_INT_LITERAL;
+    return TOK_INT_LITERAL;
 }
 
 int Lexer::parse_float_lit(const char* text) {
-	char* p;
-	double value = strtod(text, &p);
-	if (errno == ERANGE) {
-	}
+    char* p;
+    double value = strtod(text, &p);
+    if (errno == ERANGE) {
+    }
 
-	auto size = FloatingPointSize::DOUBLE;
-	for (; *p; ++p) {
-		char c = toupper(*p);
-		if (c == 'F') size = FloatingPointSize::FLOAT;
-		else if (c == 'L') size = FloatingPointSize::LONG_DOUBLE;
-		else assert(false);
-	}
+    auto size = FloatingPointSize::DOUBLE;
+    for (; *p; ++p) {
+        char c = toupper(*p);
+        if (c == 'F') size = FloatingPointSize::FLOAT;
+        else if (c == 'L') size = FloatingPointSize::LONG_DOUBLE;
+        else assert(false);
+    }
 
-	float_lit = value;
-	float_size = size;
+    float_lit = value;
+    float_size = size;
 
-	return TOK_FLOAT_LITERAL;
+    return TOK_FLOAT_LITERAL;
 }
 
 
@@ -463,5 +463,5 @@ void Lexer::new_line() {
 int Lexer::check_identifier(std::string name)
 {
     identifier = std::move(name);
-	return context.is_type(identifier) ? TOK_TYPE_IDENTIFIER : TOK_IDENTIFIER;
+    return context.is_type(identifier) ? TOK_TYPE_IDENTIFIER : TOK_IDENTIFIER;
 }

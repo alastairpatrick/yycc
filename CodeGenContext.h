@@ -2,9 +2,9 @@
 #define CODEGEN_H
 
 struct CodeGenContext {
-	LLVMModuleRef mod;
-	LLVMValueRef function;
-	LLVMBuilderRef builder;
+    LLVMModuleRef mod;
+    LLVMValueRef function;
+    LLVMBuilderRef builder;
 };
 
 #endif

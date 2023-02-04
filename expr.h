@@ -5,87 +5,87 @@
 #include "Token.h"
 
 struct ConditionExpr: Expr {
-	ConditionExpr(shared_ptr<Expr> condition, shared_ptr<Expr> then_expr, shared_ptr<Expr> else_expr, const Location& location);
+    ConditionExpr(shared_ptr<Expr> condition, shared_ptr<Expr> then_expr, shared_ptr<Expr> else_expr, const Location& location);
 
-	shared_ptr<Expr> condition;
-	shared_ptr<Expr> then_expr;
-	shared_ptr<Expr> else_expr;
+    shared_ptr<Expr> condition;
+    shared_ptr<Expr> then_expr;
+    shared_ptr<Expr> else_expr;
 
-	virtual const Type* get_type() const;
-	virtual LLVMValueRef codegen(CodeGenContext* context) const;
-	virtual void print(std::ostream& stream) const;
+    virtual const Type* get_type() const;
+    virtual LLVMValueRef codegen(CodeGenContext* context) const;
+    virtual void print(std::ostream& stream) const;
 };
 
 struct Constant: Expr {
-	Location location;
+    Location location;
 
-	Constant(const Location& location);
+    Constant(const Location& location);
 };
 
 struct IntegerConstant: Constant {
-	const IntegerType* type;
-	unsigned long long value;
+    const IntegerType* type;
+    unsigned long long value;
 
-	IntegerConstant(unsigned long long int_value, const IntegerType* type, const Location& location);
+    IntegerConstant(unsigned long long int_value, const IntegerType* type, const Location& location);
 
-	virtual const Type* get_type() const;
-	virtual LLVMValueRef codegen(CodeGenContext* context) const;
-	virtual void print(std::ostream& stream) const;
+    virtual const Type* get_type() const;
+    virtual LLVMValueRef codegen(CodeGenContext* context) const;
+    virtual void print(std::ostream& stream) const;
 };
 
 struct FloatingPointConstant: Constant {
-	const FloatingPointType* type;
-	double value;
+    const FloatingPointType* type;
+    double value;
 
-	FloatingPointConstant(double float_value, const FloatingPointType* type, const Location& location);
+    FloatingPointConstant(double float_value, const FloatingPointType* type, const Location& location);
 
-	virtual const Type* get_type() const;
-	virtual LLVMValueRef codegen(CodeGenContext* context) const;
-	virtual void print(std::ostream& stream) const;
+    virtual const Type* get_type() const;
+    virtual LLVMValueRef codegen(CodeGenContext* context) const;
+    virtual void print(std::ostream& stream) const;
 };
 
 struct StringConstant: Constant {
-	const IntegerType* char_type;
-	std::string utf8_literal;
+    const IntegerType* char_type;
+    std::string utf8_literal;
 
-	StringConstant(std::string utf8_literal, const IntegerType* char_type, const Location& location);
+    StringConstant(std::string utf8_literal, const IntegerType* char_type, const Location& location);
 
-	virtual const Type* get_type() const;
-	virtual LLVMValueRef codegen(CodeGenContext* context) const;
-	virtual void print(std::ostream& stream) const;
+    virtual const Type* get_type() const;
+    virtual LLVMValueRef codegen(CodeGenContext* context) const;
+    virtual void print(std::ostream& stream) const;
 };
 
 struct NameExpr: Expr {
-	string name;
+    string name;
 
-	NameExpr(string name, const Location& location);
+    NameExpr(string name, const Location& location);
 
-	virtual const Type* get_type() const;
-	virtual LLVMValueRef codegen(CodeGenContext* context) const;
-	virtual void print(std::ostream& stream) const;
+    virtual const Type* get_type() const;
+    virtual LLVMValueRef codegen(CodeGenContext* context) const;
+    virtual void print(std::ostream& stream) const;
 };
 
 enum class BinaryOp {
-	LOGICAL_OR			= TOK_OR_OP,
-	LOGICAL_AND			= TOK_AND_OP,
-	ADD					= '+',
-	SUB					= '-',
-	MUL					= '*',
-	DIV					= '/',
-	MOD					= '%',
+    LOGICAL_OR			= TOK_OR_OP,
+    LOGICAL_AND			= TOK_AND_OP,
+    ADD					= '+',
+    SUB					= '-',
+    MUL					= '*',
+    DIV					= '/',
+    MOD					= '%',
 };
 
 struct BinaryExpr: Expr {
-	BinaryExpr(shared_ptr<Expr> left, shared_ptr<Expr> right, BinaryOp op, const Location& location);
+    BinaryExpr(shared_ptr<Expr> left, shared_ptr<Expr> right, BinaryOp op, const Location& location);
 
-	shared_ptr<Expr> left;
-	shared_ptr<Expr> right;
-	BinaryOp op;
-	Location location;
-	
-	virtual const Type* get_type() const;
-	virtual LLVMValueRef codegen(CodeGenContext* context) const;
-	virtual void print(std::ostream& stream) const;
+    shared_ptr<Expr> left;
+    shared_ptr<Expr> right;
+    BinaryOp op;
+    Location location;
+    
+    virtual const Type* get_type() const;
+    virtual LLVMValueRef codegen(CodeGenContext* context) const;
+    virtual void print(std::ostream& stream) const;
 };
 
 

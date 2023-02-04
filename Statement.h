@@ -4,19 +4,19 @@
 #include "AST.h"
 
 struct CompoundStatement: Statement {
-	CompoundStatement(DeclStatementList items, const Location& location);
+    CompoundStatement(DeclStatementList items, const Location& location);
 
-	DeclStatementList items;
+    DeclStatementList items;
 
-	virtual void print(std::ostream& stream) const;
+    virtual void print(std::ostream& stream) const;
 };
 
 struct ReturnStatement: Statement {
-	ReturnStatement(shared_ptr<Expr> value, const Location& location);
+    ReturnStatement(shared_ptr<Expr> value, const Location& location);
 
-	shared_ptr<Expr> value;
+    shared_ptr<Expr> value;
 
-	virtual void print(std::ostream& stream) const;
+    virtual void print(std::ostream& stream) const;
 };
 
 #endif

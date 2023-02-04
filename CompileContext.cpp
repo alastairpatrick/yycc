@@ -5,11 +5,11 @@
 thread_local CompileContext* CompileContext::it;
 
 CompileContext::CompileContext() {
-	assert(!it);
-	it = this;
+    assert(!it);
+    it = this;
 }
 
 CompileContext::~CompileContext() {
-	assert(it == this);
-	it = nullptr;
+    assert(it == this);
+    it = nullptr;
 }

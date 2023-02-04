@@ -20,9 +20,9 @@ enum class StorageClass {
 ostream& operator<<(ostream& stream, StorageClass storage_class);
 
 struct DeclStatement: Printable {
-	DeclStatement(const Location& location): location(location) {}
+    DeclStatement(const Location& location): location(location) {}
 
-	Location location;
+    Location location;
 };
 
 typedef vector<shared_ptr<DeclStatement>> DeclStatementList;
@@ -40,14 +40,14 @@ struct Decl: DeclStatement {
 };
 
 struct Statement: DeclStatement {
-	Statement(const Location& location): DeclStatement(location) {}
+    Statement(const Location& location): DeclStatement(location) {}
 };
 
 struct Expr: Statement {
-	explicit Expr(const Location& location): Statement(location) {}
+    explicit Expr(const Location& location): Statement(location) {}
 
-	virtual const Type* get_type() const = 0;
-	virtual LLVMValueRef codegen(CodeGenContext* context) const = 0;
+    virtual const Type* get_type() const = 0;
+    virtual LLVMValueRef codegen(CodeGenContext* context) const = 0;
 };
 
 

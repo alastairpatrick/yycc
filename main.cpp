@@ -10,7 +10,7 @@
 int do_parse();
 
 /*int main(int argc, const char* argv[]) {
-	do_parse();
+    do_parse();
 }*/
 
 typedef int32_t (*SumFunction)(int32_t x, int32_t y);
