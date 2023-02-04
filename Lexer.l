@@ -63,16 +63,16 @@ static void comment(void);
 
 %}
 
-D			[0-9]
-L			[a-zA-Z_]
-H			[a-fA-F0-9]
-E			([Ee][+-]?{D}+)
-P                       ([Pp][+-]?{D}+)
-FS			(f|F|l|L)
-IS                      ((u|U)|(u|U)?(l|L|ll|LL)|(l|L|ll|LL)(u|U))
-HW          [ \t\v\f\r]
+D			    [0-9]
+L			    [a-zA-Z_]
+H			    [a-fA-F0-9]
+E			    ([Ee][+-]?{D}+)
+P               ([Pp][+-]?{D}+)
+FS			    (f|F|l|L)
+IS              ((u|U)|(u|U)?(l|L|ll|LL)|(l|L|ll|LL)(u|U))
+HW              [ \t\v\f\r]
 
-STRING      \"(\\.|[^\\"\n])*\"
+STRING          \"(\\.|[^\\"\n])*\"
 
 %%
 "/*"		    { skip_comment(); }
@@ -96,7 +96,7 @@ STRING      \"(\\.|[^\\"\n])*\"
 "for"			{ return TOK_FOR; }
 "goto"			{ return TOK_GOTO; }
 "if"			{ return TOK_IF; }
-"_Imaginary"		{ return TOK_IMAGINARY; }
+"_Imaginary"	{ return TOK_IMAGINARY; }
 "inline"		{ return TOK_INLINE; }
 "int"			{ return TOK_INT; }
 "long"			{ return TOK_LONG; }
@@ -116,13 +116,13 @@ STRING      \"(\\.|[^\\"\n])*\"
 "volatile"		{ return TOK_VOLATILE; }
 "while"			{ return TOK_WHILE; }
 
-{L}({L}|{D})*		{ return check_identifier(std::move(str())); }
+{L}({L}|{D})*		        { return check_identifier(std::move(str())); }
 
-0[xX]{H}+{IS}?		{ return parse_int_lit(text() + 2, 16); }
-0[bB][0-1]+{IS}?	{ return parse_int_lit(text() + 2, 2); }
-0[0-7]*{IS}?		{ return parse_int_lit(text(), 8); }
-[1-9]{D}*{IS}?		{ return parse_int_lit(text(), 10); }
-L?'(\\.|[^\\'\n])+'	{ return parse_char_lit(text()); }
+0[xX]{H}+{IS}?		        { return parse_int_lit(text() + 2, 16); }
+0[bB][0-1]+{IS}?	        { return parse_int_lit(text() + 2, 2); }
+0[0-7]*{IS}?		        { return parse_int_lit(text(), 8); }
+[1-9]{D}*{IS}?		        { return parse_int_lit(text(), 10); }
+L?'(\\.|[^\\'\n])+'	        { return parse_char_lit(text()); }
 
 {D}+{E}{FS}?				{ return parse_float_lit(text()); }
 {D}*"."{D}+{E}?{FS}?		{ return parse_float_lit(text()); }
@@ -131,7 +131,7 @@ L?'(\\.|[^\\'\n])+'	{ return parse_char_lit(text()); }
 0[xX]{H}*"."{H}+{P}?{FS}?   { return parse_float_lit(text());; }
 0[xX]{H}+"."{H}*{P}?{FS}?   { return parse_float_lit(text());; }
 
-L?\"(\\.|[^\\"\n])*\"	{ return parse_string_lit(text(), size()); }
+L?\"(\\.|[^\\"\n])*\"	    { return parse_string_lit(text(), size()); }
 
 "..."			{ return TOK_ELLIPSIS; }
 ">>="			{ return TOK_RIGHT_ASSIGN; }
@@ -155,35 +155,35 @@ L?\"(\\.|[^\\"\n])*\"	{ return parse_string_lit(text(), size()); }
 ">="			{ return TOK_GE_OP; }
 "=="			{ return TOK_EQ_OP; }
 "!="			{ return TOK_NE_OP; }
-";"			{ return ';'; }
+";"			    { return ';'; }
 ("{"|"<%")		{ return '{'; }
 ("}"|"%>")		{ return '}'; }
-","			{ return ','; }
-":"			{ return ':'; }
-"="			{ return '='; }
-"("			{ return '('; }
-")"			{ return ')'; }
+","			    { return ','; }
+":"			    { return ':'; }
+"="			    { return '='; }
+"("			    { return '('; }
+")"			    { return ')'; }
 ("["|"<:")		{ return '['; }
 ("]"|":>")		{ return ']'; }
-"."			{ return '.'; }
-"&"			{ return '&'; }
-"!"			{ return '!'; }
-"~"			{ return '~'; }
-"-"			{ return '-'; }
-"+"			{ return '+'; }
-"*"			{ return '*'; }
-"/"			{ return '/'; }
-"%"			{ return '%'; }
-"<"			{ return '<'; }
-">"			{ return '>'; }
-"^"			{ return '^'; }
-"|"			{ return '|'; }
-"?"			{ return '?'; }
+"."			    { return '.'; }
+"&"			    { return '&'; }
+"!"			    { return '!'; }
+"~"			    { return '~'; }
+"-"			    { return '-'; }
+"+"			    { return '+'; }
+"*"			    { return '*'; }
+"/"			    { return '/'; }
+"%"			    { return '%'; }
+"<"			    { return '<'; }
+">"			    { return '>'; }
+"^"			    { return '^'; }
+"|"			    { return '|'; }
+"?"			    { return '?'; }
 
-{HW}+		{ }
-\n          { new_line(); }
+{HW}+		    { }
+\n              { new_line(); }
 
-.			{ message() << "error unexpected character '" << text() << "'\n"; }
+.			    { message() << "error unexpected character '" << text() << "'\n"; }
 
 "#line"{HW}+{D}+({HW}*{STRING})?
                 { parse_line_directive(text() + 5); }
