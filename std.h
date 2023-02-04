@@ -17,6 +17,7 @@ using std::cout;
 using std::dec;
 using std::exception;
 using std::fstream;
+using std::hash;
 using std::hex;
 using std::hexfloat;
 using std::ios_base;

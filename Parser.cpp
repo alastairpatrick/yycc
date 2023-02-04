@@ -444,8 +444,9 @@ struct Parser {
             }
 
             if (storage_class == StorageClass::TYPEDEF) {
-                context.set_is_type(identifier);
-                return make_shared<TypeDef>(type, move(identifier), location);
+                auto decl = make_shared<TypeDef>(type, move(identifier), location);
+                context.set_is_type(decl.get());
+                return decl;
             } else if (dynamic_cast<const FunctionType*>(type)) {
                 if (storage_class == StorageClass::NONE) {
                     storage_class = StorageClass::EXTERN;
