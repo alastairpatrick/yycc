@@ -165,7 +165,7 @@ enum class TypeNameKind {
 };
 
 struct TypeName: Type {
-	TypeName(TypeNameKind kind, string name);
+	static const TypeName* of(TypeNameKind kind, string name);
 
 	const TypeNameKind kind;
 	const string name;
@@ -175,6 +175,9 @@ struct TypeName: Type {
 	virtual LLVMTypeRef llvm_type() const;
 
 	virtual void print(std::ostream& stream) const;
+
+private:
+	TypeName(TypeNameKind kind, string name);
 };
 
 #endif

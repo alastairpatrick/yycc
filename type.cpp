@@ -2,6 +2,7 @@
 
 #include "type.h"
 #include "codegen.h"
+#include "CompileContext.h"
 #include "symbol.h"
 
 // Type codes
@@ -19,28 +20,6 @@
 // S short int
 // V void
 // ? variadic placeholder
-
-// This map is only used for "complicated" types like functions.
-static unordered_map<string, const Type*> g_indexed_types;
-
-typedef map<pair<const Type*, int>, const QualifiedType*> QualifierTypesMap; 
-static QualifierTypesMap g_qualified_types;
-
-struct TypeNameMapValue {
-	const TypeName* kinds[unsigned(TypeNameKind::NUM)];
-};
-typedef unordered_map<string, TypeNameMapValue> TypeNameMap;
-static TypeNameMap g_type_names;
-
-static const Type* lookup_indexed_type(const string& key) {
-	auto it = g_indexed_types.find(key);
-	if (it != g_indexed_types.end()) return it->second;
-	return nullptr;
-}
-
-static void add_indexed_type(const string& key, const Type* type) {
-	g_indexed_types[key] = type;
-}
 
 int Type::qualifiers() const {
 	return 0;
@@ -325,13 +304,11 @@ const QualifiedType* QualifiedType::of(const Type* base_type, int qualifiers) {
 	qualifiers |= base_type->qualifiers();
 	base_type = base_type->unqualified();
 
-	QualifierTypesMap::key_type key(base_type, qualifiers);
+	auto type = CompileContext::it->type.lookup_qualified_type(base_type, qualifiers);
+	if (type) return type;
 
-	auto it = g_qualified_types.find(key);
-	if (it != g_qualified_types.end()) return it->second;
-
-	auto type = new QualifiedType(base_type, qualifiers);
-	g_qualified_types[key] = type;
+	type = new QualifiedType(base_type, qualifiers);
+	CompileContext::it->type.add_qualified_type(type);
 	return type;
 }
 
@@ -376,12 +353,11 @@ const FunctionType* FunctionType::of(const Type* return_type, std::vector<const 
 	stringstream key_stream;
 	print_function_type(key_stream, return_type, parameter_types, variadic);
 
-	auto type = static_cast<const FunctionType*>(lookup_indexed_type(key_stream.str()));
-	if (!type) {
-		type = new FunctionType(return_type, move(parameter_types), variadic);
-		add_indexed_type(key_stream.str(), type);
-	}
+	auto type = static_cast<const FunctionType*>(CompileContext::it->type.lookup_indexed_type(key_stream.str()));
+	if (type) return type;
 
+	type = new FunctionType(return_type, move(parameter_types), variadic);
+	CompileContext::it->type.add_indexed_type(key_stream.str(), type);
 	return type;
 }
 
@@ -413,6 +389,15 @@ void FunctionType::print(std::ostream& stream) const {
 
 FunctionType::FunctionType(const Type* return_type, std::vector<const Type*> parameter_types, bool variadic)
 	: return_type(return_type), parameter_types(move(parameter_types)), variadic(variadic) {
+}
+
+const TypeName* TypeName::of(TypeNameKind kind, string name) {
+	auto type = CompileContext::it->type.lookup_type_name(kind, name);
+	if (type) return type;
+
+	type = new TypeName(kind, name);
+	CompileContext::it->type.add_type_name(type);
+	return type;
 }
 
 const Type* TypeName::resolve(const SymbolScope& scope) const {

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.20.6)
 
 project(lang)
 
@@ -7,23 +7,17 @@ message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 
 add_library(lang_lib STATIC
     assoc_prec.c
-    assoc_prec.h
     ast.cpp
-    ast.h
+    CompileContext.cpp
     decl.cpp
-    decl.h
     expr.cpp
-    expr.h
     ParseContext.cpp
     Parser.cpp
     print.cpp
-    print.h
     stmt.cpp
-    stmt.h
     type.cpp
-    type.h
+    TypeContext.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/lex.yy.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/lex.yy.h
 )
 
 add_custom_command(

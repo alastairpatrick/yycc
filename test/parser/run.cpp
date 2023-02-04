@@ -2,6 +2,7 @@
 
 #include "std.h"
 #include "ast.h"
+#include "CompileContext.h"
 #include "expr.h"
 #include "decl.h"
 #include "stmt.h"
@@ -51,6 +52,8 @@ static ostream& print_error(const string& name, const string& file, int line) {
 
 static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], const string& name, const string& file, int line) {
 	//try {
+		CompileContext compile_context;
+
 		const Type* type = nullptr;
 		stringstream message_stream;
 		stringstream output_stream;

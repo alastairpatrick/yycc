@@ -200,7 +200,7 @@ struct Parser {
                 type_specifier_location = lexer.location();                
 
                 if (token == TOK_TYPE_IDENTIFIER) {
-                    type = new TypeName(TypeNameKind::ORDINARY, move(lexer.identifier));
+                    type = TypeName::of(TypeNameKind::ORDINARY, move(lexer.identifier));
                 }
 
                 break;
@@ -336,8 +336,7 @@ struct Parser {
                     list.push_back(move(decl));
                 }
 
-                // No ';' after function definition. TODO: It should also be the only "declarator" in the
-                // declaration.
+                // No ';' after function definition.
                 if (is_function) return;
 
                 if (!consume(',')) break;
