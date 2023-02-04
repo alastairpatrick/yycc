@@ -63,127 +63,127 @@ static void comment(void);
 
 %}
 
-D			    [0-9]
-L			    [a-zA-Z_]
-H			    [a-fA-F0-9]
-E			    ([Ee][+-]?{D}+)
+D               [0-9]
+L               [a-zA-Z_]
+H               [a-fA-F0-9]
+E               ([Ee][+-]?{D}+)
 P               ([Pp][+-]?{D}+)
-FS			    (f|F|l|L)
+FS              (f|F|l|L)
 IS              ((u|U)|(u|U)?(l|L|ll|LL)|(l|L|ll|LL)(u|U))
 HW              [ \t\v\f\r]
 
 STRING          \"(\\.|[^\\"\n])*\"
 
 %%
-"/*"		    { skip_comment(); }
+"/*"            { skip_comment(); }
 "//"[^\n]*      { }
 
-"auto"			{ return TOK_AUTO; }
-"_Bool"			{ return TOK_BOOL; }
-"break"			{ return TOK_BREAK; }
-"case"			{ return TOK_CASE; }
-"char"			{ return TOK_CHAR; }
-"_Complex"		{ return TOK_COMPLEX; }
-"const"			{ return TOK_CONST; }
-"continue"		{ return TOK_CONTINUE; }
-"default"		{ return TOK_DEFAULT; }
-"do"			{ return TOK_DO; }
-"double"		{ return TOK_DOUBLE; }
-"else"			{ return TOK_ELSE; }
-"enum"			{ return TOK_ENUM; }
-"extern"		{ return TOK_EXTERN; }
-"float"			{ return TOK_FLOAT; }
-"for"			{ return TOK_FOR; }
-"goto"			{ return TOK_GOTO; }
-"if"			{ return TOK_IF; }
-"_Imaginary"	{ return TOK_IMAGINARY; }
-"inline"		{ return TOK_INLINE; }
-"int"			{ return TOK_INT; }
-"long"			{ return TOK_LONG; }
-"register"		{ return TOK_REGISTER; }
-"restrict"		{ return TOK_RESTRICT; }
-"return"		{ return TOK_RETURN; }
-"short"			{ return TOK_SHORT; }
-"signed"		{ return TOK_SIGNED; }
-"sizeof"		{ return TOK_SIZEOF; }
-"static"		{ return TOK_STATIC; }
-"struct"		{ return TOK_STRUCT; }
-"switch"		{ return TOK_SWITCH; }
-"typedef"		{ return TOK_TYPEDEF; }
-"union"			{ return TOK_UNION; }
-"unsigned"		{ return TOK_UNSIGNED; }
-"void"			{ return TOK_VOID; }
-"volatile"		{ return TOK_VOLATILE; }
-"while"			{ return TOK_WHILE; }
+"auto"          { return TOK_AUTO; }
+"_Bool"         { return TOK_BOOL; }
+"break"         { return TOK_BREAK; }
+"case"          { return TOK_CASE; }
+"char"          { return TOK_CHAR; }
+"_Complex"      { return TOK_COMPLEX; }
+"const"         { return TOK_CONST; }
+"continue"      { return TOK_CONTINUE; }
+"default"       { return TOK_DEFAULT; }
+"do"            { return TOK_DO; }
+"double"        { return TOK_DOUBLE; }
+"else"          { return TOK_ELSE; }
+"enum"          { return TOK_ENUM; }
+"extern"        { return TOK_EXTERN; }
+"float"         { return TOK_FLOAT; }
+"for"           { return TOK_FOR; }
+"goto"          { return TOK_GOTO; }
+"if"            { return TOK_IF; }
+"_Imaginary"    { return TOK_IMAGINARY; }
+"inline"        { return TOK_INLINE; }
+"int"           { return TOK_INT; }
+"long"          { return TOK_LONG; }
+"register"      { return TOK_REGISTER; }
+"restrict"      { return TOK_RESTRICT; }
+"return"        { return TOK_RETURN; }
+"short"         { return TOK_SHORT; }
+"signed"        { return TOK_SIGNED; }
+"sizeof"        { return TOK_SIZEOF; }
+"static"        { return TOK_STATIC; }
+"struct"        { return TOK_STRUCT; }
+"switch"        { return TOK_SWITCH; }
+"typedef"       { return TOK_TYPEDEF; }
+"union"         { return TOK_UNION; }
+"unsigned"      { return TOK_UNSIGNED; }
+"void"          { return TOK_VOID; }
+"volatile"      { return TOK_VOLATILE; }
+"while"         { return TOK_WHILE; }
 
-{L}({L}|{D})*		        { return check_identifier(std::move(str())); }
+{L}({L}|{D})*               { return check_identifier(std::move(str())); }
 
-0[xX]{H}+{IS}?		        { return parse_int_lit(text() + 2, 16); }
-0[bB][0-1]+{IS}?	        { return parse_int_lit(text() + 2, 2); }
-0[0-7]*{IS}?		        { return parse_int_lit(text(), 8); }
-[1-9]{D}*{IS}?		        { return parse_int_lit(text(), 10); }
-L?'(\\.|[^\\'\n])+'	        { return parse_char_lit(text()); }
+0[xX]{H}+{IS}?              { return parse_int_lit(text() + 2, 16); }
+0[bB][0-1]+{IS}?            { return parse_int_lit(text() + 2, 2); }
+0[0-7]*{IS}?                { return parse_int_lit(text(), 8); }
+[1-9]{D}*{IS}?              { return parse_int_lit(text(), 10); }
+L?'(\\.|[^\\'\n])+'         { return parse_char_lit(text()); }
 
-{D}+{E}{FS}?				{ return parse_float_lit(text()); }
-{D}*"."{D}+{E}?{FS}?		{ return parse_float_lit(text()); }
-{D}+"."{D}*{E}?{FS}?		{ return parse_float_lit(text()); }
-0[xX]{H}+{P}{FS}?			{ return parse_float_lit(text());; }
-0[xX]{H}*"."{H}+{P}?{FS}?   { return parse_float_lit(text());; }
+{D}+{E}{FS}?                { return parse_float_lit(text()); }
+{D}*"."{D}+{E}?{FS}?        { return parse_float_lit(text()); }
+{D}+"."{D}*{E}?{FS}?        { return parse_float_lit(text()); }
+0[xX]{H}+{P}{FS}?           { return parse_float_lit(text()); }
+0[xX]{H}*"."{H}+{P}?{FS}?   { return parse_float_lit(text()); }
 0[xX]{H}+"."{H}*{P}?{FS}?   { return parse_float_lit(text());; }
 
-L?\"(\\.|[^\\"\n])*\"	    { return parse_string_lit(text(), size()); }
+L?\"(\\.|[^\\"\n])*\"       { return parse_string_lit(text(), size()); }
 
-"..."			{ return TOK_ELLIPSIS; }
-">>="			{ return TOK_RIGHT_ASSIGN; }
-"<<="			{ return TOK_LEFT_ASSIGN; }
-"+="			{ return TOK_ADD_ASSIGN; }
-"-="			{ return TOK_SUB_ASSIGN; }
-"*="			{ return TOK_MUL_ASSIGN; }
-"/="			{ return TOK_DIV_ASSIGN; }
-"%="			{ return TOK_MOD_ASSIGN; }
-"&="			{ return TOK_AND_ASSIGN; }
-"^="			{ return TOK_XOR_ASSIGN; }
-"|="			{ return TOK_OR_ASSIGN; }
-">>"			{ return TOK_RIGHT_OP; }
-"<<"			{ return TOK_LEFT_OP; }
-"++"			{ return TOK_INC_OP; }
-"--"			{ return TOK_DEC_OP; }
-"->"			{ return TOK_PTR_OP; }
-"&&"			{ return TOK_AND_OP; }
-"||"			{ return TOK_OR_OP; }
-"<="			{ return TOK_LE_OP; }
-">="			{ return TOK_GE_OP; }
-"=="			{ return TOK_EQ_OP; }
-"!="			{ return TOK_NE_OP; }
-";"			    { return ';'; }
-("{"|"<%")		{ return '{'; }
-("}"|"%>")		{ return '}'; }
-","			    { return ','; }
-":"			    { return ':'; }
-"="			    { return '='; }
-"("			    { return '('; }
-")"			    { return ')'; }
-("["|"<:")		{ return '['; }
-("]"|":>")		{ return ']'; }
-"."			    { return '.'; }
-"&"			    { return '&'; }
-"!"			    { return '!'; }
-"~"			    { return '~'; }
-"-"			    { return '-'; }
-"+"			    { return '+'; }
-"*"			    { return '*'; }
-"/"			    { return '/'; }
-"%"			    { return '%'; }
-"<"			    { return '<'; }
-">"			    { return '>'; }
-"^"			    { return '^'; }
-"|"			    { return '|'; }
-"?"			    { return '?'; }
+"..."           { return TOK_ELLIPSIS; }
+">>="           { return TOK_RIGHT_ASSIGN; }
+"<<="           { return TOK_LEFT_ASSIGN; }
+"+="            { return TOK_ADD_ASSIGN; }
+"-="            { return TOK_SUB_ASSIGN; }
+"*="            { return TOK_MUL_ASSIGN; }
+"/="            { return TOK_DIV_ASSIGN; }
+"%="            { return TOK_MOD_ASSIGN; }
+"&="            { return TOK_AND_ASSIGN; }
+"^="            { return TOK_XOR_ASSIGN; }
+"|="            { return TOK_OR_ASSIGN; }
+">>"            { return TOK_RIGHT_OP; }
+"<<"            { return TOK_LEFT_OP; }
+"++"            { return TOK_INC_OP; }
+"--"            { return TOK_DEC_OP; }
+"->"            { return TOK_PTR_OP; }
+"&&"            { return TOK_AND_OP; }
+"||"            { return TOK_OR_OP; }
+"<="            { return TOK_LE_OP; }
+">="            { return TOK_GE_OP; }
+"=="            { return TOK_EQ_OP; }
+"!="            { return TOK_NE_OP; }
+";"             { return ';'; }
+("{"|"<%")      { return '{'; }
+("}"|"%>")      { return '}'; }
+","             { return ','; }
+":"             { return ':'; }
+"="             { return '='; }
+"("             { return '('; }
+")"             { return ')'; }
+("["|"<:")      { return '['; }
+("]"|":>")      { return ']'; }
+"."             { return '.'; }
+"&"             { return '&'; }
+"!"             { return '!'; }
+"~"             { return '~'; }
+"-"             { return '-'; }
+"+"             { return '+'; }
+"*"             { return '*'; }
+"/"             { return '/'; }
+"%"             { return '%'; }
+"<"             { return '<'; }
+">"             { return '>'; }
+"^"             { return '^'; }
+"|"             { return '|'; }
+"?"             { return '?'; }
 
-{HW}+		    { }
+{HW}+           { }
 \n              { new_line(); }
 
-.			    { message() << "error unexpected character '" << text() << "'\n"; }
+.               { message() << "error unexpected character '" << text() << "'\n"; }
 
 "#line"{HW}+{D}+({HW}*{STRING})?
                 { parse_line_directive(text() + 5); }
