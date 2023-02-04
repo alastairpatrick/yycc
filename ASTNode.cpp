@@ -1,4 +1,4 @@
-#include "AST.h"
+#include "ASTNode.h"
 
 ostream& operator<<(ostream& stream, StorageClass storage_class) {
     switch (storage_class) {
@@ -23,7 +23,7 @@ ostream& operator<<(ostream& stream, StorageClass storage_class) {
     return stream;
 }
 
-ostream& operator<<(ostream& stream, const DeclStatementList& items) {
+ostream& operator<<(ostream& stream, const ASTNodeVector& items) {
     stream << '[';
     for (auto i = 0; i < items.size(); ++i) {
         if (i != 0) stream << ", ";

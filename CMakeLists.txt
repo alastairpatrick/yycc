@@ -7,7 +7,7 @@ message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 
 add_library(lang_lib STATIC
     assoc_prec.c
-    AST.cpp
+    ASTNode.cpp
     CompileContext.cpp
     Decl.cpp
     Expr.cpp

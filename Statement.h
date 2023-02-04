@@ -1,12 +1,12 @@
-#ifndef STMT_H
-#define STMT_H
+#ifndef STATEMENT_H
+#define STATEMENT_H
 
-#include "AST.h"
+#include "ASTNode.h"
 
 struct CompoundStatement: Statement {
-    CompoundStatement(DeclStatementList items, const Location& location);
+    CompoundStatement(ASTNodeVector items, const Location& location);
 
-    DeclStatementList items;
+    ASTNodeVector items;
 
     virtual void print(std::ostream& stream) const;
 };

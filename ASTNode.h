@@ -19,17 +19,17 @@ enum class StorageClass {
 
 ostream& operator<<(ostream& stream, StorageClass storage_class);
 
-struct DeclStatement: Printable {
-    DeclStatement(const Location& location): location(location) {}
+struct ASTNode: Printable {
+    ASTNode(const Location& location): location(location) {}
 
     Location location;
 };
 
-typedef vector<shared_ptr<DeclStatement>> DeclStatementList;
+typedef vector<shared_ptr<ASTNode>> ASTNodeVector;
 
-ostream& operator<<(ostream& stream, const DeclStatementList& items);
+ostream& operator<<(ostream& stream, const ASTNodeVector& items);
 
-struct Decl: DeclStatement {
+struct Decl: ASTNode {
     Decl(StorageClass storage_class, const Type* type, std::string identifier, const Location& location);
 
     StorageClass storage_class;
@@ -39,8 +39,8 @@ struct Decl: DeclStatement {
     virtual void print(std::ostream& stream) const = 0;
 };
 
-struct Statement: DeclStatement {
-    Statement(const Location& location): DeclStatement(location) {}
+struct Statement: ASTNode {
+    Statement(const Location& location): ASTNode(location) {}
 };
 
 struct Expr: Statement {

@@ -1,7 +1,7 @@
 #ifndef EXPR_H
 #define EXPR_H
 
-#include "AST.h"
+#include "ASTNode.h"
 #include "Token.h"
 
 struct ConditionExpr: Expr {

@@ -2,7 +2,7 @@
 #include "Decl.h"
 
 Decl::Decl(StorageClass storage_class, const Type* type, string identifier, const Location& location)
-    : DeclStatement(location), storage_class(storage_class), type(type), identifier(move(identifier)) {
+    : ASTNode(location), storage_class(storage_class), type(type), identifier(move(identifier)) {
 }
 
 Variable::Variable(StorageClass storage_class, const Type* type, string identifier, shared_ptr<Expr> initializer, const Location& location)

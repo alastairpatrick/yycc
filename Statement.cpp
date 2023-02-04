@@ -2,7 +2,7 @@
 #include "Statement.h"
 
 
-CompoundStatement::CompoundStatement(DeclStatementList items, const Location& location)
+CompoundStatement::CompoundStatement(ASTNodeVector items, const Location& location)
     : Statement(location), items(move(items)) {
 }
 

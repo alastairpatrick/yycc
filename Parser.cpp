@@ -1,6 +1,6 @@
 #include "std.h"
 #include "assoc_prec.h"
-#include "AST.h"
+#include "ASTNode.h"
 #include "ParseContext.h"
 #include "Decl.h"
 #include "Expr.h"
@@ -321,7 +321,7 @@ struct Parser {
     // This parses a single declaration or a single statement. It can append multiple items to the
     // statement list when it flattens a single declaration with multiple declarators into multiple
     // declarations, each with a single declarator. The AST has no notion of declarators.
-    void parse_decl_or_statement(DeclStatementList& list) {
+    void parse_decl_or_statement(ASTNodeVector& list) {
         auto location = lexer.location();
 
         StorageClass storage_class = StorageClass::NONE;
@@ -344,7 +344,7 @@ struct Parser {
 
             require(';');
         } else {
-            shared_ptr<DeclStatement> decl;
+            shared_ptr<ASTNode> decl;
             if (token == '{') {
                 decl = parse_compound_statement();
             } else if (consume(TOK_RETURN)) {
@@ -365,7 +365,7 @@ struct Parser {
         Location loc;
         require('{', &loc);
 
-        DeclStatementList list;
+        ASTNodeVector list;
         while (token && token != '}') {
             parse_decl_or_statement(list);
         }
@@ -468,9 +468,9 @@ shared_ptr<Expr> parse_expr(const string& input, ostream& message_stream) {
     return result;
 }
 
-DeclStatementList parse_statements(const string& input, ostream& message_stream) {
+ASTNodeVector parse_statements(const string& input, ostream& message_stream) {
     Parser parser(input, message_stream);
-    DeclStatementList result;
+    ASTNodeVector result;
     while (parser.token != 0) {
         parser.parse_decl_or_statement(result);
     }
