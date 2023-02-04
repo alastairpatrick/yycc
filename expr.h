@@ -12,7 +12,7 @@ struct ConditionExpr: Expr {
     shared_ptr<Expr> else_expr;
 
     virtual const Type* get_type() const;
-    virtual LLVMValueRef codegen(CodeGenContext* context) const;
+    virtual LLVMValueRef generate_value(CodeGenContext* context) const;
     virtual void print(std::ostream& stream) const;
 };
 
@@ -29,7 +29,7 @@ struct IntegerConstant: Constant {
     IntegerConstant(unsigned long long int_value, const IntegerType* type, const Location& location);
 
     virtual const Type* get_type() const;
-    virtual LLVMValueRef codegen(CodeGenContext* context) const;
+    virtual LLVMValueRef generate_value(CodeGenContext* context) const;
     virtual void print(std::ostream& stream) const;
 };
 
@@ -40,7 +40,7 @@ struct FloatingPointConstant: Constant {
     FloatingPointConstant(double float_value, const FloatingPointType* type, const Location& location);
 
     virtual const Type* get_type() const;
-    virtual LLVMValueRef codegen(CodeGenContext* context) const;
+    virtual LLVMValueRef generate_value(CodeGenContext* context) const;
     virtual void print(std::ostream& stream) const;
 };
 
@@ -51,7 +51,7 @@ struct StringConstant: Constant {
     StringConstant(std::string utf8_literal, const IntegerType* char_type, const Location& location);
 
     virtual const Type* get_type() const;
-    virtual LLVMValueRef codegen(CodeGenContext* context) const;
+    virtual LLVMValueRef generate_value(CodeGenContext* context) const;
     virtual void print(std::ostream& stream) const;
 };
 
@@ -61,7 +61,7 @@ struct NameExpr: Expr {
     NameExpr(string name, const Location& location);
 
     virtual const Type* get_type() const;
-    virtual LLVMValueRef codegen(CodeGenContext* context) const;
+    virtual LLVMValueRef generate_value(CodeGenContext* context) const;
     virtual void print(std::ostream& stream) const;
 };
 
@@ -84,7 +84,7 @@ struct BinaryExpr: Expr {
     Location location;
     
     virtual const Type* get_type() const;
-    virtual LLVMValueRef codegen(CodeGenContext* context) const;
+    virtual LLVMValueRef generate_value(CodeGenContext* context) const;
     virtual void print(std::ostream& stream) const;
 };
 

@@ -18,7 +18,7 @@ const Type* ConditionExpr::get_type() const {
     return convert_arithmetic(then_expr->get_type(), else_expr->get_type());
 }
 
-LLVMValueRef ConditionExpr::codegen(CodeGenContext* context) const {
+LLVMValueRef ConditionExpr::generate_value(CodeGenContext* context) const {
     auto builder = context->builder;
 
     auto cond_type = condition->get_type();
@@ -32,17 +32,17 @@ LLVMValueRef ConditionExpr::codegen(CodeGenContext* context) const {
     };
     auto merge_block = LLVMAppendBasicBlock(context->function, "merge");
 
-    auto cond_value = cond_type->convert_to_type(context, condition->codegen(context), IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::INT));
+    auto cond_value = cond_type->convert_to_type(context, condition->generate_value(context), IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::INT));
     LLVMBuildCondBr(builder, cond_value, alt_blocks[0], alt_blocks[1]);
 
     LLVMValueRef 
         alt_values[2];
     LLVMPositionBuilderAtEnd(builder, alt_blocks[0]);
-    alt_values[0] = then_type->convert_to_type(context, then_expr->codegen(context), result_type);
+    alt_values[0] = then_type->convert_to_type(context, then_expr->generate_value(context), result_type);
     LLVMBuildBr(builder, merge_block);
 
     LLVMPositionBuilderAtEnd(builder, alt_blocks[1]);
-    alt_values[1] = else_type->convert_to_type(context, else_expr->codegen(context), result_type);
+    alt_values[1] = else_type->convert_to_type(context, else_expr->generate_value(context), result_type);
     LLVMBuildBr(builder, merge_block);
 
     LLVMPositionBuilderAtEnd(builder, merge_block);
@@ -67,7 +67,7 @@ const Type* IntegerConstant::get_type() const {
     return type;
 }
 
-LLVMValueRef IntegerConstant::codegen(CodeGenContext* context) const {
+LLVMValueRef IntegerConstant::generate_value(CodeGenContext* context) const {
     return LLVMConstInt(type->llvm_type(), value, type->is_signed());
 }
 
@@ -83,7 +83,7 @@ const Type* FloatingPointConstant::get_type() const {
     return type;
 }
 
-LLVMValueRef FloatingPointConstant::codegen(CodeGenContext* context) const {
+LLVMValueRef FloatingPointConstant::generate_value(CodeGenContext* context) const {
     return LLVMConstReal(type->llvm_type(), value);
 }
 
@@ -106,7 +106,7 @@ void StringConstant::print(ostream& stream) const {
     stream << json(t);
 }
 
-LLVMValueRef StringConstant::codegen(CodeGenContext* context) const {
+LLVMValueRef StringConstant::generate_value(CodeGenContext* context) const {
     return nullptr;
 }
 
@@ -119,7 +119,7 @@ const Type* NameExpr::get_type() const {
     return nullptr;
 }
 
-LLVMValueRef NameExpr::codegen(CodeGenContext* context) const {
+LLVMValueRef NameExpr::generate_value(CodeGenContext* context) const {
     assert(false);
     return nullptr;
 }
@@ -138,15 +138,15 @@ const Type* BinaryExpr::get_type() const {
     return convert_arithmetic(left->get_type(), right->get_type());
 }
 
-LLVMValueRef BinaryExpr::codegen(CodeGenContext* context) const {
+LLVMValueRef BinaryExpr::generate_value(CodeGenContext* context) const {
     auto builder = context->builder;
 
     auto left_type = left->get_type();
     auto right_type = right->get_type();
     auto result_type = get_type();
 
-    auto left_temp = left_type->convert_to_type(context, left->codegen(context), result_type);
-    auto right_temp = right_type->convert_to_type(context, right->codegen(context), result_type);
+    auto left_temp = left_type->convert_to_type(context, left->generate_value(context), result_type);
+    auto right_temp = right_type->convert_to_type(context, right->generate_value(context), result_type);
 
     if (auto result_as_int = dynamic_cast<const IntegerType*>(result_type)) {
         switch (op) {

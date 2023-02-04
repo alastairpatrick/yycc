@@ -47,7 +47,7 @@ struct Expr: Statement {
     explicit Expr(const Location& location): Statement(location) {}
 
     virtual const Type* get_type() const = 0;
-    virtual LLVMValueRef codegen(CodeGenContext* context) const = 0;
+    virtual LLVMValueRef generate_value(CodeGenContext* context) const = 0;
 };
 
 
