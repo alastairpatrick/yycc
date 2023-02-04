@@ -1,12 +1,12 @@
 #include "std.h"
 #include "assoc_prec.h"
-#include "ast.h"
+#include "AST.h"
 #include "ParseContext.h"
-#include "decl.h"
-#include "expr.h"
+#include "Decl.h"
+#include "Expr.h"
 #include "lex.yy.h"
-#include "stmt.h"
-#include "token.h"
+#include "Statement.h"
+#include "Token.h"
 
 struct Parser {
     Lexer lexer;

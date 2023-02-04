@@ -1,8 +1,8 @@
 #ifndef EXPR_H
 #define EXPR_H
 
-#include "ast.h"
-#include "token.h"
+#include "AST.h"
+#include "Token.h"
 
 struct ConditionExpr: Expr {
 	ConditionExpr(shared_ptr<Expr> condition, shared_ptr<Expr> then_expr, shared_ptr<Expr> else_expr, const Location& location);

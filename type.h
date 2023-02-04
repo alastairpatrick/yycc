@@ -4,8 +4,8 @@
 #include "llvm-c/Core.h"
 
 #include "std.h"
-#include "print.h"
-#include "token.h"
+#include "Printable.h"
+#include "Token.h"
 
 struct CodeGenContext;
 struct PointerType;

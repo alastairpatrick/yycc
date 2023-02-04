@@ -1,11 +1,11 @@
 #include "nlohmann/json.hpp"
 
 #include "std.h"
-#include "ast.h"
+#include "AST.h"
 #include "CompileContext.h"
-#include "expr.h"
-#include "decl.h"
-#include "stmt.h"
+#include "Expr.h"
+#include "Decl.h"
+#include "Statement.h"
 
 using json = nlohmann::json;
 

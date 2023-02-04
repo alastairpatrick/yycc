@@ -2,8 +2,8 @@
 
 %top {
 #include "ParseContext.h"
-#include "location.h"
-#include "type.h"
+#include "Location.h"
+#include "Type.h"
 }
 
 %option ctorarg="ParseContext& context"

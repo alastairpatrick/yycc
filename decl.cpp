@@ -1,5 +1,5 @@
 #include "std.h"
-#include "decl.h"
+#include "Decl.h"
 
 Decl::Decl(StorageClass storage_class, const Type* type, string identifier, const Location& location)
 	: DeclStatement(location), storage_class(storage_class), type(type), identifier(move(identifier)) {

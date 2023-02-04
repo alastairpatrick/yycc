@@ -1,7 +1,7 @@
 #ifndef STMT_H
 #define STMT_H
 
-#include "ast.h"
+#include "AST.h"
 
 struct CompoundStatement: Statement {
 	CompoundStatement(DeclStatementList items, const Location& location);

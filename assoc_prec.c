@@ -1,5 +1,5 @@
 #include "assoc_prec.h"
-#include "token.h"
+#include "Token.h"
 
 const AssocPrec g_assoc_prec[0x100] = {
 	[TOK_EOF]			= { ASSOC_RIGHT, EOF_PREC },

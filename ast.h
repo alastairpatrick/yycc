@@ -3,9 +3,9 @@
 
 #include "llvm-c/Core.h"
 
-#include "location.h"
-#include "print.h"
-#include "type.h"
+#include "Location.h"
+#include "Printable.h"
+#include "Type.h"
 
 
 enum class StorageClass {

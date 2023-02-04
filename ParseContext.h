@@ -2,7 +2,7 @@
 #define CTX_H
 
 #include "std.h"
-#include "type.h"
+#include "Type.h"
 
 // The state shared between the lexer and parser that makes the grammar not context free.
 struct ParseContext {

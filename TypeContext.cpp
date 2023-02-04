@@ -1,6 +1,6 @@
 #include "TypeContext.h"
 
-#include "type.h"
+#include "Type.h"
 
 const Type* TypeContext::lookup_indexed_type(const string& key) {
 	auto it = indexed_types.find(key);

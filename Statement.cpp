@@ -1,5 +1,5 @@
 #include "std.h"
-#include "stmt.h"
+#include "Statement.h"
 
 
 CompoundStatement::CompoundStatement(DeclStatementList items, const Location& location)

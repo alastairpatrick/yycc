@@ -7,15 +7,15 @@ message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 
 add_library(lang_lib STATIC
     assoc_prec.c
-    ast.cpp
+    "AST.cpp"
     CompileContext.cpp
-    decl.cpp
-    expr.cpp
+    "Decl.cpp"
+    "Expr.cpp"
     ParseContext.cpp
     Parser.cpp
-    print.cpp
-    stmt.cpp
-    type.cpp
+    "Printable.cpp"
+    "Statement.cpp"
+    "Type.cpp"
     TypeContext.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/lex.yy.cpp
 )

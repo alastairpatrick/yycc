@@ -1,7 +1,7 @@
 #include "std.h"
 
-#include "type.h"
-#include "codegen.h"
+#include "Type.h"
+#include "CodeGenContext.h"
 #include "CompileContext.h"
 #include "symbol.h"
 

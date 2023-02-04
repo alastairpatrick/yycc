@@ -1,7 +1,7 @@
 #ifndef DECL_H
 #define DECL_H
 
-#include "ast.h"
+#include "AST.h"
 
 // Function prototypes are represented in the AST as variables of function type. N.B.: _not_ function _pointer_ type!
 // The reason is because before symbols have been resolved, a function prototype can be syntactically indistinguishable

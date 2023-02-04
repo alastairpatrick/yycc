@@ -2,8 +2,8 @@
 
 #include "std.h"
 
-#include "expr.h"
-#include "codegen.h"
+#include "Expr.h"
+#include "CodeGenContext.h"
 
 using json = nlohmann::json;
 

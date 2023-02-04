@@ -1,4 +1,4 @@
-#include "ast.h"
+#include "AST.h"
 
 ostream& operator<<(ostream& stream, StorageClass storage_class) {
 	switch (storage_class) {
