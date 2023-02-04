@@ -13,3 +13,8 @@ CompileContext::~CompileContext() {
     assert(it == this);
     it = nullptr;
 }
+
+const string* intern(string source) {
+    auto& strings = CompileContext::it->interned_strings;
+    return &*strings.insert(move(source)).first;
+}

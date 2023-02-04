@@ -15,7 +15,7 @@
     int parse_float_lit(const char* text);
     int parse_char_lit(const char* text);
     int parse_string_lit(const char* text, size_t capacity_hint);
-    int check_identifier(std::string name);
+    int check_identifier(std::string identifier);
     void parse_line_directive(const char* text);
     void new_line();
 
@@ -49,15 +49,17 @@ public:
     long double float_lit;
 
     bool string_wide;
-    std::string string_lit;  // UTF-8 with C string literal escape sequences expanded
+    string string_lit;  // UTF-8 with C string literal escape sequences expanded
 
-    std::string identifier;  // UTF-8
+    const string* identifier;  // UTF-8
 };
 
 %{
 #include <stdlib.h>
 #include <stdio.h>
-#include "token.h"
+
+#include "CompileContext.h"
+#include "Token.h"
 
 static void comment(void);
 
@@ -460,8 +462,8 @@ void Lexer::new_line() {
     }
 }
 
-int Lexer::check_identifier(std::string name)
+int Lexer::check_identifier(std::string id)
 {
-    identifier = std::move(name);
+    identifier = intern(std::move(id));
     return context.is_type(identifier) ? TOK_TYPE_IDENTIFIER : TOK_IDENTIFIER;
 }

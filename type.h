@@ -162,10 +162,10 @@ enum class TypeNameKind {
 };
 
 struct TypeName: Type {
-    static const TypeName* of(TypeNameKind kind, string name);
+    static const TypeName* of(TypeNameKind kind, const string* name);
 
     const TypeNameKind kind;
-    const string name;
+    const string* name;
 
     virtual const Type* resolve(const SymbolMap& scope) const;
 
@@ -174,7 +174,7 @@ struct TypeName: Type {
     virtual void print(std::ostream& stream) const;
 
 private:
-    TypeName(TypeNameKind kind, string name);
+    TypeName(TypeNameKind kind, const string* name);
 };
 
 #endif

@@ -396,7 +396,7 @@ FunctionType::FunctionType(const Type* return_type, std::vector<const Type*> par
     : return_type(return_type), parameter_types(move(parameter_types)), variadic(variadic) {
 }
 
-const TypeName* TypeName::of(TypeNameKind kind, string name) {
+const TypeName* TypeName::of(TypeNameKind kind, const string* name) {
     auto type = CompileContext::it->type.lookup_type_name(kind, name);
     if (type) return type;
 
@@ -435,5 +435,5 @@ void TypeName::print(std::ostream& stream) const {
     stream << name;
 }
 
-TypeName::TypeName(TypeNameKind kind, string name): kind(kind), name(name) {
+TypeName::TypeName(TypeNameKind kind, const string* name): kind(kind), name(name) {
 }

@@ -56,9 +56,9 @@ struct StringConstant: Constant {
 };
 
 struct NameExpr: Expr {
-    string name;
+    const string* name;
 
-    NameExpr(string name, const Location& location);
+    NameExpr(const string* name, const Location& location);
 
     virtual const Type* get_type() const;
     virtual LLVMValueRef generate_value(CodeGenContext* context) const;

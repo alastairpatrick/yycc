@@ -30,11 +30,11 @@ typedef vector<shared_ptr<ASTNode>> ASTNodeVector;
 ostream& operator<<(ostream& stream, const ASTNodeVector& items);
 
 struct Decl: ASTNode {
-    Decl(StorageClass storage_class, const Type* type, std::string identifier, const Location& location);
+    Decl(StorageClass storage_class, const Type* type, const string* identifier, const Location& location);
 
     StorageClass storage_class;
     const Type* type;
-    string identifier;
+    const string* identifier;
 
     virtual void print(std::ostream& stream) const = 0;
 };

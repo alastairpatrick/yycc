@@ -57,7 +57,7 @@ void TypeContext::add_pointer_type(const PointerType* type) {
     pointer_types[type->base_type] = type;
 }
 
-const TypeName* TypeContext::lookup_type_name(TypeNameKind kind, const string& name) {
+const TypeName* TypeContext::lookup_type_name(TypeNameKind kind, const string* name) {
     auto it = type_names.find(name);
     if (it == type_names.end()) return nullptr;
     return it->second.kinds[unsigned(kind)];

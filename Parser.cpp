@@ -135,7 +135,7 @@ struct Parser {
                 break;
             }
             else if (token == TOK_IDENTIFIER) {
-                result = make_shared<NameExpr>(move(lexer.identifier), loc);
+                result = make_shared<NameExpr>(lexer.identifier, loc);
                 consume();
                 break;
             } else if (consume('(')) {
@@ -200,7 +200,7 @@ struct Parser {
                 type_specifier_location = lexer.location();                
 
                 if (token == TOK_TYPE_IDENTIFIER) {
-                    type = TypeName::of(TypeNameKind::ORDINARY, move(lexer.identifier));
+                    type = TypeName::of(TypeNameKind::ORDINARY, lexer.identifier);
                 }
 
                 break;
@@ -330,7 +330,7 @@ struct Parser {
             while (token && token != ';') {
                 auto decl = parse_declarator(storage_class, type, list.empty(), location);
                 auto is_function = dynamic_cast<Function*>(decl.get());
-                if (decl->identifier.empty()) {
+                if (!decl->identifier) {
                     message(lexer.location()) << "error expected identifier\n";
                 } else {
                     list.push_back(move(decl));
@@ -406,8 +406,8 @@ struct Parser {
                 type = type->pointer_to();
             }
 
-            string identifier = move(lexer.identifier);
-            if (!consume(TOK_IDENTIFIER)) identifier.clear();
+            const string* identifier = lexer.identifier;
+            if (!consume(TOK_IDENTIFIER)) identifier = nullptr;
 
             shared_ptr<Expr> initializer;
             if (consume('=')) {
@@ -445,7 +445,7 @@ struct Parser {
 
             if (storage_class == StorageClass::TYPEDEF) {
                 auto decl = make_shared<TypeDef>(type, move(identifier), location);
-                context.set_is_type(decl.get());
+                context.set_is_type(decl->identifier);
                 return decl;
             } else if (dynamic_cast<const FunctionType*>(type)) {
                 if (storage_class == StorageClass::NONE) {

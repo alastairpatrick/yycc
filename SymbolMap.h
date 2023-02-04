@@ -5,7 +5,7 @@
 #include "Type.h"
 
 struct SymbolMap {
-    const Type* lookup_type(TypeNameKind kind, const std::string& name) const { return nullptr; }
+    const Type* lookup_type(TypeNameKind kind, const std::string* name) const { return nullptr; }
 
 private:
 

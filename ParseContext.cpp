@@ -6,13 +6,13 @@ ParseContext::ParseContext() {
     push_scope();
 }
 
-void ParseContext::set_is_type(const Decl* decl) {
-    scopes.front().types.insert(&decl->identifier);
+void ParseContext::set_is_type(const string* identifier) {
+    scopes.front().types.insert(identifier);
 }
 
-bool ParseContext::is_type(const string& identifier) const {
+bool ParseContext::is_type(const string* identifier) const {
     for (auto& scope : scopes) {
-        if (scope.types.find(&identifier) != scope.types.end()) return true;
+        if (scope.types.find(identifier) != scope.types.end()) return true;
     }
     return false;
 }

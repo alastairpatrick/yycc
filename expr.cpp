@@ -110,8 +110,8 @@ LLVMValueRef StringConstant::generate_value(CodeGenContext* context) const {
     return nullptr;
 }
 
-NameExpr::NameExpr(string name, const Location& location)
-    : Expr(location), name(move(name)) {
+NameExpr::NameExpr(const string* name, const Location& location)
+    : Expr(location), name(name) {
 }
 
 const Type* NameExpr::get_type() const {

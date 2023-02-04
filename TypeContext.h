@@ -21,7 +21,7 @@ struct TypeContext {
     const QualifiedType* lookup_qualified_type(const Type* base_type, unsigned qualifiers);
     void add_qualified_type(const QualifiedType* type);
 
-    const TypeName* lookup_type_name(TypeNameKind kind, const string& name);
+    const TypeName* lookup_type_name(TypeNameKind kind, const string* name);
     void add_type_name(const TypeName* type);
 
     // This map is only used for "complicated" types like functions.
@@ -36,7 +36,7 @@ struct TypeContext {
     struct TypeNameMapValue {
         const TypeName* kinds[4] = { nullptr };
     };
-    typedef unordered_map<string, TypeNameMapValue> TypeNameMap;
+    typedef unordered_map<const string*, TypeNameMapValue> TypeNameMap;
     TypeNameMap type_names;
 };
 

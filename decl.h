@@ -18,7 +18,7 @@
 
 
 struct Variable: Decl {
-    Variable(StorageClass storage_class, const Type* type, std::string identifier, shared_ptr<Expr> initializer, const Location& location);
+    Variable(StorageClass storage_class, const Type* type, const string* identifier, shared_ptr<Expr> initializer, const Location& location);
 
     shared_ptr<Expr> initializer;
 
@@ -26,7 +26,7 @@ struct Variable: Decl {
 };
 
 struct Function: Decl {
-    Function(StorageClass storage_class, const FunctionType* type, std::string identifier, shared_ptr<Statement> body, const Location& location);
+    Function(StorageClass storage_class, const FunctionType* type, const string* identifier, shared_ptr<Statement> body, const Location& location);
 
     shared_ptr<Statement> body;
 
@@ -34,7 +34,7 @@ struct Function: Decl {
 };
 
 struct TypeDef: Decl {
-    TypeDef(const Type* type, std::string identifier, const Location& location);
+    TypeDef(const Type* type, const string* identifier, const Location& location);
 
     shared_ptr<Statement> body;
 

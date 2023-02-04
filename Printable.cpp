@@ -13,3 +13,12 @@ ostream& operator<<(ostream& stream, const Printable* p) {
     }
     return stream;
 }
+
+ostream& operator<<(ostream& stream, const string* p) {
+    if (p) {
+        stream << *p;
+    } else {
+        stream << "null";
+    }
+    return stream;
+}
