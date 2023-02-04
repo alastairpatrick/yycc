@@ -21,7 +21,7 @@
 // V void
 // ? variadic placeholder
 
-int Type::qualifiers() const {
+unsigned Type::qualifiers() const {
     return 0;
 }
 
@@ -45,8 +45,13 @@ LLVMValueRef Type::convert_to_type(CodeGenContext* context, LLVMValueRef value, 
 }
 
 const PointerType* Type::pointer_to() const {
-    if (!pointer) pointer = new PointerType(this);
-    return pointer;
+    auto type = CompileContext::it->type.lookup_pointer_type(this);
+    if (type) return type;
+
+    type = new PointerType(this);
+    CompileContext::it->type.add_pointer_type(type);
+
+    return type;
 }
 
 const VoidType VoidType::it;
@@ -300,7 +305,7 @@ PointerType::PointerType(const Type* base_type)
     : base_type(base_type) {
 }
 
-const QualifiedType* QualifiedType::of(const Type* base_type, int qualifiers) {
+const QualifiedType* QualifiedType::of(const Type* base_type, unsigned qualifiers) {
     qualifiers |= base_type->qualifiers();
     base_type = base_type->unqualified();
 
@@ -312,7 +317,7 @@ const QualifiedType* QualifiedType::of(const Type* base_type, int qualifiers) {
     return type;
 }
 
-int QualifiedType::qualifiers() const {
+unsigned QualifiedType::qualifiers() const {
     return qualifier_flags;
 }
 
@@ -336,7 +341,7 @@ void QualifiedType::print(std::ostream& stream) const {
     stream << base_type;
 }
 
-QualifiedType::QualifiedType(const Type* base_type, int qualifiers)
+QualifiedType::QualifiedType(const Type* base_type, unsigned qualifiers)
     : base_type(base_type), qualifier_flags(qualifiers) {
 }
 

@@ -12,7 +12,7 @@ struct PointerType;
 struct SymbolScope;
 
 struct Type: Printable {
-    virtual int qualifiers() const;
+    virtual unsigned qualifiers() const;
     virtual const Type* unqualified() const;
 
     const PointerType* pointer_to() const;
@@ -24,9 +24,6 @@ struct Type: Printable {
     virtual LLVMValueRef convert_to_type(CodeGenContext* context, LLVMValueRef value, const Type* to_type) const;
 
     virtual LLVMTypeRef llvm_type() const = 0;
-
-private:
-    mutable const PointerType* pointer = nullptr;
 };
 
 struct VoidType: Type {
@@ -120,11 +117,11 @@ enum TypeQualifiers {
 };
 
 struct QualifiedType: Type {
-    static const QualifiedType* of(const Type* base_type, int qualifiers);
+    static const QualifiedType* of(const Type* base_type, unsigned qualifiers);
 
     const Type* const base_type;
 
-    virtual int qualifiers() const;
+    virtual unsigned qualifiers() const;
     virtual const Type* unqualified() const;
 
     virtual const Type* resolve(const SymbolScope& scope) const;
@@ -134,8 +131,8 @@ struct QualifiedType: Type {
     virtual void print(std::ostream& stream) const;
 
 private:
-    const int qualifier_flags;
-    explicit QualifiedType(const Type* base_type, int qualifiers);
+    const unsigned qualifier_flags;
+    explicit QualifiedType(const Type* base_type, unsigned qualifiers);
 };
 
 struct FunctionType: Type {
