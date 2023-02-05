@@ -325,9 +325,12 @@ struct Parser {
         StorageClass storage_class = StorageClass::NONE;
         const Type* type = nullptr;
         if (parse_decl_specifiers(storage_class, type)) {
+            int decl_count = 0;
             while (token && token != ';') {
-                auto decl = parse_declarator(storage_class, type, list.empty(), location);
-                auto is_function = dynamic_cast<Function*>(decl.get());
+                auto decl = parse_declarator(storage_class, type, decl_count == 0, location);
+                ++ decl_count;
+
+                auto is_function_definition = decl->is_function_definition();
                 if (!decl->identifier) {
                     message(lexer.location()) << "error expected identifier\n";
                 } else {
@@ -335,7 +338,7 @@ struct Parser {
                 }
 
                 // No ';' after function definition.
-                if (is_function) return;
+                if (is_function_definition) return;
 
                 if (!consume(',')) break;
             }
@@ -442,11 +445,11 @@ struct Parser {
 
                 type = FunctionType::of(type, move(param_types), false);
 
-                if (allow_function_def && token == '{') {
+                if (allow_function_def) {
                     return make_shared<Function>(storage_class,
                                                  static_cast<const FunctionType*>(type),
-                                                 move(identifier),
-                                                 parse_compound_statement(),
+                                                 identifier,
+                                                 token == '{' ? parse_compound_statement() : nullptr,
                                                  location);
                 }
             }
@@ -455,14 +458,6 @@ struct Parser {
                 auto decl = make_shared<TypeDef>(type, identifier, location);
                 symbols.add_decl(TypeNameKind::ORDINARY, decl->identifier, decl.get());
                 return decl;
-            } else if (dynamic_cast<const FunctionType*>(type)) {
-                if (storage_class == StorageClass::NONE) {
-                    storage_class = StorageClass::EXTERN;
-                }
-                if (storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN) {
-                    storage_class = StorageClass::STATIC;
-                    message(location) << "error invalid storage class for a function\n";
-                }
             }
 
             return make_shared<Variable>(storage_class, type, move(identifier), move(initializer), location);

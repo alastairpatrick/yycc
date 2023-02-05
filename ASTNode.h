@@ -37,6 +37,7 @@ struct Decl: ASTNode {
     const string* identifier;
 
     virtual const Type* to_type() const;
+    virtual bool is_function_definition() const;
     virtual void redeclare(const Decl* redeclared) const;
     virtual void print(std::ostream& stream) const = 0;
 };

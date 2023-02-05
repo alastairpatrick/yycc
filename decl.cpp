@@ -12,6 +12,10 @@ const Type* Decl::to_type() const {
     return nullptr;
 }
 
+bool Decl::is_function_definition() const {
+    return false;
+}
+
 void Decl::redeclare(const Decl* redeclared) const {
     message(redeclared->location) << "error redeclaration of '" << redeclared->identifier << "'\n";
     message(location) << "see original declaration\n";
@@ -29,14 +33,24 @@ void Variable::print(std::ostream& stream) const {
     stream << ']';
 }
 
-Function::Function(StorageClass storage_class, const FunctionType* type, const string* identifier, shared_ptr<Statement> body, const Location& location)
-    : Decl(storage_class, type, identifier, location), body(move(body)) {
-    // For function definitions only. Prototypes use Variable instead.
-    assert(this->body);
+Function::Function(StorageClass storage, const FunctionType* type, const string* identifier, shared_ptr<Statement> body, const Location& location)
+    : Decl(storage == StorageClass::EXTERN ? StorageClass::NONE : storage, type, identifier, location), body(move(body)) {
+    if (storage_class != StorageClass::STATIC && storage_class != StorageClass::NONE) {
+        storage_class = StorageClass::NONE;
+        message(location) << "error invalid storage class for a function\n";
+    }
+}
+
+bool Function::is_function_definition() const {
+    return body != nullptr;
 }
 
 void Function::print(std::ostream& stream) const {
-    stream << "[\"fun\", [" << storage_class << "], \"" << type << "\", \"" << identifier  << "\", " << body << ']';
+    stream << "[\"fun\", [" << storage_class << "], \"" << type << "\", \"" << identifier << '"';
+    if (body) {
+        stream << ", " << body;
+    }
+    stream << ']';
 }
 
 TypeDef::TypeDef(const Type* type, const string* identifier, const Location& location)

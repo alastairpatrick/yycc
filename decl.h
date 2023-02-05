@@ -3,20 +3,6 @@
 
 #include "ASTNode.h"
 
-// Function prototypes are represented in the AST as variables of function type. N.B.: _not_ function _pointer_ type!
-// The reason is because before symbols have been resolved, a function prototype can be syntactically indistinguishable
-// from a variable declaration. Example:
-//
-// typedef int compare(int, int);
-// compare min, max;
-//
-// Above is equivalent to:
-//
-// typedef int compare(int, int);
-// int min(int, int);
-// int max(int, int);
-
-
 struct Variable: Decl {
     Variable(StorageClass storage_class, const Type* type, const string* identifier, shared_ptr<Expr> initializer, const Location& location);
 
@@ -30,6 +16,7 @@ struct Function: Decl {
 
     shared_ptr<Statement> body;
 
+    virtual bool is_function_definition() const;
     virtual void print(std::ostream& stream) const;
 };
 

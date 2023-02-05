@@ -320,19 +320,19 @@ EXPECT_AST
 BEGIN Function prototype with no parameters (1)
 int foo();
 EXPECT_AST
-[["var", ["extern"], "()Is", "foo"]]
+[["fun", [], "()Is", "foo"]]
 
 
 BEGIN Function prototype with no parameters (2)
 int foo(void);
 EXPECT_AST
-[["var", ["extern"], "()Is", "foo"]]
+[["fun", [], "()Is", "foo"]]
 
 
 BEGIN Function prototype with parameters
 void foo(float x, float y);
 EXPECT_AST
-[["var", ["extern"], "(FF)V", "foo"]]
+[["fun", [], "(FF)V", "foo"]]
 
 
 BEGIN Error if prototype has void parameters (1)
@@ -340,7 +340,7 @@ int foo(void, void);
 EXPECT_MESSAGE
 :1:15: error a parameter may not have void type
 EXPECT_AST
-[["var", ["extern"], "()Is", "foo"]]
+[["fun", [], "()Is", "foo"]]
 
 
 BEGIN Error if prototype has void parameters (2)
@@ -348,19 +348,19 @@ int foo(float, void);
 EXPECT_MESSAGE
 :1:16: error a parameter may not have void type
 EXPECT_AST
-[["var", ["extern"], "(F)Is", "foo"]]
+[["fun", [], "(F)Is", "foo"]]
 
 
-BEGIN Explictly external prototype
+BEGIN Explictly external prototype and transformed to no storage class
 extern int foo(float);
 EXPECT_AST
-[["var", ["extern"], "(F)Is", "foo"]]
+[["fun", [], "(F)Is", "foo"]]
 
 
 BEGIN Internal prototype
 static int foo(float);
 EXPECT_AST
-[["var", ["static"], "(F)Is", "foo"]]
+[["fun", ["static"], "(F)Is", "foo"]]
 
 
 BEGIN Error if prototype has register storage class
@@ -368,7 +368,7 @@ register int foo(float);
 EXPECT_MESSAGE
 :1:1: error invalid storage class for a function
 EXPECT_AST
-[["var", ["static"], "(F)Is", "foo"]]
+[["fun", [], "(F)Is", "foo"]]
 
 
 BEGIN Error if function parameter has storage class
@@ -376,7 +376,15 @@ static int foo(extern float);
 EXPECT_MESSAGE
 :1:16: error a parameter may not have a storage class
 EXPECT_AST
-[["var", ["static"], "(F)Is", "foo"]]
+[["fun", ["static"], "(F)Is", "foo"]]
+
+
+BEGIN Consistent prototypes for function
+int foo(signed);
+signed foo(int);
+EXPECT_AST
+[["fun", [], "(Is)Is", "foo"]
+,["fun", [], "(Is)Is", "foo"]]
 
 
 BEGIN Empty function definition
@@ -414,7 +422,7 @@ EXPECT_MESSAGE
 :2:1: error unexpected token
 EXPECT_AST
 [["var", [], "Is", "foo"]
-,["var", ["extern"], "(Is)Is", "bar"]]
+,["var", [], "(Is)Is", "bar"]]
 
 
 BEGIN Function definition may not share external declaration with declarators (2)
