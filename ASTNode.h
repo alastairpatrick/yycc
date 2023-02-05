@@ -7,17 +7,8 @@
 #include "Printable.h"
 #include "Type.h"
 
-
-enum class StorageClass {
-    NONE,
-    TYPEDEF,
-    EXTERN,
-    STATIC,
-    AUTO,
-    REGISTER,
-};
-
-ostream& operator<<(ostream& stream, StorageClass storage_class);
+enum class DeclKind;
+enum class StorageClass;
 
 struct ASTNode: Printable {
     ASTNode(const Location& location): location(location) {}
@@ -36,6 +27,7 @@ struct Decl: ASTNode {
     const Type* type;
     const string* identifier;
 
+    virtual DeclKind kind() const = 0;
     virtual const Type* to_type() const;
     virtual bool is_function_definition() const;
     virtual void redeclare(const Decl* redeclared) const;

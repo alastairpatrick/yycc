@@ -4,6 +4,29 @@
 
 #include "CompileContext.h"
 
+ostream& operator<<(ostream& stream, StorageClass storage_class) {
+    switch (storage_class) {
+    case StorageClass::NONE:
+        break;
+    case StorageClass::TYPEDEF:
+        stream << "\"typedef\"";
+        break;
+    case StorageClass::EXTERN:
+        stream << "\"extern\"";
+        break;
+    case StorageClass::STATIC:
+        stream << "\"static\"";
+        break;
+    case StorageClass::AUTO:
+        stream << "\"auto\"";
+        break;
+    case StorageClass::REGISTER:
+        stream << "\"register\"";
+        break;
+    }
+    return stream;
+}
+
 Decl::Decl(StorageClass storage_class, const Type* type, const string* identifier, const Location& location)
     : ASTNode(location), storage_class(storage_class), type(type), identifier(identifier) {
 }
@@ -25,6 +48,10 @@ Variable::Variable(StorageClass storage_class, const Type* type, const string* i
     : Decl(storage_class, type, move(identifier), location), initializer(initializer) {
 }
 
+DeclKind Variable::kind() const {
+    return DeclKind::VARIABLE;
+}
+
 void Variable::print(std::ostream& stream) const {
     stream << "[\"var\", [" << storage_class << "], \"" << type << "\", \"" << identifier  << "\"";
     if (initializer) {
@@ -41,6 +68,10 @@ Function::Function(StorageClass storage, const FunctionType* type, const string*
     }
 }
 
+DeclKind Function::kind() const {
+    return DeclKind::FUNCTION;
+}
+
 bool Function::is_function_definition() const {
     return body != nullptr;
 }
@@ -55,6 +86,10 @@ void Function::print(std::ostream& stream) const {
 
 TypeDef::TypeDef(const Type* type, const string* identifier, const Location& location)
     : Decl(StorageClass::TYPEDEF, type, identifier, location) {
+}
+
+DeclKind TypeDef::kind() const {
+    return DeclKind::TYPEDEF;
 }
 
 const Type* TypeDef::to_type() const {
