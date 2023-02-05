@@ -72,8 +72,6 @@ struct Parser {
             auto next_min_prec = assoc() == ASSOC_LEFT ? prec() + 1 : prec();
 
             if (consume('?', &loc)) {
-                // <conditional-expression> ::= <logical-or-expression>
-                //                            | <logical-or-expression> ? <expression> : <conditional-expression>
                 auto then_expr = parse_expr(next_min_prec);
                 if (require(':')) {
                     auto else_expr = parse_expr(CONDITIONAL_PREC);
@@ -404,6 +402,16 @@ struct Parser {
             const Type* type = declaration_type;
             while (consume('*')) {
                 type = type->pointer_to();
+
+                unsigned qualifier_set = 0;
+                while (token == TOK_CONST || token == TOK_RESTRICT || token == TOK_VOLATILE) {
+                    qualifier_set |= 1 << token;
+                    consume();
+                }
+
+                if (qualifier_set) {
+                    type = QualifiedType::of(type, qualifier_set);
+                }
             }
 
             const string* identifier = lexer.identifier;

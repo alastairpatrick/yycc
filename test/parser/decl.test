@@ -278,6 +278,31 @@ EXPECT_AST
 ,["var", ["extern"], "PIs", "y"]]
 
 
+BEGIN Const declarator
+int* const y;
+EXPECT_AST
+[["var", [], "QcPIs", "y"]]
+
+
+BEGIN Restrict declarator
+int* restrict y;
+EXPECT_AST
+[["var", [], "QrPIs", "y"]]
+
+
+BEGIN Volatile declarator
+int* volatile y;
+EXPECT_AST
+[["var", [], "QvPIs", "y"]]
+
+
+BEGIN Declarator with multiple qualifiers
+int x, * const * volatile restrict y;
+EXPECT_AST
+[["var", [], "Is", "x"]
+,["var", [], "QrvPQcPIs", "y"]]
+
+
 BEGIN Declarator initializers
 int x = 1, y = 2;
 EXPECT_AST
@@ -410,6 +435,12 @@ foo_t foo;
 EXPECT_AST
 [["typedef", "Ss", "foo_t"]
 ,["var", [], "Ss", "foo"]]
+
+
+BEGIN Typedef with no declarators
+typedef;
+EXPECT_AST
+[]
 
 
 BEGIN Consistent redefinition of typedef
