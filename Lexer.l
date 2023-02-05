@@ -1,13 +1,13 @@
 %option yylineno
 
 %top {
-#include "ParseContext.h"
 #include "Location.h"
+#include "SymbolMap.h"
 #include "Type.h"
 }
 
-%option ctorarg="ParseContext& context"
-%option ctorinit="context(context)"
+%option ctorarg="SymbolMap& symbols"
+%option ctorinit="symbols(symbols)"
 
 %class {
     void skip_comment();
@@ -31,7 +31,7 @@
         return message(location());
     }
 
-    ParseContext& context;
+    const SymbolMap& symbols;
 
 public:
 
@@ -465,5 +465,5 @@ void Lexer::new_line() {
 int Lexer::check_identifier(std::string id)
 {
     identifier = intern(std::move(id));
-    return context.is_type(identifier) ? TOK_TYPE_IDENTIFIER : TOK_IDENTIFIER;
+    return symbols.is_type_identifier(identifier) ? TOK_TYPE_IDENTIFIER : TOK_IDENTIFIER;
 }

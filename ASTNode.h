@@ -36,6 +36,7 @@ struct Decl: ASTNode {
     const Type* type;
     const string* identifier;
 
+    virtual bool is_type() const;
     virtual void print(std::ostream& stream) const = 0;
 };
 

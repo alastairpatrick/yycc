@@ -1,19 +1,19 @@
 #include "std.h"
 #include "assoc_prec.h"
 #include "ASTNode.h"
-#include "ParseContext.h"
 #include "Decl.h"
 #include "Expr.h"
 #include "lex.yy.h"
 #include "Statement.h"
+#include "SymbolMap.h"
 #include "Token.h"
 
 struct Parser {
     Lexer lexer;
     int token;
-    ParseContext context;
+    SymbolMap symbols;
 
-    explicit Parser(const reflex::Input& input, ostream& message_stream): lexer(context, input, message_stream) {
+    explicit Parser(const reflex::Input& input, ostream& message_stream): lexer(symbols, input, message_stream) {
         token = lexer.lex();
     }
 
@@ -360,7 +360,7 @@ struct Parser {
     }
 
     shared_ptr<CompoundStatement> parse_compound_statement() {
-        context.push_scope();
+        symbols.push_scope();
 
         Location loc;
         require('{', &loc);
@@ -372,7 +372,7 @@ struct Parser {
 
         // Must pop scope before consuming '}' in case '}' is immediately followed by an identifier that the
         // lexer must correctly identify as TOK_IDENTIFIER or TOK_TYPE_IDENTIFIER.
-        context.pop_scope();
+        symbols.pop_scope();
 
         require('}');
 
@@ -445,7 +445,7 @@ struct Parser {
 
             if (storage_class == StorageClass::TYPEDEF) {
                 auto decl = make_shared<TypeDef>(type, move(identifier), location);
-                context.set_is_type(decl->identifier);
+                symbols.add_decl(decl->identifier, decl.get());
                 return decl;
             } else if (dynamic_cast<const FunctionType*>(type)) {
                 if (storage_class == StorageClass::NONE) {

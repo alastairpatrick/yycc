@@ -11,10 +11,10 @@ add_library(lang_lib STATIC
     CompileContext.cpp
     Decl.cpp
     Expr.cpp
-    ParseContext.cpp
     Parser.cpp
     Printable.cpp
     Statement.cpp
+    SymbolMap.cpp
     Type.cpp
     TypeContext.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/Lexer.yy.cpp

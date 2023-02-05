@@ -36,8 +36,7 @@ struct Function: Decl {
 struct TypeDef: Decl {
     TypeDef(const Type* type, const string* identifier, const Location& location);
 
-    shared_ptr<Statement> body;
-
+    virtual bool is_type() const;
     virtual void print(std::ostream& stream) const;
 };
 

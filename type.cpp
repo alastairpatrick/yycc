@@ -3,6 +3,7 @@
 #include "Type.h"
 #include "CodeGenContext.h"
 #include "CompileContext.h"
+#include "Decl.h"
 #include "SymbolMap.h"
 
 // Type codes
@@ -405,8 +406,13 @@ const TypeName* TypeName::of(TypeNameKind kind, const string* name) {
     return type;
 }
 
-const Type* TypeName::resolve(const SymbolMap& scope) const {
-    return scope.lookup_type(kind, name);
+const Type* TypeName::resolve(const SymbolMap& symbols) const {
+    auto decl = dynamic_cast<const TypeDef*>(symbols.lookup_decl(kind, name));
+    if (!decl) {
+        // TODO
+    }
+
+    return decl->type;
 }
 
 LLVMTypeRef TypeName::llvm_type() const {

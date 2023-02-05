@@ -5,6 +5,10 @@ Decl::Decl(StorageClass storage_class, const Type* type, const string* identifie
     : ASTNode(location), storage_class(storage_class), type(type), identifier(identifier) {
 }
 
+bool Decl::is_type() const {
+    return false;
+}
+
 Variable::Variable(StorageClass storage_class, const Type* type, const string* identifier, shared_ptr<Expr> initializer, const Location& location)
     : Decl(storage_class, type, move(identifier), location), initializer(initializer) {
 }
@@ -29,6 +33,10 @@ void Function::print(std::ostream& stream) const {
 
 TypeDef::TypeDef(const Type* type, const string* identifier, const Location& location)
     : Decl(StorageClass::TYPEDEF, type, identifier, location) {
+}
+
+bool TypeDef::is_type() const {
+    return true;
 }
 
 void TypeDef::print(std::ostream& stream) const {
