@@ -39,7 +39,7 @@ static const Test tests[] = {
     { "expr",               TestType::EXPR },
 };
 
-shared_ptr<Expr> parse_expr(const string& input);
+Expr* parse_expr(const string& input);
 ASTNodeVector parse_statements(const string& input);
 
 static bool compare_json(const string& l, const string& r) {
@@ -55,7 +55,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
         stringstream message_stream;
         CompileContext compile_context(message_stream);
 
-        const Type* type = nullptr;
+        const Type* type{};
         stringstream output_stream;
         if (test_type == TestType::EXPR) {
             auto expr = parse_expr(sections[INPUT]);

@@ -4,17 +4,21 @@
 #include "TypeContext.h"
 #include "Location.h"
 
+struct ASTNode;
+
 struct CompileContext {
     static thread_local CompileContext* it;
 
     CompileContext(ostream& message_stream);
     ~CompileContext();
 
-    TypeContext type;
-
     ostream& message_stream;
 
+    TypeContext type;
+
     unordered_set<string> interned_strings;
+
+    ASTNode* ast_nodes{};
 };
 
 

@@ -10,7 +10,7 @@ void CompoundStatement::print(std::ostream& stream) const {
     stream << "[\"block\", " << items << ']';
 }
 
-ReturnStatement::ReturnStatement(shared_ptr<Expr> value, const Location& location)
+ReturnStatement::ReturnStatement(Expr* value, const Location& location)
     : Statement(location), value(value) {
 }
 

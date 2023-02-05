@@ -44,7 +44,7 @@ void Decl::redeclare(const Decl* redeclared) const {
     message(location) << "see original declaration\n";
 }
 
-Variable::Variable(StorageClass storage_class, const Type* type, const string* identifier, shared_ptr<Expr> initializer, const Location& location)
+Variable::Variable(StorageClass storage_class, const Type* type, const string* identifier, Expr* initializer, const Location& location)
     : Decl(storage_class, type, move(identifier), location), initializer(initializer) {
 }
 
@@ -60,7 +60,7 @@ void Variable::print(std::ostream& stream) const {
     stream << ']';
 }
 
-Function::Function(StorageClass storage, const FunctionType* type, const string* identifier, shared_ptr<Statement> body, const Location& location)
+Function::Function(StorageClass storage, const FunctionType* type, const string* identifier, Statement* body, const Location& location)
     : Decl(storage == StorageClass::EXTERN ? StorageClass::NONE : storage, type, identifier, location), body(move(body)) {
     if (storage_class != StorageClass::STATIC && storage_class != StorageClass::NONE) {
         storage_class = StorageClass::NONE;

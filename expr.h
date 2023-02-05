@@ -5,11 +5,11 @@
 #include "Token.h"
 
 struct ConditionExpr: Expr {
-    ConditionExpr(shared_ptr<Expr> condition, shared_ptr<Expr> then_expr, shared_ptr<Expr> else_expr, const Location& location);
+    ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, const Location& location);
 
-    shared_ptr<Expr> condition;
-    shared_ptr<Expr> then_expr;
-    shared_ptr<Expr> else_expr;
+    Expr* condition{};
+    Expr* then_expr{};
+    Expr* else_expr{};
 
     virtual const Type* get_type() const;
     virtual LLVMValueRef generate_value(CodeGenContext* context) const;
@@ -23,7 +23,7 @@ struct Constant: Expr {
 };
 
 struct IntegerConstant: Constant {
-    const IntegerType* type;
+    const IntegerType* type{};
     unsigned long long value;
 
     IntegerConstant(unsigned long long int_value, const IntegerType* type, const Location& location);
@@ -34,7 +34,7 @@ struct IntegerConstant: Constant {
 };
 
 struct FloatingPointConstant: Constant {
-    const FloatingPointType* type;
+    const FloatingPointType* type{};
     double value;
 
     FloatingPointConstant(double float_value, const FloatingPointType* type, const Location& location);
@@ -45,7 +45,7 @@ struct FloatingPointConstant: Constant {
 };
 
 struct StringConstant: Constant {
-    const IntegerType* char_type;
+    const IntegerType* char_type{};
     std::string utf8_literal;
 
     StringConstant(std::string utf8_literal, const IntegerType* char_type, const Location& location);
@@ -56,7 +56,7 @@ struct StringConstant: Constant {
 };
 
 struct NameExpr: Expr {
-    const string* name;
+    const string* name{};
 
     NameExpr(const string* name, const Location& location);
 
@@ -76,10 +76,10 @@ enum class BinaryOp {
 };
 
 struct BinaryExpr: Expr {
-    BinaryExpr(shared_ptr<Expr> left, shared_ptr<Expr> right, BinaryOp op, const Location& location);
+    BinaryExpr(Expr* left, Expr* right, BinaryOp op, const Location& location);
 
-    shared_ptr<Expr> left;
-    shared_ptr<Expr> right;
+    Expr* left{};
+    Expr* right{};
     BinaryOp op;
     Location location;
     

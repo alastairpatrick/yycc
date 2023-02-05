@@ -12,9 +12,9 @@ struct CompoundStatement: Statement {
 };
 
 struct ReturnStatement: Statement {
-    ReturnStatement(shared_ptr<Expr> value, const Location& location);
+    ReturnStatement(Expr* value, const Location& location);
 
-    shared_ptr<Expr> value;
+    Expr* value{};
 
     virtual void print(std::ostream& stream) const;
 };

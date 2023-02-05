@@ -21,18 +21,18 @@ enum class DeclKind {
 };
 
 struct Variable: Decl {
-    Variable(StorageClass storage_class, const Type* type, const string* identifier, shared_ptr<Expr> initializer, const Location& location);
+    Variable(StorageClass storage_class, const Type* type, const string* identifier, Expr* initializer, const Location& location);
 
-    shared_ptr<Expr> initializer;
+    Expr* initializer{};
 
     virtual DeclKind kind() const;
     virtual void print(std::ostream& stream) const;
 };
 
 struct Function: Decl {
-    Function(StorageClass storage_class, const FunctionType* type, const string* identifier, shared_ptr<Statement> body, const Location& location);
+    Function(StorageClass storage_class, const FunctionType* type, const string* identifier, Statement* body, const Location& location);
 
-    shared_ptr<Statement> body;
+    Statement* body{};
 
     virtual DeclKind kind() const;
     virtual bool is_function_definition() const;

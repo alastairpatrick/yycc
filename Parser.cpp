@@ -64,7 +64,7 @@ struct Parser {
         return false;
     }
 
-    shared_ptr<Expr> parse_expr(int min_prec) {
+    Expr* parse_expr(int min_prec) {
         Location loc;
         auto result = parse_cast_expr();
 
@@ -75,7 +75,7 @@ struct Parser {
                 auto then_expr = parse_expr(next_min_prec);
                 if (require(':')) {
                     auto else_expr = parse_expr(CONDITIONAL_PREC);
-                    result = make_shared<ConditionExpr>(move(result), move(then_expr), move(else_expr), loc);
+                    result = new ConditionExpr(move(result), move(then_expr), move(else_expr), loc);
                 }
             }
             else {
@@ -97,40 +97,40 @@ struct Parser {
                 }
 
                 auto right = parse_expr(next_min_prec);
-                result = make_shared<BinaryExpr>(move(result), move(right), op, loc);
+                result = new BinaryExpr(move(result), move(right), op, loc);
             }
         }
 
         return result;
     }
 
-    shared_ptr<Expr> parse_cast_expr() {
-        shared_ptr<Expr> result;
+    Expr* parse_cast_expr() {
+        Expr* result{};
         Location loc;
 
         while (token) {
             if (token == TOK_INT_LITERAL) {
-                result = make_shared<IntegerConstant>(lexer.int_lit, IntegerType::of(lexer.int_signedness, lexer.int_size), loc);
+                result = new IntegerConstant(lexer.int_lit, IntegerType::of(lexer.int_signedness, lexer.int_size), loc);
                 consume();
                 break;
             }
             else if (token == TOK_FLOAT_LITERAL) {
-                result = make_shared<FloatingPointConstant>(lexer.float_lit, FloatingPointType::of(lexer.float_size), loc);
+                result = new FloatingPointConstant(lexer.float_lit, FloatingPointType::of(lexer.float_size), loc);
                 consume();
                 break;
             }
             else if (token == TOK_CHAR_LITERAL) {
-                result = make_shared<IntegerConstant>(lexer.int_lit, IntegerType::of_char(lexer.string_wide), loc);
+                result = new IntegerConstant(lexer.int_lit, IntegerType::of_char(lexer.string_wide), loc);
                 consume();
                 break;
             }
             else if (token == TOK_STRING_LITERAL) {
-                result = make_shared<StringConstant>(move(lexer.string_lit), IntegerType::of_char(lexer.string_wide), loc);
+                result = new StringConstant(move(lexer.string_lit), IntegerType::of_char(lexer.string_wide), loc);
                 consume();
                 break;
             }
             else if (token == TOK_IDENTIFIER) {
-                result = make_shared<NameExpr>(lexer.identifier, loc);
+                result = new NameExpr(lexer.identifier, loc);
                 consume();
                 break;
             } else if (consume('(')) {
@@ -145,7 +145,7 @@ struct Parser {
         if (!result) {
             assert(token == TOK_EOF);
             message(lexer.location()) << "error unexpected end of file\n";
-            result = make_shared<IntegerConstant>(0, IntegerType::default_type(), lexer.location());
+            result = new IntegerConstant(0, IntegerType::default_type(), lexer.location());
         }
 
         return result;
@@ -323,7 +323,7 @@ struct Parser {
         auto location = lexer.location();
 
         StorageClass storage_class = StorageClass::NONE;
-        const Type* type = nullptr;
+        const Type* type{};
         if (parse_decl_specifiers(storage_class, type)) {
             int decl_count = 0;
             while (token && token != ';') {
@@ -345,11 +345,11 @@ struct Parser {
 
             require(';');
         } else {
-            shared_ptr<ASTNode> decl;
+            ASTNode* decl{};
             if (token == '{') {
                 decl = parse_compound_statement();
             } else if (consume(TOK_RETURN)) {
-                decl = make_shared<ReturnStatement>(parse_expr(0), location);
+                decl = new ReturnStatement(parse_expr(0), location);
                 require(';');
             } else {
                 decl = parse_expr(0);
@@ -360,7 +360,7 @@ struct Parser {
         }
     }
 
-    shared_ptr<CompoundStatement> parse_compound_statement() {
+    CompoundStatement* parse_compound_statement() {
         symbols.push_scope();
 
         Location loc;
@@ -377,13 +377,13 @@ struct Parser {
 
         require('}');
 
-        return make_shared<CompoundStatement>(move(list), loc);
+        return new CompoundStatement(move(list), loc);
     }
 
-    shared_ptr<Decl> parse_parameter_decl() {
+    Decl* parse_parameter_decl() {
         auto location = lexer.location();
         StorageClass storage_class = StorageClass::NONE;
-        const Type* type = nullptr;
+        const Type* type{};
         if (!parse_decl_specifiers(storage_class, type)) {
             // TODO
         }
@@ -396,7 +396,7 @@ struct Parser {
         return parse_declarator(storage_class, type, false, location);        
     }
 
-    shared_ptr<Decl> parse_declarator(StorageClass storage_class, const Type* declaration_type, bool allow_function_def, const Location& location) {
+    Decl* parse_declarator(StorageClass storage_class, const Type* declaration_type, bool allow_function_def, const Location& location) {
         if (consume('(')) {
             auto result = parse_declarator(storage_class, declaration_type, allow_function_def, location);
             require(')');
@@ -420,7 +420,7 @@ struct Parser {
             const string* identifier = lexer.identifier;
             if (!consume(TOK_IDENTIFIER) && !consume(TOK_TYPE_IDENTIFIER)) identifier = nullptr;
 
-            shared_ptr<Expr> initializer;
+            Expr* initializer{};
             if (consume('=')) {
                 initializer = parse_expr(ASSIGN_PREC);
             }
@@ -446,26 +446,26 @@ struct Parser {
                 type = FunctionType::of(type, move(param_types), false);
 
                 if (allow_function_def) {
-                    return make_shared<Function>(storage_class,
-                                                 static_cast<const FunctionType*>(type),
-                                                 identifier,
-                                                 token == '{' ? parse_compound_statement() : nullptr,
-                                                 location);
+                    return new Function(storage_class,
+                                        static_cast<const FunctionType*>(type),
+                                        identifier,
+                                        token == '{' ? parse_compound_statement() : nullptr,
+                                        location);
                 }
             }
 
             if (storage_class == StorageClass::TYPEDEF) {
-                auto decl = make_shared<TypeDef>(type, identifier, location);
-                symbols.add_decl(TypeNameKind::ORDINARY, decl->identifier, decl.get());
+                auto decl = new TypeDef(type, identifier, location);
+                symbols.add_decl(TypeNameKind::ORDINARY, decl->identifier, decl);
                 return decl;
             }
 
-            return make_shared<Variable>(storage_class, type, move(identifier), move(initializer), location);
+            return new Variable(storage_class, type, move(identifier), move(initializer), location);
         }
     }
 };
 
-shared_ptr<Expr> parse_expr(const string& input) {
+Expr* parse_expr(const string& input) {
     Parser parser(input);
     auto result = parser.parse_expr(0);
     if (!parser.check_eof()) return nullptr;

@@ -7,7 +7,7 @@
 
 using json = nlohmann::json;
 
-ConditionExpr::ConditionExpr(shared_ptr<Expr> condition, shared_ptr<Expr> then_expr, shared_ptr<Expr> else_expr, const Location& location)
+ConditionExpr::ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, const Location& location)
     : Expr(location), condition(move(condition)), then_expr(move(then_expr)), else_expr(move(else_expr)) {
     assert(this->condition);
     assert(this->then_expr);
@@ -128,7 +128,7 @@ void NameExpr::print(std::ostream& stream) const {
     stream << "\"N" << name << '"';
 }
 
-BinaryExpr::BinaryExpr(shared_ptr<Expr> left, shared_ptr<Expr> right, BinaryOp op, const Location& location)
+BinaryExpr::BinaryExpr(Expr* left, Expr* right, BinaryOp op, const Location& location)
     : Expr(location), left(move(left)), right(move(right)), op(op) {
     assert(this->left);
     assert(this->right);

@@ -11,12 +11,14 @@ enum class DeclKind;
 enum class StorageClass;
 
 struct ASTNode: Printable {
-    ASTNode(const Location& location): location(location) {}
+    explicit ASTNode(const Location& location);
 
     Location location;
+
+    ASTNode* next_delete;
 };
 
-typedef vector<shared_ptr<ASTNode>> ASTNodeVector;
+typedef vector<ASTNode*> ASTNodeVector;
 
 ostream& operator<<(ostream& stream, const ASTNodeVector& items);
 
