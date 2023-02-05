@@ -36,7 +36,8 @@ struct Function: Decl {
 struct TypeDef: Decl {
     TypeDef(const Type* type, const string* identifier, const Location& location);
 
-    virtual bool is_type() const;
+    virtual const Type* to_type() const;
+    virtual void redeclare(const Decl* redeclared) const;
     virtual void print(std::ostream& stream) const;
 };
 

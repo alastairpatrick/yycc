@@ -39,8 +39,8 @@ static const Test tests[] = {
     { "expr",               TestType::EXPR },
 };
 
-shared_ptr<Expr> parse_expr(const string& input, ostream& message_stream);
-ASTNodeVector parse_statements(const string& input, ostream& message_stream);
+shared_ptr<Expr> parse_expr(const string& input);
+ASTNodeVector parse_statements(const string& input);
 
 static bool compare_json(const string& l, const string& r) {
 }
@@ -52,19 +52,19 @@ static ostream& print_error(const string& name, const string& file, int line) {
 
 static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], const string& name, const string& file, int line) {
     //try {
-        CompileContext compile_context;
+        stringstream message_stream;
+        CompileContext compile_context(message_stream);
 
         const Type* type = nullptr;
-        stringstream message_stream;
         stringstream output_stream;
         if (test_type == TestType::EXPR) {
-            auto expr = parse_expr(sections[INPUT], message_stream);
+            auto expr = parse_expr(sections[INPUT]);
             if (!sections[EXPECTED_TYPE].empty()) {
                 type = expr->get_type();
             }
             output_stream << expr;
         } else {
-            auto statements = parse_statements(sections[INPUT], message_stream);
+            auto statements = parse_statements(sections[INPUT]);
             output_stream << statements;
         }
 

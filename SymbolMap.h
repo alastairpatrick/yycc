@@ -13,8 +13,8 @@ struct SymbolMap {
     list<Scope> scopes;
 
     const Decl* lookup_decl(TypeNameKind kind, const string* name) const;
-    bool is_type_identifier(const string* identifier) const;
-    void add_decl(const string* name, const Decl* decl);
+    const Type* lookup_type(TypeNameKind kind, const string* name) const;
+    void add_decl(TypeNameKind kind, const string* name, const Decl* decl);
 
     void push_scope();
     void pop_scope();

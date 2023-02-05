@@ -27,9 +27,7 @@
     bool has_pending_line = false;
     const char* pending_filename = nullptr;
 
-    ostream& message() {
-        return message(location());
-    }
+    ostream& message();
 
     const SymbolMap& symbols;
 
@@ -38,8 +36,6 @@ public:
     Location location() const {
         return Location { lineno(), columno() + 1, current_filename };
     }
-
-    ostream& message(const Location& location);
 
     IntegerSignedness int_signedness;
     IntegerSize int_size;
@@ -192,8 +188,8 @@ L?\"(\\.|[^\\"\n])*\"       { return parse_string_lit(text(), size()); }
 
 %%
 
-ostream& Lexer::message(const Location& location) {
-    return out() << location.file << ':' << location.line << ':' << location.column << ": ";
+ostream& Lexer::message() {
+    return ::message(location());
 }
 
 void Lexer::skip_comment() {
@@ -465,5 +461,5 @@ void Lexer::new_line() {
 int Lexer::check_identifier(std::string id)
 {
     identifier = intern(std::move(id));
-    return symbols.is_type_identifier(identifier) ? TOK_TYPE_IDENTIFIER : TOK_IDENTIFIER;
+    return symbols.lookup_type(TypeNameKind::ORDINARY, identifier) ? TOK_TYPE_IDENTIFIER : TOK_IDENTIFIER;
 }

@@ -1,6 +1,7 @@
 #include "std.h"
 #include "assoc_prec.h"
 #include "ASTNode.h"
+#include "CompileContext.h"
 #include "Decl.h"
 #include "Expr.h"
 #include "lex.yy.h"
@@ -13,12 +14,8 @@ struct Parser {
     int token;
     SymbolMap symbols;
 
-    explicit Parser(const reflex::Input& input, ostream& message_stream): lexer(symbols, input, message_stream) {
+    explicit Parser(const reflex::Input& input): lexer(symbols, input) {
         token = lexer.lex();
-    }
-
-    ostream& message(const Location& location) {
-        return lexer.message(location);
     }
 
     void consume() {
@@ -157,6 +154,10 @@ struct Parser {
     }
 
     bool parse_decl_specifiers(StorageClass& storage_class, const Type*& type) {
+        const uint32_t storage_class_mask = (1 << TOK_TYPEDEF) | (1 << TOK_EXTERN) | (1 << TOK_STATIC) | (1 << TOK_AUTO) | (1 << TOK_REGISTER);
+        const uint32_t type_qualifier_mask = (1 << TOK_CONST) | (1 << TOK_RESTRICT) | (1 << TOK_VOLATILE);
+        const uint32_t type_specifier_mask = ~(storage_class_mask | type_qualifier_mask);
+
         Location storage_class_location;
         Location type_specifier_location;
         Location qualifier_location;
@@ -195,12 +196,15 @@ struct Parser {
             case TOK_UNSIGNED:
             case TOK_BOOL:
             case TOK_COMPLEX:
-            case TOK_TYPE_IDENTIFIER:
                 should_consume = true;
                 type_specifier_location = lexer.location();                
+                break;
 
-                if (token == TOK_TYPE_IDENTIFIER) {
-                    type = TypeName::of(TypeNameKind::ORDINARY, lexer.identifier);
+            case TOK_TYPE_IDENTIFIER:
+                if ((specifier_set & type_specifier_mask) == 0) {
+                    should_consume = true;
+                    type_specifier_location = lexer.location();                
+                    type = symbols.lookup_type(TypeNameKind::ORDINARY, lexer.identifier);
                 }
 
                 break;
@@ -229,11 +233,7 @@ struct Parser {
 
         if (!is_declaration) return false;
 
-        const uint32_t storage_class_mask = (1 << TOK_TYPEDEF) | (1 << TOK_EXTERN) | (1 << TOK_STATIC) | (1 << TOK_AUTO) | (1 << TOK_REGISTER);
-        const uint32_t type_qualifier_mask = (1 << TOK_CONST) | (1 << TOK_RESTRICT) | (1 << TOK_VOLATILE);
-        const uint32_t type_specifier_mask = ~(storage_class_mask | type_qualifier_mask);
-
-        // Have single storage class specifier iff storage class set is a power of 2.
+        // Have single storage class specifier iff storage class set contains only one element.
         uint32_t storage_class_set = specifier_set & storage_class_mask;
         if (storage_class_set != 0 && storage_class_set & (storage_class_set-1)) {
             message(storage_class_location) << "error too many storage classes\n";
@@ -407,7 +407,7 @@ struct Parser {
             }
 
             const string* identifier = lexer.identifier;
-            if (!consume(TOK_IDENTIFIER)) identifier = nullptr;
+            if (!consume(TOK_IDENTIFIER) && !consume(TOK_TYPE_IDENTIFIER)) identifier = nullptr;
 
             shared_ptr<Expr> initializer;
             if (consume('=')) {
@@ -444,8 +444,8 @@ struct Parser {
             }
 
             if (storage_class == StorageClass::TYPEDEF) {
-                auto decl = make_shared<TypeDef>(type, move(identifier), location);
-                symbols.add_decl(decl->identifier, decl.get());
+                auto decl = make_shared<TypeDef>(type, identifier, location);
+                symbols.add_decl(TypeNameKind::ORDINARY, decl->identifier, decl.get());
                 return decl;
             } else if (dynamic_cast<const FunctionType*>(type)) {
                 if (storage_class == StorageClass::NONE) {
@@ -462,15 +462,15 @@ struct Parser {
     }
 };
 
-shared_ptr<Expr> parse_expr(const string& input, ostream& message_stream) {
-    Parser parser(input, message_stream);
+shared_ptr<Expr> parse_expr(const string& input) {
+    Parser parser(input);
     auto result = parser.parse_expr(0);
     if (!parser.check_eof()) return nullptr;
     return result;
 }
 
-ASTNodeVector parse_statements(const string& input, ostream& message_stream) {
-    Parser parser(input, message_stream);
+ASTNodeVector parse_statements(const string& input) {
+    Parser parser(input);
     ASTNodeVector result;
     while (parser.token != 0) {
         parser.parse_decl_or_statement(result);

@@ -12,15 +12,20 @@ const Decl* SymbolMap::lookup_decl(TypeNameKind kind, const string* name) const 
     return nullptr;
 }
 
-bool SymbolMap::is_type_identifier(const string* identifier) const {
-    auto decl = lookup_decl(TypeNameKind::ORDINARY, identifier);
-    if (!decl) return false;
+const Type* SymbolMap::lookup_type(TypeNameKind kind, const string* name) const {
+    auto decl = lookup_decl(kind, name);
+    if (!decl) return nullptr;
 
-    return decl->is_type();
+    return decl->to_type();
 }
 
-void SymbolMap::add_decl(const string* name, const Decl* decl) {
-    scopes.front().declarations[name] = decl;
+void SymbolMap::add_decl(TypeNameKind kind, const string* name, const Decl* decl) {
+    auto it = scopes.front().declarations.find(name);
+    if (it != scopes.front().declarations.end()) {
+        it->second->redeclare(decl);
+    } else {
+        scopes.front().declarations[name] = decl;
+    }
 }
 
 void SymbolMap::push_scope() {

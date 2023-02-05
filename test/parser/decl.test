@@ -409,7 +409,48 @@ typedef short foo_t;
 foo_t foo;
 EXPECT_AST
 [["typedef", "Ss", "foo_t"]
-,["var", [], "Nofoo_t", "foo"]]
+,["var", [], "Ss", "foo"]]
+
+
+BEGIN Consistent redefinition of typedef
+typedef int a;
+typedef signed a;
+EXPECT_AST
+[["typedef", "Is", "a"]
+,["typedef", "Is", "a"]]
+
+
+BEGIN Inconsistent redefinition of typedef
+typedef int a;
+typedef long a;
+EXPECT_MESSAGE
+:2:1: error redefinition of 'a' with different type
+:1:1: see original definition
+EXPECT_AST
+[["typedef", "Is", "a"]
+,["typedef", "Ls", "a"]]
+
+
+BEGIN Typedefs use block scope
+typedef int a;
+{
+    typedef long a;
+}
+EXPECT_AST
+[
+    ["typedef", "Is", "a"],
+    ["block", [
+        ["typedef", "Ls", "a"]]
+    ]
+]
+
+
+BEGIN Typedef as self
+typedef int a;
+typedef a a;
+EXPECT_AST
+[["typedef", "Is", "a"]
+,["typedef", "Is", "a"]]
 
 
 BEGIN Disambiguates between multiplication and variable declaration of pointer type
@@ -422,7 +463,7 @@ EXPECT_AST
 [["block", [
     ["*", "Nq", "Np"],
     ["typedef", "Ss", "q"],
-    ["var", [], "PNoq", "v"]
+    ["var", [], "PSs", "v"]
 ]]]
 
 

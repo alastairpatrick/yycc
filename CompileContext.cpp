@@ -4,7 +4,7 @@
 
 thread_local CompileContext* CompileContext::it;
 
-CompileContext::CompileContext() {
+CompileContext::CompileContext(ostream& message_stream): message_stream(message_stream) {
     assert(!it);
     it = this;
 }
@@ -12,6 +12,10 @@ CompileContext::CompileContext() {
 CompileContext::~CompileContext() {
     assert(it == this);
     it = nullptr;
+}
+
+ostream& message(const Location& location) {
+    return CompileContext::it->message_stream << location.file << ':' << location.line << ':' << location.column << ": ";
 }
 
 const string* intern(string source) {
