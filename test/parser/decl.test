@@ -572,6 +572,21 @@ EXPECT_AST
 ]
 
 
+BEGIN Parameters have function prototype scope (1)
+int foo(int foo) {
+}
+EXPECT_AST
+[["fun", [], "(Is)Is", "foo", ["foo"], ["block", []]]]
+
+
+BEGIN Parameters have function prototype scope (2)
+int foo(int bar) {
+    int bar;
+}
+EXPECT_AST
+[["fun", [], "(Is)Is", "foo", ["bar"], ["block", [["var", [], "Is", "bar"]]]]]
+
+
 BEGIN Variable declaration of typedef type.
 typedef short foo_t;
 foo_t foo;

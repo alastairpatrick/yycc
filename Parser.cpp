@@ -428,6 +428,8 @@ struct Parser {
             Decl* decl{};
 
             if (consume('(')) {
+                symbols.push_scope();
+
                 vector<Variable*> params;
                 vector<const Type*> param_types;
                 bool seen_void = false;
@@ -457,6 +459,8 @@ struct Parser {
                                         allow_function_def && token == '{' ? parse_compound_statement() : nullptr,
                                         location);
                 }
+
+                symbols.pop_scope();
             }
 
             if (storage_class == StorageClass::TYPEDEF) {
