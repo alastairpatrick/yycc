@@ -110,8 +110,8 @@ LLVMValueRef StringConstant::generate_value(CodeGenContext* context) const {
     return nullptr;
 }
 
-NameExpr::NameExpr(const string* name, const Location& location)
-    : Expr(location), name(name) {
+NameExpr::NameExpr(const Decl* decl, const Location& location)
+    : Expr(location), decl(decl) {
 }
 
 const Type* NameExpr::get_type() const {
@@ -125,7 +125,7 @@ LLVMValueRef NameExpr::generate_value(CodeGenContext* context) const {
 }
 
 void NameExpr::print(std::ostream& stream) const {
-    stream << "\"N" << name << '"';
+    stream << "\"N" << decl->identifier << '"';
 }
 
 BinaryExpr::BinaryExpr(Expr* left, Expr* right, BinaryOp op, const Location& location)

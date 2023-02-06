@@ -575,10 +575,11 @@ int bar(int x) {
 }, foo;
 EXPECT_MESSAGE
 :2:2: error unexpected token
+:2:4: error use of undeclared identifier 'foo'
 EXPECT_AST
 [
     ["fun", [], "(Is)Is", "bar", ["x"], ["block", []]],
-    "Nfoo"
+    "Is0"
 ]
 
 
@@ -650,31 +651,50 @@ EXPECT_AST
 
 
 BEGIN Disambiguates between multiplication and variable declaration of pointer type
+int p, q;
 {
     q * p; // "q" is not a type so this is multiplication.
     typedef short q;
     q * v; // now "q" is a type so this declares variable "v" with type "q*".
 }
 EXPECT_AST
-[["block", [
-    ["*", "Nq", "Np"],
-    ["typedef", "Ss", "q"],
-    ["var", [], "PSs", "v"]
-]]]
+[
+    ["var", [], "Is", "p"],
+    ["var", [], "Is", "q"],
+    ["block", [
+        ["*", "Nq", "Np"],
+        ["typedef", "Ss", "q"],
+        ["var", [], "PSs", "v"]
+    ]
+]]
 
 
 BEGIN Typedef goes out of scope immediately following block
+int p, q;
 {
     typedef long q;
 }
 q * p; // Identifier "q" immediately follows '}'
 EXPECT_AST
 [
+    ["var", [], "Is", "p"],
+    ["var", [], "Is", "q"],
     ["block", [
         ["typedef", "Ls", "q"]
     ]],
     ["*", "Nq", "Np"]
 ]
+
+
+BEGIN Typedef may not be used as a variable.
+typedef long p;
+p+p;
+EXPECT_MESSAGE
+:2:2: error expected identifier
+:2:2: error unexpected token
+:2:3: error unexpected token
+EXPECT_AST
+[["typedef", "Ls", "p"]]
 
 
 BEGIN Function definition with expression statement

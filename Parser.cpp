@@ -131,7 +131,16 @@ struct Parser {
                 break;
             }
             else if (token == TOK_IDENTIFIER) {
-                result = new NameExpr(lexer.identifier, loc);
+                Decl* decl = symbols.lookup_decl(TypeNameKind::ORDINARY, lexer.identifier);
+                if (!decl) {
+                    message(lexer.location()) << "error use of undeclared identifier '" << lexer.identifier << "'\n";
+                    result = new IntegerConstant(0, IntegerType::default_type(), lexer.location());
+                } else {
+                    // Token would have to be TOK_TYPE_IDENTIFIER for decl to be a typedef.
+                    assert(!dynamic_cast<TypeDef*>(decl));
+
+                    result = new NameExpr(decl, loc);
+                }
                 consume();
                 break;
             } else if (consume('(')) {

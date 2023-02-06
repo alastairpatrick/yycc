@@ -4,6 +4,8 @@
 #include "ASTNode.h"
 #include "Token.h"
 
+struct Decl;
+
 struct ConditionExpr: Expr {
     ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, const Location& location);
 
@@ -56,9 +58,9 @@ struct StringConstant: Constant {
 };
 
 struct NameExpr: Expr {
-    const string* name{};
+    const Decl* decl{};
 
-    NameExpr(const string* name, const Location& location);
+    NameExpr(const Decl* decl, const Location& location);
 
     virtual const Type* get_type() const;
     virtual LLVMValueRef generate_value(CodeGenContext* context) const;
