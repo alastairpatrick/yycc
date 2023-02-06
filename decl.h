@@ -30,8 +30,9 @@ struct Variable: Decl {
 };
 
 struct Function: Decl {
-    Function(StorageClass storage_class, const FunctionType* type, const string* identifier, Statement* body, const Location& location);
+    Function(StorageClass storage_class, const FunctionType* type, const string* identifier, vector<Variable*> params, Statement* body, const Location& location);
 
+    vector<Variable*> params;
     Statement* body{};
 
     virtual DeclKind kind() const;

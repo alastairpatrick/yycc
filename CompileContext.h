@@ -16,6 +16,7 @@ struct CompileContext {
 
     TypeContext type;
 
+    const string* empty_string;
     unordered_set<string> interned_strings;
 
     ASTNode* ast_nodes{};
@@ -29,5 +30,6 @@ ostream& message(const Location& location);
 // a poor fit for ordered set and maps because the order is their address order rather than their
 // lexicographic order.
 const string* intern(string source);
+const string* empty_string();
 
 #endif

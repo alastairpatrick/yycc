@@ -331,7 +331,7 @@ struct Parser {
                 ++ decl_count;
 
                 auto is_function_definition = decl->is_function_definition();
-                if (!decl->identifier) {
+                if (decl->identifier == empty_string()) {
                     message(lexer.location()) << "error expected identifier\n";
                 } else {
                     if (!decl->redundant) list.push_back(move(decl));
@@ -418,7 +418,7 @@ struct Parser {
             }
 
             const string* identifier = lexer.identifier;
-            if (!consume(TOK_IDENTIFIER) && !consume(TOK_TYPE_IDENTIFIER)) identifier = nullptr;
+            if (!consume(TOK_IDENTIFIER) && !consume(TOK_TYPE_IDENTIFIER)) identifier = empty_string();
 
             Expr* initializer{};
             if (consume('=')) {
@@ -428,10 +428,12 @@ struct Parser {
             Decl* decl{};
 
             if (consume('(')) {
+                vector<Variable*> params;
                 vector<const Type*> param_types;
                 bool seen_void = false;
                 while (token && !consume(')')) {
                     auto decl = parse_parameter_decl();
+                    params.push_back(dynamic_cast<Variable*>(decl));  // TODO: what if it's not a variable!
 
                     if (decl->type == &VoidType::it) {
                         if (seen_void || !param_types.empty()) {
@@ -451,6 +453,7 @@ struct Parser {
                     decl = new Function(storage_class,
                                         static_cast<const FunctionType*>(type),
                                         identifier,
+                                        move(params),
                                         allow_function_def && token == '{' ? parse_compound_statement() : nullptr,
                                         location);
                 }
@@ -461,10 +464,10 @@ struct Parser {
             }
 
             if (!decl) {
-                decl = new Variable(storage_class, type, move(identifier), move(initializer), location);
+                decl = new Variable(storage_class, type, identifier, move(initializer), location);
             }
 
-            if (decl->identifier) {
+            if (identifier != empty_string()) {
                 symbols.add_decl(TypeNameKind::ORDINARY, decl->identifier, decl);
             }
 

@@ -47,7 +47,7 @@ void Decl::redeclare(Decl* redeclared) {
 }
 
 Variable::Variable(StorageClass storage_class, const Type* type, const string* identifier, Expr* initializer, const Location& location)
-    : Decl(storage_class, type, move(identifier), location), initializer(initializer) {
+    : Decl(storage_class, type, identifier, location), initializer(initializer) {
 }
 
 DeclKind Variable::kind() const {
@@ -62,8 +62,8 @@ void Variable::print(std::ostream& stream) const {
     stream << ']';
 }
 
-Function::Function(StorageClass storage, const FunctionType* type, const string* identifier, Statement* body, const Location& location)
-    : Decl(storage, type, identifier, location), body(move(body)) {
+Function::Function(StorageClass storage, const FunctionType* type, const string* identifier, vector<Variable*> params, Statement* body, const Location& location)
+    : Decl(storage, type, identifier, location), params(move(params)), body(body) {
     if (storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) {
         storage_class = StorageClass::NONE;
         message(location) << "error invalid storage class for a function\n";
@@ -89,13 +89,22 @@ void Function::redeclare(Decl* redeclared) {
         message(location) << "see original definition\n";
     }
 
-    if (!body) body = redeclared_fn->body;
+    if (!body) {
+        body = redeclared_fn->body;
+        params = move(redeclared_fn->params);
+    }
 }
 
 void Function::print(std::ostream& stream) const {
     stream << "[\"fun\", [" << storage_class << "], \"" << type << "\", \"" << identifier << '"';
     if (body) {
-        stream << ", " << body;
+        stream << ", [";
+        for (auto i = 0; i < params.size(); ++i) {
+            if (i != 0) stream << ", ";
+            auto identifier = params[i]->identifier;
+            stream << '"' << identifier << '"';
+        }
+        stream << "], " << body;
     }
     stream << ']';
 }

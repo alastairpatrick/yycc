@@ -467,7 +467,7 @@ BEGIN Empty function definition
 static void foo(int) {
 }
 EXPECT_AST
-[["fun", ["static"], "(Is)V", "foo", ["block", []]]]
+[["fun", ["static"], "(Is)V", "foo", [""], ["block", []]]]
 
 
 BEGIN Collapses function definition into function declaration (1)
@@ -475,15 +475,15 @@ static void foo(int);
 void foo(int x) {
 }
 EXPECT_AST
-[["fun", ["static"], "(Is)V", "foo", ["block", []]]]
+[["fun", ["static"], "(Is)V", "foo", ["x"], ["block", []]]]
 
 
 BEGIN Collapses function definition into function declaration (2)
-void foo(int) {
+void foo(int x) {
 }
 extern void foo(int);
 EXPECT_AST
-[["fun", ["extern"], "(Is)V", "foo", ["block", []]]]
+[["fun", ["extern"], "(Is)V", "foo", ["x"], ["block", []]]]
 
 
 BEGIN Error on function redefinition
@@ -495,7 +495,7 @@ EXPECT_MESSAGE
 :3:1: error redefinition of 'foo'
 :1:1: see original definition
 EXPECT_AST
-[["fun", ["extern"], "(Is)V", "foo", ["block", []]]]
+[["fun", ["extern"], "(Is)V", "foo", [""], ["block", []]]]
 
 
 BEGIN File scope none storage class, then block scope extern storage class yields extern
@@ -539,22 +539,12 @@ EXPECT_MESSAGE
 :2:5: see original declaration
 
 
-BEGIN Function definition with expression statement
-int main(int argc, const char* argv) {
-    1;
-}
-EXPECT_AST
-[["fun", [], "(IsPQcCd)Is", "main", ["block", [
-    "Is1"
-]]]]
-
-
 BEGIN Function definition with local variables
 static void foo() {
     int x = 1;
 }
 EXPECT_AST
-[["fun", ["static"], "()V", "foo", ["block", [
+[["fun", ["static"], "()V", "foo", [], ["block", [
     ["var", [], "Is", "x", "Is1"]
 ]]]]
 
@@ -577,7 +567,7 @@ EXPECT_MESSAGE
 :2:2: error unexpected token
 EXPECT_AST
 [
-    ["fun", [], "(Is)Is", "bar", ["block", []]],
+    ["fun", [], "(Is)Is", "bar", ["x"], ["block", []]],
     "Nfoo"
 ]
 
@@ -660,3 +650,13 @@ EXPECT_AST
     ]],
     ["*", "Nq", "Np"]
 ]
+
+
+BEGIN Function definition with expression statement
+int main(int argc, const char* argv) {
+    return argc;
+}
+EXPECT_AST
+[["fun", [], "(IsPQcCd)Is", "main", ["argc", "argv"], ["block", [
+    ["return", "Nargc"]
+]]]]

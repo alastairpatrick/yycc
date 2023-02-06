@@ -9,6 +9,8 @@ thread_local CompileContext* CompileContext::it;
 CompileContext::CompileContext(ostream& message_stream): message_stream(message_stream) {
     assert(!it);
     it = this;
+
+    empty_string = intern(string());
 }
 
 CompileContext::~CompileContext() {
@@ -29,4 +31,8 @@ ostream& message(const Location& location) {
 const string* intern(string source) {
     auto& strings = CompileContext::it->interned_strings;
     return &*strings.insert(move(source)).first;
+}
+
+const string* empty_string() {
+    return CompileContext::it->empty_string;
 }
