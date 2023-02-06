@@ -506,9 +506,7 @@ void foo(int);
 EXPECT_AST
 [
     ["fun", ["extern"], "(Is)V", "foo"],
-    ["block", [
-        ["fun", ["extern"], "(Is)V", "foo"]
-    ]]
+    ["block", []]
 ]
 
 
@@ -527,7 +525,7 @@ EXPECT_MESSAGE
 :2:5: see original declaration
 
 
-BEGIN Other declarations of identifier at block scope must have same type (1)
+BEGIN Other declarations of identifier at block scope must have same type (2)
 {
     extern int foo(void);
     {
@@ -536,6 +534,18 @@ BEGIN Other declarations of identifier at block scope must have same type (1)
 }
 EXPECT_MESSAGE
 :4:9: error redeclaration of 'foo' with different type
+:2:5: see original declaration
+
+
+BEGIN Other declarations of identifier at block scope must have same type (3)
+{
+    extern int a(void);
+}
+{
+    extern float a(void);
+}
+EXPECT_MESSAGE
+:5:5: error redeclaration of 'a' with different type
 :2:5: see original declaration
 
 

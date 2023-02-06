@@ -13,6 +13,7 @@ struct Parser {
     Lexer lexer;
     int token;
     SymbolMap symbols;
+    ASTNodeVector extern_decls;
 
     explicit Parser(const reflex::Input& input): lexer(symbols, input) {
         token = lexer.lex();
@@ -333,8 +334,12 @@ struct Parser {
                 auto is_function_definition = decl->is_function_definition();
                 if (decl->identifier == empty_string()) {
                     message(lexer.location()) << "error expected identifier\n";
-                } else {
-                    if (!decl->redundant) list.push_back(move(decl));
+                } else if (!decl->redundant) {
+                    if (decl->storage_class != StorageClass::EXTERN) {
+                        list.push_back(decl);
+                    } else {
+                        extern_decls.push_back(decl);
+                    }
                 }
 
                 // No ';' after function definition.
@@ -478,6 +483,11 @@ struct Parser {
             return decl;
         }
     }
+
+    void insert_externs(ASTNodeVector& ast) {
+        ast.insert(ast.begin(), extern_decls.begin(), extern_decls.end());
+        extern_decls.clear();
+    }
 };
 
 Expr* parse_expr(const string& input) {
@@ -488,10 +498,12 @@ Expr* parse_expr(const string& input) {
 }
 
 ASTNodeVector parse_statements(const string& input) {
+    ASTNodeVector ast;
     Parser parser(input);
-    ASTNodeVector result;
     while (parser.token != 0) {
-        parser.parse_decl_or_statement(result);
+        parser.parse_decl_or_statement(ast);
     }
-    return result;
+    parser.insert_externs(ast);
+
+    return ast;
 }

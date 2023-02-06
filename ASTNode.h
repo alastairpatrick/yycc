@@ -28,6 +28,10 @@ struct Decl: ASTNode {
     StorageClass storage_class;
     const Type* type;
     const string* identifier;
+    bool file_scope = false;
+
+    // Only one declaration per identifier is retained. Redundant indicates that this delaration is not that.
+    // Redundant declarations are added to the AST.
     bool redundant = false;
 
     virtual DeclKind kind() const = 0;

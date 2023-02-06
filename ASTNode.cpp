@@ -10,9 +10,11 @@ ASTNode::ASTNode(const Location& location): location(location) {
 
 ostream& operator<<(ostream& stream, const ASTNodeVector& items) {
     stream << '[';
-    for (auto i = 0; i < items.size(); ++i) {
-        if (i != 0) stream << ", ";
-        stream << items[i];
+    auto separate = false;
+    for (auto item : items) {
+        if (separate) stream << ", ";
+        separate = true;
+        stream << item;
     }
     return stream << ']';
 }

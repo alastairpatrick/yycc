@@ -2,6 +2,7 @@
 #define SYMBOL_MAP_H
 
 #include "std.h"
+#include "ASTNode.h"
 #include "Type.h"
 
 struct Decl;
