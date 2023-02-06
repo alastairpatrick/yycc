@@ -334,7 +334,7 @@ struct Parser {
                 if (!decl->identifier) {
                     message(lexer.location()) << "error expected identifier\n";
                 } else {
-                    list.push_back(move(decl));
+                    if (!decl->redundant) list.push_back(move(decl));
                 }
 
                 // No ';' after function definition.
@@ -425,6 +425,8 @@ struct Parser {
                 initializer = parse_expr(ASSIGN_PREC);
             }
 
+            Decl* decl{};
+
             if (consume('(')) {
                 vector<const Type*> param_types;
                 bool seen_void = false;
@@ -445,22 +447,28 @@ struct Parser {
 
                 type = FunctionType::of(type, move(param_types), false);
 
-                if (allow_function_def) {
-                    return new Function(storage_class,
+                if (storage_class != StorageClass::TYPEDEF) {
+                    decl = new Function(storage_class,
                                         static_cast<const FunctionType*>(type),
                                         identifier,
-                                        token == '{' ? parse_compound_statement() : nullptr,
+                                        allow_function_def && token == '{' ? parse_compound_statement() : nullptr,
                                         location);
                 }
             }
 
             if (storage_class == StorageClass::TYPEDEF) {
-                auto decl = new TypeDef(type, identifier, location);
-                symbols.add_decl(TypeNameKind::ORDINARY, decl->identifier, decl);
-                return decl;
+                decl = new TypeDef(type, identifier, location);
             }
 
-            return new Variable(storage_class, type, move(identifier), move(initializer), location);
+            if (!decl) {
+                decl = new Variable(storage_class, type, move(identifier), move(initializer), location);
+            }
+
+            if (decl->identifier) {
+                symbols.add_decl(TypeNameKind::ORDINARY, decl->identifier, decl);
+            }
+
+            return decl;
         }
     }
 };

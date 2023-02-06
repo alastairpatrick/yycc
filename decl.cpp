@@ -39,9 +39,11 @@ bool Decl::is_function_definition() const {
     return false;
 }
 
-void Decl::redeclare(const Decl* redeclared) const {
-    message(redeclared->location) << "error redeclaration of '" << redeclared->identifier << "'\n";
-    message(location) << "see original declaration\n";
+void Decl::redeclare(Decl* redeclared) {
+    if (type != redeclared->type) {
+        message(redeclared->location) << "error redeclaration of '" << redeclared->identifier << "' with different type\n";
+        message(location) << "see original declaration\n";
+    }
 }
 
 Variable::Variable(StorageClass storage_class, const Type* type, const string* identifier, Expr* initializer, const Location& location)
@@ -61,8 +63,8 @@ void Variable::print(std::ostream& stream) const {
 }
 
 Function::Function(StorageClass storage, const FunctionType* type, const string* identifier, Statement* body, const Location& location)
-    : Decl(storage == StorageClass::EXTERN ? StorageClass::NONE : storage, type, identifier, location), body(move(body)) {
-    if (storage_class != StorageClass::STATIC && storage_class != StorageClass::NONE) {
+    : Decl(storage, type, identifier, location), body(move(body)) {
+    if (storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) {
         storage_class = StorageClass::NONE;
         message(location) << "error invalid storage class for a function\n";
     }
@@ -74,6 +76,20 @@ DeclKind Function::kind() const {
 
 bool Function::is_function_definition() const {
     return body != nullptr;
+}
+
+void Function::redeclare(Decl* redeclared) {
+    Decl::redeclare(redeclared);
+
+    auto redeclared_fn = dynamic_cast<Function*>(redeclared);
+    if (!redeclared_fn) return;
+
+    if (body && redeclared_fn->body) {
+        message(redeclared_fn->location) << "error redefinition of '" << identifier << "'\n";
+        message(location) << "see original definition\n";
+    }
+
+    if (!body) body = redeclared_fn->body;
 }
 
 void Function::print(std::ostream& stream) const {
@@ -94,17 +110,6 @@ DeclKind TypeDef::kind() const {
 
 const Type* TypeDef::to_type() const {
     return type;
-}
-
-void TypeDef::redeclare(const Decl* redeclared) const {
-    if (auto redefined = dynamic_cast<const TypeDef*>(redeclared)) {
-        if (redefined->type != type) {
-            message(redefined->location) << "error redefinition of '" << identifier << "' with different type\n";
-            message(location) << "see original definition\n";
-        }
-    } else {
-        Decl::redeclare(redeclared);
-    }
 }
 
 void TypeDef::print(std::ostream& stream) const {

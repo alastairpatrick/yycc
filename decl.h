@@ -36,6 +36,7 @@ struct Function: Decl {
 
     virtual DeclKind kind() const;
     virtual bool is_function_definition() const;
+    virtual void redeclare(Decl* redeclared);
     virtual void print(std::ostream& stream) const;
 };
 
@@ -44,7 +45,6 @@ struct TypeDef: Decl {
 
     virtual DeclKind kind() const;
     virtual const Type* to_type() const;
-    virtual void redeclare(const Decl* redeclared) const;
     virtual void print(std::ostream& stream) const;
 };
 

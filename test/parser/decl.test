@@ -296,7 +296,7 @@ EXPECT_AST
 [["var", [], "QvPIs", "y"]]
 
 
-BEGIN Declarator with multiple qualifiers
+BEGIN Declarator with multiple qualifiers interleaved with pointers
 int x, * const * volatile restrict y;
 EXPECT_AST
 [["var", [], "Is", "x"]
@@ -335,7 +335,7 @@ EXPECT_AST
 [["fun", [], "(FF)V", "foo"]]
 
 
-BEGIN Error if prototype has void parameters (1)
+BEGIN Error if prototype has multiple void parameters (1)
 int foo(void, void);
 EXPECT_MESSAGE
 :1:15: error a parameter may not have void type
@@ -343,7 +343,7 @@ EXPECT_AST
 [["fun", [], "()Is", "foo"]]
 
 
-BEGIN Error if prototype has void parameters (2)
+BEGIN Error if prototype has multiple void parameters (2)
 int foo(float, void);
 EXPECT_MESSAGE
 :1:16: error a parameter may not have void type
@@ -351,13 +351,13 @@ EXPECT_AST
 [["fun", [], "(F)Is", "foo"]]
 
 
-BEGIN Explictly external prototype and transformed to no storage class
+BEGIN Prototype and external linkage
 extern int foo(float);
 EXPECT_AST
-[["fun", [], "(F)Is", "foo"]]
+[["fun", ["extern"], "(F)Is", "foo"]]
 
 
-BEGIN Internal prototype
+BEGIN Prototype and internal linkage
 static int foo(float);
 EXPECT_AST
 [["fun", ["static"], "(F)Is", "foo"]]
@@ -383,15 +383,160 @@ BEGIN Consistent prototypes for function
 int foo(signed);
 signed foo(int);
 EXPECT_AST
-[["fun", [], "(Is)Is", "foo"]
-,["fun", [], "(Is)Is", "foo"]]
+[["fun", [], "(Is)Is", "foo"]]
+
+
+BEGIN Error on inconsistent function prototype.
+void foo(int, short);
+void foo(int, int);
+EXPECT_MESSAGE
+:2:1: error redeclaration of 'foo' with different type
+:1:1: see original declaration
+EXPECT_AST
+[["fun", [], "(IsSs)V", "foo"]]
+
+
+BEGIN File scope none storage class, then none storage class collapses to none
+void foo(int);
+void foo(int);
+EXPECT_AST
+[["fun", [], "(Is)V", "foo"]]
+
+
+BEGIN File scope none storage class, then extern storage class collapses to extern
+void foo(int);
+extern void foo(int);
+EXPECT_AST
+[["fun", ["extern"], "(Is)V", "foo"]]
+
+
+BEGIN File scope none storage class, then static storage class collapses to error
+void foo(int);
+static void foo(int);
+EXPECT_MESSAGE
+:2:1: error static declaration of 'foo' follows non-static
+EXPECT_AST
+[["fun", [], "(Is)V", "foo"]]
+
+
+BEGIN File scope extern storage class, then none storage class collapses to extern
+extern void foo(int);
+void foo(int);
+EXPECT_AST
+[["fun", ["extern"], "(Is)V", "foo"]]
+
+
+BEGIN File scope extern storage class, then extern storage class collapses to extern
+extern void foo(int);
+extern void foo(int);
+EXPECT_AST
+[["fun", ["extern"], "(Is)V", "foo"]]
+
+
+BEGIN File scope extern storage class, then static storage class collapses to extern
+extern void foo(int);
+static void foo(int);
+EXPECT_MESSAGE
+:2:1: error static declaration of 'foo' follows non-static
+EXPECT_AST
+[["fun", ["extern"], "(Is)V", "foo"]]
+
+
+BEGIN File scope static storage class, then none storage class collapses to static
+static void foo(int);
+void foo(int);
+EXPECT_AST
+[["fun", ["static"], "(Is)V", "foo"]]
+
+
+BEGIN File scope static storage class, then extern storage class collapses to static
+static void foo(int);
+extern void foo(int);
+EXPECT_AST
+[["fun", ["static"], "(Is)V", "foo"]]
+
+
+BEGIN File scope static storage class, then static storage class collapses to static
+static void foo(int);
+static void foo(int);
+EXPECT_AST
+[["fun", ["static"], "(Is)V", "foo"]]
 
 
 BEGIN Empty function definition
-static void foo() {
+static void foo(int) {
 }
 EXPECT_AST
-[["fun", ["static"], "()V", "foo", ["block", []]]]
+[["fun", ["static"], "(Is)V", "foo", ["block", []]]]
+
+
+BEGIN Collapses function definition into function declaration (1)
+static void foo(int);
+void foo(int x) {
+}
+EXPECT_AST
+[["fun", ["static"], "(Is)V", "foo", ["block", []]]]
+
+
+BEGIN Collapses function definition into function declaration (2)
+void foo(int) {
+}
+extern void foo(int);
+EXPECT_AST
+[["fun", ["extern"], "(Is)V", "foo", ["block", []]]]
+
+
+BEGIN Error on function redefinition
+extern void foo(int) {
+}
+extern void foo(int) {
+}
+EXPECT_MESSAGE
+:3:1: error redefinition of 'foo'
+:1:1: see original definition
+EXPECT_AST
+[["fun", ["extern"], "(Is)V", "foo", ["block", []]]]
+
+
+BEGIN File scope none storage class, then block scope extern storage class yields extern
+void foo(int);
+{
+    extern void foo(int);
+}
+EXPECT_AST
+[
+    ["fun", ["extern"], "(Is)V", "foo"],
+    ["block", [
+        ["fun", ["extern"], "(Is)V", "foo"]
+    ]]
+]
+
+
+BEGIN Other declarations of identifier at block scope must have same type (1)
+{
+    extern int foo(void);
+    {
+        int foo; // OKAY (no linkage)
+        {
+            extern float foo(void); // ERROR
+        }
+    }
+}
+EXPECT_MESSAGE
+:6:13: error redeclaration of 'foo' with different type
+:2:5: see original declaration
+
+
+BEGIN Other declarations of identifier at block scope must have same type (1)
+{
+    extern int foo(void);
+    {
+        extern int foo;  // ERROR
+    }
+}
+EXPECT_MESSAGE
+:4:9: error redeclaration of 'foo' with different type
+:2:5: see original declaration
 
 
 BEGIN Function definition with expression statement
@@ -422,7 +567,7 @@ EXPECT_MESSAGE
 :2:1: error unexpected token
 EXPECT_AST
 [["var", [], "Is", "foo"]
-,["var", [], "(Is)Is", "bar"]]
+,["fun", [], "(Is)Is", "bar"]]
 
 
 BEGIN Function definition may not share external declaration with declarators (2)
@@ -455,19 +600,17 @@ BEGIN Consistent redefinition of typedef
 typedef int a;
 typedef signed a;
 EXPECT_AST
-[["typedef", "Is", "a"]
-,["typedef", "Is", "a"]]
+[["typedef", "Is", "a"]]
 
 
 BEGIN Inconsistent redefinition of typedef
 typedef int a;
 typedef long a;
 EXPECT_MESSAGE
-:2:1: error redefinition of 'a' with different type
-:1:1: see original definition
+:2:1: error redeclaration of 'a' with different type
+:1:1: see original declaration
 EXPECT_AST
-[["typedef", "Is", "a"]
-,["typedef", "Ls", "a"]]
+[["typedef", "Is", "a"]]
 
 
 BEGIN Typedefs use block scope
@@ -488,8 +631,7 @@ BEGIN Typedef as self
 typedef int a;
 typedef a a;
 EXPECT_AST
-[["typedef", "Is", "a"]
-,["typedef", "Is", "a"]]
+[["typedef", "Is", "a"]]
 
 
 BEGIN Disambiguates between multiplication and variable declaration of pointer type

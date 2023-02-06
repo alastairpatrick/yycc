@@ -28,11 +28,12 @@ struct Decl: ASTNode {
     StorageClass storage_class;
     const Type* type;
     const string* identifier;
+    bool redundant = false;
 
     virtual DeclKind kind() const = 0;
     virtual const Type* to_type() const;
     virtual bool is_function_definition() const;
-    virtual void redeclare(const Decl* redeclared) const;
+    virtual void redeclare(Decl* redeclared);
     virtual void print(std::ostream& stream) const = 0;
 };
 
