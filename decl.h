@@ -36,7 +36,7 @@ struct Variable: Decl {
 };
 
 struct Function: Decl {
-    Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, const string* identifier, vector<Variable*> params, Statement* body, const Location& location);
+    Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, const string* identifier, vector<Variable*>&& params, Statement* body, const Location& location);
 
     vector<Variable*> params;
     Statement* body{};

@@ -28,7 +28,7 @@ ostream& message(const Location& location) {
     return CompileContext::it->message_stream << location.file << ':' << location.line << ':' << location.column << ": ";
 }
 
-const string* intern(string source) {
+const string* intern(string&& source) {
     auto& strings = CompileContext::it->interned_strings;
     return &*strings.insert(move(source)).first;
 }

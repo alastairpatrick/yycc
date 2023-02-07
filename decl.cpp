@@ -62,7 +62,7 @@ void Variable::print(std::ostream& stream) const {
     stream << ']';
 }
 
-Function::Function(IdentifierScope scope, StorageClass storage, const FunctionType* type, const string* identifier, vector<Variable*> params, Statement* body, const Location& location)
+Function::Function(IdentifierScope scope, StorageClass storage, const FunctionType* type, const string* identifier, vector<Variable*>&& params, Statement* body, const Location& location)
     : Decl(scope, storage, type, identifier, location), params(move(params)), body(body) {
     if ((storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) ||
         (storage_class == StorageClass::STATIC && scope != IdentifierScope::FILE)) {

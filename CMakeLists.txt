@@ -17,14 +17,13 @@ add_library(lang_lib STATIC
     SymbolMap.cpp
     Type.cpp
     TypeContext.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/Lexer.yy.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/lex.yy.cpp
 )
 
 add_custom_command(
     DEPENDS reflex Lexer.l
-    OUTPUT  Lexer.yy.cpp Lexer.yy.h
+    OUTPUT  lex.yy.cpp lex.yy.h
     COMMAND reflex --header-file
-            -o ${CMAKE_CURRENT_BINARY_DIR}/Lexer.yy.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/Lexer.l
 )
 

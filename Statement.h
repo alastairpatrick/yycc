@@ -4,7 +4,7 @@
 #include "ASTNode.h"
 
 struct CompoundStatement: Statement {
-    CompoundStatement(ASTNodeVector items, const Location& location);
+    CompoundStatement(ASTNodeVector&& items, const Location& location);
 
     ASTNodeVector items;
 

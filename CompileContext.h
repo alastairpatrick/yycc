@@ -25,11 +25,11 @@ struct CompileContext {
 
 ostream& message(const Location& location);
 
-// Interned strings have the property that it their string values are equal, their addresses are the same also.
+// Interned strings have the property that if their string values are equal, their addresses are the same also.
 // This means they can be used as keys in sets and maps with a very fast equality test. Note that they might be
 // a poor fit for ordered set and maps because the order is their address order rather than their
 // lexicographic order.
-const string* intern(string source);
+const string* intern(string&& source);
 const string* empty_string();
 
 #endif
