@@ -1,12 +1,12 @@
 BEGIN Static storage class declaration
 static x;
 EXPECT_AST
-[["var", ["static"], "Is", "x"]]
+[["var", "IS", "Is", "x"]]
 
 BEGIN Extern storage class declaration
 extern int x;
 EXPECT_AST
-[["var", ["extern"], "Is", "x"]]
+[["var", "ESX", "Is", "x"]]
 
 BEGIN Typedef storage class declaration
 typedef int x;
@@ -16,176 +16,170 @@ EXPECT_AST
 BEGIN Auto storage class declaration
 auto int x;
 EXPECT_AST
-[["var", ["auto"], "Is", "x"]]
+[["var", "S", "Is", "x"]]
 
 BEGIN Register storage class declaration
 register int x;
 EXPECT_AST
-[["var", ["register"], "Is", "x"]]
+[["var", "S", "Is", "x"]]
 
 BEGIN Error on declaration with multiple storage classes
 auto register x;
 EXPECT_MESSAGE
 :1:6: error too many storage classes
 EXPECT_AST
-[["var", ["auto"], "Is", "x"]]
+[["var", "S", "Is", "x"]]
 
 
 BEGIN void variable declaration
 void x;
 EXPECT_AST
-[["var", [], "V", "x"]]
+[["var", "S", "V", "x"]]
 
 BEGIN char variable declaration
 char x;
 EXPECT_AST
-[["var", [], "Cd", "x"]]
+[["var", "S", "Cd", "x"]]
 
 BEGIN signed char variable declaration
 signed char x;
 EXPECT_AST
-[["var", [], "Cs", "x"]]
+[["var", "S", "Cs", "x"]]
 
 BEGIN unsigned char variable declaration
 char unsigned x;
 EXPECT_AST
-[["var", [], "Cu", "x"]]
+[["var", "S", "Cu", "x"]]
 
 BEGIN short variable declaration
 short x;
 EXPECT_AST
-[["var", [], "Ss", "x"]]
+[["var", "S", "Ss", "x"]]
 
 BEGIN signed short variable declaration
 short signed x;
 EXPECT_AST
-[["var", [], "Ss", "x"]]
+[["var", "S", "Ss", "x"]]
 
 BEGIN short int variable declaration
 short int x;
 EXPECT_AST
-[["var", [], "Ss", "x"]]
+[["var", "S", "Ss", "x"]]
 
 BEGIN signed short int variable declaration
 short signed int x;
 EXPECT_AST
-[["var", [], "Ss", "x"]]
+[["var", "S", "Ss", "x"]]
 
 BEGIN unsigned short variable declaration
 unsigned short x;
 EXPECT_AST
-[["var", [], "Su", "x"]]
+[["var", "S", "Su", "x"]]
 
 BEGIN int variable declaration
 int x;
 EXPECT_AST
-[["var", [], "Is", "x"]]
+[["var", "S", "Is", "x"]]
 
 BEGIN signed variable declaration
 signed x;
 EXPECT_AST
-[["var", [], "Is", "x"]]
+[["var", "S", "Is", "x"]]
 
 BEGIN signed int variable declaration
 signed int x;
 EXPECT_AST
-[["var", [], "Is", "x"]]
+[["var", "S", "Is", "x"]]
 
 BEGIN unsigned variable declaration
 unsigned x;
 EXPECT_AST
-[["var", [], "Iu", "x"]]
+[["var", "S", "Iu", "x"]]
 
 BEGIN unsigned int variable declaration
 int unsigned x;
 EXPECT_AST
-[["var", [], "Iu", "x"]]
+[["var", "S", "Iu", "x"]]
 
 BEGIN long variable declaration
 long x;
 EXPECT_AST
-[["var", [], "Ls", "x"]]
+[["var", "S", "Ls", "x"]]
 
 BEGIN signed long variable declaration
 signed long x;
 EXPECT_AST
-[["var", [], "Ls", "x"]]
+[["var", "S", "Ls", "x"]]
 
 BEGIN long int variable declaration
 int long x;
 EXPECT_AST
-[["var", [], "Ls", "x"]]
+[["var", "S", "Ls", "x"]]
 
 BEGIN signed long int variable declaration
 long int signed x;
 EXPECT_AST
-[["var", [], "Ls", "x"]]
+[["var", "S", "Ls", "x"]]
 
 BEGIN unsigned long variable declaration
 unsigned long x;
 EXPECT_AST
-[["var", [], "Lu", "x"]]
+[["var", "S", "Lu", "x"]]
 
 BEGIN unsigned long int variable declaration
 unsigned int long x;
 EXPECT_AST
-[["var", [], "Lu", "x"]]
+[["var", "S", "Lu", "x"]]
 
 BEGIN long variable declaration
 long long x;
 EXPECT_AST
-[["var", [], "Ms", "x"]]
+[["var", "S", "Ms", "x"]]
 
 BEGIN signed long long variable declaration
 signed long long x;
 EXPECT_AST
-[["var", [], "Ms", "x"]]
+[["var", "S", "Ms", "x"]]
 
 BEGIN long long int variable declaration
 int long long x;
 EXPECT_AST
-[["var", [], "Ms", "x"]]
+[["var", "S", "Ms", "x"]]
 
 BEGIN signed long long int variable declaration
 long long int signed x;
 EXPECT_AST
-[["var", [], "Ms", "x"]]
+[["var", "S", "Ms", "x"]]
 
 BEGIN unsigned long long variable declaration
 unsigned long long x;
 EXPECT_AST
-[["var", [], "Mu", "x"]]
+[["var", "S", "Mu", "x"]]
 
 BEGIN unsigned long long int variable declaration
 unsigned int long long x;
 EXPECT_AST
-[["var", [], "Mu", "x"]]
+[["var", "S", "Mu", "x"]]
 
 BEGIN float variable declaration
 float x;
 EXPECT_AST
-[["var", [], "F", "x"]]
+[["var", "S", "F", "x"]]
 
 BEGIN double variable declaration
 double x;
 EXPECT_AST
-[["var", [], "D", "x"]]
+[["var", "S", "D", "x"]]
 
 BEGIN long double variable declaration
 long double x;
 EXPECT_AST
-[["var", [], "E", "x"]]
+[["var", "S", "E", "x"]]
 
 BEGIN bool variable declaration
 _Bool x;
 EXPECT_AST
-[["var", [], "Bu", "x"]]
-
-
-BEGIN bool variable declaration
-_Bool x;
-EXPECT_AST
-[["var", [], "Bu", "x"]]
+[["var", "S", "Bu", "x"]]
 
 
 BEGIN Error on duplicate type specifiers (except long)
@@ -193,7 +187,7 @@ short short x;
 EXPECT_MESSAGE
 :1:7: error invalid declaration specifier or type qualifier combination
 EXPECT_AST
-[["var", [], "Ss", "x"]]
+[["var", "S", "Ss", "x"]]
 
 
 BEGIN Error on invalid type specifier combination
@@ -201,7 +195,7 @@ short float x;
 EXPECT_MESSAGE
 :1:7: error invalid type specifier combination
 EXPECT_AST
-[["var", [], "Is", "x"]]
+[["var", "S", "Is", "x"]]
 
 
 BEGIN Error on too many long type specifiers
@@ -209,44 +203,44 @@ long long long x;
 EXPECT_MESSAGE
 :1:11: error invalid type specifier combination
 EXPECT_AST
-[["var", [], "Ms", "x"]]
+[["var", "S", "Ms", "x"]]
 
 
 BEGIN Const qualified declarators
 const int x;
 EXPECT_AST
-[["var", [], "QcIs", "x"]]
+[["var", "S", "QcIs", "x"]]
 
 
 BEGIN Restrict qualified declarators
 restrict int x;
 EXPECT_AST
-[["var", [], "QrIs", "x"]]
+[["var", "S", "QrIs", "x"]]
 
 
 BEGIN Restrict qualified declarators
 volatile int x;
 EXPECT_AST
-[["var", [], "QvIs", "x"]]
+[["var", "S", "QvIs", "x"]]
 
 
 BEGIN Multiply qualified declarators
 int volatile restrict const x;
 EXPECT_AST
-[["var", [], "QcrvIs", "x"]]
+[["var", "S", "QcrvIs", "x"]]
 
 
 BEGIN Declaration type qualifiers may be repeated
 volatile volatile x;
 EXPECT_AST
-[["var", [], "QvIs", "x"]]
+[["var", "S", "QvIs", "x"]]
 
 
 BEGIN Multiple declarators
-extern int x, y;
+int x, y;
 EXPECT_AST
-[["var", ["extern"], "Is", "x"]
-,["var", ["extern"], "Is", "y"]]
+[["var", "S", "Is", "x"]
+,["var", "S", "Is", "y"]]
 
 
 BEGIN Declaration with no declarators
@@ -268,71 +262,99 @@ short a b;
 EXPECT_MESSAGE
 :1:9: error unexpected token
 EXPECT_AST
-[["var", [], "Ss", "a"]]
+[["var", "S", "Ss", "a"]]
 
 
 BEGIN Pointer declarators
-extern int **x, *y;
+int **x, *y;
 EXPECT_AST
-[["var", ["extern"], "PPIs", "x"]
-,["var", ["extern"], "PIs", "y"]]
+[["var", "S", "PPIs", "x"]
+,["var", "S", "PIs", "y"]]
 
 
 BEGIN Const declarator
 int* const y;
 EXPECT_AST
-[["var", [], "QcPIs", "y"]]
+[["var", "S", "QcPIs", "y"]]
 
 
 BEGIN Restrict declarator
 int* restrict y;
 EXPECT_AST
-[["var", [], "QrPIs", "y"]]
+[["var", "S", "QrPIs", "y"]]
 
 
 BEGIN Volatile declarator
 int* volatile y;
 EXPECT_AST
-[["var", [], "QvPIs", "y"]]
+[["var", "S", "QvPIs", "y"]]
 
 
 BEGIN Declarator with multiple qualifiers interleaved with pointers
 int x, * const * volatile restrict y;
 EXPECT_AST
-[["var", [], "Is", "x"]
-,["var", [], "QrvPQcPIs", "y"]]
+[["var", "S", "Is", "x"]
+,["var", "S", "QrvPQcPIs", "y"]]
 
 
 BEGIN Declarator initializers
 int x = 1, y = 2;
 EXPECT_AST
-[["var", [], "Is", "x", "Is1"]
-,["var", [], "Is", "y", "Is2"]]
+[["var", "S", "Is", "x", "Is1"]
+,["var", "S", "Is", "y", "Is2"]]
 
 
 BEGIN Declarators in parentheses
 int ((x)), (*y);
 EXPECT_AST
-[["var", [], "Is", "x"]
-,["var", [], "PIs", "y"]]
+[["var", "S", "Is", "x"]
+,["var", "S", "PIs", "y"]]
+
+
+BEGIN Collapses variable definition into variable declaration (1)
+extern int x;
+int x;
+EXPECT_AST
+[["var", "ES", "Is", "x"]]
+
+
+BEGIN Collapses variable definition into variable declaration (2)
+int x;
+extern int x;
+EXPECT_AST
+[["var", "ES", "Is", "x"]]
+
+
+BEGIN Collapses variable initialization into variable declaration (1)
+extern int x;
+int x = 1;
+EXPECT_AST
+[["var", "ES", "Is", "x", "Is1"]]
+
+
+BEGIN Collapses variable initialization  into variable declaration (2)
+int x = 1;
+extern int x;
+EXPECT_AST
+[["var", "ES", "Is", "x", "Is1"]]
 
 
 BEGIN Function prototype with no parameters (1)
 int foo();
 EXPECT_AST
-[["fun", [], "()Is", "foo"]]
+[["fun", "", "()Is", "foo"]]
 
 
 BEGIN Function prototype with no parameters (2)
 int foo(void);
 EXPECT_AST
-[["fun", [], "()Is", "foo"]]
+[["fun", "", "()Is", "foo"]]
 
 
 BEGIN Function prototype with parameters
 void foo(float x, float y);
 EXPECT_AST
-[["fun", [], "(FF)V", "foo"]]
+[["fun", "", "(FF)V", "foo"]]
 
 
 BEGIN Error if prototype has multiple void parameters (1)
@@ -340,7 +362,7 @@ int foo(void, void);
 EXPECT_MESSAGE
 :1:15: error a parameter may not have void type
 EXPECT_AST
-[["fun", [], "()Is", "foo"]]
+[["fun", "", "()Is", "foo"]]
 
 
 BEGIN Error if prototype has multiple void parameters (2)
@@ -348,25 +370,25 @@ int foo(float, void);
 EXPECT_MESSAGE
 :1:16: error a parameter may not have void type
 EXPECT_AST
-[["fun", [], "(F)Is", "foo"]]
+[["fun", "", "(F)Is", "foo"]]
 
 
 BEGIN Function parameters of function type are adjusted to pointer
 int foo(int bar(void));
 EXPECT_AST
-[["fun", [], "(P()Is)Is", "foo"]]
+[["fun", "", "(P()Is)Is", "foo"]]
 
 
 BEGIN Prototype and external linkage
 extern int foo(float);
 EXPECT_AST
-[["fun", ["extern"], "(F)Is", "foo"]]
+[["fun", "E", "(F)Is", "foo"]]
 
 
 BEGIN Prototype and internal linkage
 static int foo(float);
 EXPECT_AST
-[["fun", ["static"], "(F)Is", "foo"]]
+[["fun", "I", "(F)Is", "foo"]]
 
 
 BEGIN Error if prototype has register storage class
@@ -374,28 +396,28 @@ register int foo(float);
 EXPECT_MESSAGE
 :1:1: error invalid storage class
 EXPECT_AST
-[["fun", [], "(F)Is", "foo"]]
+[["fun", "", "(F)Is", "foo"]]
 
 
 BEGIN Error if function parameter has invalid storage class
-static int foo(extern float);
+int foo(extern float);
 EXPECT_MESSAGE
-:1:16: error invalid storage class
+:1:9: error invalid storage class
 EXPECT_AST
-[["fun", ["static"], "(F)Is", "foo"]]
+[["fun", "", "(F)Is", "foo"]]
 
 
 BEGIN Function parameter with (ignored) register storage class
 void foo(register int);
 EXPECT_AST
-[["fun", [], "(Is)V", "foo"]]
+[["fun", "", "(Is)V", "foo"]]
 
 
 BEGIN Consistent prototypes for function
 int foo(signed);
 signed foo(int);
 EXPECT_AST
-[["fun", [], "(Is)Is", "foo"]]
+[["fun", "", "(Is)Is", "foo"]]
 
 
 BEGIN Error on inconsistent function prototype.
@@ -405,81 +427,81 @@ EXPECT_MESSAGE
 :2:1: error redeclaration of 'foo' with different type
 :1:1: see original declaration
 EXPECT_AST
-[["fun", [], "(IsSs)V", "foo"]]
+[["fun", "", "(IsSs)V", "foo"]]
 
 
-BEGIN File scope none storage class, then none storage class collapses to none
+BEGIN Function declarations having no linkage collapse
 void foo(int);
 void foo(int);
 EXPECT_AST
-[["fun", [], "(Is)V", "foo"]]
+[["fun", "", "(Is)V", "foo"]]
 
 
-BEGIN File scope none storage class, then extern storage class collapses to extern
+BEGIN Function declaration having no linkage collapses with function declaration having external linkage
 void foo(int);
 extern void foo(int);
 EXPECT_AST
-[["fun", ["extern"], "(Is)V", "foo"]]
+[["fun", "E", "(Is)V", "foo"]]
 
 
-BEGIN File scope none storage class, then static storage class collapses to error
+BEGIN Function declaration having no linkage collapses with function declaration having internal linkage
 void foo(int);
 static void foo(int);
 EXPECT_MESSAGE
 :2:1: error static declaration of 'foo' follows non-static
 EXPECT_AST
-[["fun", [], "(Is)V", "foo"]]
+[["fun", "", "(Is)V", "foo"]]
 
 
-BEGIN File scope extern storage class, then none storage class collapses to extern
+BEGIN Function declaration having external linkage collapses with function declaration having no linkage
 extern void foo(int);
 void foo(int);
 EXPECT_AST
-[["fun", ["extern"], "(Is)V", "foo"]]
+[["fun", "E", "(Is)V", "foo"]]
 
 
-BEGIN File scope extern storage class, then extern storage class collapses to extern
+BEGIN Function declarations having external linkage collapse
 extern void foo(int);
 extern void foo(int);
 EXPECT_AST
-[["fun", ["extern"], "(Is)V", "foo"]]
+[["fun", "E", "(Is)V", "foo"]]
 
 
-BEGIN File scope extern storage class, then static storage class collapses to extern
+BEGIN Function declaration having external linkage does not collapse with function declaration having internal linkage
 extern void foo(int);
 static void foo(int);
 EXPECT_MESSAGE
 :2:1: error static declaration of 'foo' follows non-static
 EXPECT_AST
-[["fun", ["extern"], "(Is)V", "foo"]]
+[["fun", "E", "(Is)V", "foo"]]
 
 
-BEGIN File scope static storage class, then none storage class collapses to static
+BEGIN Function declaration having internal linkage collapses with function declaration having no linkage
 static void foo(int);
 void foo(int);
 EXPECT_AST
-[["fun", ["static"], "(Is)V", "foo"]]
+[["fun", "I", "(Is)V", "foo"]]
 
 
-BEGIN File scope static storage class, then extern storage class collapses to static
+BEGIN Function declaration having internal linkage collapses with function declaration having external linkage
 static void foo(int);
 extern void foo(int);
 EXPECT_AST
-[["fun", ["static"], "(Is)V", "foo"]]
+[["fun", "I", "(Is)V", "foo"]]
 
 
-BEGIN File scope static storage class, then static storage class collapses to static
+BEGIN Function declarations having internal linkage collapse
 static void foo(int);
 static void foo(int);
 EXPECT_AST
-[["fun", ["static"], "(Is)V", "foo"]]
+[["fun", "I", "(Is)V", "foo"]]
 
 
 BEGIN Empty function definition
-static void foo(int) {
+void foo(int) {
 }
 EXPECT_AST
-[["fun", ["static"], "(Is)V", "foo", [""], ["block", []]]]
+[["fun", "", "(Is)V", "foo", [""], ["block", []]]]
 
 
 BEGIN Collapses function definition into function declaration (1)
@@ -487,7 +509,7 @@ static void foo(int);
 void foo(int x) {
 }
 EXPECT_AST
-[["fun", ["static"], "(Is)V", "foo", ["x"], ["block", []]]]
+[["fun", "I", "(Is)V", "foo", ["x"], ["block", []]]]
 
 
 BEGIN Collapses function definition into function declaration (2)
@@ -495,7 +517,7 @@ void foo(int x) {
 }
 extern void foo(int);
 EXPECT_AST
-[["fun", ["extern"], "(Is)V", "foo", ["x"], ["block", []]]]
+[["fun", "E", "(Is)V", "foo", ["x"], ["block", []]]]
 
 
 BEGIN Error on function redefinition
@@ -507,7 +529,7 @@ EXPECT_MESSAGE
 :3:1: error redefinition of 'foo'
 :1:1: see original definition
 EXPECT_AST
-[["fun", ["extern"], "(Is)V", "foo", [""], ["block", []]]]
+[["fun", "E", "(Is)V", "foo", [""], ["block", []]]]
 
 
 BEGIN File scope none storage class, then block scope extern storage class yields extern
@@ -517,7 +539,7 @@ void foo(int);
 }
 EXPECT_AST
 [
-    ["fun", ["extern"], "(Is)V", "foo"],
+    ["fun", "E", "(Is)V", "foo"],
     ["block", []]
 ]
 
@@ -562,12 +584,12 @@ EXPECT_MESSAGE
 
 
 BEGIN Function definition with local variables
-static void foo() {
+void foo() {
     int x = 1;
 }
 EXPECT_AST
-[["fun", ["static"], "()V", "foo", [], ["block", [
-    ["var", [], "Is", "x", "Is1"]
+[["fun", "", "()V", "foo", [], ["block", [
+    ["var", "", "Is", "x", "Is1"]
 ]]]]
 
 
@@ -578,8 +600,8 @@ EXPECT_MESSAGE
 :1:21: error unexpected token
 :2:1: error unexpected token
 EXPECT_AST
-[["var", [], "Is", "foo"]
-,["fun", [], "(Is)Is", "bar"]]
+[["var", "S", "Is", "foo"]
+,["fun", "", "(Is)Is", "bar"]]
 
 
 BEGIN Function definition may not share external declaration with declarators (2)
@@ -590,7 +612,7 @@ EXPECT_MESSAGE
 :2:4: error use of undeclared identifier 'foo'
 EXPECT_AST
 [
-    ["fun", [], "(Is)Is", "bar", ["x"], ["block", []]],
+    ["fun", "", "(Is)Is", "bar", ["x"], ["block", []]],
     "Is0"
 ]
 
@@ -599,7 +621,7 @@ BEGIN Parameters have function prototype scope (1)
 int foo(int foo) {
 }
 EXPECT_AST
-[["fun", [], "(Is)Is", "foo", ["foo"], ["block", []]]]
+[["fun", "", "(Is)Is", "foo", ["foo"], ["block", []]]]
 
 
 BEGIN Parameters have function prototype scope (2)
@@ -607,7 +629,7 @@ int foo(int bar) {
     int bar;
 }
 EXPECT_AST
-[["fun", [], "(Is)Is", "foo", ["bar"], ["block", [["var", [], "Is", "bar"]]]]]
+[["fun", "", "(Is)Is", "foo", ["bar"], ["block", [["var", "", "Is", "bar"]]]]]
 
 
 BEGIN Cannot declare static function at block scope
@@ -617,7 +639,7 @@ BEGIN Cannot declare static function at block scope
 EXPECT_MESSAGE
 :2:5: error invalid storage class
 EXPECT_AST
-[["block", [["fun", [], "()V", "foo"]]]]
+[["block", [["fun", "", "()V", "foo"]]]]
 
 
 BEGIN Variable declaration of typedef type.
@@ -625,7 +647,7 @@ typedef short foo_t;
 foo_t foo;
 EXPECT_AST
 [["typedef", "Ss", "foo_t"]
-,["var", [], "Ss", "foo"]]
+,["var", "S", "Ss", "foo"]]
 
 
 BEGIN Typedef with no declarators
@@ -681,12 +703,12 @@ int p, q;
 }
 EXPECT_AST
 [
-    ["var", [], "Is", "p"],
-    ["var", [], "Is", "q"],
+    ["var", "S", "Is", "p"],
+    ["var", "S", "Is", "q"],
     ["block", [
         ["*", "Nq", "Np"],
         ["typedef", "Ss", "q"],
-        ["var", [], "PSs", "v"]
+        ["var", "", "PSs", "v"]
     ]
 ]]
 
@@ -699,8 +721,8 @@ int p, q;
 q * p; // Identifier "q" immediately follows '}'
 EXPECT_AST
 [
-    ["var", [], "Is", "p"],
-    ["var", [], "Is", "q"],
+    ["var", "S", "Is", "p"],
+    ["var", "S", "Is", "q"],
     ["block", [
         ["typedef", "Ls", "q"]
     ]],
@@ -724,6 +746,6 @@ int main(int argc, const char* argv) {
     return argc;
 }
 EXPECT_AST
-[["fun", [], "(IsPQcCd)Is", "main", ["argc", "argv"], ["block", [
+[["fun", "", "(IsPQcCd)Is", "main", ["argc", "argv"], ["block", [
     ["return", "Nargc"]
 ]]]]

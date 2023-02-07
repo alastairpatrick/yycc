@@ -344,7 +344,7 @@ struct Parser {
                 if (decl->identifier == empty_string()) {
                     message(lexer.location()) << "error expected identifier\n";
                 } else if (!decl->redundant) {
-                    if (decl->storage_class != StorageClass::EXTERN) {
+                    if (decl->linkage != Linkage::EXTERNAL) {
                         list.push_back(decl);
                     } else {
                         extern_decls.push_back(decl);

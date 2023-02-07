@@ -4,31 +4,40 @@
 
 #include "CompileContext.h"
 
-ostream& operator<<(ostream& stream, StorageClass storage_class) {
-    switch (storage_class) {
-    case StorageClass::NONE:
+ostream& operator<<(ostream& stream, Linkage linkage) {
+    switch (linkage) {
+    case Linkage::NONE:
         break;
-    case StorageClass::TYPEDEF:
-        stream << "\"typedef\"";
+    case Linkage::INTERNAL:
+        stream << 'I';
         break;
-    case StorageClass::EXTERN:
-        stream << "\"extern\"";
+    case Linkage::EXTERNAL:
+        stream << 'E';
         break;
-    case StorageClass::STATIC:
-        stream << "\"static\"";
+    }
+    return stream;
+}
+
+ostream& operator<<(ostream& stream, StorageDuration duration) {
+    switch (duration) {
+    case StorageDuration::AUTO:
         break;
-    case StorageClass::AUTO:
-        stream << "\"auto\"";
-        break;
-    case StorageClass::REGISTER:
-        stream << "\"register\"";
+    case StorageDuration::STATIC:
+        stream << 'S';
         break;
     }
     return stream;
 }
 
 Decl::Decl(IdentifierScope scope, StorageClass storage_class, const Type* type, const string* identifier, const Location& location)
-    : ASTNode(location), scope(scope), storage_class(storage_class), type(type), identifier(identifier) {
+    : ASTNode(location), scope(scope), type(type), identifier(identifier) {
+    if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
+        linkage = Linkage::INTERNAL;
+    } else if (storage_class == StorageClass::EXTERN) {
+        linkage = Linkage::EXTERNAL;
+    } else {
+        linkage = Linkage::NONE;
+    }
 }
 
 const Type* Decl::to_type() const {
@@ -48,21 +57,50 @@ void Decl::redeclare(Decl* redeclared) {
 
 Variable::Variable(IdentifierScope scope, StorageClass storage_class, const Type* type, const string* identifier, Expr* initializer, const Location& location)
     : Decl(scope, storage_class, type, identifier, location), initializer(initializer) {
+    if (storage_class == StorageClass::EXTERN || storage_class == StorageClass::STATIC || scope == IdentifierScope::FILE) {
+        storage_duration = StorageDuration::STATIC;
+    } else {
+        storage_duration = StorageDuration::AUTO;
+    }
+
+    is_definition = storage_class != StorageClass::EXTERN || initializer != nullptr;
+}
+
+void Variable::redeclare(Decl* redeclared) {
+    Decl::redeclare(redeclared);
+
+    auto redeclared_var = dynamic_cast<Variable*>(redeclared);
+    if (!redeclared_var) return;
+
+    if (!initializer) {
+        initializer = redeclared_var->initializer;
+    }
+
+    if (!is_definition) {
+        is_definition = redeclared_var->is_definition;
+    }
+
+    assert(storage_duration == redeclared_var->storage_duration);
 }
 
 void Variable::print(std::ostream& stream) const {
-    stream << "[\"var\", [" << storage_class << "], \"" << type << "\", \"" << identifier  << "\"";
+    stream << "[\"var\", \"" << linkage << storage_duration;
+
+    if (!is_definition) {
+        stream << 'X';
+    }
+
+    stream << "\", \"" << type << "\", \"" << identifier  << "\"";
     if (initializer) {
         stream << ", " << initializer;
     }
     stream << ']';
 }
 
-Function::Function(IdentifierScope scope, StorageClass storage, const FunctionType* type, const string* identifier, vector<Variable*>&& params, Statement* body, const Location& location)
-    : Decl(scope, storage, type, identifier, location), params(move(params)), body(body) {
+Function::Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, const string* identifier, vector<Variable*>&& params, Statement* body, const Location& location)
+    : Decl(scope, storage_class, type, identifier, location), params(move(params)), body(body) {
     if ((storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) ||
         (storage_class == StorageClass::STATIC && scope != IdentifierScope::FILE)) {
-        storage_class = StorageClass::NONE;
         message(location) << "error invalid storage class\n";
     }
 }
@@ -89,7 +127,7 @@ void Function::redeclare(Decl* redeclared) {
 }
 
 void Function::print(std::ostream& stream) const {
-    stream << "[\"fun\", [" << storage_class << "], \"" << type << "\", \"" << identifier << '"';
+    stream << "[\"fun\", \"" << linkage << "\", \"" << type << "\", \"" << identifier << '"';
     if (body) {
         stream << ", [";
         for (auto i = 0; i < params.size(); ++i) {

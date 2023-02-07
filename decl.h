@@ -18,13 +18,28 @@ enum class StorageClass {
     REGISTER,
 };
 
-ostream& operator<<(ostream& stream, StorageClass storage_class);
+enum class Linkage {
+    NONE,
+    INTERNAL,
+    EXTERNAL,
+};
+
+enum class StorageDuration {
+    AUTO,
+    STATIC,
+};
+
+ostream& operator<<(ostream& stream, Linkage linkage);
+ostream& operator<<(ostream& stream, StorageDuration duration);
 
 struct Variable: Decl {
     Variable(IdentifierScope scope, StorageClass storage_class, const Type* type, const string* identifier, Expr* initializer, const Location& location);
 
+    StorageDuration storage_duration;
+    bool is_definition;
     Expr* initializer{};
 
+    virtual void redeclare(Decl* redeclared);
     virtual void print(std::ostream& stream) const;
 };
 

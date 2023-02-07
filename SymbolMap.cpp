@@ -25,7 +25,7 @@ const Type* SymbolMap::lookup_type(TypeNameKind kind, const string* name) const 
 }
 
 void SymbolMap::add_decl(TypeNameKind kind, const string* name, Decl* decl) {
-    auto& scope = decl->storage_class == StorageClass::EXTERN ? scopes.back() : scopes.front();
+    auto& scope = decl->linkage == Linkage::EXTERNAL ? scopes.back() : scopes.front();
 
     auto it = scope.declarations.find(name);
     if (it != scope.declarations.end()) {
@@ -34,7 +34,7 @@ void SymbolMap::add_decl(TypeNameKind kind, const string* name, Decl* decl) {
 
         // int baz(void);
         // static int baz(void); // ERROR
-        if (decl->storage_class == StorageClass::STATIC && existing_decl->storage_class != StorageClass::STATIC) {
+        if (decl->linkage == Linkage::INTERNAL && existing_decl->linkage != Linkage::INTERNAL) {
             message(decl->location) << "error static declaration of '" << decl->identifier << "' follows non-static\n";
         }
 
@@ -76,8 +76,8 @@ void SymbolMap::add_decl(TypeNameKind kind, const string* name, Decl* decl) {
         //     extern int foo(void);
         // }
 
-        if (decl->storage_class == StorageClass::EXTERN && existing_decl->storage_class == StorageClass::NONE) {
-            existing_decl->storage_class = StorageClass::EXTERN;
+        if (decl->linkage == Linkage::EXTERNAL && existing_decl->linkage == Linkage::NONE) {
+            existing_decl->linkage = Linkage::EXTERNAL;
         }
 
         if (decl->scope == IdentifierScope::FILE) {

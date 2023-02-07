@@ -9,6 +9,7 @@
 
 enum class IdentifierScope;
 enum class StorageClass;
+enum class Linkage;
 
 struct ASTNode: Printable {
     explicit ASTNode(const Location& location);
@@ -26,7 +27,7 @@ struct Decl: ASTNode {
     Decl(IdentifierScope scope, StorageClass storage_class, const Type* type, const string* identifier, const Location& location);
 
     IdentifierScope scope;
-    StorageClass storage_class;
+    Linkage linkage;
     const Type* type;
     const string* identifier;
 
