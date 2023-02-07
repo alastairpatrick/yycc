@@ -29,9 +29,9 @@ enum Section {
 };
 
 static const Test tests[] = {
+    { "typedef",            TestType::STATEMENTS },
     { "var_decl",           TestType::STATEMENTS },
     { "fun_decl",           TestType::STATEMENTS },
-    { "typedef",            TestType::STATEMENTS },
     { "stmt",               TestType::STATEMENTS },
     { "string_literal",     TestType::EXPR },
     { "lex",                TestType::EXPR },
@@ -75,9 +75,14 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
             print_error(name, file, line) << "Expected message:\n" << sections[EXPECTED_MESSAGE] << "\n  Actual message:\n" << message_stream.str();
         }
 
-        if (!sections[EXPECTED_AST].empty() && json::parse(output_stream) != json::parse(sections[EXPECTED_AST])) {
-            print_error(name, file, line) << "Expected AST: " << sections[EXPECTED_AST] << "\n  Actual AST: " << output_stream.str() << "\n";
-            return false;
+        if (!sections[EXPECTED_AST].empty()) {
+            auto parsed_output = json::parse(output_stream);
+            auto parsed_expected = json::parse(sections[EXPECTED_AST]);
+
+            if (parsed_output != parsed_expected) {
+                print_error(name, file, line) << "Expected AST: " << parsed_expected << "\n  Actual AST: " << parsed_output << "\n";
+                return false;
+            }
         }
 
         if (!sections[EXPECTED_TYPE].empty()) {

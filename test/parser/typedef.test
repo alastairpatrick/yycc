@@ -3,7 +3,7 @@ typedef short foo_t;
 foo_t foo;
 EXPECT_AST
 [["typedef", "Ss", "foo_t"]
-,["var", "S", "Ss", "foo"]]
+,["var", "ES", "Ss", "foo"]]
 
 
 BEGIN Typedef with no declarators
@@ -59,8 +59,8 @@ int p, q;
 }
 EXPECT_AST
 [
-    ["var", "S", "Is", "p"],
-    ["var", "S", "Is", "q"],
+    ["var", "ES", "Is", "p"],
+    ["var", "ES", "Is", "q"],
     ["block", [
         ["*", "Nq", "Np"],
         ["typedef", "Ss", "q"],
@@ -77,8 +77,8 @@ int p, q;
 q * p; // Identifier "q" immediately follows '}'
 EXPECT_AST
 [
-    ["var", "S", "Is", "p"],
-    ["var", "S", "Is", "q"],
+    ["var", "ES", "Is", "p"],
+    ["var", "ES", "Is", "q"],
     ["block", [
         ["typedef", "Ls", "q"]
     ]],

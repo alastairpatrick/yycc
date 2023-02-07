@@ -16,170 +16,170 @@ EXPECT_AST
 BEGIN Auto storage class declaration
 auto int x;
 EXPECT_AST
-[["var", "S", "Is", "x"]]
+[["var", "ES", "Is", "x"]]
 
 BEGIN Register storage class declaration
 register int x;
 EXPECT_AST
-[["var", "S", "Is", "x"]]
+[["var", "ES", "Is", "x"]]
 
 BEGIN Error on declaration with multiple storage classes
 auto register x;
 EXPECT_MESSAGE
 :1:6: error too many storage classes
 EXPECT_AST
-[["var", "S", "Is", "x"]]
+[["var", "ES", "Is", "x"]]
 
 
 BEGIN void variable declaration
 void x;
 EXPECT_AST
-[["var", "S", "V", "x"]]
+[["var", "ES", "V", "x"]]
 
 BEGIN char variable declaration
 char x;
 EXPECT_AST
-[["var", "S", "Cd", "x"]]
+[["var", "ES", "Cd", "x"]]
 
 BEGIN signed char variable declaration
 signed char x;
 EXPECT_AST
-[["var", "S", "Cs", "x"]]
+[["var", "ES", "Cs", "x"]]
 
 BEGIN unsigned char variable declaration
 char unsigned x;
 EXPECT_AST
-[["var", "S", "Cu", "x"]]
+[["var", "ES", "Cu", "x"]]
 
 BEGIN short variable declaration
 short x;
 EXPECT_AST
-[["var", "S", "Ss", "x"]]
+[["var", "ES", "Ss", "x"]]
 
 BEGIN signed short variable declaration
 short signed x;
 EXPECT_AST
-[["var", "S", "Ss", "x"]]
+[["var", "ES", "Ss", "x"]]
 
 BEGIN short int variable declaration
 short int x;
 EXPECT_AST
-[["var", "S", "Ss", "x"]]
+[["var", "ES", "Ss", "x"]]
 
 BEGIN signed short int variable declaration
 short signed int x;
 EXPECT_AST
-[["var", "S", "Ss", "x"]]
+[["var", "ES", "Ss", "x"]]
 
 BEGIN unsigned short variable declaration
 unsigned short x;
 EXPECT_AST
-[["var", "S", "Su", "x"]]
+[["var", "ES", "Su", "x"]]
 
 BEGIN int variable declaration
 int x;
 EXPECT_AST
-[["var", "S", "Is", "x"]]
+[["var", "ES", "Is", "x"]]
 
 BEGIN signed variable declaration
 signed x;
 EXPECT_AST
-[["var", "S", "Is", "x"]]
+[["var", "ES", "Is", "x"]]
 
 BEGIN signed int variable declaration
 signed int x;
 EXPECT_AST
-[["var", "S", "Is", "x"]]
+[["var", "ES", "Is", "x"]]
 
 BEGIN unsigned variable declaration
 unsigned x;
 EXPECT_AST
-[["var", "S", "Iu", "x"]]
+[["var", "ES", "Iu", "x"]]
 
 BEGIN unsigned int variable declaration
 int unsigned x;
 EXPECT_AST
-[["var", "S", "Iu", "x"]]
+[["var", "ES", "Iu", "x"]]
 
 BEGIN long variable declaration
 long x;
 EXPECT_AST
-[["var", "S", "Ls", "x"]]
+[["var", "ES", "Ls", "x"]]
 
 BEGIN signed long variable declaration
 signed long x;
 EXPECT_AST
-[["var", "S", "Ls", "x"]]
+[["var", "ES", "Ls", "x"]]
 
 BEGIN long int variable declaration
 int long x;
 EXPECT_AST
-[["var", "S", "Ls", "x"]]
+[["var", "ES", "Ls", "x"]]
 
 BEGIN signed long int variable declaration
 long int signed x;
 EXPECT_AST
-[["var", "S", "Ls", "x"]]
+[["var", "ES", "Ls", "x"]]
 
 BEGIN unsigned long variable declaration
 unsigned long x;
 EXPECT_AST
-[["var", "S", "Lu", "x"]]
+[["var", "ES", "Lu", "x"]]
 
 BEGIN unsigned long int variable declaration
 unsigned int long x;
 EXPECT_AST
-[["var", "S", "Lu", "x"]]
+[["var", "ES", "Lu", "x"]]
 
 BEGIN long variable declaration
 long long x;
 EXPECT_AST
-[["var", "S", "Ms", "x"]]
+[["var", "ES", "Ms", "x"]]
 
 BEGIN signed long long variable declaration
 signed long long x;
 EXPECT_AST
-[["var", "S", "Ms", "x"]]
+[["var", "ES", "Ms", "x"]]
 
 BEGIN long long int variable declaration
 int long long x;
 EXPECT_AST
-[["var", "S", "Ms", "x"]]
+[["var", "ES", "Ms", "x"]]
 
 BEGIN signed long long int variable declaration
 long long int signed x;
 EXPECT_AST
-[["var", "S", "Ms", "x"]]
+[["var", "ES", "Ms", "x"]]
 
 BEGIN unsigned long long variable declaration
 unsigned long long x;
 EXPECT_AST
-[["var", "S", "Mu", "x"]]
+[["var", "ES", "Mu", "x"]]
 
 BEGIN unsigned long long int variable declaration
 unsigned int long long x;
 EXPECT_AST
-[["var", "S", "Mu", "x"]]
+[["var", "ES", "Mu", "x"]]
 
 BEGIN float variable declaration
 float x;
 EXPECT_AST
-[["var", "S", "F", "x"]]
+[["var", "ES", "F", "x"]]
 
 BEGIN double variable declaration
 double x;
 EXPECT_AST
-[["var", "S", "D", "x"]]
+[["var", "ES", "D", "x"]]
 
 BEGIN long double variable declaration
 long double x;
 EXPECT_AST
-[["var", "S", "E", "x"]]
+[["var", "ES", "E", "x"]]
 
 BEGIN bool variable declaration
 _Bool x;
 EXPECT_AST
-[["var", "S", "Bu", "x"]]
+[["var", "ES", "Bu", "x"]]
 
 
 BEGIN Error on duplicate type specifiers (except long)
@@ -187,7 +187,7 @@ short short x;
 EXPECT_MESSAGE
 :1:7: error invalid declaration specifier or type qualifier combination
 EXPECT_AST
-[["var", "S", "Ss", "x"]]
+[["var", "ES", "Ss", "x"]]
 
 
 BEGIN Error on invalid type specifier combination
@@ -195,7 +195,7 @@ short float x;
 EXPECT_MESSAGE
 :1:7: error invalid type specifier combination
 EXPECT_AST
-[["var", "S", "Is", "x"]]
+[["var", "ES", "Is", "x"]]
 
 
 BEGIN Error on too many long type specifiers
@@ -203,44 +203,44 @@ long long long x;
 EXPECT_MESSAGE
 :1:11: error invalid type specifier combination
 EXPECT_AST
-[["var", "S", "Ms", "x"]]
+[["var", "ES", "Ms", "x"]]
 
 
 BEGIN Const qualified declarators
 const int x;
 EXPECT_AST
-[["var", "S", "QcIs", "x"]]
+[["var", "ES", "QcIs", "x"]]
 
 
 BEGIN Restrict qualified declarators
 restrict int x;
 EXPECT_AST
-[["var", "S", "QrIs", "x"]]
+[["var", "ES", "QrIs", "x"]]
 
 
 BEGIN Restrict qualified declarators
 volatile int x;
 EXPECT_AST
-[["var", "S", "QvIs", "x"]]
+[["var", "ES", "QvIs", "x"]]
 
 
 BEGIN Multiply qualified declarators
 int volatile restrict const x;
 EXPECT_AST
-[["var", "S", "QcrvIs", "x"]]
+[["var", "ES", "QcrvIs", "x"]]
 
 
 BEGIN Declaration type qualifiers may be repeated
 volatile volatile x;
 EXPECT_AST
-[["var", "S", "QvIs", "x"]]
+[["var", "ES", "QvIs", "x"]]
 
 
 BEGIN Multiple declarators
 int x, y;
 EXPECT_AST
-[["var", "S", "Is", "x"]
-,["var", "S", "Is", "y"]]
+[["var", "ES", "Is", "x"]
+,["var", "ES", "Is", "y"]]
 
 
 BEGIN Declaration with no declarators
@@ -262,53 +262,83 @@ short a b;
 EXPECT_MESSAGE
 :1:9: error unexpected token
 EXPECT_AST
-[["var", "S", "Ss", "a"]]
+[["var", "ES", "Ss", "a"]]
 
 
 BEGIN Pointer declarators
 int **x, *y;
 EXPECT_AST
-[["var", "S", "PPIs", "x"]
-,["var", "S", "PIs", "y"]]
+[["var", "ES", "PPIs", "x"]
+,["var", "ES", "PIs", "y"]]
 
 
 BEGIN Const declarator
 int* const y;
 EXPECT_AST
-[["var", "S", "QcPIs", "y"]]
+[["var", "ES", "QcPIs", "y"]]
 
 
 BEGIN Restrict declarator
 int* restrict y;
 EXPECT_AST
-[["var", "S", "QrPIs", "y"]]
+[["var", "ES", "QrPIs", "y"]]
 
 
 BEGIN Volatile declarator
 int* volatile y;
 EXPECT_AST
-[["var", "S", "QvPIs", "y"]]
+[["var", "ES", "QvPIs", "y"]]
 
 
 BEGIN Declarator with multiple qualifiers interleaved with pointers
 int x, * const * volatile restrict y;
 EXPECT_AST
-[["var", "S", "Is", "x"]
-,["var", "S", "QrvPQcPIs", "y"]]
+[["var", "ES", "Is", "x"]
+,["var", "ES", "QrvPQcPIs", "y"]]
 
 
 BEGIN Declarator initializers
 int x = 1, y = 2;
 EXPECT_AST
-[["var", "S", "Is", "x", "Is1"]
-,["var", "S", "Is", "y", "Is2"]]
+[["var", "ES", "Is", "x", "Is1"]
+,["var", "ES", "Is", "y", "Is2"]]
 
 
 BEGIN Declarators in parentheses
 int ((x)), (*y);
 EXPECT_AST
-[["var", "S", "Is", "x"]
-,["var", "S", "PIs", "y"]]
+[["var", "ES", "Is", "x"]
+,["var", "ES", "PIs", "y"]]
+
+
+BEGIN Variable declarations having external linkage collapse
+extern int x;
+extern int x;
+EXPECT_AST
+[["var", "ESX", "Is", "x"]]
+
+
+BEGIN Variable declaration having external linkage does not collapse with variable declaration having internal linkage
+extern int x;
+static int x;
+EXPECT_MESSAGE
+:2:1: error static declaration of 'x' follows non-static
+EXPECT_AST
+[["var", "ES", "Is", "x"]]
+
+
+BEGIN Variable declaration having internal linkage collapses with variable declaration having external linkage
+static int x;
+extern int x;
+EXPECT_AST
+[["var", "IS", "Is", "x"]]
+
+
+BEGIN Variable declarations having internal linkage collapse
+static int x;
+static int x;
+EXPECT_AST
+[["var", "IS", "Is", "x"]]
 
 
 BEGIN Collapses variable definition into variable declaration (1)

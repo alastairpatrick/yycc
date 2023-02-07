@@ -33,7 +33,7 @@ Decl::Decl(IdentifierScope scope, StorageClass storage_class, const Type* type, 
     : ASTNode(location), scope(scope), type(type), identifier(identifier) {
     if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
         linkage = Linkage::INTERNAL;
-    } else if (storage_class == StorageClass::EXTERN) {
+    } else if (storage_class == StorageClass::EXTERN || scope == IdentifierScope::FILE) {
         linkage = Linkage::EXTERNAL;
     } else {
         linkage = Linkage::NONE;
