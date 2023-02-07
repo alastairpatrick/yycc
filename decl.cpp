@@ -97,12 +97,14 @@ void Variable::print(std::ostream& stream) const {
     stream << ']';
 }
 
-Function::Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, const string* identifier, vector<Variable*>&& params, Statement* body, const Location& location)
+Function::Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, uint32_t specifiers, const string* identifier, vector<Variable*>&& params, Statement* body, const Location& location)
     : Decl(scope, storage_class, type, identifier, location), params(move(params)), body(body) {
     if ((storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) ||
         (storage_class == StorageClass::STATIC && scope != IdentifierScope::FILE)) {
         message(location) << "error invalid storage class\n";
     }
+
+    inline_definition = (linkage == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
 }
 
 bool Function::is_function_definition() const {
@@ -124,10 +126,18 @@ void Function::redeclare(Decl* redeclared) {
         body = redeclared_fn->body;
         params = move(redeclared_fn->params);
     }
+
+    inline_definition = inline_definition && (redeclared_fn->inline_definition || redeclared_fn->scope != IdentifierScope::FILE);
 }
 
 void Function::print(std::ostream& stream) const {
-    stream << "[\"fun\", \"" << linkage << "\", \"" << type << "\", \"" << identifier << '"';
+    stream << "[\"fun\", \"" << linkage;
+
+    if (inline_definition) {
+        stream << 'i';
+    }
+
+    stream << "\", \"" << type << "\", \"" << identifier << '"';
     if (body) {
         stream << ", [";
         for (auto i = 0; i < params.size(); ++i) {

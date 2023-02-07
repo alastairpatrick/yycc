@@ -95,3 +95,11 @@ EXPECT_MESSAGE
 :2:3: error unexpected token
 EXPECT_AST
 [["typedef", "Ls", "p"]]
+
+
+BEGIN Typedef may not be inline
+inline typedef int A;
+EXPECT_MESSAGE
+:1:1: error 'inline' may only appear on function
+EXPECT_AST
+[["typedef", "Is", "A"]]

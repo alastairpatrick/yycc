@@ -264,7 +264,59 @@ EXPECT_AST
 [["block", [["fun", "", "()V", "foo"]]]]
 
 
-BEGIN Function definition with expression statement
+BEGIN Inline function definition with internal linkage drops inline hint
+static inline void foo() {
+}
+EXPECT_AST
+[["fun", "I", "()V", "foo", [], ["block", []]]]
+
+
+BEGIN Inline function definition with external linkage
+inline void foo() {
+}
+EXPECT_AST
+[["fun", "Ei", "()V", "foo", [], ["block", []]]]
+
+
+BEGIN Function definition with extern storage class is not an inline definition
+extern inline void foo() {
+}
+EXPECT_AST
+[["fun", "E", "()V", "foo", [], ["block", []]]]
+
+
+BEGIN Another function declaration lacking inline specifier prevents inline definition (1)
+inline void foo() {
+}
+void foo();
+EXPECT_AST
+[["fun", "E", "()V", "foo", [], ["block", []]]]
+
+
+BEGIN Inline specifier may be given multiple times
+inline void inline foo() {
+}
+EXPECT_AST
+[["fun", "Ei", "()V", "foo", [], ["block", []]]]
+
+
+BEGIN Another function declaration with extern storage class prevents inline definition (2)
+extern void foo();
+inline void foo() {
+}
+EXPECT_AST
+[["fun", "E", "()V", "foo", [], ["block", []]]]
+
+
+BEGIN Parameters may not be inline
+void foo(inline int x);
+EXPECT_MESSAGE
+:1:10: error 'inline' may only appear on function
+EXPECT_AST
+[["fun", "E", "(Is)V", "foo"]]
+
+
+BEGIN Function definition with return statement
 int main(int argc, const char* argv) {
     return argc;
 }

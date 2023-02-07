@@ -44,10 +44,12 @@ struct Variable: Decl {
 };
 
 struct Function: Decl {
-    Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, const string* identifier, vector<Variable*>&& params, Statement* body, const Location& location);
+    Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, uint32_t specifiers, const string* identifier, vector<Variable*>&& params, Statement* body, const Location& location);
 
     vector<Variable*> params;
     Statement* body{};
+
+    bool inline_definition;
 
     virtual bool is_function_definition() const;
     virtual void redeclare(Decl* redeclared);

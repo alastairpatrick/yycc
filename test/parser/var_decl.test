@@ -367,3 +367,10 @@ int x = 1;
 extern int x;
 EXPECT_AST
 [["var", "ES", "Is", "x", "Is1"]]
+
+BEGIN Variable declarations may not be inline
+inline int i;
+EXPECT_MESSAGE
+:1:1: error 'inline' may only appear on function
+EXPECT_AST
+[["var", "ES", "Is", "i"]]

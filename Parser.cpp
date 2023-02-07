@@ -161,13 +161,15 @@ struct Parser {
         return result;
     }
 
-    bool parse_decl_specifiers(StorageClass& storage_class, const Type*& type) {
+    bool parse_decl_specifiers(StorageClass& storage_class, const Type*& type, uint32_t& specifiers) {
         const uint32_t storage_class_mask = (1 << TOK_TYPEDEF) | (1 << TOK_EXTERN) | (1 << TOK_STATIC) | (1 << TOK_AUTO) | (1 << TOK_REGISTER);
         const uint32_t type_qualifier_mask = (1 << TOK_CONST) | (1 << TOK_RESTRICT) | (1 << TOK_VOLATILE);
-        const uint32_t type_specifier_mask = ~(storage_class_mask | type_qualifier_mask);
+        const uint32_t function_specifier_mask = 1 << TOK_INLINE;
+        const uint32_t type_specifier_mask = ~(storage_class_mask | type_qualifier_mask | function_specifier_mask);
 
         Location storage_class_location;
         Location type_specifier_location;
+        Location function_specifier_location;
         Location qualifier_location;
         uint32_t specifier_set = 0;
         uint32_t qualifier_set = 0;
@@ -215,6 +217,12 @@ struct Parser {
                     type = symbols.lookup_type(TypeNameKind::ORDINARY, lexer.identifier);
                 }
 
+                break;
+
+            case TOK_INLINE:
+                should_consume = true;
+                function_specifier_location = lexer.location();
+                specifier_set &= ~(1 << token); // function speficiers may be repeated
                 break;
 
             case TOK_CONST:
@@ -323,6 +331,7 @@ struct Parser {
             type = QualifiedType::of(type, specifier_set & type_qualifier_mask);
         }
 
+        specifiers = specifier_set & function_specifier_mask;
         return true;
     }
 
@@ -334,10 +343,11 @@ struct Parser {
 
         StorageClass storage_class = StorageClass::NONE;
         const Type* type{};
-        if (parse_decl_specifiers(storage_class, type)) {
+        uint32_t specifiers;
+        if (parse_decl_specifiers(storage_class, type, specifiers)) {
             int decl_count = 0;
             while (token && token != ';') {
-                auto decl = parse_declarator(scope, storage_class, type, decl_count == 0, location);
+                auto decl = parse_declarator(scope, storage_class, type, specifiers, decl_count == 0, location);
                 ++ decl_count;
 
                 auto is_function_definition = decl->is_function_definition();
@@ -398,7 +408,8 @@ struct Parser {
         auto location = lexer.location();
         StorageClass storage_class = StorageClass::NONE;
         const Type* type{};
-        if (!parse_decl_specifiers(storage_class, type)) {
+        uint32_t specifiers;
+        if (!parse_decl_specifiers(storage_class, type, specifiers)) {
             // TODO
         }
 
@@ -407,12 +418,12 @@ struct Parser {
             storage_class = StorageClass::NONE;
         }
 
-        return parse_declarator(IdentifierScope::PROTOTYPE, storage_class, type, false, location);        
+        return parse_declarator(IdentifierScope::PROTOTYPE, storage_class, type, specifiers, false, location);        
     }
 
-    Decl* parse_declarator(IdentifierScope scope, StorageClass storage_class, const Type* declaration_type, bool allow_function_def, const Location& location) {
+    Decl* parse_declarator(IdentifierScope scope, StorageClass storage_class, const Type* declaration_type, uint32_t specifiers, bool allow_function_def, const Location& location) {
         if (consume('(')) {
-            auto result = parse_declarator(scope, storage_class, declaration_type, allow_function_def, location);
+            auto result = parse_declarator(scope, storage_class, declaration_type, specifiers, allow_function_def, location);
             require(')');
             return result;
         } else {
@@ -475,6 +486,7 @@ struct Parser {
                     decl = new Function(scope,
                                         storage_class,
                                         static_cast<const FunctionType*>(type),
+                                        specifiers,
                                         identifier,
                                         move(params),
                                         allow_function_def && token == '{' ? parse_compound_statement() : nullptr,
@@ -482,6 +494,10 @@ struct Parser {
                 }
 
                 symbols.pop_scope();
+            }
+
+            if (!decl && (specifiers & (1 << TOK_INLINE))) {
+                message(location) << "error 'inline' may only appear on function\n";
             }
 
             if (storage_class == StorageClass::TYPEDEF) {
