@@ -1,0 +1,311 @@
+BEGIN Function prototype with no parameters (1)
+int foo();
+EXPECT_AST
+[["fun", "", "()Is", "foo"]]
+
+
+BEGIN Function prototype with no parameters (2)
+int foo(void);
+EXPECT_AST
+[["fun", "", "()Is", "foo"]]
+
+
+BEGIN Function prototype with parameters
+void foo(float x, float y);
+EXPECT_AST
+[["fun", "", "(FF)V", "foo"]]
+
+
+BEGIN Error if prototype has multiple void parameters (1)
+int foo(void, void);
+EXPECT_MESSAGE
+:1:15: error a parameter may not have void type
+EXPECT_AST
+[["fun", "", "()Is", "foo"]]
+
+
+BEGIN Error if prototype has multiple void parameters (2)
+int foo(float, void);
+EXPECT_MESSAGE
+:1:16: error a parameter may not have void type
+EXPECT_AST
+[["fun", "", "(F)Is", "foo"]]
+
+
+BEGIN Function parameters of function type are adjusted to pointer
+int foo(int bar(void));
+EXPECT_AST
+[["fun", "", "(P()Is)Is", "foo"]]
+
+
+BEGIN Prototype and external linkage
+extern int foo(float);
+EXPECT_AST
+[["fun", "E", "(F)Is", "foo"]]
+
+
+BEGIN Prototype and internal linkage
+static int foo(float);
+EXPECT_AST
+[["fun", "I", "(F)Is", "foo"]]
+
+
+BEGIN Error if prototype has register storage class
+register int foo(float);
+EXPECT_MESSAGE
+:1:1: error invalid storage class
+EXPECT_AST
+[["fun", "", "(F)Is", "foo"]]
+
+
+BEGIN Error if function parameter has invalid storage class
+int foo(extern float);
+EXPECT_MESSAGE
+:1:9: error invalid storage class
+EXPECT_AST
+[["fun", "", "(F)Is", "foo"]]
+
+
+BEGIN Function parameter with (ignored) register storage class
+void foo(register int);
+EXPECT_AST
+[["fun", "", "(Is)V", "foo"]]
+
+
+BEGIN Consistent prototypes for function
+int foo(signed);
+signed foo(int);
+EXPECT_AST
+[["fun", "", "(Is)Is", "foo"]]
+
+
+BEGIN Error on inconsistent function prototype.
+void foo(int, short);
+void foo(int, int);
+EXPECT_MESSAGE
+:2:1: error redeclaration of 'foo' with different type
+:1:1: see original declaration
+EXPECT_AST
+[["fun", "", "(IsSs)V", "foo"]]
+
+
+BEGIN Function declarations having no linkage collapse
+void foo(int);
+void foo(int);
+EXPECT_AST
+[["fun", "", "(Is)V", "foo"]]
+
+
+BEGIN Function declaration having no linkage collapses with function declaration having external linkage
+void foo(int);
+extern void foo(int);
+EXPECT_AST
+[["fun", "E", "(Is)V", "foo"]]
+
+
+BEGIN Function declaration having no linkage collapses with function declaration having internal linkage
+void foo(int);
+static void foo(int);
+EXPECT_MESSAGE
+:2:1: error static declaration of 'foo' follows non-static
+EXPECT_AST
+[["fun", "", "(Is)V", "foo"]]
+
+
+BEGIN Function declaration having external linkage collapses with function declaration having no linkage
+extern void foo(int);
+void foo(int);
+EXPECT_AST
+[["fun", "E", "(Is)V", "foo"]]
+
+
+BEGIN Function declarations having external linkage collapse
+extern void foo(int);
+extern void foo(int);
+EXPECT_AST
+[["fun", "E", "(Is)V", "foo"]]
+
+
+BEGIN Function declaration having external linkage does not collapse with function declaration having internal linkage
+extern void foo(int);
+static void foo(int);
+EXPECT_MESSAGE
+:2:1: error static declaration of 'foo' follows non-static
+EXPECT_AST
+[["fun", "E", "(Is)V", "foo"]]
+
+
+BEGIN Function declaration having internal linkage collapses with function declaration having no linkage
+static void foo(int);
+void foo(int);
+EXPECT_AST
+[["fun", "I", "(Is)V", "foo"]]
+
+
+BEGIN Function declaration having internal linkage collapses with function declaration having external linkage
+static void foo(int);
+extern void foo(int);
+EXPECT_AST
+[["fun", "I", "(Is)V", "foo"]]
+
+
+BEGIN Function declarations having internal linkage collapse
+static void foo(int);
+static void foo(int);
+EXPECT_AST
+[["fun", "I", "(Is)V", "foo"]]
+
+
+BEGIN Empty function definition
+void foo(int) {
+}
+EXPECT_AST
+[["fun", "", "(Is)V", "foo", [""], ["block", []]]]
+
+
+BEGIN Collapses function definition into function declaration (1)
+static void foo(int);
+void foo(int x) {
+}
+EXPECT_AST
+[["fun", "I", "(Is)V", "foo", ["x"], ["block", []]]]
+
+
+BEGIN Collapses function definition into function declaration (2)
+void foo(int x) {
+}
+extern void foo(int);
+EXPECT_AST
+[["fun", "E", "(Is)V", "foo", ["x"], ["block", []]]]
+
+
+BEGIN Error on function redefinition
+extern void foo(int) {
+}
+extern void foo(int) {
+}
+EXPECT_MESSAGE
+:3:1: error redefinition of 'foo'
+:1:1: see original definition
+EXPECT_AST
+[["fun", "E", "(Is)V", "foo", [""], ["block", []]]]
+
+
+BEGIN File scope none storage class, then block scope extern storage class yields extern
+void foo(int);
+{
+    extern void foo(int);
+}
+EXPECT_AST
+[
+    ["fun", "E", "(Is)V", "foo"],
+    ["block", []]
+]
+
+
+BEGIN Other declarations of identifier at block scope must have same type (1)
+{
+    extern int foo(void);
+    {
+        int foo; // OKAY (no linkage)
+        {
+            extern float foo(void); // ERROR
+        }
+    }
+}
+EXPECT_MESSAGE
+:6:13: error redeclaration of 'foo' with different type
+:2:5: see original declaration
+
+
+BEGIN Other declarations of identifier at block scope must have same type (2)
+{
+    extern int foo(void);
+    {
+        extern int foo;  // ERROR
+    }
+}
+EXPECT_MESSAGE
+:4:9: error redeclaration of 'foo' with different type
+:2:5: see original declaration
+
+
+BEGIN Other declarations of identifier at block scope must have same type (3)
+{
+    extern int a(void);
+}
+{
+    extern float a(void);
+}
+EXPECT_MESSAGE
+:5:5: error redeclaration of 'a' with different type
+:2:5: see original declaration
+
+
+BEGIN Function definition with local variables
+void foo() {
+    int x = 1;
+}
+EXPECT_AST
+[["fun", "", "()V", "foo", [], ["block", [
+    ["var", "", "Is", "x", "Is1"]
+]]]]
+
+
+BEGIN Function definition may not share external declaration with declarators (1)
+int foo, bar(int x) {
+}
+EXPECT_MESSAGE
+:1:21: error unexpected token
+:2:1: error unexpected token
+EXPECT_AST
+[["var", "S", "Is", "foo"]
+,["fun", "", "(Is)Is", "bar"]]
+
+
+BEGIN Function definition may not share external declaration with declarators (2)
+int bar(int x) {
+}, foo;
+EXPECT_MESSAGE
+:2:2: error unexpected token
+:2:4: error use of undeclared identifier 'foo'
+EXPECT_AST
+[
+    ["fun", "", "(Is)Is", "bar", ["x"], ["block", []]],
+    "Is0"
+]
+
+
+BEGIN Parameters have function prototype scope (1)
+int foo(int foo) {
+}
+EXPECT_AST
+[["fun", "", "(Is)Is", "foo", ["foo"], ["block", []]]]
+
+
+BEGIN Parameters have function prototype scope (2)
+int foo(int bar) {
+    int bar;
+}
+EXPECT_AST
+[["fun", "", "(Is)Is", "foo", ["bar"], ["block", [["var", "", "Is", "bar"]]]]]
+
+
+BEGIN Cannot declare static function at block scope
+{
+    static void foo(void);
+}
+EXPECT_MESSAGE
+:2:5: error invalid storage class
+EXPECT_AST
+[["block", [["fun", "", "()V", "foo"]]]]
+
+
+BEGIN Function definition with expression statement
+int main(int argc, const char* argv) {
+    return argc;
+}
+EXPECT_AST
+[["fun", "", "(IsPQcCd)Is", "main", ["argc", "argv"], ["block", [
+    ["return", "Nargc"]
+]]]]

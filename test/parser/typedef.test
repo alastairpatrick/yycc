@@ -1,0 +1,97 @@
+BEGIN Variable declaration of typedef type.
+typedef short foo_t;
+foo_t foo;
+EXPECT_AST
+[["typedef", "Ss", "foo_t"]
+,["var", "S", "Ss", "foo"]]
+
+
+BEGIN Typedef with no declarators
+typedef;
+EXPECT_AST
+[]
+
+
+BEGIN Consistent redefinition of typedef
+typedef int a;
+typedef signed a;
+EXPECT_AST
+[["typedef", "Is", "a"]]
+
+
+BEGIN Inconsistent redefinition of typedef
+typedef int a;
+typedef long a;
+EXPECT_MESSAGE
+:2:1: error redeclaration of 'a' with different type
+:1:1: see original declaration
+EXPECT_AST
+[["typedef", "Is", "a"]]
+
+
+BEGIN Typedefs use block scope
+typedef int a;
+{
+    typedef long a;
+}
+EXPECT_AST
+[
+    ["typedef", "Is", "a"],
+    ["block", [
+        ["typedef", "Ls", "a"]]
+    ]
+]
+
+
+BEGIN Typedef as self
+typedef int a;
+typedef a a;
+EXPECT_AST
+[["typedef", "Is", "a"]]
+
+
+BEGIN Disambiguates between multiplication and variable declaration of pointer type
+int p, q;
+{
+    q * p; // "q" is not a type so this is multiplication.
+    typedef short q;
+    q * v; // now "q" is a type so this declares variable "v" with type "q*".
+}
+EXPECT_AST
+[
+    ["var", "S", "Is", "p"],
+    ["var", "S", "Is", "q"],
+    ["block", [
+        ["*", "Nq", "Np"],
+        ["typedef", "Ss", "q"],
+        ["var", "", "PSs", "v"]
+    ]
+]]
+
+
+BEGIN Typedef goes out of scope immediately following block
+int p, q;
+{
+    typedef long q;
+}
+q * p; // Identifier "q" immediately follows '}'
+EXPECT_AST
+[
+    ["var", "S", "Is", "p"],
+    ["var", "S", "Is", "q"],
+    ["block", [
+        ["typedef", "Ls", "q"]
+    ]],
+    ["*", "Nq", "Np"]
+]
+
+
+BEGIN Typedef may not be used as a variable.
+typedef long p;
+p+p;
+EXPECT_MESSAGE
+:2:2: error expected identifier
+:2:2: error unexpected token
+:2:3: error unexpected token
+EXPECT_AST
+[["typedef", "Ls", "p"]]

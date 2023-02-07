@@ -29,7 +29,9 @@ enum Section {
 };
 
 static const Test tests[] = {
-    { "decl",               TestType::STATEMENTS },
+    { "var_decl",           TestType::STATEMENTS },
+    { "fun_decl",           TestType::STATEMENTS },
+    { "typedef",            TestType::STATEMENTS },
     { "stmt",               TestType::STATEMENTS },
     { "string_literal",     TestType::EXPR },
     { "lex",                TestType::EXPR },
