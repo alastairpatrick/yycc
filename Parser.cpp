@@ -329,7 +329,7 @@ struct Parser {
     // This parses a single declaration or a single statement. It can append multiple items to the
     // statement list when it flattens a single declaration with multiple declarators into multiple
     // declarations, each with a single declarator. The AST has no notion of declarators.
-    void parse_decl_or_statement(ASTNodeVector& list) {
+    void parse_decl_or_statement(IdentifierScope scope, ASTNodeVector& list) {
         auto location = lexer.location();
 
         StorageClass storage_class = StorageClass::NONE;
@@ -337,7 +337,7 @@ struct Parser {
         if (parse_decl_specifiers(storage_class, type)) {
             int decl_count = 0;
             while (token && token != ';') {
-                auto decl = parse_declarator(storage_class, type, decl_count == 0, false, location);
+                auto decl = parse_declarator(scope, storage_class, type, decl_count == 0, location);
                 ++ decl_count;
 
                 auto is_function_definition = decl->is_function_definition();
@@ -382,7 +382,7 @@ struct Parser {
 
         ASTNodeVector list;
         while (token && token != '}') {
-            parse_decl_or_statement(list);
+            parse_decl_or_statement(IdentifierScope::BLOCK, list);
         }
 
         // Must pop scope before consuming '}' in case '}' is immediately followed by an identifier that the
@@ -407,12 +407,12 @@ struct Parser {
             storage_class = StorageClass::NONE;
         }
 
-        return parse_declarator(storage_class, type, false, true, location);        
+        return parse_declarator(IdentifierScope::PROTOTYPE, storage_class, type, false, location);        
     }
 
-    Decl* parse_declarator(StorageClass storage_class, const Type* declaration_type, bool allow_function_def, bool is_parameter, const Location& location) {
+    Decl* parse_declarator(IdentifierScope scope, StorageClass storage_class, const Type* declaration_type, bool allow_function_def, const Location& location) {
         if (consume('(')) {
-            auto result = parse_declarator(storage_class, declaration_type, allow_function_def, is_parameter, location);
+            auto result = parse_declarator(scope, storage_class, declaration_type, allow_function_def, location);
             require(')');
             return result;
         } else {
@@ -469,10 +469,11 @@ struct Parser {
 
                 type = FunctionType::of(type, move(param_types), false);
 
-                if (is_parameter) {
+                if (scope == IdentifierScope::PROTOTYPE) {
                     type = type->pointer_to();
                 } else if (storage_class != StorageClass::TYPEDEF) {
-                    decl = new Function(storage_class,
+                    decl = new Function(scope,
+                                        storage_class,
                                         static_cast<const FunctionType*>(type),
                                         identifier,
                                         move(params),
@@ -484,11 +485,11 @@ struct Parser {
             }
 
             if (storage_class == StorageClass::TYPEDEF) {
-                decl = new TypeDef(type, identifier, location);
+                decl = new TypeDef(scope, type, identifier, location);
             }
 
             if (!decl) {
-                decl = new Variable(storage_class, type, identifier, move(initializer), location);
+                decl = new Variable(scope, storage_class, type, identifier, move(initializer), location);
             }
 
             if (identifier != empty_string()) {
@@ -516,7 +517,7 @@ ASTNodeVector parse_statements(const string& input) {
     ASTNodeVector ast;
     Parser parser(input);
     while (parser.token != 0) {
-        parser.parse_decl_or_statement(ast);
+        parser.parse_decl_or_statement(IdentifierScope::FILE, ast);
     }
     parser.insert_externs(ast);
 

@@ -3,6 +3,12 @@
 
 #include "ASTNode.h"
 
+enum class IdentifierScope {
+    FILE,
+    BLOCK,
+    PROTOTYPE,
+};
+
 enum class StorageClass {
     NONE,
     TYPEDEF,
@@ -21,7 +27,7 @@ enum class DeclKind {
 };
 
 struct Variable: Decl {
-    Variable(StorageClass storage_class, const Type* type, const string* identifier, Expr* initializer, const Location& location);
+    Variable(IdentifierScope scope, StorageClass storage_class, const Type* type, const string* identifier, Expr* initializer, const Location& location);
 
     Expr* initializer{};
 
@@ -30,7 +36,7 @@ struct Variable: Decl {
 };
 
 struct Function: Decl {
-    Function(StorageClass storage_class, const FunctionType* type, const string* identifier, vector<Variable*> params, Statement* body, const Location& location);
+    Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, const string* identifier, vector<Variable*> params, Statement* body, const Location& location);
 
     vector<Variable*> params;
     Statement* body{};
@@ -42,7 +48,7 @@ struct Function: Decl {
 };
 
 struct TypeDef: Decl {
-    TypeDef(const Type* type, const string* identifier, const Location& location);
+    TypeDef(IdentifierScope scope, const Type* type, const string* identifier, const Location& location);
 
     virtual DeclKind kind() const;
     virtual const Type* to_type() const;

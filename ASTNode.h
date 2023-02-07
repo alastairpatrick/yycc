@@ -7,6 +7,7 @@
 #include "Printable.h"
 #include "Type.h"
 
+enum class IdentifierScope;
 enum class DeclKind;
 enum class StorageClass;
 
@@ -23,12 +24,12 @@ typedef vector<ASTNode*> ASTNodeVector;
 ostream& operator<<(ostream& stream, const ASTNodeVector& items);
 
 struct Decl: ASTNode {
-    Decl(StorageClass storage_class, const Type* type, const string* identifier, const Location& location);
+    Decl(IdentifierScope scope, StorageClass storage_class, const Type* type, const string* identifier, const Location& location);
 
+    IdentifierScope scope;
     StorageClass storage_class;
     const Type* type;
     const string* identifier;
-    bool file_scope = false;
 
     // Only one declaration per identifier is retained. Redundant indicates that this delaration is not that.
     // Redundant declarations are added to the AST.

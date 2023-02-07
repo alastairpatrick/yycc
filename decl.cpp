@@ -27,8 +27,8 @@ ostream& operator<<(ostream& stream, StorageClass storage_class) {
     return stream;
 }
 
-Decl::Decl(StorageClass storage_class, const Type* type, const string* identifier, const Location& location)
-    : ASTNode(location), storage_class(storage_class), type(type), identifier(identifier) {
+Decl::Decl(IdentifierScope scope, StorageClass storage_class, const Type* type, const string* identifier, const Location& location)
+    : ASTNode(location), scope(scope), storage_class(storage_class), type(type), identifier(identifier) {
 }
 
 const Type* Decl::to_type() const {
@@ -46,8 +46,8 @@ void Decl::redeclare(Decl* redeclared) {
     }
 }
 
-Variable::Variable(StorageClass storage_class, const Type* type, const string* identifier, Expr* initializer, const Location& location)
-    : Decl(storage_class, type, identifier, location), initializer(initializer) {
+Variable::Variable(IdentifierScope scope, StorageClass storage_class, const Type* type, const string* identifier, Expr* initializer, const Location& location)
+    : Decl(scope, storage_class, type, identifier, location), initializer(initializer) {
 }
 
 DeclKind Variable::kind() const {
@@ -62,9 +62,10 @@ void Variable::print(std::ostream& stream) const {
     stream << ']';
 }
 
-Function::Function(StorageClass storage, const FunctionType* type, const string* identifier, vector<Variable*> params, Statement* body, const Location& location)
-    : Decl(storage, type, identifier, location), params(move(params)), body(body) {
-    if (storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) {
+Function::Function(IdentifierScope scope, StorageClass storage, const FunctionType* type, const string* identifier, vector<Variable*> params, Statement* body, const Location& location)
+    : Decl(scope, storage, type, identifier, location), params(move(params)), body(body) {
+    if ((storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) ||
+        (storage_class == StorageClass::STATIC && scope != IdentifierScope::FILE)) {
         storage_class = StorageClass::NONE;
         message(location) << "error invalid storage class\n";
     }
@@ -109,8 +110,8 @@ void Function::print(std::ostream& stream) const {
     stream << ']';
 }
 
-TypeDef::TypeDef(const Type* type, const string* identifier, const Location& location)
-    : Decl(StorageClass::TYPEDEF, type, identifier, location) {
+TypeDef::TypeDef(IdentifierScope scope, const Type* type, const string* identifier, const Location& location)
+    : Decl(scope, StorageClass::TYPEDEF, type, identifier, location) {
 }
 
 DeclKind TypeDef::kind() const {

@@ -610,6 +610,16 @@ EXPECT_AST
 [["fun", [], "(Is)Is", "foo", ["bar"], ["block", [["var", [], "Is", "bar"]]]]]
 
 
+BEGIN Cannot declare static function at block scope
+{
+    static void foo(void);
+}
+EXPECT_MESSAGE
+:2:5: error invalid storage class
+EXPECT_AST
+[["block", [["fun", [], "()V", "foo"]]]]
+
+
 BEGIN Variable declaration of typedef type.
 typedef short foo_t;
 foo_t foo;

@@ -11,7 +11,7 @@ Decl* SymbolMap::lookup_decl(TypeNameKind kind, const string* name) const {
 
             // Extern declarations with block scope are added to both their clock and to also to file scope.
             // Only return such declarations if found at block scope.
-            if (decl->file_scope || &scope != &scopes.back()) return decl;
+            if (decl->scope == IdentifierScope::FILE || &scope != &scopes.back()) return decl;
         }
     }
     return nullptr;
@@ -25,8 +25,6 @@ const Type* SymbolMap::lookup_type(TypeNameKind kind, const string* name) const 
 }
 
 void SymbolMap::add_decl(TypeNameKind kind, const string* name, Decl* decl) {
-    decl->file_scope = scopes.size() == 1;
-
     auto& scope = decl->storage_class == StorageClass::EXTERN ? scopes.back() : scopes.front();
 
     auto it = scope.declarations.find(name);
@@ -82,8 +80,8 @@ void SymbolMap::add_decl(TypeNameKind kind, const string* name, Decl* decl) {
             existing_decl->storage_class = StorageClass::EXTERN;
         }
 
-        if (decl->file_scope) {
-            existing_decl->file_scope = true;
+        if (decl->scope == IdentifierScope::FILE) {
+            existing_decl->scope = IdentifierScope::FILE;
         }
 
         existing_decl->redeclare(decl);
