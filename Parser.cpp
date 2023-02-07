@@ -337,7 +337,7 @@ struct Parser {
         if (parse_decl_specifiers(storage_class, type)) {
             int decl_count = 0;
             while (token && token != ';') {
-                auto decl = parse_declarator(storage_class, type, decl_count == 0, location);
+                auto decl = parse_declarator(storage_class, type, decl_count == 0, false, location);
                 ++ decl_count;
 
                 auto is_function_definition = decl->is_function_definition();
@@ -402,17 +402,17 @@ struct Parser {
             // TODO
         }
 
-        if (storage_class != StorageClass::NONE) {
-            message(location) << "error a parameter may not have a storage class\n";
+        if (storage_class != StorageClass::NONE && storage_class != StorageClass::REGISTER) {
+            message(location) << "error invalid storage class\n";
             storage_class = StorageClass::NONE;
         }
 
-        return parse_declarator(storage_class, type, false, location);        
+        return parse_declarator(storage_class, type, false, true, location);        
     }
 
-    Decl* parse_declarator(StorageClass storage_class, const Type* declaration_type, bool allow_function_def, const Location& location) {
+    Decl* parse_declarator(StorageClass storage_class, const Type* declaration_type, bool allow_function_def, bool is_parameter, const Location& location) {
         if (consume('(')) {
-            auto result = parse_declarator(storage_class, declaration_type, allow_function_def, location);
+            auto result = parse_declarator(storage_class, declaration_type, allow_function_def, is_parameter, location);
             require(')');
             return result;
         } else {
@@ -449,7 +449,12 @@ struct Parser {
                 bool seen_void = false;
                 while (token && !consume(')')) {
                     auto decl = parse_parameter_decl();
-                    params.push_back(dynamic_cast<Variable*>(decl));  // TODO: what if it's not a variable!
+
+                    // Functions are adjusted to variable of function pointer type.
+                    auto variable = dynamic_cast<Variable*>(decl);
+                    assert(variable);
+
+                    params.push_back(variable);
 
                     if (decl->type == &VoidType::it) {
                         if (seen_void || !param_types.empty()) {
@@ -459,13 +464,14 @@ struct Parser {
                     } else {
                         param_types.push_back(decl->type);
                     }
-
                     consume(',');
                 }
 
                 type = FunctionType::of(type, move(param_types), false);
 
-                if (storage_class != StorageClass::TYPEDEF) {
+                if (is_parameter) {
+                    type = type->pointer_to();
+                } else if (storage_class != StorageClass::TYPEDEF) {
                     decl = new Function(storage_class,
                                         static_cast<const FunctionType*>(type),
                                         identifier,

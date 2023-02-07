@@ -66,7 +66,7 @@ Function::Function(StorageClass storage, const FunctionType* type, const string*
     : Decl(storage, type, identifier, location), params(move(params)), body(body) {
     if (storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) {
         storage_class = StorageClass::NONE;
-        message(location) << "error invalid storage class for a function\n";
+        message(location) << "error invalid storage class\n";
     }
 }
 

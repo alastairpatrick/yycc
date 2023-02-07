@@ -351,6 +351,12 @@ EXPECT_AST
 [["fun", [], "(F)Is", "foo"]]
 
 
+BEGIN Function parameters of function type are adjusted to pointer
+int foo(int bar(void));
+EXPECT_AST
+[["fun", [], "(P()Is)Is", "foo"]]
+
+
 BEGIN Prototype and external linkage
 extern int foo(float);
 EXPECT_AST
@@ -366,17 +372,23 @@ EXPECT_AST
 BEGIN Error if prototype has register storage class
 register int foo(float);
 EXPECT_MESSAGE
-:1:1: error invalid storage class for a function
+:1:1: error invalid storage class
 EXPECT_AST
 [["fun", [], "(F)Is", "foo"]]
 
 
-BEGIN Error if function parameter has storage class
+BEGIN Error if function parameter has invalid storage class
 static int foo(extern float);
 EXPECT_MESSAGE
-:1:16: error a parameter may not have a storage class
+:1:16: error invalid storage class
 EXPECT_AST
 [["fun", ["static"], "(F)Is", "foo"]]
+
+
+BEGIN Function parameter with (ignored) register storage class
+void foo(register int);
+EXPECT_AST
+[["fun", [], "(Is)V", "foo"]]
 
 
 BEGIN Consistent prototypes for function
