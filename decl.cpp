@@ -50,10 +50,6 @@ Variable::Variable(IdentifierScope scope, StorageClass storage_class, const Type
     : Decl(scope, storage_class, type, identifier, location), initializer(initializer) {
 }
 
-DeclKind Variable::kind() const {
-    return DeclKind::VARIABLE;
-}
-
 void Variable::print(std::ostream& stream) const {
     stream << "[\"var\", [" << storage_class << "], \"" << type << "\", \"" << identifier  << "\"";
     if (initializer) {
@@ -69,10 +65,6 @@ Function::Function(IdentifierScope scope, StorageClass storage, const FunctionTy
         storage_class = StorageClass::NONE;
         message(location) << "error invalid storage class\n";
     }
-}
-
-DeclKind Function::kind() const {
-    return DeclKind::FUNCTION;
 }
 
 bool Function::is_function_definition() const {
@@ -112,10 +104,6 @@ void Function::print(std::ostream& stream) const {
 
 TypeDef::TypeDef(IdentifierScope scope, const Type* type, const string* identifier, const Location& location)
     : Decl(scope, StorageClass::TYPEDEF, type, identifier, location) {
-}
-
-DeclKind TypeDef::kind() const {
-    return DeclKind::TYPEDEF;
 }
 
 const Type* TypeDef::to_type() const {

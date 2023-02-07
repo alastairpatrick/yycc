@@ -8,7 +8,6 @@
 #include "Type.h"
 
 enum class IdentifierScope;
-enum class DeclKind;
 enum class StorageClass;
 
 struct ASTNode: Printable {
@@ -35,7 +34,6 @@ struct Decl: ASTNode {
     // Redundant declarations are added to the AST.
     bool redundant = false;
 
-    virtual DeclKind kind() const = 0;
     virtual const Type* to_type() const;
     virtual bool is_function_definition() const;
     virtual void redeclare(Decl* redeclared);
