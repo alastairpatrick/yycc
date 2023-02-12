@@ -42,11 +42,25 @@ EXPECT_MESSAGE
 :1:9: error unexpected character '@'
 
 
+BEGIN Skips pragma
+1
+#pragma hello
+ # /*
+*/ pragma
+EXPECT_AST
+"Is1"
+
+
 BEGIN Skips line directive
-#line 1 // foo
+#line 1 
+ # line 1
 1
 #line 2 "foo.c"
 #line 3"foo.c"
+#line /*
+*/ 4 /***/ "foo.c"
+# /*
+*/ line 5
 EXPECT_AST
 "Is1"
 
@@ -65,3 +79,13 @@ BEGIN Line directive resets line and optionally filename
 @
 EXPECT_MESSAGE
 foo.c:7:1: error unexpected character '@'
+
+
+BEGIN Error on unrecognized directive
+//
+#hello
+1
+EXPECT_MESSAGE
+:2:7: error unexpected directive
+EXPECT_AST
+"Is1"

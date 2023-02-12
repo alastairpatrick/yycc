@@ -16,16 +16,11 @@
     int parse_char_lit(const char* text);
     int parse_string_lit(const char* text, size_t capacity_hint);
     int check_identifier(std::string&& identifier);
+    void handle_directive();
     void parse_line_directive(const char* text);
-    void new_line();
 
     unordered_set<string> filenames;
     const char* current_filename = "";
-
-    // To be applied on next line
-    size_t pending_line = 0;
-    bool has_pending_line = false;
-    const char* pending_filename = nullptr;
 
     ostream& message();
 
@@ -48,6 +43,9 @@ public:
     string string_lit;  // UTF-8 with C string literal escape sequences expanded
 
     const string* identifier;  // UTF-8
+
+    string directive_kind;
+    string directive;
 };
 
 %{
@@ -73,9 +71,35 @@ HW              [ \t\v\f\r]
 
 STRING          \"(\\.|[^\\"\n])*\"
 
+%xstate C
+%xstate D1
+%xstate D2
+
 %%
+
+
+<*> {
+
 "/*"            { skip_comment(); }
 "//"[^\n]*      { }
+{HW}+           { }
+
+}
+
+// This is the state at the start of the file and the start of each line. From here, switch to state
+// D1 if there is a directive or C otherwise.
+<INITIAL> {
+
+\n                  { }
+"#"                 { start(D1); }
+.                   { matcher().unput(text()[0]); start(C); }
+
+}
+
+// Tokenize regular C code until end of line.
+<C> {
+
+\n              { start(INITIAL); }
 
 "auto"          { return TOK_AUTO; }
 "_Bool"         { return TOK_BOOL; }
@@ -179,13 +203,30 @@ L?\"(\\.|[^\\"\n])*\"       { return parse_string_lit(text(), size()); }
 "|"             { return '|'; }
 "?"             { return '?'; }
 
-{HW}+           { }
-\n              { new_line(); }
-
 .               { message() << "error unexpected character '" << text() << "'\n"; }
 
-"#line"{HW}+{D}+({HW}*{STRING})?
-                { parse_line_directive(text() + 5); }
+}
+
+// Determine the kind of directive and transition to D2.
+<D1> {
+
+{L}({L}|{D})*   { directive_kind = str(); start(D2); }
+.               { message() << "error unexpected directive\n"; matcher().skip('\n'); start(INITIAL); }
+
+}
+
+// Tokenize directive until end of line.
+<D2> {
+
+{L}({L}|{D})*   { directive += str() + " "; }
+{STRING}        { directive += str() + " "; }
+{D}+            { directive += str() + " "; }
+
+\n              { handle_directive(); start(INITIAL); }
+
+.               { directive += str() + " "; }
+
+}
 
 %%
 
@@ -431,31 +472,28 @@ int Lexer::parse_string_lit(const char* text, size_t capacity_hint) {
     return TOK_STRING_LITERAL;
 }
 
+void Lexer::handle_directive() {
+    if (directive_kind == "line") {
+        parse_line_directive(directive.c_str());
+    } else if (directive_kind == "pragma") {
+    } else {
+        message() << "error unexpected directive\n";
+    }
+
+    directive.clear();
+}
+
 void Lexer::parse_line_directive(const char* text) {
     const char* p = text;
     while (isspace(*p)) ++p;
 
-    pending_line = strtoll(p, (char**) &p, 10);
-    has_pending_line = true;
+    lineno(strtoll(p, (char**) &p, 10) - 1);
 
     while (isspace(*p)) ++p;
 
     if (*p == '"') {
         parse_string_lit(p, 0);
-        pending_filename = filenames.insert(string_lit).first->c_str();
-    }
-}
-
-void Lexer::new_line() {
-    if (has_pending_line) {
-        // The line number has not been updated to reflect the new line we're handling yet.
-        lineno(pending_line - 1);
-        has_pending_line = false;
-    }
-
-    if (pending_filename) {
-        current_filename = pending_filename;
-        pending_filename = nullptr;
+        current_filename = filenames.insert(string_lit).first->c_str();
     }
 }
 
