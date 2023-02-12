@@ -1,7 +1,7 @@
 BEGIN Variable
 x
-EXPECT_MESSAGE
-:1:1: error use of undeclared identifier 'x'
+EXPECT_AST
+"Nx"
 
 
 BEGIN Condition expression

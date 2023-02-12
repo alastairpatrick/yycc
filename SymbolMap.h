@@ -6,6 +6,7 @@
 #include "Type.h"
 
 struct Decl;
+struct Mystery;
 
 struct SymbolMap {
     struct Scope {
@@ -13,8 +14,10 @@ struct SymbolMap {
     };
     list<Scope> scopes;
 
-    Decl* lookup_decl(TypeNameKind kind, const string* name) const;
-    const Type* lookup_type(TypeNameKind kind, const string* name) const;
+    unordered_map<const string*, Mystery*> mysteries;
+
+    Decl* lookup_decl(TypeNameKind kind, const string* name);
+    const Type* lookup_type(TypeNameKind kind, const string* name);
     void add_decl(TypeNameKind kind, const string* name, Decl* decl);
 
     void push_scope();

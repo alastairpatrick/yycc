@@ -19,7 +19,7 @@ struct Type: Printable {
 
     virtual const Type* promote() const;
 
-    virtual const Type* resolve(const SymbolMap& scope) const;
+    virtual const Type* resolve(SymbolMap& scope) const;
 
     virtual LLVMValueRef convert_to_type(CodeGenContext* context, LLVMValueRef value, const Type* to_type) const;
 
@@ -97,7 +97,7 @@ const Type* convert_arithmetic(const Type* left, const Type* right);
 struct PointerType: Type {
     const Type* const base_type;
 
-    virtual const Type* resolve(const SymbolMap& scope) const;
+    virtual const Type* resolve(SymbolMap& scope) const;
 
     virtual LLVMTypeRef llvm_type() const;
 
@@ -124,7 +124,7 @@ struct QualifiedType: Type {
     virtual unsigned qualifiers() const;
     virtual const Type* unqualified() const;
 
-    virtual const Type* resolve(const SymbolMap& scope) const;
+    virtual const Type* resolve(SymbolMap& scope) const;
 
     virtual LLVMTypeRef llvm_type() const;
 
@@ -142,7 +142,7 @@ struct FunctionType: Type {
     const std::vector<const Type*> parameter_types;
     const bool variadic;
 
-    virtual const Type* resolve(const SymbolMap& scope) const;
+    virtual const Type* resolve(SymbolMap& scope) const;
 
     virtual LLVMTypeRef llvm_type() const;
 
@@ -167,7 +167,7 @@ struct TypeName: Type {
     const TypeNameKind kind;
     const string* name;
 
-    virtual const Type* resolve(const SymbolMap& scope) const;
+    virtual const Type* resolve(SymbolMap& scope) const;
 
     virtual LLVMTypeRef llvm_type() const;
 

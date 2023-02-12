@@ -48,6 +48,9 @@ bool Decl::is_function_definition() const {
     return false;
 }
 
+void Decl::parse_combine(Decl* other_decl) {
+}
+
 void Decl::redeclare(Decl* redeclared) {
     if (type != redeclared->type) {
         message(redeclared->location) << "error redeclaration of '" << redeclared->identifier << "' with different type\n";
@@ -104,11 +107,20 @@ Function::Function(IdentifierScope scope, StorageClass storage_class, const Func
         message(location) << "error invalid storage class\n";
     }
 
+    // It's very valuable to determine which functions with external linkage are inline definitions, because they don't need to be
+    // written to the AST file; another translation unit is guaranteed to have an external definition.
     inline_definition = (linkage == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
 }
 
 bool Function::is_function_definition() const {
     return body != nullptr;
+}
+
+void Function::parse_combine(Decl* other_decl) {
+    auto other = dynamic_cast<Function*>(other_decl);
+    if (!other) return;
+
+    other->inline_definition = inline_definition = inline_definition && other->inline_definition;
 }
 
 void Function::redeclare(Decl* redeclared) {
@@ -126,8 +138,6 @@ void Function::redeclare(Decl* redeclared) {
         body = redeclared_fn->body;
         params = move(redeclared_fn->params);
     }
-
-    inline_definition = inline_definition && (redeclared_fn->inline_definition || redeclared_fn->scope != IdentifierScope::FILE);
 }
 
 void Function::print(std::ostream& stream) const {
@@ -160,4 +170,12 @@ const Type* TypeDef::to_type() const {
 
 void TypeDef::print(std::ostream& stream) const {
     stream << "[\"typedef\", \"" << type << "\", \"" << identifier  << "\"]";
+}
+
+Mystery::Mystery(const string* identifier)
+    : Decl(IdentifierScope::FILE, StorageClass::NONE, nullptr, identifier, Location()) {
+}
+
+void Mystery::print(std::ostream& stream) const {
+    stream << "[\"mystery\", \"" << identifier << "\"]";
 }

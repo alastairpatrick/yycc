@@ -34,7 +34,7 @@ const Type* Type::promote() const {
     return this;
 }
 
-const Type* Type::resolve(const SymbolMap& scope) const {
+const Type* Type::resolve(SymbolMap& scope) const {
     return this;
 }
 
@@ -289,7 +289,7 @@ const Type* convert_arithmetic(const Type* left, const Type* right) {
     return nullptr;
 }
 
-const Type* PointerType::resolve(const SymbolMap& scope) const {
+const Type* PointerType::resolve(SymbolMap& scope) const {
     return base_type->resolve(scope)->pointer_to();
 }
 
@@ -326,7 +326,7 @@ const Type* QualifiedType::unqualified() const {
     return base_type;
 }
 
-const Type* QualifiedType::resolve(const SymbolMap& scope) const {
+const Type* QualifiedType::resolve(SymbolMap& scope) const {
     return QualifiedType::of(base_type->resolve(scope), qualifier_flags);
 }
 
@@ -367,7 +367,7 @@ const FunctionType* FunctionType::of(const Type* return_type, std::vector<const 
     return type;
 }
 
-const Type* FunctionType::resolve(const SymbolMap& scope) const {
+const Type* FunctionType::resolve(SymbolMap& scope) const {
     auto resolved_return_type = return_type->resolve(scope);
     auto resolved_param_types(parameter_types);
     for (auto& param_type : resolved_param_types) {
@@ -406,7 +406,7 @@ const TypeName* TypeName::of(TypeNameKind kind, const string* name) {
     return type;
 }
 
-const Type* TypeName::resolve(const SymbolMap& symbols) const {
+const Type* TypeName::resolve(SymbolMap& symbols) const {
     auto decl = dynamic_cast<const TypeDef*>(symbols.lookup_decl(kind, name));
     if (!decl) {
         // TODO

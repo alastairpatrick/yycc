@@ -31,7 +31,7 @@ enum Token {
     TOK_STRUCT,
     TOK_UNION,
     TOK_ENUM,
-    TOK_TYPE_IDENTIFIER,
+    TOK_TYPEDEF_IDENTIFIER,
 
     TOK_INLINE,
 

@@ -52,6 +52,7 @@ struct Function: Decl {
     bool inline_definition;
 
     virtual bool is_function_definition() const;
+    virtual void parse_combine(Decl* other_decl);
     virtual void redeclare(Decl* redeclared);
     virtual void print(std::ostream& stream) const;
 };
@@ -60,6 +61,12 @@ struct TypeDef: Decl {
     TypeDef(IdentifierScope scope, const Type* type, const string* identifier, const Location& location);
 
     virtual const Type* to_type() const;
+    virtual void print(std::ostream& stream) const;
+};
+
+struct Mystery: Decl {
+    Mystery(const string* identifier);
+
     virtual void print(std::ostream& stream) const;
 };
 

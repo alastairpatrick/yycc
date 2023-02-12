@@ -72,51 +72,44 @@ EXPECT_AST
 [["fun", "E", "(Is)V", "foo"]]
 
 
-BEGIN Consistent prototypes for function
+BEGIN Multiple function declarations
 int foo(signed);
 signed foo(int);
 EXPECT_AST
-[["fun", "E", "(Is)Is", "foo"]]
+[["fun", "E", "(Is)Is", "foo"]
+,["fun","E","(Is)Is","foo"]]
 
 
-BEGIN Error on inconsistent function prototype.
-void foo(int, short);
-void foo(int, int);
-EXPECT_MESSAGE
-:2:1: error redeclaration of 'foo' with different type
-:1:1: see original declaration
-EXPECT_AST
-[["fun", "E", "(IsSs)V", "foo"]]
-
-
-BEGIN Function declarations having external linkage collapse
-extern void foo(int);
+BEGIN Multiple function declarations having external linkage
+extern void foo(short);
 extern void foo(int);
 EXPECT_AST
-[["fun", "E", "(Is)V", "foo"]]
+[["fun", "E", "(Ss)V", "foo"]
+,["fun", "E", "(Is)V", "foo"]]
 
 
-BEGIN Function declaration having external linkage does not collapse with function declaration having internal linkage
+BEGIN Function declaration having external linkage may preceed function declaration having internal linkage
 extern void foo(int);
 static void foo(int);
-EXPECT_MESSAGE
-:2:1: error static declaration of 'foo' follows non-static
 EXPECT_AST
-[["fun", "E", "(Is)V", "foo"]]
+[["fun","E","(Is)V","foo"]
+,["fun","I","(Is)V","foo"]]
 
 
-BEGIN Function declaration having internal linkage collapses with function declaration having external linkage
+BEGIN Function declaration having internal linkage may preceed function declaration having external linkage
 static void foo(int);
 extern void foo(int);
 EXPECT_AST
-[["fun", "I", "(Is)V", "foo"]]
+[["fun","I","(Is)V","foo"]
+,["fun","E","(Is)V","foo"]]
 
 
 BEGIN Function declarations having internal linkage collapse
 static void foo(int);
 static void foo(int);
 EXPECT_AST
-[["fun", "I", "(Is)V", "foo"]]
+[["fun","I","(Is)V","foo"]
+,["fun","I","(Is)V","foo"]]
 
 
 BEGIN Empty function definition
@@ -126,35 +119,25 @@ EXPECT_AST
 [["fun", "E", "(Is)V", "foo", [""], ["block", []]]]
 
 
-BEGIN Collapses function definition into function declaration (1)
+BEGIN Function definition with function declaration (1)
 static void foo(int);
 void foo(int x) {
 }
 EXPECT_AST
-[["fun", "I", "(Is)V", "foo", ["x"], ["block", []]]]
+[["fun","I","(Is)V","foo"]
+,["fun","E","(Is)V","foo",["x"],["block",[]]]]
 
 
-BEGIN Collapses function definition into function declaration (2)
+BEGIN Function definition with function declaration (2)
 void foo(int x) {
 }
 extern void foo(int);
 EXPECT_AST
-[["fun", "E", "(Is)V", "foo", ["x"], ["block", []]]]
+[["fun","E","(Is)V","foo",["x"],["block",[]]]
+,["fun","E","(Is)V","foo"]]
 
 
-BEGIN Error on function redefinition
-extern void foo(int) {
-}
-extern void foo(int) {
-}
-EXPECT_MESSAGE
-:3:1: error redefinition of 'foo'
-:1:1: see original definition
-EXPECT_AST
-[["fun", "E", "(Is)V", "foo", [""], ["block", []]]]
-
-
-BEGIN File scope none storage class, then block scope extern storage class yields extern
+BEGIN Block scope extern storage class
 void foo(int);
 {
     extern void foo(int);
@@ -162,47 +145,10 @@ void foo(int);
 EXPECT_AST
 [
     ["fun", "E", "(Is)V", "foo"],
-    ["block", []]
+    ["block", [
+        ["fun","E","(Is)V","foo"]
+    ]]
 ]
-
-
-BEGIN Other declarations of identifier at block scope must have same type (1)
-{
-    extern int foo(void);
-    {
-        int foo; // OKAY (no linkage)
-        {
-            extern float foo(void); // ERROR
-        }
-    }
-}
-EXPECT_MESSAGE
-:6:13: error redeclaration of 'foo' with different type
-:2:5: see original declaration
-
-
-BEGIN Other declarations of identifier at block scope must have same type (2)
-{
-    extern int foo(void);
-    {
-        extern int foo;  // ERROR
-    }
-}
-EXPECT_MESSAGE
-:4:9: error redeclaration of 'foo' with different type
-:2:5: see original declaration
-
-
-BEGIN Other declarations of identifier at block scope must have same type (3)
-{
-    extern int a(void);
-}
-{
-    extern float a(void);
-}
-EXPECT_MESSAGE
-:5:5: error redeclaration of 'a' with different type
-:2:5: see original declaration
 
 
 BEGIN Function definition with local variables
@@ -231,11 +177,10 @@ int bar(int x) {
 }, foo;
 EXPECT_MESSAGE
 :2:2: error unexpected token
-:2:4: error use of undeclared identifier 'foo'
 EXPECT_AST
 [
     ["fun", "E", "(Is)Is", "bar", ["x"], ["block", []]],
-    "Is0"
+    "Nfoo"
 ]
 
 
@@ -264,33 +209,43 @@ EXPECT_AST
 [["block", [["fun", "", "()V", "foo"]]]]
 
 
-BEGIN Inline function definition with internal linkage drops inline hint
+BEGIN Inline function with internal linkage
 static inline void foo() {
 }
 EXPECT_AST
 [["fun", "I", "()V", "foo", [], ["block", []]]]
 
 
-BEGIN Inline function definition with external linkage
+BEGIN Inline definition
 inline void foo() {
 }
 EXPECT_AST
 [["fun", "Ei", "()V", "foo", [], ["block", []]]]
 
 
-BEGIN Function definition with extern storage class is not an inline definition
+BEGIN Extern storage class prevents inline definition (1)
 extern inline void foo() {
 }
 EXPECT_AST
 [["fun", "E", "()V", "foo", [], ["block", []]]]
 
 
-BEGIN Another function declaration lacking inline specifier prevents inline definition (1)
+BEGIN Extern storage class prevents inline definition (2)
+extern void foo();
 inline void foo() {
 }
-void foo();
 EXPECT_AST
-[["fun", "E", "()V", "foo", [], ["block", []]]]
+[["fun","E","()V","foo"]
+,["fun","E","()V","foo",[],["block",[]]]]
+
+
+BEGIN Extern storage class prevents inline definition (3)
+inline void foo() {
+}
+extern void foo();
+EXPECT_AST
+[["fun","E","()V","foo",[],["block",[]]]
+,["fun","E","()V","foo"]]
 
 
 BEGIN Inline specifier may be given multiple times
@@ -298,14 +253,6 @@ inline void inline foo() {
 }
 EXPECT_AST
 [["fun", "Ei", "()V", "foo", [], ["block", []]]]
-
-
-BEGIN Another function declaration with extern storage class prevents inline definition (2)
-extern void foo();
-inline void foo() {
-}
-EXPECT_AST
-[["fun", "E", "()V", "foo", [], ["block", []]]]
 
 
 BEGIN Parameters may not be inline

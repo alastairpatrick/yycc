@@ -30,13 +30,11 @@ struct Decl: ASTNode {
     Linkage linkage;
     const Type* type;
     const string* identifier;
-
-    // Only one declaration per identifier is retained. Redundant indicates that this delaration is not that.
-    // Redundant declarations are added to the AST.
-    bool redundant = false;
+    Decl* scope_next{};
 
     virtual const Type* to_type() const;
     virtual bool is_function_definition() const;
+    virtual void parse_combine(Decl* other_decl);
     virtual void redeclare(Decl* redeclared);
     virtual void print(std::ostream& stream) const = 0;
 };

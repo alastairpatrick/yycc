@@ -132,15 +132,11 @@ struct Parser {
             }
             else if (token == TOK_IDENTIFIER) {
                 Decl* decl = symbols.lookup_decl(TypeNameKind::ORDINARY, lexer.identifier);
-                if (!decl) {
-                    message(lexer.location()) << "error use of undeclared identifier '" << lexer.identifier << "'\n";
-                    result = new IntegerConstant(0, IntegerType::default_type(), lexer.location());
-                } else {
-                    // Token would have to be TOK_TYPE_IDENTIFIER for decl to be a typedef.
-                    assert(!dynamic_cast<TypeDef*>(decl));
 
-                    result = new NameExpr(decl, loc);
-                }
+                // Token would have to be TOK_TYPEDEF_IDENTIFIER for decl to be a typedef.
+                assert(!dynamic_cast<TypeDef*>(decl));
+
+                result = new NameExpr(decl, loc);
                 consume();
                 break;
             } else if (consume('(')) {
@@ -210,7 +206,7 @@ struct Parser {
                 type_specifier_location = lexer.location();                
                 break;
 
-            case TOK_TYPE_IDENTIFIER:
+            case TOK_TYPEDEF_IDENTIFIER:
                 if ((specifier_set & type_specifier_mask) == 0) {
                     should_consume = true;
                     type_specifier_location = lexer.location();                
@@ -318,7 +314,7 @@ struct Parser {
         case (1 << TOK_BOOL):
             type = IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL);
             break;
-        case (1 << TOK_TYPE_IDENTIFIER):
+        case (1 << TOK_TYPEDEF_IDENTIFIER):
             assert(type);
             break;
         default:
@@ -353,12 +349,8 @@ struct Parser {
                 auto is_function_definition = decl->is_function_definition();
                 if (decl->identifier == empty_string()) {
                     message(lexer.location()) << "error expected identifier\n";
-                } else if (!decl->redundant) {
-                    if (decl->linkage != Linkage::EXTERNAL) {
-                        list.push_back(decl);
-                    } else {
-                        extern_decls.push_back(decl);
-                    }
+                } else {
+                    list.push_back(decl);
                 }
 
                 // No ';' after function definition.
@@ -396,7 +388,7 @@ struct Parser {
         }
 
         // Must pop scope before consuming '}' in case '}' is immediately followed by an identifier that the
-        // lexer must correctly identify as TOK_IDENTIFIER or TOK_TYPE_IDENTIFIER.
+        // lexer must correctly identify as TOK_IDENTIFIER or TOK_TYPEDEF_IDENTIFIER.
         symbols.pop_scope();
 
         require('}');
@@ -443,7 +435,7 @@ struct Parser {
             }
 
             const string* identifier = lexer.identifier;
-            if (!consume(TOK_IDENTIFIER) && !consume(TOK_TYPE_IDENTIFIER)) identifier = empty_string();
+            if (!consume(TOK_IDENTIFIER) && !consume(TOK_TYPEDEF_IDENTIFIER)) identifier = empty_string();
 
             Expr* initializer{};
             if (consume('=')) {

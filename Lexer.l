@@ -15,7 +15,7 @@
     int parse_float_lit(const char* text);
     int parse_char_lit(const char* text);
     int parse_string_lit(const char* text, size_t capacity_hint);
-    int check_identifier(std::string identifier);
+    int check_identifier(std::string&& identifier);
     void parse_line_directive(const char* text);
     void new_line();
 
@@ -29,7 +29,7 @@
 
     ostream& message();
 
-    const SymbolMap& symbols;
+    SymbolMap& symbols;
 
 public:
 
@@ -55,6 +55,7 @@ public:
 #include <stdio.h>
 
 #include "CompileContext.h"
+#include "Decl.h"
 #include "Token.h"
 
 static void comment(void);
@@ -458,8 +459,9 @@ void Lexer::new_line() {
     }
 }
 
-int Lexer::check_identifier(std::string id)
+int Lexer::check_identifier(std::string&& id)
 {
     identifier = intern(std::move(id));
-    return symbols.lookup_type(TypeNameKind::ORDINARY, identifier) ? TOK_TYPE_IDENTIFIER : TOK_IDENTIFIER;
+    auto decl = symbols.lookup_decl(TypeNameKind::ORDINARY, identifier);
+    return (decl && dynamic_cast<TypeDef*>(decl)) ? TOK_TYPEDEF_IDENTIFIER : TOK_IDENTIFIER;
 }

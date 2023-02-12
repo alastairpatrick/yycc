@@ -311,62 +311,68 @@ EXPECT_AST
 ,["var", "ES", "PIs", "y"]]
 
 
-BEGIN Variable declarations having external linkage collapse
+BEGIN Variable redeclarations having external linkage
 extern int x;
 extern int x;
 EXPECT_AST
-[["var", "ESX", "Is", "x"]]
+[["var", "ESX", "Is", "x"]
+,["var", "ESX", "Is", "x"]]
 
 
-BEGIN Variable declaration having external linkage does not collapse with variable declaration having internal linkage
+BEGIN Variable declaration having external linkage may preceed variable declaration having internal linkage
 extern int x;
 static int x;
-EXPECT_MESSAGE
-:2:1: error static declaration of 'x' follows non-static
 EXPECT_AST
-[["var", "ES", "Is", "x"]]
+[["var","ESX","Is","x"]
+,["var","IS","Is","x"]]
 
 
-BEGIN Variable declaration having internal linkage collapses with variable declaration having external linkage
+BEGIN Variable declaration having internal linkage may preceed variable declaration having external linkage
 static int x;
 extern int x;
 EXPECT_AST
-[["var", "IS", "Is", "x"]]
+[["var","IS","Is","x"]
+,["var","ESX","Is","x"]]
 
 
-BEGIN Variable declarations having internal linkage collapse
+BEGIN Multiple variable declarations having internal linkage
 static int x;
 static int x;
 EXPECT_AST
-[["var", "IS", "Is", "x"]]
+[["var", "IS", "Is", "x"]
+,["var", "IS", "Is", "x"]]
 
 
-BEGIN Collapses variable definition into variable declaration (1)
+BEGIN Variable definition can follow variable declaration
 extern int x;
 int x;
 EXPECT_AST
-[["var", "ES", "Is", "x"]]
+[["var","ESX","Is","x"]
+,["var","ES","Is","x"]]
 
 
-BEGIN Collapses variable definition into variable declaration (2)
+BEGIN Variable definition can preceed variable declaration
 int x;
 extern int x;
 EXPECT_AST
-[["var", "ES", "Is", "x"]]
+[["var","ES","Is","x"],
+["var","ESX","Is","x"]]
 
 
-BEGIN Collapses variable initialization into variable declaration (1)
+BEGIN Variable initialization following variable declaration
 extern int x;
 int x = 1;
 EXPECT_AST
-[["var", "ES", "Is", "x", "Is1"]]
+[["var","ESX","Is","x"]
+,["var","ES","Is","x","Is1"]]
 
 
-BEGIN Collapses variable initialization  into variable declaration (2)
+BEGIN Variable initialization preceeding variable declaration
 int x = 1;
 extern int x;
 EXPECT_AST
-[["var", "ES", "Is", "x", "Is1"]]
+[["var", "ES", "Is", "x", "Is1"]
+,["var","ESX","Is","x"]]
 
 BEGIN Variable declarations may not be inline
 inline int i;

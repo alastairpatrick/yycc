@@ -12,21 +12,12 @@ EXPECT_AST
 []
 
 
-BEGIN Consistent redefinition of typedef
+BEGIN Redefinition of typedef
 typedef int a;
 typedef signed a;
 EXPECT_AST
-[["typedef", "Is", "a"]]
-
-
-BEGIN Inconsistent redefinition of typedef
-typedef int a;
-typedef long a;
-EXPECT_MESSAGE
-:2:1: error redeclaration of 'a' with different type
-:1:1: see original declaration
-EXPECT_AST
-[["typedef", "Is", "a"]]
+[["typedef", "Is", "a"]
+,["typedef", "Is", "a"]]
 
 
 BEGIN Typedefs use block scope
@@ -47,7 +38,8 @@ BEGIN Typedef as self
 typedef int a;
 typedef a a;
 EXPECT_AST
-[["typedef", "Is", "a"]]
+[["typedef", "Is", "a"]
+,["typedef", "Is", "a"]]
 
 
 BEGIN Disambiguates between multiplication and variable declaration of pointer type
