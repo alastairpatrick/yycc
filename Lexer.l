@@ -4,6 +4,12 @@
 #include "Location.h"
 #include "SymbolMap.h"
 #include "Type.h"
+
+enum class DirectiveKind {
+    NONE,
+    LINE,
+    PRAGMA,
+};
 }
 
 %option ctorarg="SymbolMap& symbols"
@@ -44,7 +50,7 @@ public:
 
     const string* identifier;  // UTF-8
 
-    string directive_kind;
+    DirectiveKind directive_kind{};
     string directive;
 };
 
@@ -207,10 +213,11 @@ L?\"(\\.|[^\\"\n])*\"       { return parse_string_lit(text(), size()); }
 
 }
 
-// Determine the kind of directive and transition to D2.
+// Determine the kind of directive and transition.
 <D1> {
 
-{L}({L}|{D})*   { directive_kind = str(); start(D2); }
+"line"          { directive_kind = DirectiveKind::LINE; start(D2); }
+"pragma"        { directive_kind = DirectiveKind::PRAGMA; start(D2); }
 .               { message() << "error unexpected directive\n"; matcher().skip('\n'); start(INITIAL); }
 
 }
@@ -473,9 +480,9 @@ int Lexer::parse_string_lit(const char* text, size_t capacity_hint) {
 }
 
 void Lexer::handle_directive() {
-    if (directive_kind == "line") {
+    if (directive_kind == DirectiveKind::LINE) {
         parse_line_directive(directive.c_str());
-    } else if (directive_kind == "pragma") {
+    } else if (directive_kind == DirectiveKind::PRAGMA) {
     } else {
         message() << "error unexpected directive\n";
     }

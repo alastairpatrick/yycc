@@ -86,6 +86,6 @@ BEGIN Error on unrecognized directive
 #hello
 1
 EXPECT_MESSAGE
-:2:7: error unexpected directive
+:2:2: error unexpected directive
 EXPECT_AST
 "Is1"
