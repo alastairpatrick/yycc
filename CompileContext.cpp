@@ -29,9 +29,6 @@ ostream& message(Severity severity, const Location& location) {
     stream << location.file << ':' << location.line << ':' << location.column << ": ";
 
     switch (severity) {
-    case Severity::INFO:
-        stream << "info ";
-        break;
     case Severity::WARNING:
         stream << "warning ";
         break;

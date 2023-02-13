@@ -4,6 +4,7 @@
 #include "llvm-c/Core.h"
 
 #include "std.h"
+#include "Identifier.h"
 #include "Printable.h"
 #include "Token.h"
 
@@ -159,22 +160,6 @@ enum class TypeNameKind {
     STRUCT,
     UNION,
     NUM
-};
-
-struct TypeName: Type {
-    static const TypeName* of(TypeNameKind kind, const string* name);
-
-    const TypeNameKind kind;
-    const string* name;
-
-    virtual const Type* resolve(SymbolMap& scope) const;
-
-    virtual LLVMTypeRef llvm_type() const;
-
-    virtual void print(std::ostream& stream) const;
-
-private:
-    TypeName(TypeNameKind kind, const string* name);
 };
 
 #endif

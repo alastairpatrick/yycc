@@ -3,7 +3,7 @@ typedef short foo_t;
 foo_t foo;
 EXPECT_AST
 [["typedef", "Ss", "foo_t"]
-,["var", "ES", "Ss", "foo"]]
+,["var", "ES", "Ss", "foo", ""]]
 
 
 BEGIN Typedef with no declarators
@@ -18,6 +18,17 @@ typedef signed a;
 EXPECT_AST
 [["typedef", "Is", "a"]
 ,["typedef", "Is", "a"]]
+
+
+BEGIN Redefinition of typedef with different type
+typedef int a;
+typedef unsigned a;
+EXPECT_MESSAGE
+:2:1: error redeclaration of 'a' with different type
+:1:1: see prior declaration
+EXPECT_AST
+[["typedef", "Is", "a"]
+,["typedef", "Iu", "a"]]
 
 
 BEGIN Typedefs use block scope
@@ -51,12 +62,12 @@ int p, q;
 }
 EXPECT_AST
 [
-    ["var", "ES", "Is", "p"],
-    ["var", "ES", "Is", "q"],
+    ["var", "ES", "Is", "p", ""],
+    ["var", "ES", "Is", "q", ""],
     ["block", [
         ["*", "Nq", "Np"],
         ["typedef", "Ss", "q"],
-        ["var", "", "PSs", "v"]
+        ["var", "", "PSs", "v", ""]
     ]
 ]]
 
@@ -69,8 +80,8 @@ int p, q;
 q * p; // Identifier "q" immediately follows '}'
 EXPECT_AST
 [
-    ["var", "ES", "Is", "p"],
-    ["var", "ES", "Is", "q"],
+    ["var", "ES", "Is", "p", ""],
+    ["var", "ES", "Is", "q", ""],
     ["block", [
         ["typedef", "Ls", "q"]
     ]],
@@ -95,3 +106,11 @@ EXPECT_MESSAGE
 :1:1: error 'inline' may only appear on function
 EXPECT_AST
 [["typedef", "Is", "A"]]
+
+
+BEGIN Typedef may not be redeclared as a variable of same type
+typedef int a;
+int a;
+EXPECT_MESSAGE
+:2:1: error redeclaration of 'a' with different type
+:1:1: see prior declaration

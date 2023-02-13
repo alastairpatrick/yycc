@@ -14,11 +14,9 @@ struct SymbolMap {
     };
     list<Scope> scopes;
 
-    unordered_map<const string*, Mystery*> mysteries;
-
-    Decl* lookup_decl(TypeNameKind kind, const string* name);
-    const Type* lookup_type(TypeNameKind kind, const string* name);
-    void add_decl(TypeNameKind kind, const string* name, Decl* decl);
+    Decl* lookup_decl(TypeNameKind kind, Identifier identifier);
+    const Type* lookup_type(TypeNameKind kind, Identifier identifier);
+    void add_decl(TypeNameKind kind, Decl* decl);
 
     void push_scope();
     void pop_scope();

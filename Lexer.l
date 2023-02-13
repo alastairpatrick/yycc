@@ -2,6 +2,7 @@
 
 %top {
 #include "CompileContext.h"
+#include "Identifier.h"
 #include "Location.h"
 #include "SymbolMap.h"
 #include "Type.h"
@@ -23,7 +24,7 @@ enum class DirectiveKind {
     int parse_float_lit(const char* text);
     int parse_char_lit(const char* text);
     int parse_string_lit(const char* text, size_t capacity_hint);
-    int check_identifier(std::string&& identifier);
+    int check_identifier();
     void handle_directive();
     void parse_line_directive(const char* text);
 
@@ -41,6 +42,10 @@ public:
         return Location { lineno(), columno() + 1, current_filename };
     }
 
+    size_t byte_offset() const {
+        return matcher().first();
+    }
+
     IntegerSignedness int_signedness;
     IntegerSize int_size;
     unsigned long long int_lit;
@@ -51,7 +56,7 @@ public:
     bool string_wide;
     string string_lit;  // UTF-8 with C string literal escape sequences expanded
 
-    const string* identifier;  // UTF-8
+    Identifier identifier;
 
     DirectiveKind directive_kind{};
     string directive;
@@ -148,7 +153,7 @@ STRING          \"(\\.|[^\\"\n])*\"
 "volatile"      { return TOK_VOLATILE; }
 "while"         { return TOK_WHILE; }
 
-{L}({L}|{D})*               { return check_identifier(std::move(str())); }
+{L}({L}|{D})*               { return check_identifier(); }
 
 0[xX]{H}+{IS}?              { return parse_int_lit(text() + 2, 16); }
 0[bB][0-1]+{IS}?            { return parse_int_lit(text() + 2, 2); }
@@ -518,9 +523,10 @@ void Lexer::parse_line_directive(const char* text) {
     }
 }
 
-int Lexer::check_identifier(std::string&& id)
+int Lexer::check_identifier()
 {
-    identifier = intern(std::move(id));
+    identifier.name = intern(str());
+    identifier.byte_offset = byte_offset();
     auto decl = symbols.lookup_decl(TypeNameKind::ORDINARY, identifier);
     return (decl && dynamic_cast<TypeDef*>(decl)) ? TOK_TYPEDEF_IDENTIFIER : TOK_IDENTIFIER;
 }

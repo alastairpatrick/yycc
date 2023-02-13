@@ -6,7 +6,6 @@
 struct Type;
 struct PointerType;
 struct QualifiedType;
-struct TypeName;
 enum class TypeNameKind;
 
 struct TypeContext {
@@ -21,9 +20,6 @@ struct TypeContext {
     const QualifiedType* lookup_qualified_type(const Type* base_type, unsigned qualifiers);
     void add_qualified_type(const QualifiedType* type);
 
-    const TypeName* lookup_type_name(TypeNameKind kind, const string* name);
-    void add_type_name(const TypeName* type);
-
     // This map is only used for "complicated" types like functions.
     unordered_map<string, const Type*> indexed_types;
 
@@ -33,11 +29,6 @@ struct TypeContext {
     typedef map<pair<const Type*, unsigned>, const QualifiedType*> QualifierTypesMap; 
     QualifierTypesMap qualified_types;
 
-    struct TypeNameMapValue {
-        const TypeName* kinds[4] = { nullptr };
-    };
-    typedef unordered_map<const string*, TypeNameMapValue> TypeNameMap;
-    TypeNameMap type_names;
 };
 
 #endif

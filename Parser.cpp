@@ -107,36 +107,39 @@ struct Parser {
 
     Expr* parse_cast_expr() {
         Expr* result{};
-        Location loc;
 
         while (token) {
             if (token == TOK_INT_LITERAL) {
-                result = new IntegerConstant(lexer.int_lit, IntegerType::of(lexer.int_signedness, lexer.int_size), loc);
+                result = new IntegerConstant(lexer.int_lit, IntegerType::of(lexer.int_signedness, lexer.int_size), lexer.location());
                 consume();
                 break;
             }
             else if (token == TOK_FLOAT_LITERAL) {
-                result = new FloatingPointConstant(lexer.float_lit, FloatingPointType::of(lexer.float_size), loc);
+                result = new FloatingPointConstant(lexer.float_lit, FloatingPointType::of(lexer.float_size), lexer.location());
                 consume();
                 break;
             }
             else if (token == TOK_CHAR_LITERAL) {
-                result = new IntegerConstant(lexer.int_lit, IntegerType::of_char(lexer.string_wide), loc);
+                result = new IntegerConstant(lexer.int_lit, IntegerType::of_char(lexer.string_wide), lexer.location());
                 consume();
                 break;
             }
             else if (token == TOK_STRING_LITERAL) {
-                result = new StringConstant(move(lexer.string_lit), IntegerType::of_char(lexer.string_wide), loc);
+                result = new StringConstant(move(lexer.string_lit), IntegerType::of_char(lexer.string_wide), lexer.location());
                 consume();
                 break;
             }
             else if (token == TOK_IDENTIFIER) {
                 Decl* decl = symbols.lookup_decl(TypeNameKind::ORDINARY, lexer.identifier);
+                if (decl) {
+                    // Token would have to be TOK_TYPEDEF_IDENTIFIER for decl to be a typedef.
+                    assert(!dynamic_cast<TypeDef*>(decl));
 
-                // Token would have to be TOK_TYPEDEF_IDENTIFIER for decl to be a typedef.
-                assert(!dynamic_cast<TypeDef*>(decl));
-
-                result = new NameExpr(decl, loc);
+                    result = new NameExpr(decl, lexer.location());
+                } else {
+                    message(Severity::ERROR, lexer.location()) << '\'' << lexer.identifier << "' undeclared\n";
+                    result = new IntegerConstant(0, IntegerType::default_type(), lexer.location());
+                }
                 consume();
                 break;
             } else if (consume('(')) {
@@ -347,7 +350,7 @@ struct Parser {
                 ++ decl_count;
 
                 auto is_function_definition = decl->is_function_definition();
-                if (decl->identifier == empty_string()) {
+                if (decl->identifier.name == empty_string()) {
                     message(Severity::ERROR, lexer.location()) << "expected identifier\n";
                 } else {
                     list.push_back(decl);
@@ -434,17 +437,15 @@ struct Parser {
                 }
             }
 
-            const string* identifier = lexer.identifier;
-            if (!consume(TOK_IDENTIFIER) && !consume(TOK_TYPEDEF_IDENTIFIER)) identifier = empty_string();
+            auto identifier = lexer.identifier;
+            if (!consume(TOK_IDENTIFIER) && !consume(TOK_TYPEDEF_IDENTIFIER)) identifier.name = empty_string();
 
             Expr* initializer{};
-            if (consume('=')) {
-                initializer = parse_expr(ASSIGN_PREC);
-            }
-
             Decl* decl{};
 
-            if (consume('(')) {
+            if (consume('=')) {
+                initializer = parse_expr(ASSIGN_PREC);
+            } else if (consume('(')) {
                 symbols.push_scope();
 
                 vector<Variable*> params;
@@ -497,11 +498,14 @@ struct Parser {
             }
 
             if (!decl) {
-                decl = new Variable(scope, storage_class, type, identifier, move(initializer), location);
+                if (!initializer && storage_class != StorageClass::EXTERN) {
+                    initializer = new DefaultExpr(type, location);
+                }
+                decl = new Variable(scope, storage_class, type, identifier, initializer, location);
             }
 
-            if (identifier != empty_string()) {
-                symbols.add_decl(TypeNameKind::ORDINARY, decl->identifier, decl);
+            if (identifier.name != empty_string()) {
+                symbols.add_decl(TypeNameKind::ORDINARY, decl);
             }
 
             return decl;

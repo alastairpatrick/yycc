@@ -3,13 +3,15 @@
 
 #include "llvm-c/Core.h"
 
+#include "Identifier.h"
 #include "Location.h"
 #include "Printable.h"
-#include "Type.h"
 
+struct CodeGenContext;
 enum class IdentifierScope;
 enum class StorageClass;
 enum class Linkage;
+struct Type;
 
 struct ASTNode: Printable {
     explicit ASTNode(const Location& location);
@@ -23,19 +25,20 @@ typedef vector<ASTNode*> ASTNodeVector;
 
 ostream& operator<<(ostream& stream, const ASTNodeVector& items);
 
+
 struct Decl: ASTNode {
-    Decl(IdentifierScope scope, StorageClass storage_class, const Type* type, const string* identifier, const Location& location);
+    Decl(IdentifierScope scope, StorageClass storage_class, const Type* type, Identifier identifier, const Location& location);
 
     IdentifierScope scope;
     Linkage linkage;
     const Type* type;
-    const string* identifier;
-    Decl* scope_next{};
+    Identifier identifier;
+    Decl* earlier{};
+    Decl* definition{};
 
     virtual const Type* to_type() const;
     virtual bool is_function_definition() const;
-    virtual void parse_combine(Decl* other_decl);
-    virtual void redeclare(Decl* redeclared);
+    virtual void combine();
     virtual void print(std::ostream& stream) const = 0;
 };
 

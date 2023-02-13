@@ -29,22 +29,23 @@ enum class StorageDuration {
     STATIC,
 };
 
+struct FunctionType;
+
 ostream& operator<<(ostream& stream, Linkage linkage);
 ostream& operator<<(ostream& stream, StorageDuration duration);
 
 struct Variable: Decl {
-    Variable(IdentifierScope scope, StorageClass storage_class, const Type* type, const string* identifier, Expr* initializer, const Location& location);
+    Variable(IdentifierScope scope, StorageClass storage_class, const Type* type, Identifier identifier, Expr* initializer, const Location& location);
 
     StorageDuration storage_duration;
-    bool is_definition;
     Expr* initializer{};
 
-    virtual void redeclare(Decl* redeclared);
+    virtual void combine();
     virtual void print(std::ostream& stream) const;
 };
 
 struct Function: Decl {
-    Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, uint32_t specifiers, const string* identifier, vector<Variable*>&& params, Statement* body, const Location& location);
+    Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, uint32_t specifiers, Identifier identifier, vector<Variable*>&& params, Statement* body, const Location& location);
 
     vector<Variable*> params;
     Statement* body{};
@@ -52,21 +53,14 @@ struct Function: Decl {
     bool inline_definition;
 
     virtual bool is_function_definition() const;
-    virtual void parse_combine(Decl* other_decl);
-    virtual void redeclare(Decl* redeclared);
+    virtual void combine();
     virtual void print(std::ostream& stream) const;
 };
 
 struct TypeDef: Decl {
-    TypeDef(IdentifierScope scope, const Type* type, const string* identifier, const Location& location);
+    TypeDef(IdentifierScope scope, const Type* type, Identifier identifier, const Location& location);
 
     virtual const Type* to_type() const;
-    virtual void print(std::ostream& stream) const;
-};
-
-struct Mystery: Decl {
-    Mystery(const string* identifier);
-
     virtual void print(std::ostream& stream) const;
 };
 

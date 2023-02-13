@@ -1,8 +1,8 @@
 #include "std.h"
 
 #include "Decl.h"
-
 #include "CompileContext.h"
+#include "Type.h"
 
 ostream& operator<<(ostream& stream, Linkage linkage) {
     switch (linkage) {
@@ -29,7 +29,7 @@ ostream& operator<<(ostream& stream, StorageDuration duration) {
     return stream;
 }
 
-Decl::Decl(IdentifierScope scope, StorageClass storage_class, const Type* type, const string* identifier, const Location& location)
+Decl::Decl(IdentifierScope scope, StorageClass storage_class, const Type* type, Identifier identifier, const Location& location)
     : ASTNode(location), scope(scope), type(type), identifier(identifier) {
     if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
         linkage = Linkage::INTERNAL;
@@ -48,17 +48,19 @@ bool Decl::is_function_definition() const {
     return false;
 }
 
-void Decl::parse_combine(Decl* other_decl) {
-}
+void Decl::combine() {
+    if (type != earlier->type || typeid(*this) != typeid(*earlier)) {
+        message(Severity::ERROR, location) << "redeclaration of '" << identifier << "' with different type\n";
+        message(Severity::INFO, earlier->location) << "see prior declaration\n";
+    }
 
-void Decl::redeclare(Decl* redeclared) {
-    if (type != redeclared->type) {
-        message(Severity::ERROR, redeclared->location) << "redeclaration of '" << redeclared->identifier << "' with different type\n";
-        message(Severity::INFO, location) << "see original declaration\n";
+    if (linkage == Linkage::INTERNAL && earlier->linkage != Linkage::INTERNAL) {
+        message(Severity::ERROR, location) << "static declaration of '" << identifier << "' follows non-static declaration\n";
+        message(Severity::INFO, earlier->location) << "see prior declaration\n";
     }
 }
 
-Variable::Variable(IdentifierScope scope, StorageClass storage_class, const Type* type, const string* identifier, Expr* initializer, const Location& location)
+Variable::Variable(IdentifierScope scope, StorageClass storage_class, const Type* type, Identifier identifier, Expr* initializer, const Location& location)
     : Decl(scope, storage_class, type, identifier, location), initializer(initializer) {
     if (storage_class == StorageClass::EXTERN || storage_class == StorageClass::STATIC || scope == IdentifierScope::FILE) {
         storage_duration = StorageDuration::STATIC;
@@ -66,32 +68,29 @@ Variable::Variable(IdentifierScope scope, StorageClass storage_class, const Type
         storage_duration = StorageDuration::AUTO;
     }
 
-    is_definition = storage_class != StorageClass::EXTERN || initializer != nullptr;
+    definition = initializer ? this : nullptr;
 }
 
-void Variable::redeclare(Decl* redeclared) {
-    Decl::redeclare(redeclared);
+void Variable::combine() {
+    Decl::combine();
 
-    auto redeclared_var = dynamic_cast<Variable*>(redeclared);
-    if (!redeclared_var) return;
+    auto earlier_var = dynamic_cast<Variable*>(earlier);
+    if (!earlier_var) return;
 
-    if (!initializer) {
-        initializer = redeclared_var->initializer;
+    if (initializer && earlier_var->definition) {
+        message(Severity::ERROR, location) << "redefinition of '" << identifier << "'\n";
+        message(Severity::INFO, earlier->definition->location) << "see prior definition\n";
     }
 
-    if (!is_definition) {
-        is_definition = redeclared_var->is_definition;
+    if (!definition) {
+        definition = earlier_var->definition;
     }
 
-    assert(storage_duration == redeclared_var->storage_duration);
+    assert(storage_duration == earlier_var->storage_duration);
 }
 
 void Variable::print(std::ostream& stream) const {
     stream << "[\"var\", \"" << linkage << storage_duration;
-
-    if (!is_definition) {
-        stream << 'X';
-    }
 
     stream << "\", \"" << type << "\", \"" << identifier  << "\"";
     if (initializer) {
@@ -100,12 +99,14 @@ void Variable::print(std::ostream& stream) const {
     stream << ']';
 }
 
-Function::Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, uint32_t specifiers, const string* identifier, vector<Variable*>&& params, Statement* body, const Location& location)
+Function::Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, uint32_t specifiers, Identifier identifier, vector<Variable*>&& params, Statement* body, const Location& location)
     : Decl(scope, storage_class, type, identifier, location), params(move(params)), body(body) {
     if ((storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) ||
         (storage_class == StorageClass::STATIC && scope != IdentifierScope::FILE)) {
         message(Severity::ERROR, location) << "invalid storage class\n";
     }
+
+    definition = body ? this : nullptr;
 
     // It's very valuable to determine which functions with external linkage are inline definitions, because they don't need to be
     // written to the AST file; another translation unit is guaranteed to have an external definition.
@@ -116,27 +117,26 @@ bool Function::is_function_definition() const {
     return body != nullptr;
 }
 
-void Function::parse_combine(Decl* other_decl) {
-    auto other = dynamic_cast<Function*>(other_decl);
-    if (!other) return;
+void Function::combine() {
+    Decl::combine();
 
-    other->inline_definition = inline_definition = inline_definition && other->inline_definition;
-}
+    auto earlier_fn = dynamic_cast<Function*>(earlier);
+    if (!earlier_fn) return;
 
-void Function::redeclare(Decl* redeclared) {
-    Decl::redeclare(redeclared);
-
-    auto redeclared_fn = dynamic_cast<Function*>(redeclared);
-    if (!redeclared_fn) return;
-
-    if (body && redeclared_fn->body) {
-        message(Severity::ERROR, redeclared_fn->location) << "redefinition of '" << identifier << "'\n";
-        message(Severity::INFO, location) << "see original definition\n";
+    if (!definition) {
+        definition = earlier_fn->definition;
     }
 
-    if (!body) {
-        body = redeclared_fn->body;
-        params = move(redeclared_fn->params);
+    if (body && earlier_fn->definition) {
+        message(Severity::ERROR, location) << "redefinition of '" << identifier << "'\n";
+        message(Severity::INFO, earlier_fn->definition->location) << "see prior definition\n";
+    }
+
+    inline_definition = inline_definition && earlier_fn->inline_definition;
+
+    if (!inline_definition && definition) {
+        auto definition_fn = dynamic_cast<Function*>(definition);
+        definition_fn->inline_definition = false;
     }
 }
 
@@ -160,7 +160,7 @@ void Function::print(std::ostream& stream) const {
     stream << ']';
 }
 
-TypeDef::TypeDef(IdentifierScope scope, const Type* type, const string* identifier, const Location& location)
+TypeDef::TypeDef(IdentifierScope scope, const Type* type, Identifier identifier, const Location& location)
     : Decl(scope, StorageClass::TYPEDEF, type, identifier, location) {
 }
 
@@ -170,12 +170,4 @@ const Type* TypeDef::to_type() const {
 
 void TypeDef::print(std::ostream& stream) const {
     stream << "[\"typedef\", \"" << type << "\", \"" << identifier  << "\"]";
-}
-
-Mystery::Mystery(const string* identifier)
-    : Decl(IdentifierScope::FILE, StorageClass::NONE, nullptr, identifier, Location()) {
-}
-
-void Mystery::print(std::ostream& stream) const {
-    stream << "[\"mystery\", \"" << identifier << "\"]";
 }

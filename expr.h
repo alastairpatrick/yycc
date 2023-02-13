@@ -3,6 +3,7 @@
 
 #include "ASTNode.h"
 #include "Token.h"
+#include "Type.h"
 
 struct Decl;
 
@@ -83,12 +84,21 @@ struct BinaryExpr: Expr {
     Expr* left{};
     Expr* right{};
     BinaryOp op;
-    Location location;
     
     virtual const Type* get_type() const;
     virtual LLVMValueRef generate_value(CodeGenContext* context) const;
     virtual void print(std::ostream& stream) const;
 };
 
+// The default value of a variable, e.g. zero for static duration and uninitialized for automatic duration
+struct DefaultExpr: Expr {
+    DefaultExpr(const Type* type, const Location& location);
+
+    const Type* type;
+
+    virtual const Type* get_type() const;
+    virtual LLVMValueRef generate_value(CodeGenContext* context) const;
+    virtual void print(std::ostream& stream) const;
+};
 
 #endif

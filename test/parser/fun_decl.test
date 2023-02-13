@@ -77,23 +77,26 @@ int foo(signed);
 signed foo(int);
 EXPECT_AST
 [["fun", "E", "(Is)Is", "foo"]
-,["fun","E","(Is)Is","foo"]]
+,["fun", "E", "(Is)Is", "foo"]]
 
 
-BEGIN Multiple function declarations having external linkage
-extern void foo(short);
+BEGIN Multiple function declarations with extern storage class
+extern void foo(int);
 extern void foo(int);
 EXPECT_AST
-[["fun", "E", "(Ss)V", "foo"]
+[["fun", "E", "(Is)V", "foo"]
 ,["fun", "E", "(Is)V", "foo"]]
 
 
-BEGIN Function declaration having external linkage may preceed function declaration having internal linkage
+BEGIN Function declaration having internal linkage may not follow function declaration having external linkage
 extern void foo(int);
 static void foo(int);
+EXPECT_MESSAGE
+:2:1: error static declaration of 'foo' follows non-static declaration
+:1:1: see prior declaration
 EXPECT_AST
-[["fun","E","(Is)V","foo"]
-,["fun","I","(Is)V","foo"]]
+[["fun", "E", "(Is)V", "foo"]
+,["fun", "I", "(Is)V", "foo"]]
 
 
 BEGIN Function declaration having internal linkage may preceed function declaration having external linkage
@@ -104,7 +107,7 @@ EXPECT_AST
 ,["fun","E","(Is)V","foo"]]
 
 
-BEGIN Function declarations having internal linkage collapse
+BEGIN Multiple function declarations with internal linkage
 static void foo(int);
 static void foo(int);
 EXPECT_AST
@@ -133,8 +136,18 @@ void foo(int x) {
 }
 extern void foo(int);
 EXPECT_AST
-[["fun","E","(Is)V","foo",["x"],["block",[]]]
-,["fun","E","(Is)V","foo"]]
+[["fun", "E", "(Is)V", "foo",[ "x"], ["block", []]]
+,["fun", "E", "(Is)V", "foo"]]
+
+
+BEGIN Error on function redefinition
+void foo(int x) {
+}
+void foo(int x) {
+}
+EXPECT_MESSAGE
+:3:1: error redefinition of 'foo'
+:1:1: see prior definition
 
 
 BEGIN Block scope extern storage class
@@ -168,7 +181,7 @@ EXPECT_MESSAGE
 :1:21: error unexpected token
 :2:1: error unexpected token
 EXPECT_AST
-[["var", "ES", "Is", "foo"]
+[["var", "ES", "Is", "foo", ""]
 ,["fun", "E", "(Is)Is", "bar"]]
 
 
@@ -177,10 +190,11 @@ int bar(int x) {
 }, foo;
 EXPECT_MESSAGE
 :2:2: error unexpected token
+:2:4: error 'foo' undeclared
 EXPECT_AST
 [
     ["fun", "E", "(Is)Is", "bar", ["x"], ["block", []]],
-    "Nfoo"
+    "Is0"
 ]
 
 
@@ -196,7 +210,7 @@ int foo(int bar) {
     int bar;
 }
 EXPECT_AST
-[["fun", "E", "(Is)Is", "foo", ["bar"], ["block", [["var", "", "Is", "bar"]]]]]
+[["fun", "E", "(Is)Is", "foo", ["bar"], ["block", [["var", "", "Is", "bar", ""]]]]]
 
 
 BEGIN Cannot declare static function at block scope

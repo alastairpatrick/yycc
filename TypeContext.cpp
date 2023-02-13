@@ -16,12 +16,6 @@ TypeContext::~TypeContext() {
     for (auto& value : qualified_types) {
         delete value.second;
     }
-
-    for (auto& value : type_names) {
-        for (auto type : value.second.kinds) {
-            delete type;
-        }
-    }
 }
 
 const Type* TypeContext::lookup_indexed_type(const string& key) {
@@ -55,14 +49,4 @@ const PointerType* TypeContext::lookup_pointer_type(const Type* base_type) {
 
 void TypeContext::add_pointer_type(const PointerType* type) {
     pointer_types[type->base_type] = type;
-}
-
-const TypeName* TypeContext::lookup_type_name(TypeNameKind kind, const string* name) {
-    auto it = type_names.find(name);
-    if (it == type_names.end()) return nullptr;
-    return it->second.kinds[unsigned(kind)];
-}
-
-void TypeContext::add_type_name(const TypeName* type) {
-    type_names[type->name].kinds[unsigned(type->kind)] = type;
 }
