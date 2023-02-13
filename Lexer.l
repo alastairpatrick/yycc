@@ -7,6 +7,7 @@
 
 enum class DirectiveKind {
     NONE,
+    ERROR,
     LINE,
     PRAGMA,
 };
@@ -29,6 +30,7 @@ enum class DirectiveKind {
     const char* current_filename = "";
 
     ostream& message();
+    ostream& message(const Location&);
 
     SymbolMap& symbols;
 
@@ -52,6 +54,7 @@ public:
 
     DirectiveKind directive_kind{};
     string directive;
+    Location directive_location;
 };
 
 %{
@@ -84,7 +87,7 @@ STRING          \"(\\.|[^\\"\n])*\"
 %%
 
 
-<*> {
+<INITIAL,C,D1> {
 
 "/*"            { skip_comment(); }
 "//"[^\n]*      { }
@@ -97,7 +100,7 @@ STRING          \"(\\.|[^\\"\n])*\"
 <INITIAL> {
 
 \n                  { }
-"#"                 { start(D1); }
+"#"                 { directive_location = location(); start(D1); }
 .                   { matcher().unput(text()[0]); start(C); }
 
 }
@@ -216,22 +219,26 @@ L?\"(\\.|[^\\"\n])*\"       { return parse_string_lit(text(), size()); }
 // Determine the kind of directive and transition.
 <D1> {
 
-"line"          { directive_kind = DirectiveKind::LINE; start(D2); }
-"pragma"        { directive_kind = DirectiveKind::PRAGMA; start(D2); }
-.               { message() << "error unexpected directive\n"; matcher().skip('\n'); start(INITIAL); }
+"error"{HW}*    { directive_kind = DirectiveKind::ERROR; start(D2); }
+"line"{HW}*     { directive_kind = DirectiveKind::LINE; start(D2); }
+"pragma"{HW}*   { directive_kind = DirectiveKind::PRAGMA; start(D2); }
+.               { message(directive_location) << "error unexpected directive\n"; matcher().skip('\n'); start(INITIAL); }
 
 }
 
 // Tokenize directive until end of line.
 <D2> {
 
-{L}({L}|{D})*   { directive += str() + " "; }
-{STRING}        { directive += str() + " "; }
-{D}+            { directive += str() + " "; }
+"/*"            { skip_comment(); directive += " "; }
+"//"[^\n]*      { directive += " "; }
+
+{L}({L}|{D})*   { directive += str(); }
+{STRING}        { directive += str(); }
+{D}+            { directive += str(); }
 
 \n              { handle_directive(); start(INITIAL); }
 
-.               { directive += str() + " "; }
+.               { directive += str(); }
 
 }
 
@@ -239,6 +246,10 @@ L?\"(\\.|[^\\"\n])*\"       { return parse_string_lit(text(), size()); }
 
 ostream& Lexer::message() {
     return ::message(location());
+}
+
+ostream& Lexer::message(const Location& location) {
+    return ::message(location);
 }
 
 void Lexer::skip_comment() {
@@ -483,10 +494,13 @@ void Lexer::handle_directive() {
     if (directive_kind == DirectiveKind::LINE) {
         parse_line_directive(directive.c_str());
     } else if (directive_kind == DirectiveKind::PRAGMA) {
+    } else if (directive_kind == DirectiveKind::ERROR) {
+        message(directive_location) << "error " << directive << '\n';
     } else {
-        message() << "error unexpected directive\n";
+        message(directive_location) << "error unexpected directive\n";
     }
 
+    directive_kind = DirectiveKind::NONE;
     directive.clear();
 }
 
