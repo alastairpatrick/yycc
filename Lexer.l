@@ -1,6 +1,7 @@
 %option yylineno
 
 %top {
+#include "CompileContext.h"
 #include "Location.h"
 #include "SymbolMap.h"
 #include "Type.h"
@@ -29,8 +30,8 @@ enum class DirectiveKind {
     unordered_set<string> filenames;
     const char* current_filename = "";
 
-    ostream& message();
-    ostream& message(const Location&);
+    ostream& message(Severity severity);
+    ostream& message(Severity severity, const Location&);
 
     SymbolMap& symbols;
 
@@ -61,7 +62,6 @@ public:
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "CompileContext.h"
 #include "Decl.h"
 #include "Token.h"
 
@@ -99,9 +99,9 @@ STRING          \"(\\.|[^\\"\n])*\"
 // D1 if there is a directive or C otherwise.
 <INITIAL> {
 
-\n                  { }
-"#"                 { directive_location = location(); start(D1); }
-.                   { matcher().unput(text()[0]); start(C); }
+\n              { }
+"#"             { directive_location = location(); start(D1); }
+.               { matcher().unput(text()[0]); start(C); }
 
 }
 
@@ -212,7 +212,7 @@ L?\"(\\.|[^\\"\n])*\"       { return parse_string_lit(text(), size()); }
 "|"             { return '|'; }
 "?"             { return '?'; }
 
-.               { message() << "error unexpected character '" << text() << "'\n"; }
+.               { message(Severity::ERROR) << "unexpected character '" << text() << "'\n"; }
 
 }
 
@@ -222,7 +222,7 @@ L?\"(\\.|[^\\"\n])*\"       { return parse_string_lit(text(), size()); }
 "error"{HW}*    { directive_kind = DirectiveKind::ERROR; start(D2); }
 "line"{HW}*     { directive_kind = DirectiveKind::LINE; start(D2); }
 "pragma"{HW}*   { directive_kind = DirectiveKind::PRAGMA; start(D2); }
-.               { message(directive_location) << "error unexpected directive\n"; matcher().skip('\n'); start(INITIAL); }
+.               { message(Severity::ERROR, directive_location) << "unexpected directive\n"; matcher().skip('\n'); start(INITIAL); }
 
 }
 
@@ -244,17 +244,17 @@ L?\"(\\.|[^\\"\n])*\"       { return parse_string_lit(text(), size()); }
 
 %%
 
-ostream& Lexer::message() {
-    return ::message(location());
+ostream& Lexer::message(Severity severity) {
+    return ::message(severity, location());
 }
 
-ostream& Lexer::message(const Location& location) {
-    return ::message(location);
+ostream& Lexer::message(Severity severity, const Location& location) {
+    return ::message(severity, location);
 }
 
 void Lexer::skip_comment() {
     if (!matcher().skip("*/")) {
-        message() << "error unterminated comment\n";
+        message(Severity::ERROR) << "unterminated comment\n";
     }
 }
 
@@ -495,9 +495,9 @@ void Lexer::handle_directive() {
         parse_line_directive(directive.c_str());
     } else if (directive_kind == DirectiveKind::PRAGMA) {
     } else if (directive_kind == DirectiveKind::ERROR) {
-        message(directive_location) << "error " << directive << '\n';
+        message(Severity::ERROR, directive_location) << directive << '\n';
     } else {
-        message(directive_location) << "error unexpected directive\n";
+        message(Severity::ERROR, directive_location) << "unexpected directive\n";
     }
 
     directive_kind = DirectiveKind::NONE;

@@ -24,8 +24,23 @@ CompileContext::~CompileContext() {
     it = nullptr;
 }
 
-ostream& message(const Location& location) {
-    return CompileContext::it->message_stream << location.file << ':' << location.line << ':' << location.column << ": ";
+ostream& message(Severity severity, const Location& location) {
+    auto &stream = CompileContext::it->message_stream;
+    stream << location.file << ':' << location.line << ':' << location.column << ": ";
+
+    switch (severity) {
+    case Severity::INFO:
+        stream << "info ";
+        break;
+    case Severity::WARNING:
+        stream << "warning ";
+        break;
+    case Severity::ERROR:
+        stream << "error ";
+        break;
+    }
+
+    return stream;
 }
 
 const string* intern(string&& source) {

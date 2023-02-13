@@ -6,6 +6,12 @@
 
 struct ASTNode;
 
+enum class Severity {
+    INFO,
+    WARNING,
+    ERROR,
+};
+
 struct CompileContext {
     static thread_local CompileContext* it;
 
@@ -23,7 +29,7 @@ struct CompileContext {
 };
 
 
-ostream& message(const Location& location);
+ostream& message(Severity severity, const Location& location);
 
 // Interned strings have the property that if their string values are equal, their addresses are the same also.
 // This means they can be used as keys in sets and maps with a very fast equality test. Note that they might be

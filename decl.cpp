@@ -53,8 +53,8 @@ void Decl::parse_combine(Decl* other_decl) {
 
 void Decl::redeclare(Decl* redeclared) {
     if (type != redeclared->type) {
-        message(redeclared->location) << "error redeclaration of '" << redeclared->identifier << "' with different type\n";
-        message(location) << "see original declaration\n";
+        message(Severity::ERROR, redeclared->location) << "redeclaration of '" << redeclared->identifier << "' with different type\n";
+        message(Severity::INFO, location) << "see original declaration\n";
     }
 }
 
@@ -104,7 +104,7 @@ Function::Function(IdentifierScope scope, StorageClass storage_class, const Func
     : Decl(scope, storage_class, type, identifier, location), params(move(params)), body(body) {
     if ((storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) ||
         (storage_class == StorageClass::STATIC && scope != IdentifierScope::FILE)) {
-        message(location) << "error invalid storage class\n";
+        message(Severity::ERROR, location) << "invalid storage class\n";
     }
 
     // It's very valuable to determine which functions with external linkage are inline definitions, because they don't need to be
@@ -130,8 +130,8 @@ void Function::redeclare(Decl* redeclared) {
     if (!redeclared_fn) return;
 
     if (body && redeclared_fn->body) {
-        message(redeclared_fn->location) << "error redefinition of '" << identifier << "'\n";
-        message(location) << "see original definition\n";
+        message(Severity::ERROR, redeclared_fn->location) << "redefinition of '" << identifier << "'\n";
+        message(Severity::INFO, location) << "see original definition\n";
     }
 
     if (!body) {

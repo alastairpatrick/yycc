@@ -47,7 +47,7 @@ struct Parser {
     }
 
     void skip() {
-        message(lexer.location()) << "error unexpected token\n";
+        message(Severity::ERROR, lexer.location()) << "unexpected token\n";
         consume();
     }
 
@@ -61,7 +61,7 @@ struct Parser {
 
     bool check_eof() {
         if (token == TOK_EOF) return true;
-        message(lexer.location()) << "Expected end of file.\n";
+        message(Severity::ERROR, lexer.location()) << "expected end of file\n";
         return false;
     }
 
@@ -150,7 +150,7 @@ struct Parser {
 
         if (!result) {
             assert(token == TOK_EOF);
-            message(lexer.location()) << "error unexpected end of file\n";
+            message(Severity::ERROR, lexer.location()) << "unexpected end of file\n";
             result = new IntegerConstant(0, IntegerType::default_type(), lexer.location());
         }
 
@@ -175,7 +175,7 @@ struct Parser {
             if (token == TOK_LONG) {
                 ++num_longs;
                 if (num_longs > 2) {
-                    message(lexer.location()) << "error invalid type specifier combination\n";
+                    message(Severity::ERROR, lexer.location()) << "invalid type specifier combination\n";
                 }
                 specifier_set &= ~(1 << token);
             }
@@ -234,7 +234,7 @@ struct Parser {
                 assert(token < 32);
                 is_declaration = true;
                 if (specifier_set & (1 << token)) {
-                    message(lexer.location()) << "error invalid declaration specifier or type qualifier combination\n";
+                    message(Severity::ERROR, lexer.location()) << "invalid declaration specifier or type qualifier combination\n";
                 }
                 specifier_set |= 1 << token;
                 consume();
@@ -248,7 +248,7 @@ struct Parser {
         // Have single storage class specifier iff storage class set contains only one element.
         uint32_t storage_class_set = specifier_set & storage_class_mask;
         if (storage_class_set != 0 && storage_class_set & (storage_class_set-1)) {
-            message(storage_class_location) << "error too many storage classes\n";
+            message(Severity::ERROR, storage_class_location) << "too many storage classes\n";
         }
 
         storage_class = StorageClass::NONE;
@@ -319,7 +319,7 @@ struct Parser {
             break;
         default:
             type = IntegerType::default_type();
-            message(type_specifier_location) << "error invalid type specifier combination\n";
+            message(Severity::ERROR, type_specifier_location) << "invalid type specifier combination\n";
             break;
         }
 
@@ -348,7 +348,7 @@ struct Parser {
 
                 auto is_function_definition = decl->is_function_definition();
                 if (decl->identifier == empty_string()) {
-                    message(lexer.location()) << "error expected identifier\n";
+                    message(Severity::ERROR, lexer.location()) << "expected identifier\n";
                 } else {
                     list.push_back(decl);
                 }
@@ -406,7 +406,7 @@ struct Parser {
         }
 
         if (storage_class != StorageClass::NONE && storage_class != StorageClass::REGISTER) {
-            message(location) << "error invalid storage class\n";
+            message(Severity::ERROR, location) << "invalid storage class\n";
             storage_class = StorageClass::NONE;
         }
 
@@ -461,7 +461,7 @@ struct Parser {
 
                     if (decl->type == &VoidType::it) {
                         if (seen_void || !param_types.empty()) {
-                            message(decl->location) << "error a parameter may not have void type\n";
+                            message(Severity::ERROR, decl->location) << "a parameter may not have void type\n";
                         }
                         seen_void = true;
                     } else {
@@ -489,7 +489,7 @@ struct Parser {
             }
 
             if (!decl && (specifiers & (1 << TOK_INLINE))) {
-                message(location) << "error 'inline' may only appear on function\n";
+                message(Severity::ERROR, location) << "'inline' may only appear on function\n";
             }
 
             if (storage_class == StorageClass::TYPEDEF) {
