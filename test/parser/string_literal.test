@@ -99,6 +99,20 @@ L'🌈'
 EXPECT_AST
 "Us127752"
 
+BEGIN Empty char literal
+''
+EXPECT_MESSAGE
+:1:1: error character literal may only have one character
+EXPECT_AST
+"C0"
+
+BEGIN Multi-character char literal
+'aa'
+EXPECT_MESSAGE
+:1:1: error character literal may only have one character
+EXPECT_AST
+"C97"
+
 BEGIN Empty string literal
 ""
 EXPECT_AST

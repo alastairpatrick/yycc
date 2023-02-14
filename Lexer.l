@@ -127,7 +127,6 @@ STRING          \"(\\.|[^\\"\n])*\"
 0[bB][0-1]+{IS}?            { return TOK_BIN_INT_LITERAL; }
 0[0-7]*{IS}?                { return TOK_OCT_INT_LITERAL; }
 [1-9]{D}*{IS}?              { return TOK_DEC_INT_LITERAL; }
-L?'(\\.|[^\\'\n])+'         { return TOK_CHAR_LITERAL; }
 
 {D}+{E}{FS}?                { return TOK_FLOAT_LITERAL; }
 {D}*"."{D}+{E}?{FS}?        { return TOK_FLOAT_LITERAL; }
@@ -137,6 +136,7 @@ L?'(\\.|[^\\'\n])+'         { return TOK_CHAR_LITERAL; }
 0[xX]{H}+"."{H}*{P}?{FS}?   { return TOK_FLOAT_LITERAL;; }
 
 L?\"(\\.|[^\\"\n])*\"       { return TOK_STRING_LITERAL; }
+L?'(\\.|[^\\'\n])*'         { return TOK_CHAR_LITERAL; }
 
 "..."           { return TOK_ELLIPSIS; }
 ">>="           { return TOK_RIGHT_ASSIGN; }

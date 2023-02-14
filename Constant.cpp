@@ -115,7 +115,7 @@ static uint32_t unescape_char(const char** p, const Location& location) {
         case '\\':
             break;
         default:
-            if (c >= 0 && c <= '9') {
+            if (c >= '0' && c <= '9') {
                 (*p)--;
                 c = parse_char_code(p, 3, 8, location);
                 break;
@@ -130,17 +130,17 @@ static uint32_t unescape_char(const char** p, const Location& location) {
         char b1 = **p;
         (*p)++;
         if ((b1 & 0xC0) != 0x80) return 0;
-        if ((c & 0xE0) == 0xC0) return ((c & 0b11111) << 6) | (b1 & 0b111111);
+        if ((c & 0xE0) == 0xC0) return ((c & 0x1F) << 6) | (b1 & 0x3F);
 
         char b2 = **p;
         (*p)++;
         if ((b2 & 0xC0) != 0x80) return 0;
-        if ((c & 0xF0) == 0xE0) return ((c & 0b1111) << 12) | ((b1 & 0b111111) << 6) | (b2 & 0b111111);
+        if ((c & 0xF0) == 0xE0) return ((c & 0xF) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F);
 
         char b3 = **p;
         (*p)++;
         if ((b3 & 0xC0) != 0x80) return 0;
-        return ((c & 0b111) << 18) | ((b1 & 0b111111) << 12) | ((b2 & 0b111111) << 6) | (b3 & 0b111111);;
+        return ((c & 0b111) << 18) | ((b1 & 0x3F) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F);;
     }
 
     return 0;
@@ -157,14 +157,14 @@ static IntegerConstant* parse_char_literal(const char* text, const Location& loc
     assert(*p == '\'');
     ++p;
 
+    uint32_t c = 0;
     if (*p == '\'') {
-        // TODO empty character literal
-    }
-
-    auto c = unescape_char(&p, location);
-
-    if (*p != '\'') {
-        // TODO multi-characer character literal
+        message(Severity::ERROR, location) << "character literal may only have one character\n";
+    } else {
+        c = unescape_char(&p, location);
+        if (*p != '\'') {
+            message(Severity::ERROR, location) << "character literal may only have one character\n";
+        }
     }
 
     return new IntegerConstant(c, IntegerType::of_char(is_wide), location);
