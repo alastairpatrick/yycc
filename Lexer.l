@@ -21,9 +21,6 @@ enum class DirectiveKind {
     unordered_set<string> filenames;
     const char* current_filename = "";
 
-    ostream& message(Severity severity);
-    ostream& message(Severity severity, const Location&);
-
 public:
 
     Location location() const {
@@ -188,7 +185,7 @@ L?\"(\\.|[^\\"\n])*\"       { return TOK_STRING_LITERAL; }
 "|"             { return '|'; }
 "?"             { return '?'; }
 
-.               { message(Severity::ERROR) << "unexpected character '" << text() << "'\n"; }
+.               { message(Severity::ERROR, location()) << "unexpected character '" << text() << "'\n"; }
 
 }
 
@@ -220,17 +217,9 @@ L?\"(\\.|[^\\"\n])*\"       { return TOK_STRING_LITERAL; }
 
 %%
 
-ostream& Lexer::message(Severity severity) {
-    return ::message(severity, location());
-}
-
-ostream& Lexer::message(Severity severity, const Location& location) {
-    return ::message(severity, location);
-}
-
 void Lexer::skip_comment() {
     if (!matcher().skip("*/")) {
-        message(Severity::ERROR) << "unterminated comment\n";
+        message(Severity::ERROR, location()) << "unterminated comment\n";
     }
 }
 
