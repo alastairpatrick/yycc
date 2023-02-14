@@ -1,7 +1,7 @@
 #include "nlohmann/json.hpp"
 
 #include "Constant.h"
-
+#include "CompileContext.h"
 
 using json = nlohmann::json;
 
@@ -47,31 +47,30 @@ static IntegerConstant* parse_integer_literal(const char* text, int radix, const
     return new IntegerConstant(value, IntegerType::of(signedness, size), location);
 }
 
-static wchar_t parse_char_code(const char** p, int num_digits, int radix) {
+static wchar_t parse_char_code(const char** text, int num_digits, int radix, const Location& location) {
     char digits[9];
     assert(num_digits <= 8);
 
-    for (int i = 0; i < num_digits; ++i) {
-        if (**p == 0) {
-            cerr << "Truncated string";
-            return 0;
-        }
-        digits[i] = **p;
-        (*p)++;
+    const char* src = *text;
+    int i;
+    for (i = 0; i < num_digits; ++i) {
+        if (src[i] == 0) break;
+        digits[i] = src[i];
     }
-    digits[num_digits] = 0;
+    digits[i] = 0;
 
     char* end = nullptr;
     wchar_t result = wchar_t(strtol(digits, &end, radix));
+
     if (end - digits != num_digits) {
-        cerr << "Invalid character code";
-        return 0;
+        message(Severity::ERROR, location) << "truncated character escape code\n";
     }
+    *text += end - digits;
 
     return result;
 }
 
-static uint32_t unescape_char(const char** p) {
+static uint32_t unescape_char(const char** p, const Location& location) {
     uint32_t c = **p;
     (*p)++;
 
@@ -102,13 +101,13 @@ static uint32_t unescape_char(const char** p) {
             c = '\v';
             break;
         case 'u':
-            c = parse_char_code(p, 4, 16);
+            c = parse_char_code(p, 4, 16, location);
             break;
         case 'U':
-            c = parse_char_code(p, 8, 16);
+            c = parse_char_code(p, 8, 16, location);
             break;
         case 'x':
-            c = parse_char_code(p, 2, 16);
+            c = parse_char_code(p, 2, 16, location);
             break;
         case '\'':
         case '"':
@@ -118,10 +117,10 @@ static uint32_t unescape_char(const char** p) {
         default:
             if (c >= 0 && c <= '9') {
                 (*p)--;
-                c = parse_char_code(p, 3, 8);
+                c = parse_char_code(p, 3, 8, location);
                 break;
             }
-            cerr << "Unrecognized escape sequence\n";
+            message(Severity::ERROR, location) << "unrecognized escape sequence\n";
         }
 
         return c;
@@ -162,7 +161,7 @@ static IntegerConstant* parse_char_literal(const char* text, const Location& loc
         // TODO empty character literal
     }
 
-    auto c = unescape_char(&p);
+    auto c = unescape_char(&p, location);
 
     if (*p != '\'') {
         // TODO multi-characer character literal
@@ -240,7 +239,7 @@ void FloatingPointConstant::print(ostream& stream) const {
     stream << '"' << type << value << '"';
 }
 
-string parse_string(const char* text, size_t capacity_hint) {
+string parse_string(const char* text, size_t capacity_hint, const Location& location) {
     std::string value;
     value.reserve(capacity_hint);
 
@@ -251,7 +250,7 @@ string parse_string(const char* text, size_t capacity_hint) {
     while (*p != '"') {
         assert(*p);
 
-        auto c = unescape_char(&p);
+        auto c = unescape_char(&p, location);
         if (c < 0x80) {
             value += c;
         } else if (c < 0x800) {
@@ -280,7 +279,7 @@ StringConstant* StringConstant::of(const char* text, size_t capacity_hint, const
         ++p;
     }
 
-    auto value = parse_string(p, capacity_hint);
+    auto value = parse_string(p, capacity_hint, location);
 
     return new StringConstant(move(value), IntegerType::of_char(is_wide), location);
 }

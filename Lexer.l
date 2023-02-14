@@ -248,9 +248,9 @@ void Lexer::handle_directive() {
     directive.clear();
 }
 
-void Lexer::parse_line_directive(const char* text) {
-    string parse_string(const char* text, size_t capacity_hint);
+string parse_string(const char* text, size_t capacity_hint, const Location& location);
 
+void Lexer::parse_line_directive(const char* text) {
     const char* p = text;
     while (isspace(*p)) ++p;
 
@@ -259,7 +259,7 @@ void Lexer::parse_line_directive(const char* text) {
     while (isspace(*p)) ++p;
 
     if (*p == '"') {
-        auto filename = parse_string(p, 0);
+        auto filename = parse_string(p, 0, location());
         current_filename = filenames.insert(filename).first->c_str();
     }
 }

@@ -134,6 +134,16 @@ L"\U00000010"
 EXPECT_AST
 "SUs\u0010"
 
+BEGIN Truncated digits (1)
+L"\U0000010"
+EXPECT_MESSAGE
+:1:1: error truncated character escape code
+
+BEGIN Truncated digits (2)
+"\x1"
+EXPECT_MESSAGE
+:1:1: error truncated character escape code
+
 BEGIN UTF-8 2-byte string literal
 L"π"
 EXPECT_AST
@@ -143,3 +153,8 @@ BEGIN UTF-8 3-byte string literal
 L"€"
 EXPECT_AST
 "SUs€"
+
+BEGIN Unrecognized escape sequence
+"\y"
+EXPECT_MESSAGE
+:1:1: error unrecognized escape sequence
