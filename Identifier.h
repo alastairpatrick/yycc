@@ -10,7 +10,7 @@ struct Identifier {
     size_t byte_offset = 0;
 };
 
-inline ostream& operator<<(ostream& stream, Identifier identifier) {
+inline ostream& operator<<(ostream& stream, const Identifier& identifier) {
     return stream << *identifier.name;
 }
 

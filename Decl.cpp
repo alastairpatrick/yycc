@@ -29,7 +29,7 @@ ostream& operator<<(ostream& stream, StorageDuration duration) {
     return stream;
 }
 
-Decl::Decl(IdentifierScope scope, StorageClass storage_class, const Type* type, Identifier identifier, const Location& location)
+Decl::Decl(IdentifierScope scope, StorageClass storage_class, const Type* type, const Identifier &identifier, const Location& location)
     : ASTNode(location), scope(scope), type(type), identifier(identifier) {
     if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
         linkage = Linkage::INTERNAL;
@@ -60,7 +60,7 @@ void Decl::combine() {
     }
 }
 
-Variable::Variable(IdentifierScope scope, StorageClass storage_class, const Type* type, Identifier identifier, Expr* initializer, const Location& location)
+Variable::Variable(IdentifierScope scope, StorageClass storage_class, const Type* type, const Identifier& identifier, Expr* initializer, const Location& location)
     : Decl(scope, storage_class, type, identifier, location), initializer(initializer) {
     if (storage_class == StorageClass::EXTERN || storage_class == StorageClass::STATIC || scope == IdentifierScope::FILE) {
         storage_duration = StorageDuration::STATIC;
@@ -99,7 +99,7 @@ void Variable::print(std::ostream& stream) const {
     stream << ']';
 }
 
-Function::Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, uint32_t specifiers, Identifier identifier, vector<Variable*>&& params, Statement* body, const Location& location)
+Function::Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, uint32_t specifiers, const Identifier& identifier, vector<Variable*>&& params, Statement* body, const Location& location)
     : Decl(scope, storage_class, type, identifier, location), params(move(params)), body(body) {
     if ((storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) ||
         (storage_class == StorageClass::STATIC && scope != IdentifierScope::FILE)) {
@@ -160,7 +160,7 @@ void Function::print(std::ostream& stream) const {
     stream << ']';
 }
 
-TypeDef::TypeDef(IdentifierScope scope, const Type* type, Identifier identifier, const Location& location)
+TypeDef::TypeDef(IdentifierScope scope, const Type* type, const Identifier& identifier, const Location& location)
     : Decl(scope, StorageClass::TYPEDEF, type, identifier, location) {
 }
 

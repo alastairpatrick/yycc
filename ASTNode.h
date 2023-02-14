@@ -27,7 +27,7 @@ ostream& operator<<(ostream& stream, const ASTNodeVector& items);
 
 
 struct Decl: ASTNode {
-    Decl(IdentifierScope scope, StorageClass storage_class, const Type* type, Identifier identifier, const Location& location);
+    Decl(IdentifierScope scope, StorageClass storage_class, const Type* type, const Identifier& identifier, const Location& location);
 
     IdentifierScope scope;
     Linkage linkage;

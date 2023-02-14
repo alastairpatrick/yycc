@@ -2,7 +2,7 @@
 #include "CompileContext.h"
 #include "Decl.h"
 
-Decl* SymbolMap::lookup_decl(TypeNameKind kind, Identifier identifier) {
+Decl* SymbolMap::lookup_decl(TypeNameKind kind, const Identifier& identifier) {
     // TODO: consider kind
     for (auto& scope : scopes) {
         auto it = scope.declarations.find(identifier.name);
@@ -20,7 +20,7 @@ Decl* SymbolMap::lookup_decl(TypeNameKind kind, Identifier identifier) {
     return nullptr;
 }
 
-const Type* SymbolMap::lookup_type(TypeNameKind kind, Identifier identifier) {
+const Type* SymbolMap::lookup_type(TypeNameKind kind, const Identifier& identifier) {
     auto decl = lookup_decl(kind, identifier);
     if (!decl) return nullptr;
 

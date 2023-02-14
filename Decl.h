@@ -35,7 +35,7 @@ ostream& operator<<(ostream& stream, Linkage linkage);
 ostream& operator<<(ostream& stream, StorageDuration duration);
 
 struct Variable: Decl {
-    Variable(IdentifierScope scope, StorageClass storage_class, const Type* type, Identifier identifier, Expr* initializer, const Location& location);
+    Variable(IdentifierScope scope, StorageClass storage_class, const Type* type, const Identifier& identifier, Expr* initializer, const Location& location);
 
     StorageDuration storage_duration;
     Expr* initializer{};
@@ -45,7 +45,7 @@ struct Variable: Decl {
 };
 
 struct Function: Decl {
-    Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, uint32_t specifiers, Identifier identifier, vector<Variable*>&& params, Statement* body, const Location& location);
+    Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, uint32_t specifiers, const Identifier& identifier, vector<Variable*>&& params, Statement* body, const Location& location);
 
     vector<Variable*> params;
     Statement* body{};
@@ -58,7 +58,7 @@ struct Function: Decl {
 };
 
 struct TypeDef: Decl {
-    TypeDef(IdentifierScope scope, const Type* type, Identifier identifier, const Location& location);
+    TypeDef(IdentifierScope scope, const Type* type, const Identifier& identifier, const Location& location);
 
     virtual const Type* to_type() const;
     virtual void print(std::ostream& stream) const;

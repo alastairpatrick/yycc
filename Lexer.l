@@ -217,6 +217,8 @@ L?\"(\\.|[^\\"\n])*\"       { return TOK_STRING_LITERAL; }
 
 %%
 
+string parse_string(const char* text, size_t capacity_hint, const Location& location);
+
 void Lexer::skip_comment() {
     if (!matcher().skip("*/")) {
         message(Severity::ERROR, location()) << "unterminated comment\n";
@@ -236,8 +238,6 @@ void Lexer::handle_directive() {
     directive_kind = DirectiveKind::NONE;
     directive.clear();
 }
-
-string parse_string(const char* text, size_t capacity_hint, const Location& location);
 
 void Lexer::parse_line_directive(const char* text) {
     const char* p = text;
