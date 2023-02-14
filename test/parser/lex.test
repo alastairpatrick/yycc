@@ -3,7 +3,7 @@ BEGIN Skips white space
  1 
  
 EXPECT_AST
-"Is1"
+"Si1"
 
 
 BEGIN Skips single line comments
@@ -11,19 +11,19 @@ BEGIN Skips single line comments
 1 // bar
 // baz
 EXPECT_AST
-"Is1"
+"Si1"
 
 
 BEGIN Skips multi-line comments
 /* bar */ 1 /* baz */
 EXPECT_AST
-"Is1"
+"Si1"
 
 
 BEGIN Unterminated comment
 1 /* foo
 EXPECT_AST
-"Is1"
+"Si1"
 EXPECT_MESSAGE
 :2:1: error unterminated comment
 
@@ -31,7 +31,7 @@ EXPECT_MESSAGE
 BEGIN Skips unexpected character
 @ 1
 EXPECT_AST
-"Is1"
+"Si1"
 EXPECT_MESSAGE
 :1:1: error unexpected character '@'
 
@@ -48,7 +48,7 @@ BEGIN Skips pragma
  # /*
 */ pragma
 EXPECT_AST
-"Is1"
+"Si1"
 
 
 BEGIN Skips line directive
@@ -62,7 +62,7 @@ BEGIN Skips line directive
 # /*
 */ line 5
 EXPECT_AST
-"Is1"
+"Si1"
 
 
 BEGIN Line directive resets line
@@ -87,7 +87,7 @@ BEGIN Error directive
 EXPECT_MESSAGE
 :1:1: error Hello, World!
 EXPECT_AST
-"Is1"
+"Si1"
 
 
 BEGIN Error directive with embedded comment
@@ -96,7 +96,7 @@ BEGIN Error directive with embedded comment
 EXPECT_MESSAGE
 :1:1: error Hello, World!
 EXPECT_AST
-"Is1"
+"Si1"
 
 
 BEGIN Error on unrecognized directive
@@ -106,4 +106,4 @@ BEGIN Error on unrecognized directive
 EXPECT_MESSAGE
 :2:1: error unexpected directive
 EXPECT_AST
-"Is1"
+"Si1"

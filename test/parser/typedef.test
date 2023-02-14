@@ -16,8 +16,8 @@ BEGIN Redefinition of typedef
 typedef int a;
 typedef signed a;
 EXPECT_AST
-[["typedef", "Is", "a"]
-,["typedef", "Is", "a"]]
+[["typedef", "Si", "a"]
+,["typedef", "Si", "a"]]
 
 
 BEGIN Redefinition of typedef with different type
@@ -27,8 +27,8 @@ EXPECT_MESSAGE
 :2:1: error redeclaration of 'a' with different type
 :1:1: see prior declaration
 EXPECT_AST
-[["typedef", "Is", "a"]
-,["typedef", "Iu", "a"]]
+[["typedef", "Si", "a"]
+,["typedef", "Ui", "a"]]
 
 
 BEGIN Typedefs use block scope
@@ -38,9 +38,9 @@ typedef int a;
 }
 EXPECT_AST
 [
-    ["typedef", "Is", "a"],
+    ["typedef", "Si", "a"],
     ["block", [
-        ["typedef", "Ls", "a"]]
+        ["typedef", "Sl", "a"]]
     ]
 ]
 
@@ -49,8 +49,8 @@ BEGIN Typedef as self
 typedef int a;
 typedef a a;
 EXPECT_AST
-[["typedef", "Is", "a"]
-,["typedef", "Is", "a"]]
+[["typedef", "Si", "a"]
+,["typedef", "Si", "a"]]
 
 
 BEGIN Disambiguates between multiplication and variable declaration of pointer type
@@ -62,8 +62,8 @@ int p, q;
 }
 EXPECT_AST
 [
-    ["var", "ES", "Is", "p", ""],
-    ["var", "ES", "Is", "q", ""],
+    ["var", "ES", "Si", "p", ""],
+    ["var", "ES", "Si", "q", ""],
     ["block", [
         ["*", "Nq", "Np"],
         ["typedef", "Ss", "q"],
@@ -80,10 +80,10 @@ int p, q;
 q * p; // Identifier "q" immediately follows '}'
 EXPECT_AST
 [
-    ["var", "ES", "Is", "p", ""],
-    ["var", "ES", "Is", "q", ""],
+    ["var", "ES", "Si", "p", ""],
+    ["var", "ES", "Si", "q", ""],
     ["block", [
-        ["typedef", "Ls", "q"]
+        ["typedef", "Sl", "q"]
     ]],
     ["*", "Nq", "Np"]
 ]
@@ -97,7 +97,7 @@ EXPECT_MESSAGE
 :2:2: error unexpected token
 :2:3: error unexpected token
 EXPECT_AST
-[["typedef", "Ls", "p"]]
+[["typedef", "Sl", "p"]]
 
 
 BEGIN Typedef may not be inline
@@ -105,7 +105,7 @@ inline typedef int A;
 EXPECT_MESSAGE
 :1:1: error 'inline' may only appear on function
 EXPECT_AST
-[["typedef", "Is", "A"]]
+[["typedef", "Si", "A"]]
 
 
 BEGIN Typedef may not be redeclared as a variable of same type

@@ -7,20 +7,15 @@
 #include "SymbolMap.h"
 
 // Type codes
-// B bool
 // C char
-// D double
-// E long double (E for enormous)
-// F float
-// I int
-// L long int
-// M long long int (M for massive)
+// F float: Ff float, Fd double, Fl long double
 // N name: Ns<id> struct, Nu<id> union, Ne<id> enum, Nt<id> typedef
 // P pointer
 // Q qualified: Qc const, Qv volatile, Qr restrict, Qcrv const restrict volatile, etc
-// S short int
+// S signed: Sc signed char, Ss signed short, Si signed int, Sl signed long, Sm signed long long
+// U unsigned: Ub bool, Uc unsigned char, Us unsigned short, Ui unsigned int, Ul unsigned long, Um unsigned long long
 // V void
-// ? variadic placeholder
+// . variadic placeholder
 
 unsigned Type::qualifiers() const {
     return 0;
@@ -167,9 +162,13 @@ LLVMTypeRef IntegerType::llvm_type() const {
 }
 
 void IntegerType::print(ostream& stream) const {
-    static const char* const sizes[int(IntegerSize::NUM)] = { "B", "C", "S", "I", "L", "M" };
-    static const char* const signednesses[int(IntegerSignedness::NUM)] = { "d", "s", "u" };
-    stream << sizes[int(size)] << signednesses[int(signedness)];
+    if (signedness == IntegerSignedness::DEFAULT) {
+        stream << 'C';
+    } else {
+        static const char* const signednesses[unsigned(IntegerSignedness::NUM)] = { nullptr, "S", "U" };
+        static const char* const sizes[unsigned(IntegerSize::NUM)] = { "b", "c", "s", "i", "l", "m" };
+        stream << signednesses[unsigned(signedness)] << sizes[unsigned(size)];
+    }
 }
 
 bool IntegerType::is_signed() const {
@@ -233,8 +232,8 @@ LLVMTypeRef FloatingPointType::llvm_type() const {
 }
 
 void FloatingPointType::print(ostream& stream) const {
-    static const char* const types[int(IntegerSize::NUM)] = { "F", "D", "E" };
-    stream << types[int(size)];
+    static const char* const types[int(IntegerSize::NUM)] = { "f", "d", "l" };
+    stream << 'F' << types[unsigned(size)];
 }
 
 // This is applied to binary expressions and to the second and third operands of a conditional expression.

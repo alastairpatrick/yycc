@@ -1,19 +1,19 @@
 BEGIN Function prototype with no parameters (1)
 int foo();
 EXPECT_AST
-[["fun", "E", "()Is", "foo"]]
+[["fun", "E", "()Si", "foo"]]
 
 
 BEGIN Function prototype with no parameters (2)
 int foo(void);
 EXPECT_AST
-[["fun", "E", "()Is", "foo"]]
+[["fun", "E", "()Si", "foo"]]
 
 
 BEGIN Function prototype with parameters
 void foo(float x, float y);
 EXPECT_AST
-[["fun", "E", "(FF)V", "foo"]]
+[["fun", "E", "(FfFf)V", "foo"]]
 
 
 BEGIN Error if prototype has multiple void parameters (1)
@@ -21,7 +21,7 @@ int foo(void, void);
 EXPECT_MESSAGE
 :1:15: error a parameter may not have void type
 EXPECT_AST
-[["fun", "E", "()Is", "foo"]]
+[["fun", "E", "()Si", "foo"]]
 
 
 BEGIN Error if prototype has multiple void parameters (2)
@@ -29,25 +29,25 @@ int foo(float, void);
 EXPECT_MESSAGE
 :1:16: error a parameter may not have void type
 EXPECT_AST
-[["fun", "E", "(F)Is", "foo"]]
+[["fun", "E", "(Ff)Si", "foo"]]
 
 
 BEGIN Function parameters of function type are adjusted to pointer
 int foo(int bar(void));
 EXPECT_AST
-[["fun", "E", "(P()Is)Is", "foo"]]
+[["fun", "E", "(P()Si)Si", "foo"]]
 
 
 BEGIN Prototype and external linkage
 extern int foo(float);
 EXPECT_AST
-[["fun", "E", "(F)Is", "foo"]]
+[["fun", "E", "(Ff)Si", "foo"]]
 
 
 BEGIN Prototype and internal linkage
 static int foo(float);
 EXPECT_AST
-[["fun", "I", "(F)Is", "foo"]]
+[["fun", "I", "(Ff)Si", "foo"]]
 
 
 BEGIN Error if prototype has register storage class
@@ -55,7 +55,7 @@ register int foo(float);
 EXPECT_MESSAGE
 :1:1: error invalid storage class
 EXPECT_AST
-[["fun", "E", "(F)Is", "foo"]]
+[["fun", "E", "(Ff)Si", "foo"]]
 
 
 BEGIN Error if function parameter has invalid storage class
@@ -63,29 +63,29 @@ int foo(extern float);
 EXPECT_MESSAGE
 :1:9: error invalid storage class
 EXPECT_AST
-[["fun", "E", "(F)Is", "foo"]]
+[["fun", "E", "(Ff)Si", "foo"]]
 
 
 BEGIN Function parameter with (ignored) register storage class
 void foo(register int);
 EXPECT_AST
-[["fun", "E", "(Is)V", "foo"]]
+[["fun", "E", "(Si)V", "foo"]]
 
 
 BEGIN Multiple function declarations
 int foo(signed);
 signed foo(int);
 EXPECT_AST
-[["fun", "E", "(Is)Is", "foo"]
-,["fun", "E", "(Is)Is", "foo"]]
+[["fun", "E", "(Si)Si", "foo"]
+,["fun", "E", "(Si)Si", "foo"]]
 
 
 BEGIN Multiple function declarations with extern storage class
 extern void foo(int);
 extern void foo(int);
 EXPECT_AST
-[["fun", "E", "(Is)V", "foo"]
-,["fun", "E", "(Is)V", "foo"]]
+[["fun", "E", "(Si)V", "foo"]
+,["fun", "E", "(Si)V", "foo"]]
 
 
 BEGIN Function declaration having internal linkage may not follow function declaration having external linkage
@@ -95,31 +95,31 @@ EXPECT_MESSAGE
 :2:1: error static declaration of 'foo' follows non-static declaration
 :1:1: see prior declaration
 EXPECT_AST
-[["fun", "E", "(Is)V", "foo"]
-,["fun", "I", "(Is)V", "foo"]]
+[["fun", "E", "(Si)V", "foo"]
+,["fun", "I", "(Si)V", "foo"]]
 
 
 BEGIN Function declaration having internal linkage may preceed function declaration having external linkage
 static void foo(int);
 extern void foo(int);
 EXPECT_AST
-[["fun","I","(Is)V","foo"]
-,["fun","E","(Is)V","foo"]]
+[["fun","I","(Si)V","foo"]
+,["fun","E","(Si)V","foo"]]
 
 
 BEGIN Multiple function declarations with internal linkage
 static void foo(int);
 static void foo(int);
 EXPECT_AST
-[["fun","I","(Is)V","foo"]
-,["fun","I","(Is)V","foo"]]
+[["fun","I","(Si)V","foo"]
+,["fun","I","(Si)V","foo"]]
 
 
 BEGIN Empty function definition
 void foo(int) {
 }
 EXPECT_AST
-[["fun", "E", "(Is)V", "foo", [""], ["block", []]]]
+[["fun", "E", "(Si)V", "foo", [""], ["block", []]]]
 
 
 BEGIN Function definition with function declaration (1)
@@ -127,8 +127,8 @@ static void foo(int);
 void foo(int x) {
 }
 EXPECT_AST
-[["fun","I","(Is)V","foo"]
-,["fun","E","(Is)V","foo",["x"],["block",[]]]]
+[["fun","I","(Si)V","foo"]
+,["fun","E","(Si)V","foo",["x"],["block",[]]]]
 
 
 BEGIN Function definition with function declaration (2)
@@ -136,8 +136,8 @@ void foo(int x) {
 }
 extern void foo(int);
 EXPECT_AST
-[["fun", "E", "(Is)V", "foo",[ "x"], ["block", []]]
-,["fun", "E", "(Is)V", "foo"]]
+[["fun", "E", "(Si)V", "foo",[ "x"], ["block", []]]
+,["fun", "E", "(Si)V", "foo"]]
 
 
 BEGIN Error on function redefinition
@@ -157,9 +157,9 @@ void foo(int);
 }
 EXPECT_AST
 [
-    ["fun", "E", "(Is)V", "foo"],
+    ["fun", "E", "(Si)V", "foo"],
     ["block", [
-        ["fun","E","(Is)V","foo"]
+        ["fun","E","(Si)V","foo"]
     ]]
 ]
 
@@ -170,7 +170,7 @@ void foo() {
 }
 EXPECT_AST
 [["fun", "E", "()V", "foo", [], ["block", [
-    ["var", "", "Is", "x", "Is1"]
+    ["var", "", "Si", "x", "Si1"]
 ]]]]
 
 
@@ -181,8 +181,8 @@ EXPECT_MESSAGE
 :1:21: error unexpected token
 :2:1: error unexpected token
 EXPECT_AST
-[["var", "ES", "Is", "foo", ""]
-,["fun", "E", "(Is)Is", "bar"]]
+[["var", "ES", "Si", "foo", ""]
+,["fun", "E", "(Si)Si", "bar"]]
 
 
 BEGIN Function definition may not share external declaration with declarators (2)
@@ -193,8 +193,8 @@ EXPECT_MESSAGE
 :2:4: error 'foo' undeclared
 EXPECT_AST
 [
-    ["fun", "E", "(Is)Is", "bar", ["x"], ["block", []]],
-    "Is0"
+    ["fun", "E", "(Si)Si", "bar", ["x"], ["block", []]],
+    "Si0"
 ]
 
 
@@ -202,7 +202,7 @@ BEGIN Parameters have function prototype scope (1)
 int foo(int foo) {
 }
 EXPECT_AST
-[["fun", "E", "(Is)Is", "foo", ["foo"], ["block", []]]]
+[["fun", "E", "(Si)Si", "foo", ["foo"], ["block", []]]]
 
 
 BEGIN Parameters have function prototype scope (2)
@@ -210,7 +210,7 @@ int foo(int bar) {
     int bar;
 }
 EXPECT_AST
-[["fun", "E", "(Is)Is", "foo", ["bar"], ["block", [["var", "", "Is", "bar", ""]]]]]
+[["fun", "E", "(Si)Si", "foo", ["bar"], ["block", [["var", "", "Si", "bar", ""]]]]]
 
 
 BEGIN Cannot declare static function at block scope
@@ -274,7 +274,7 @@ void foo(inline int x);
 EXPECT_MESSAGE
 :1:10: error 'inline' may only appear on function
 EXPECT_AST
-[["fun", "E", "(Is)V", "foo"]]
+[["fun", "E", "(Si)V", "foo"]]
 
 
 BEGIN Function definition with return statement
@@ -282,6 +282,6 @@ int main(int argc, const char* argv) {
     return argc;
 }
 EXPECT_AST
-[["fun", "E", "(IsPQcCd)Is", "main", ["argc", "argv"], ["block", [
+[["fun", "E", "(SiPQcC)Si", "main", ["argc", "argv"], ["block", [
     ["return", "Nargc"]
 ]]]]
