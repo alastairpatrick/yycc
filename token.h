@@ -31,15 +31,16 @@ enum Token {
     TOK_STRUCT,
     TOK_UNION,
     TOK_ENUM,
-    TOK_TYPEDEF_IDENTIFIER,
+    TOK_IDENTIFIER,
 
     TOK_INLINE,
 
     // Above must be <32 so they don't overlap single char tokens and so we can make sets of them with a bitmap in a 32-bit int
 
-    TOK_IDENTIFIER = 0x80,
-
-    TOK_INT_LITERAL,
+    TOK_BIN_INT_LITERAL = 0x80,
+    TOK_OCT_INT_LITERAL,
+    TOK_DEC_INT_LITERAL,
+    TOK_HEX_INT_LITERAL,
     TOK_FLOAT_LITERAL,
     TOK_CHAR_LITERAL,
     TOK_STRING_LITERAL,

@@ -2,6 +2,7 @@
 #include "assoc_prec.h"
 #include "ASTNode.h"
 #include "CompileContext.h"
+#include "Constant.h"
 #include "Decl.h"
 #include "Expr.h"
 #include "lex.yy.h"
@@ -15,7 +16,7 @@ struct Parser {
     SymbolMap symbols;
     ASTNodeVector extern_decls;
 
-    explicit Parser(const reflex::Input& input): lexer(symbols, input) {
+    explicit Parser(const reflex::Input& input): lexer(input) {
         token = lexer.lex();
     }
 
@@ -109,35 +110,30 @@ struct Parser {
         Expr* result{};
 
         while (token) {
-            if (token == TOK_INT_LITERAL) {
-                result = new IntegerConstant(lexer.int_lit, IntegerType::of(lexer.int_signedness, lexer.int_size), lexer.location());
+            if (token == TOK_BIN_INT_LITERAL || token == TOK_OCT_INT_LITERAL || token == TOK_DEC_INT_LITERAL || token == TOK_HEX_INT_LITERAL || token == TOK_CHAR_LITERAL) {
+                result = IntegerConstant::of(lexer.text(), token, lexer.location());
                 consume();
                 break;
             }
             else if (token == TOK_FLOAT_LITERAL) {
-                result = new FloatingPointConstant(lexer.float_lit, FloatingPointType::of(lexer.float_size), lexer.location());
-                consume();
-                break;
-            }
-            else if (token == TOK_CHAR_LITERAL) {
-                result = new IntegerConstant(lexer.int_lit, IntegerType::of_char(lexer.string_wide), lexer.location());
+                result = FloatingPointConstant::of(lexer.text(), lexer.location());
                 consume();
                 break;
             }
             else if (token == TOK_STRING_LITERAL) {
-                result = new StringConstant(move(lexer.string_lit), IntegerType::of_char(lexer.string_wide), lexer.location());
+                result = StringConstant::of(lexer.text(), lexer.size(), lexer.location());
                 consume();
                 break;
             }
             else if (token == TOK_IDENTIFIER) {
-                Decl* decl = symbols.lookup_decl(TypeNameKind::ORDINARY, lexer.identifier);
+                Decl* decl = symbols.lookup_decl(TypeNameKind::ORDINARY, lexer.identifier());
                 if (decl) {
                     // Token would have to be TOK_TYPEDEF_IDENTIFIER for decl to be a typedef.
                     assert(!dynamic_cast<TypeDef*>(decl));
 
                     result = new NameExpr(decl, lexer.location());
                 } else {
-                    message(Severity::ERROR, lexer.location()) << '\'' << lexer.identifier << "' undeclared\n";
+                    message(Severity::ERROR, lexer.location()) << '\'' << lexer.identifier() << "' undeclared\n";
                     result = new IntegerConstant(0, IntegerType::default_type(), lexer.location());
                 }
                 consume();
@@ -209,13 +205,16 @@ struct Parser {
                 type_specifier_location = lexer.location();                
                 break;
 
-            case TOK_TYPEDEF_IDENTIFIER:
-                if ((specifier_set & type_specifier_mask) == 0) {
-                    should_consume = true;
-                    type_specifier_location = lexer.location();                
-                    type = symbols.lookup_type(TypeNameKind::ORDINARY, lexer.identifier);
-                }
+            case TOK_IDENTIFIER: {
+                    auto typedef_type = symbols.lookup_type(TypeNameKind::ORDINARY, lexer.identifier());
+                    if (!typedef_type) break;
 
+                    if ((specifier_set & type_specifier_mask) == 0) {
+                        type = typedef_type;
+                        should_consume = true;
+                        type_specifier_location = lexer.location();                
+                    }
+                }
                 break;
 
             case TOK_INLINE:
@@ -317,8 +316,7 @@ struct Parser {
         case (1 << TOK_BOOL):
             type = IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL);
             break;
-        case (1 << TOK_TYPEDEF_IDENTIFIER):
-            assert(type);
+        case (1 << TOK_IDENTIFIER):
             break;
         default:
             type = IntegerType::default_type();
@@ -437,8 +435,8 @@ struct Parser {
                 }
             }
 
-            auto identifier = lexer.identifier;
-            if (!consume(TOK_IDENTIFIER) && !consume(TOK_TYPEDEF_IDENTIFIER)) identifier.name = empty_string();
+            auto identifier = lexer.identifier();
+            if (!consume(TOK_IDENTIFIER)) identifier.name = empty_string();
 
             Expr* initializer{};
             Decl* decl{};

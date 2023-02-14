@@ -1,11 +1,7 @@
-#include "nlohmann/json.hpp"
-
 #include "std.h"
 
 #include "Expr.h"
 #include "CodeGenContext.h"
-
-using json = nlohmann::json;
 
 ConditionExpr::ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, const Location& location)
     : Expr(location), condition(move(condition)), then_expr(move(then_expr)), else_expr(move(else_expr)) {
@@ -54,60 +50,6 @@ LLVMValueRef ConditionExpr::generate_value(CodeGenContext* context) const {
 
 void ConditionExpr::print(ostream& stream) const {
     stream << "[\"?:\", " << condition << ", " << then_expr << ", " << else_expr << "]";
-}
-
-Constant::Constant(const Location& location): Expr(location) {
-}
-
-IntegerConstant::IntegerConstant(unsigned long long value, const IntegerType* type, const Location& location)
-    : Constant(location), type(type), value(value) {
-}
-
-const Type* IntegerConstant::get_type() const {
-    return type;
-}
-
-LLVMValueRef IntegerConstant::generate_value(CodeGenContext* context) const {
-    return LLVMConstInt(type->llvm_type(), value, type->is_signed());
-}
-
-void IntegerConstant::print(ostream& stream) const {
-    stream << '"' << type << value << '"';
-}
-
-FloatingPointConstant::FloatingPointConstant(double value, const FloatingPointType* type, const Location& location)
-    : Constant(location), type(type), value(value) {
-}
-
-const Type* FloatingPointConstant::get_type() const {
-    return type;
-}
-
-LLVMValueRef FloatingPointConstant::generate_value(CodeGenContext* context) const {
-    return LLVMConstReal(type->llvm_type(), value);
-}
-
-void FloatingPointConstant::print(ostream& stream) const {
-    stream << '"' << type << value << '"';
-}
-
-StringConstant::StringConstant(std::string utf8_literal, const IntegerType* char_type, const Location& location)
-    : Constant(location), char_type(char_type), utf8_literal(move(utf8_literal)) {
-}
-
-const Type* StringConstant::get_type() const {
-    return char_type->pointer_to();
-}
-
-void StringConstant::print(ostream& stream) const {
-    stringstream s;
-    s << 'S' << char_type << utf8_literal;
-    string t(s.str());
-    stream << json(t);
-}
-
-LLVMValueRef StringConstant::generate_value(CodeGenContext* context) const {
-    return nullptr;
 }
 
 NameExpr::NameExpr(const Decl* decl, const Location& location)

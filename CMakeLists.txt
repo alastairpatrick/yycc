@@ -9,6 +9,7 @@ add_library(lang_lib STATIC
     assoc_prec.c
     ASTNode.cpp
     CompileContext.cpp
+    Constant.cpp
     Decl.cpp
     Expr.cpp
     Parser.cpp
