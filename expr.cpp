@@ -4,7 +4,7 @@
 #include "CodeGenContext.h"
 
 ConditionExpr::ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, const Location& location)
-    : Expr(location), condition(move(condition)), then_expr(move(then_expr)), else_expr(move(else_expr)) {
+    : Expr(location), condition(condition), then_expr(then_expr), else_expr(else_expr) {
     assert(this->condition);
     assert(this->then_expr);
     assert(this->else_expr);
@@ -72,7 +72,7 @@ void NameExpr::print(std::ostream& stream) const {
 }
 
 BinaryExpr::BinaryExpr(Expr* left, Expr* right, BinaryOp op, const Location& location)
-    : Expr(location), left(move(left)), right(move(right)), op(op) {
+    : Expr(location), left(left), right(right), op(op) {
     assert(this->left);
     assert(this->right);
 }

@@ -77,7 +77,7 @@ struct Parser {
                 auto then_expr = parse_expr(next_min_prec);
                 if (require(':')) {
                     auto else_expr = parse_expr(CONDITIONAL_PREC);
-                    result = new ConditionExpr(move(result), move(then_expr), move(else_expr), loc);
+                    result = new ConditionExpr(result, then_expr, else_expr, loc);
                 }
             }
             else {
@@ -99,7 +99,7 @@ struct Parser {
                 }
 
                 auto right = parse_expr(next_min_prec);
-                result = new BinaryExpr(move(result), move(right), op, loc);
+                result = new BinaryExpr(result, right, op, loc);
             }
         }
 
@@ -373,7 +373,7 @@ struct Parser {
                 require(';');
             }
 
-            list.push_back(move(decl));
+            list.push_back(decl);
         }
     }
 

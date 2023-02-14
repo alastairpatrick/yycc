@@ -43,7 +43,7 @@ struct StringConstant: Constant {
 
     static StringConstant* of(const char* text, size_t capacity_hint, const Location& location);
 
-    StringConstant(std::string utf8_literal, const IntegerType* char_type, const Location& location);
+    StringConstant(std::string&& utf8_literal, const IntegerType* char_type, const Location& location);
 
     virtual const Type* get_type() const;
     virtual LLVMValueRef generate_value(CodeGenContext* context) const;
