@@ -32,7 +32,7 @@ typedef struct {
     OperatorPrec prec;
 } AssocPrec;
 
-extern const AssocPrec g_assoc_prec[0x100];
+extern const AssocPrec g_assoc_prec[];
 
 #ifdef __cplusplus
 } // extern "C"

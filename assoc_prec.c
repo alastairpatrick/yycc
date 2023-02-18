@@ -1,7 +1,7 @@
 #include "assoc_prec.h"
 #include "Token.h"
 
-const AssocPrec g_assoc_prec[0x100] = {
+const AssocPrec g_assoc_prec[TOK_NUM] = {
     [TOK_EOF]           = { ASSOC_RIGHT, EOF_PREC },
 
     // <expression> ::= <assignment-expression>

@@ -1,8 +1,8 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
-enum Token {
-    TOK_EOF = 0,
+enum TokenKind {
+    TOK_EOF,
 
     TOK_TYPEDEF,
     TOK_EXTERN,
@@ -35,16 +35,53 @@ enum Token {
 
     TOK_INLINE,
 
-    // Above must be <32 so they don't overlap single char tokens and so we can make sets of them with a bitmap in a 32-bit int
+    // Tokens above are <32 so that they don't overlap with single character punctuators.
+    // It is also convenient to be able to use a 32-bit int as a token set for these, e.g.
+    // for set of type specifiers.
 
-    TOK_BIN_INT_LITERAL = 0x80,
+    // Punctuators are represented with their Unicode code point.
+
+    // Tokens below use the upper case letter range so they don't overlap punctuators.
+    TOK_CHAR_LITERAL = 'A',
+    TOK_STRING_LITERAL,
+    TOK_HEADER_NAME,
+    TOK_PP_NUMBER,
+
+    TOK_PP_EOL,
+    TOK_PP_DEFINE,
+    TOK_PP_ELIF,
+    TOK_PP_ELSE,
+    TOK_PP_IF,
+    TOK_PP_IFDEF,
+    TOK_PP_IFNDEF,
+    TOK_PP_INCLUDE,
+    TOK_PP_LINE,
+    TOK_PP_ERROR,
+    TOK_PP_UNDEF,
+
+    // Tokens below fall in the lower case letter range so they don't overlap with punctuators. 
+    TOK_PRAGMA_ONCE = 'a',
+
+    // Tokens below may be outside the range of uint8_t because they are never stored in hat files.
+    TOK_BREAK = 0x100,
+    TOK_CASE,
+    TOK_CONTINUE,
+    TOK_DEFAULT,
+    TOK_DO,
+    TOK_ELSE,
+    TOK_FOR,
+    TOK_GOTO,
+    TOK_IF,
+    TOK_RETURN,
+    TOK_SIZEOF,
+    TOK_SWITCH,
+    TOK_WHILE,
+
+    TOK_BIN_INT_LITERAL,
     TOK_OCT_INT_LITERAL,
     TOK_DEC_INT_LITERAL,
     TOK_HEX_INT_LITERAL,
     TOK_FLOAT_LITERAL,
-    TOK_CHAR_LITERAL,
-    TOK_STRING_LITERAL,
-    TOK_SIZEOF,
 
     TOK_PTR_OP,
     TOK_INC_OP,
@@ -72,18 +109,7 @@ enum Token {
 
     TOK_ELLIPSIS,
 
-    TOK_CASE,
-    TOK_DEFAULT,
-    TOK_IF,
-    TOK_ELSE,
-    TOK_SWITCH,
-    TOK_WHILE,
-    TOK_DO,
-    TOK_FOR,
-    TOK_GOTO,
-    TOK_CONTINUE,
-    TOK_BREAK,
-    TOK_RETURN,
+    TOK_NUM
 };
 
 #endif

@@ -12,16 +12,16 @@
 
 struct Parser {
     Lexer lexer;
-    int token;
+    TokenKind token;
     SymbolMap symbols;
     ASTNodeVector extern_decls;
 
     explicit Parser(const reflex::Input& input): lexer(input) {
-        token = lexer.lex();
+        token = TokenKind(lexer.lex());
     }
 
     void consume() {
-        token = lexer.lex();
+        token = TokenKind(lexer.lex());
     }
 
     bool consume(int t, Location* location = nullptr) {
@@ -53,11 +53,13 @@ struct Parser {
     }
 
     OperatorAssoc assoc() {
-        return g_assoc_prec[token & 0xFF].assoc;
+        assert(token >= 0 && token < TOK_NUM);
+        return g_assoc_prec[token].assoc;
     }
 
     OperatorPrec prec() {
-        return g_assoc_prec[token & 0xFF].prec;
+        assert(token >= 0 && token < TOK_NUM);
+        return g_assoc_prec[token].prec;
     }
 
     bool check_eof() {
@@ -128,7 +130,7 @@ struct Parser {
             else if (token == TOK_IDENTIFIER) {
                 Decl* decl = symbols.lookup_decl(TypeNameKind::ORDINARY, lexer.identifier());
                 if (decl) {
-                    // Token would have to be TOK_TYPEDEF_IDENTIFIER for decl to be a typedef.
+                    // TokenKind would have to be TOK_TYPEDEF_IDENTIFIER for decl to be a typedef.
                     assert(!dynamic_cast<TypeDef*>(decl));
 
                     result = new NameExpr(decl, lexer.location());
