@@ -6,6 +6,7 @@
 #include <list>
 #include <map>
 #include <sstream>
+#include <stack>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -22,14 +23,15 @@ using std::hex;
 using std::hexfloat;
 using std::ios_base;
 using std::istream;
-using std::ostream;
-using std::string;
-using std::stringstream;
 using std::list;
 using std::map;
 using std::max;
 using std::move;
+using std::ostream;
 using std::pair;
+using std::stack;
+using std::string;
+using std::stringstream;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;

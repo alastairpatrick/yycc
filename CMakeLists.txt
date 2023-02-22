@@ -12,6 +12,7 @@ add_library(lang_lib STATIC
     Constant.cpp
     Decl.cpp
     Expr.cpp
+    Lexer.cpp
     Parser.cpp
     Printable.cpp
     Statement.cpp
@@ -52,3 +53,4 @@ target_link_libraries(lang PRIVATE lang_lib)
 
 add_subdirectory(test)
 add_subdirectory(third_party)
+add_subdirectory(yyct)

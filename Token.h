@@ -41,49 +41,8 @@ enum TokenKind {
 
     // Punctuators are represented with their Unicode code point.
 
-    // Tokens below use the upper case letter range so they don't overlap punctuators.
-    TOK_CHAR_LITERAL = 'A',
-    TOK_STRING_LITERAL,
-    TOK_HEADER_NAME,
-    TOK_PP_NUMBER,
-
-    TOK_PP_EOL,
-    TOK_PP_DEFINE,
-    TOK_PP_ELIF,
-    TOK_PP_ELSE,
-    TOK_PP_IF,
-    TOK_PP_IFDEF,
-    TOK_PP_IFNDEF,
-    TOK_PP_INCLUDE,
-    TOK_PP_LINE,
-    TOK_PP_ERROR,
-    TOK_PP_UNDEF,
-
     // Tokens below fall in the lower case letter range so they don't overlap with punctuators. 
-    TOK_PRAGMA_ONCE = 'a',
-
-    // Tokens below may be outside the range of uint8_t because they are never stored in hat files.
-    TOK_BREAK = 0x100,
-    TOK_CASE,
-    TOK_CONTINUE,
-    TOK_DEFAULT,
-    TOK_DO,
-    TOK_ELSE,
-    TOK_FOR,
-    TOK_GOTO,
-    TOK_IF,
-    TOK_RETURN,
-    TOK_SIZEOF,
-    TOK_SWITCH,
-    TOK_WHILE,
-
-    TOK_BIN_INT_LITERAL,
-    TOK_OCT_INT_LITERAL,
-    TOK_DEC_INT_LITERAL,
-    TOK_HEX_INT_LITERAL,
-    TOK_FLOAT_LITERAL,
-
-    TOK_PTR_OP,
+    TOK_PTR_OP = 'a',
     TOK_INC_OP,
     TOK_DEC_OP,
     TOK_LEFT_OP,
@@ -105,9 +64,56 @@ enum TokenKind {
     TOK_AND_ASSIGN,
     TOK_XOR_ASSIGN,
     TOK_OR_ASSIGN,
-    TOK_TYPE_NAME,
 
     TOK_ELLIPSIS,
+
+    // Tokens below use the digits range so they don't overlap punctuators.
+    TOK_CHAR_LITERAL = '0',
+    TOK_STRING_LITERAL,
+    TOK_HEADER_NAME,
+    TOK_PP_NUMBER,
+    TOK_PP_UNRECOGNIZED,
+    TOK_PP_NONDIRECTIVE,
+    TOK_PP_COMMENT,
+    TOK_PP_UNTERMINATED_COMMENT,
+
+    // Tokens below use the upper case letter range so they don't overlap punctuators.
+    TOK_PP_CONTROL = 'A',
+    TOK_PP_DEFINE,
+    TOK_PP_ELIF,
+    TOK_PP_ELSE,
+    TOK_PP_EMPTY,
+    TOK_PP_ENDIF,
+    TOK_PP_ERROR,
+    TOK_PP_IF,
+    TOK_PP_IFDEF,
+    TOK_PP_IFNDEF,
+    TOK_PP_INCLUDE,
+    TOK_PP_LINE,
+    TOK_PP_PRAGMA,
+    TOK_PP_UNDEF,
+
+    // Tokens below may be outside the range of char because they are never stored in hat files.
+    TOK_BREAK = 0x80,
+    TOK_CASE,
+    TOK_CONTINUE,
+    TOK_DEFAULT,
+    TOK_DO,
+    TOK_ELSE,
+    TOK_FOR,
+    TOK_GOTO,
+    TOK_IF,
+    TOK_RETURN,
+    TOK_SIZEOF,
+    TOK_SWITCH,
+    TOK_WHILE,
+
+    TOK_BIN_INT_LITERAL,
+    TOK_OCT_INT_LITERAL,
+    TOK_DEC_INT_LITERAL,
+    TOK_HEX_INT_LITERAL,
+    TOK_FLOAT_LITERAL,
+
 
     TOK_NUM
 };

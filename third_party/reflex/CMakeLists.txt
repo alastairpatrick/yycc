@@ -14,7 +14,7 @@ add_library(reflex_lib STATIC
 )
 
 target_include_directories(reflex_lib PUBLIC
-    include
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 add_executable(reflex
