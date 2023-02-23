@@ -2,7 +2,7 @@
 #define TOKENIZER_H
 #include "std.h"
 
-#include "Phase3Lexer.yy.h"
+#include "PPTokenLexer.yy.h"
 #include "Token.h"
 
 using reflex::Input;

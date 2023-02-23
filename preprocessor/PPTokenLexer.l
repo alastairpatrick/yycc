@@ -1,23 +1,13 @@
-%option yylineno
+%option fast
 %option lexer=Phase3Lexer
+%option yylineno
 
 %top {
 #include "../Token.h"
 %}
 
-%class{
-    TokenKind skip_comment();
-public:
-    size_t comment_lines{};
-}
-
 D               [0-9]
 L               [a-zA-Z_]
-H               [a-fA-F0-9]
-E               ([Ee][+-]?{D}+)
-P               ([Pp][+-]?{D}+)
-FS              (f|F|l|L)
-IS              ((u|U)|(u|U)?(l|L|ll|LL)|(l|L|ll|LL)(u|U))
 N               ([0-9a-zA-Z_\.]|([EePp][+-]))
 HW              [ \t\v\f\r]
 
@@ -28,20 +18,19 @@ STRING          \"(\\.|[^\\"\n])*\"
 
 %%
 
-
 <INITIAL,PP_TOKENS,DIRECTIVE> {
 
-"/*"            { auto token = skip_comment(); return token; }
-"//"[^\n]*      { comment_lines = 0; return TOK_PP_COMMENT; }
+"/*"            { if (!matcher().skip("*/")) return TOK_PP_UNTERMINATED_COMMENT; }
+"//"[^\n]*      { }
 {HW}+           { }
+\n              { start(INITIAL); return '\n'; }
 
 }
 
-// This is the state at the start of the file and the start of each line. From here, switch to state
-// D1 if there is a directive or T otherwise.
+// This is the state at the start of each line. From here, switch to state
+// DIRECTIVE or PP_TOKENS, depending on first non-white-space character.
 <INITIAL> {
 
-\n              { return '\n'; }
 "#"             { start(DIRECTIVE); return TOK_PP_CONTROL; }
 .               { matcher().wunput(matcher().wchr()); start(PP_TOKENS); }
 
@@ -50,23 +39,8 @@ STRING          \"(\\.|[^\\"\n])*\"
 // Tokenize regular text-line
 <PP_TOKENS> {
 
-\n              { start(INITIAL); return '\n'; }
-
 {L}({L}|{D})*               { return TOK_IDENTIFIER; }
 
-0[xX]{H}+{IS}?              { return TOK_HEX_INT_LITERAL; }
-0[bB][0-1]+{IS}?            { return TOK_BIN_INT_LITERAL; }
-0[0-7]*{IS}?                { return TOK_OCT_INT_LITERAL; }
-[1-9]{D}*{IS}?              { return TOK_DEC_INT_LITERAL; }
-
-{D}+{E}{FS}?                { return TOK_FLOAT_LITERAL; }
-{D}*"."{D}+{E}?{FS}?        { return TOK_FLOAT_LITERAL; }
-{D}+"."{D}*{E}?{FS}?        { return TOK_FLOAT_LITERAL; }
-0[xX]{H}+{P}{FS}?           { return TOK_FLOAT_LITERAL; }
-0[xX]{H}*"."{H}+{P}?{FS}?   { return TOK_FLOAT_LITERAL; }
-0[xX]{H}+"."{H}*{P}?{FS}?   { return TOK_FLOAT_LITERAL; }
-
-// This matches any pp-number not recognized as a valid number literal.
 "."?{D}{N}*                 { return TOK_PP_NUMBER; }
 
 L?\"(\\.|[^\\"\n])*\"       { return TOK_STRING_LITERAL; }
@@ -138,17 +112,9 @@ L?'(\\.|[^\\'\n])*'         { return TOK_CHAR_LITERAL; }
 "line"          { start(PP_TOKENS); return TOK_PP_LINE; }
 "pragma"        { start(PP_TOKENS); return TOK_PP_PRAGMA; }
 "undef"         { start(PP_TOKENS); return TOK_PP_UNDEF; }
-\n              { start(PP_TOKENS); return '\n'; }
 
 .               { start(PP_TOKENS); return TOK_PP_NONDIRECTIVE; }
 
 }
 
 %%
-
-TokenKind Phase3Lexer::skip_comment() {
-    auto start_line = lineno();
-    if (!matcher().skip("*/")) return TOK_PP_UNTERMINATED_COMMENT;
-    comment_lines = lineno_end() - start_line;
-    return TOK_PP_COMMENT;
-}

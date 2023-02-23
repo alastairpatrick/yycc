@@ -20,6 +20,7 @@ add_library(lang_lib STATIC
     Type.cpp
     TypeContext.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/lex.yy.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/PPTokenLexer.yy.cpp
 )
 
 add_custom_command(
@@ -27,6 +28,13 @@ add_custom_command(
     OUTPUT  lex.yy.cpp lex.yy.h
     COMMAND reflex --header-file
             ${CMAKE_CURRENT_SOURCE_DIR}/Lexer.l
+)
+
+add_custom_command(
+    DEPENDS reflex preprocessor/PPTokenLexer.l
+    OUTPUT  PPTokenLexer.yy.cpp PPTokenLexer.yy.h
+    COMMAND reflex --header-file=PPTokenLexer.yy.h --outfile=PPTokenLexer.yy.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/preprocessor/PPTokenLexer.l
 )
 
 target_include_directories(lang_lib

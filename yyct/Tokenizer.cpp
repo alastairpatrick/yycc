@@ -1,7 +1,5 @@
 #include "Tokenizer.h"
 
-constexpr int horz_tab_size = 4;
-
 static bool should_inline(const Tokenizer::Identifier& identifier) {
     size_t internal_size = identifier.frequency * identifier.text.length();
     size_t external_size = identifier.frequency * 3 + identifier.text.length() + 1;  // approximate - assumes two byte varuint index
@@ -59,24 +57,47 @@ void Tokenizer::histogram(const string& source) {
     } while (kind);
 }
 
+// Characters (0, '\n'] are new-line characters with varying line number adjustment
+const int max_vert_adjust = '\n' - 1;
+
+// Characters ('\n', ' '] are space characters with varying column number adjustment
+const int max_horz_adjust = ' ' - '\n' - 1;
+
+
+static char horz_space_char(int columns) {
+    assert(columns <= max_horz_adjust);
+    return ' ' - (columns - 1);
+}
+
+static char vert_space_char(int lines) {
+    assert(lines <= max_vert_adjust);
+    return '\n' - (lines - 1);
+}
+
 void Tokenizer::align_token(ostream& stream, const Phase3Lexer& lexer) {
     int target_line = lexer.lineno();
     int target_column = lexer.columno();
 
-    while (target_line - current_line >= 1) {
-        stream << '\n';
+    while (target_line - current_line > max_vert_adjust) {
+        stream << vert_space_char(max_vert_adjust);
+        current_line += max_vert_adjust;
         current_column = 0;
-        current_line += 1;
     }
 
-    while (target_column - current_column >= horz_tab_size) {
-        stream << '\t';
-        current_column += horz_tab_size;
+    if (target_line > current_line) {
+        stream << vert_space_char(target_line - current_line);
+        current_line = target_line;
+        current_column = 0;
     }
 
-    while (target_column - current_column >= 1) {
-        stream << ' ';
-        current_column += 1;
+    while (target_column - current_column > max_horz_adjust) {
+        stream << horz_space_char(max_horz_adjust);
+        current_column += max_horz_adjust;
+    }
+
+    if (target_column > current_column) {
+        stream << horz_space_char(target_column - current_column);
+        current_column = target_column;
     }
 }
 
@@ -105,7 +126,7 @@ void Tokenizer::rewrite(ostream& stream, const string& source) {
                     write_token(stream, lexer);
                 } else {
                     align_token(stream, lexer);
-                    stream << '\x1B';
+                    stream << '\0';
                     write_varuint(stream, identifier.index);
                     current_column += identifier.text.length();
                 }
@@ -122,8 +143,7 @@ void Tokenizer::rewrite(ostream& stream, const string& source) {
                 stream.write((const char*) &token, 1);
                 current_column += lexer.size();
                 break;
-            } case '\n':
-              case TOK_PP_COMMENT: {
+            } case '\n': {
                 break;
             }
         }
