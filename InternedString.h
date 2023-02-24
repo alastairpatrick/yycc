@@ -11,6 +11,6 @@ typedef const string_view* InternedString;
 extern InternedString EmptyInternedString;
 
 InternedString InternString(string_view source);
-std::ostream& operator<<(std::ostream& stream, InternedString s);
+ostream& operator<<(ostream& stream, InternedString s);
 
 #endif

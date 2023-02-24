@@ -16,7 +16,7 @@ struct ConditionExpr: Expr {
 
     virtual const Type* get_type() const;
     virtual LLVMValueRef generate_value(CodeGenContext* context) const;
-    virtual void print(std::ostream& stream) const;
+    virtual void print(ostream& stream) const;
 };
 
 struct NameExpr: Expr {
@@ -26,7 +26,7 @@ struct NameExpr: Expr {
 
     virtual const Type* get_type() const;
     virtual LLVMValueRef generate_value(CodeGenContext* context) const;
-    virtual void print(std::ostream& stream) const;
+    virtual void print(ostream& stream) const;
 };
 
 enum class BinaryOp {
@@ -48,7 +48,7 @@ struct BinaryExpr: Expr {
     
     virtual const Type* get_type() const;
     virtual LLVMValueRef generate_value(CodeGenContext* context) const;
-    virtual void print(std::ostream& stream) const;
+    virtual void print(ostream& stream) const;
 };
 
 // The default value of a variable, e.g. zero for static duration and uninitialized for automatic duration
@@ -59,7 +59,7 @@ struct DefaultExpr: Expr {
 
     virtual const Type* get_type() const;
     virtual LLVMValueRef generate_value(CodeGenContext* context) const;
-    virtual void print(std::ostream& stream) const;
+    virtual void print(ostream& stream) const;
 };
 
 #endif

@@ -65,7 +65,7 @@ LLVMValueRef NameExpr::generate_value(CodeGenContext* context) const {
     return nullptr;
 }
 
-void NameExpr::print(std::ostream& stream) const {
+void NameExpr::print(ostream& stream) const {
     stream << "\"N" << decl->identifier << '"';
 }
 
@@ -167,6 +167,6 @@ LLVMValueRef DefaultExpr::generate_value(CodeGenContext* context) const {
     return nullptr;
 }
 
-void DefaultExpr::print(std::ostream& stream) const {
+void DefaultExpr::print(ostream& stream) const {
     stream << "\"\"";
 }

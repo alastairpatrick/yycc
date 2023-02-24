@@ -284,7 +284,7 @@ StringConstant* StringConstant::of(const char* text, size_t capacity_hint, const
     return new StringConstant(move(value), IntegerType::of_char(is_wide), location);
 }
 
-StringConstant::StringConstant(std::string&& utf8_literal, const IntegerType* char_type, const Location& location)
+StringConstant::StringConstant(string&& utf8_literal, const IntegerType* char_type, const Location& location)
     : Constant(location), char_type(char_type), utf8_literal(move(utf8_literal)) {
 }
 

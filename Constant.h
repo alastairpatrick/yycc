@@ -21,7 +21,7 @@ struct IntegerConstant: Constant {
 
     virtual const Type* get_type() const;
     virtual LLVMValueRef generate_value(CodeGenContext* context) const;
-    virtual void print(std::ostream& stream) const;
+    virtual void print(ostream& stream) const;
 };
 
 struct FloatingPointConstant: Constant {
@@ -34,20 +34,20 @@ struct FloatingPointConstant: Constant {
 
     virtual const Type* get_type() const;
     virtual LLVMValueRef generate_value(CodeGenContext* context) const;
-    virtual void print(std::ostream& stream) const;
+    virtual void print(ostream& stream) const;
 };
 
 struct StringConstant: Constant {
     const IntegerType* char_type{};
-    std::string utf8_literal;
+    string utf8_literal;
 
     static StringConstant* of(const char* text, size_t capacity_hint, const Location& location);
 
-    StringConstant(std::string&& utf8_literal, const IntegerType* char_type, const Location& location);
+    StringConstant(string&& utf8_literal, const IntegerType* char_type, const Location& location);
 
     virtual const Type* get_type() const;
     virtual LLVMValueRef generate_value(CodeGenContext* context) const;
-    virtual void print(std::ostream& stream) const;
+    virtual void print(ostream& stream) const;
 };
 
 

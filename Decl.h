@@ -41,7 +41,7 @@ struct Variable: Decl {
     Expr* initializer{};
 
     virtual void combine();
-    virtual void print(std::ostream& stream) const;
+    virtual void print(ostream& stream) const;
 };
 
 struct Function: Decl {
@@ -54,14 +54,14 @@ struct Function: Decl {
 
     virtual bool is_function_definition() const;
     virtual void combine();
-    virtual void print(std::ostream& stream) const;
+    virtual void print(ostream& stream) const;
 };
 
 struct TypeDef: Decl {
     TypeDef(IdentifierScope scope, const Type* type, const Identifier& identifier, const Location& location);
 
     virtual const Type* to_type() const;
-    virtual void print(std::ostream& stream) const;
+    virtual void print(ostream& stream) const;
 };
 
 #endif

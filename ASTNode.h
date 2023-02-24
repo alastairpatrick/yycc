@@ -39,7 +39,7 @@ struct Decl: ASTNode {
     virtual const Type* to_type() const;
     virtual bool is_function_definition() const;
     virtual void combine();
-    virtual void print(std::ostream& stream) const = 0;
+    virtual void print(ostream& stream) const = 0;
 };
 
 struct Statement: ASTNode {

@@ -87,7 +87,7 @@ void Variable::combine() {
     assert(storage_duration == earlier_var->storage_duration);
 }
 
-void Variable::print(std::ostream& stream) const {
+void Variable::print(ostream& stream) const {
     stream << "[\"var\", \"" << linkage << storage_duration;
 
     stream << "\", \"" << type << "\", \"" << identifier  << "\"";
@@ -138,7 +138,7 @@ void Function::combine() {
     }
 }
 
-void Function::print(std::ostream& stream) const {
+void Function::print(ostream& stream) const {
     stream << "[\"fun\", \"" << linkage;
 
     if (inline_definition) {
@@ -166,6 +166,6 @@ const Type* TypeDef::to_type() const {
     return type;
 }
 
-void TypeDef::print(std::ostream& stream) const {
+void TypeDef::print(ostream& stream) const {
     stream << "[\"typedef\", \"" << type << "\", \"" << identifier  << "\"]";
 }

@@ -8,7 +8,7 @@ struct CompoundStatement: Statement {
 
     ASTNodeVector items;
 
-    virtual void print(std::ostream& stream) const;
+    virtual void print(ostream& stream) const;
 };
 
 struct ReturnStatement: Statement {
@@ -16,7 +16,7 @@ struct ReturnStatement: Statement {
 
     Expr* value{};
 
-    virtual void print(std::ostream& stream) const;
+    virtual void print(ostream& stream) const;
 };
 
 #endif

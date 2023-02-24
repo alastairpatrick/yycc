@@ -4,7 +4,7 @@ CompoundStatement::CompoundStatement(ASTNodeVector&& items, const Location& loca
     : Statement(location), items(move(items)) {
 }
 
-void CompoundStatement::print(std::ostream& stream) const {
+void CompoundStatement::print(ostream& stream) const {
     stream << "[\"block\", " << items << ']';
 }
 
@@ -12,6 +12,6 @@ ReturnStatement::ReturnStatement(Expr* value, const Location& location)
     : Statement(location), value(value) {
 }
 
-void ReturnStatement::print(std::ostream& stream) const {
+void ReturnStatement::print(ostream& stream) const {
     stream << "[\"return\", " << value << ']';
 }
