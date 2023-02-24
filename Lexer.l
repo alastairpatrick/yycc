@@ -256,7 +256,7 @@ void Lexer::parse_line_directive(const char* text) {
 Identifier Lexer::identifier() const
 {
     Identifier result;
-    result.name = intern(str());
+    result.name = InternString(string_view(matcher().begin(), matcher().size()));
     result.byte_offset = byte_offset();
     return result;
 }

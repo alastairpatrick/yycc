@@ -8,6 +8,7 @@
 #include <sstream>
 #include <stack>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -32,6 +33,7 @@ using std::pair;
 using std::stack;
 using std::string;
 using std::stringstream;
+using std::string_view;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;

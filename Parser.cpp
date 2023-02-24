@@ -350,7 +350,7 @@ struct Parser {
                 ++ decl_count;
 
                 auto is_function_definition = decl->is_function_definition();
-                if (decl->identifier.name == empty_string()) {
+                if (decl->identifier.name->empty()) {
                     message(Severity::ERROR, lexer.location()) << "expected identifier\n";
                 } else {
                     list.push_back(decl);
@@ -438,7 +438,7 @@ struct Parser {
             }
 
             auto identifier = lexer.identifier();
-            if (!consume(TOK_IDENTIFIER)) identifier.name = empty_string();
+            if (!consume(TOK_IDENTIFIER)) identifier.name = EmptyInternedString;
 
             Expr* initializer{};
             Decl* decl{};
@@ -504,7 +504,7 @@ struct Parser {
                 decl = new Variable(scope, storage_class, type, identifier, initializer, location);
             }
 
-            if (identifier.name != empty_string()) {
+            if (!identifier.name->empty()) {
                 symbols.add_decl(TypeNameKind::ORDINARY, decl);
             }
 

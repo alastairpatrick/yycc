@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.20.6)
 
 project(lang)
 
+set(CMAKE_CXX_STANDARD 17)
+
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 
@@ -12,6 +14,7 @@ add_library(lang_lib STATIC
     Constant.cpp
     Decl.cpp
     Expr.cpp
+    InternedString.cpp
     Lexer.cpp
     Parser.cpp
     Printable.cpp

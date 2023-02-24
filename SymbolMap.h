@@ -10,7 +10,7 @@ struct Mystery;
 
 struct SymbolMap {
     struct Scope {
-        unordered_map<const string*, Decl*> declarations;
+        unordered_map<InternedString, Decl*> declarations;
     };
     list<Scope> scopes;
 

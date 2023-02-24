@@ -9,6 +9,5 @@ struct Printable {
 };
 
 std::ostream& operator<<(std::ostream& stream, const Printable* expr);
-std::ostream& operator<<(std::ostream& stream, const string* expr);
 
 #endif
