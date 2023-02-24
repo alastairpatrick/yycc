@@ -1,6 +1,8 @@
 #ifndef INTERNED_STRING_H
 #define INTERNED_STRING_H
 
+#include "std.h"
+
 // Interned strings have the property that if their string values are equal, their addresses are the same,
 // allowing constant time equality test.
 

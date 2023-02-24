@@ -4,6 +4,8 @@
 #include "PPTokenLexer.yy.h"
 #include "Token.h"
 
+#include "std.h"
+
 using reflex::Input;
 
 struct Tokenizer {

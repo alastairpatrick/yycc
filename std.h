@@ -1,17 +1,5 @@
-#include <algorithm>
-#include <cassert>
-#include <exception>
-#include <fstream>
-#include <iostream>
-#include <list>
-#include <map>
-#include <sstream>
-#include <stack>
-#include <string>
-#include <string_view>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
+#ifndef STD_H
+#define STD_H
 
 using std::cerr;
 using std::cin;
@@ -38,3 +26,5 @@ using std::unordered_map;
 using std::unordered_set;
 using std::vector;
 using std::wstring;
+
+#endif

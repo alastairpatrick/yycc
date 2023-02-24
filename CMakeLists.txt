@@ -18,7 +18,6 @@ add_library(lang_lib STATIC
     Decl.cpp
     Expr.cpp
     InternedString.cpp
-    Lexer.cpp
     Parser.cpp
     Printable.cpp
     Statement.cpp
@@ -29,7 +28,7 @@ add_library(lang_lib STATIC
     ${CMAKE_CURRENT_BINARY_DIR}/PPTokenLexer.yy.cpp
 )
 
-target_precompile_headers(lang_lib PUBLIC "std.h")
+target_precompile_headers(lang_lib PUBLIC "pch.h")
 
 add_custom_command(
     DEPENDS reflex Lexer.l
