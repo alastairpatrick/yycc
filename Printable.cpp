@@ -1,5 +1,3 @@
-#include "std.h"
-
 #include "Printable.h"
 
 Printable::~Printable() {

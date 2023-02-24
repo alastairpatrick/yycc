@@ -3,7 +3,6 @@
 
 #include "llvm-c/Core.h"
 
-#include "std.h"
 #include "Identifier.h"
 #include "Printable.h"
 #include "Token.h"

@@ -7,8 +7,11 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 
-add_library(lang_lib STATIC
+add_library(lang_lib_c STATIC
     assoc_prec.c
+)
+
+add_library(lang_lib STATIC
     ASTNode.cpp
     CompileContext.cpp
     Constant.cpp
@@ -25,6 +28,8 @@ add_library(lang_lib STATIC
     ${CMAKE_CURRENT_BINARY_DIR}/lex.yy.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/PPTokenLexer.yy.cpp
 )
+
+target_precompile_headers(lang_lib PUBLIC "std.h")
 
 add_custom_command(
     DEPENDS reflex Lexer.l
@@ -54,7 +59,13 @@ target_compile_definitions(lang_lib PRIVATE
 )
 
 llvm_map_components_to_libnames(lang_llvm_libs core executionengine mcjit interpreter analysis native bitwriter ${LLVM_ALL_TARGETS})
-target_link_libraries(lang_lib PRIVATE reflex_lib nlohmann_json::nlohmann_json ${lang_llvm_libs})
+
+target_link_libraries(lang_lib PRIVATE
+    lang_lib_c
+    reflex_lib
+    nlohmann_json::nlohmann_json
+    ${lang_llvm_libs}
+)
 
 add_executable(lang
     main.cpp

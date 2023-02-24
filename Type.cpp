@@ -1,5 +1,3 @@
-#include "std.h"
-
 #include "Type.h"
 #include "CodeGenContext.h"
 #include "CompileContext.h"

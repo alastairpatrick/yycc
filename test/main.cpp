@@ -1,5 +1,3 @@
-#include "std.h"
-
 bool run_parser_tests();
 
 int main(int argc, const char *argv[]) {

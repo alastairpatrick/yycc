@@ -1,7 +1,6 @@
 #ifndef IDENTIFIER_H
 #define IDENTIFIER_H
 
-#include "std.h"
 #include "CompileContext.h"
 
 struct Identifier {

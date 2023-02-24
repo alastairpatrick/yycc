@@ -1,7 +1,5 @@
 #include "CompileContext.h"
 
-#include "std.h"
-
 #include "ASTNode.h"
 
 thread_local CompileContext* CompileContext::it;

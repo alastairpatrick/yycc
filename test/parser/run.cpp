@@ -1,6 +1,5 @@
 #include "nlohmann/json.hpp"
 
-#include "std.h"
 #include "ASTNode.h"
 #include "CompileContext.h"
 #include "Expr.h"

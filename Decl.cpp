@@ -1,5 +1,3 @@
-#include "std.h"
-
 #include "Decl.h"
 #include "CompileContext.h"
 #include "Type.h"

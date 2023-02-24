@@ -1,6 +1,4 @@
-#include "std.h"
 #include "Statement.h"
-
 
 CompoundStatement::CompoundStatement(ASTNodeVector&& items, const Location& location)
     : Statement(location), items(move(items)) {

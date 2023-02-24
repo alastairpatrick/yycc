@@ -1,8 +1,6 @@
 #ifndef TYPE_CONTEXT_H
 #define TYPE_CONTEXT_H
 
-#include "std.h"
-
 struct Type;
 struct PointerType;
 struct QualifiedType;

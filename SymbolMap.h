@@ -1,7 +1,6 @@
 #ifndef SYMBOL_MAP_H
 #define SYMBOL_MAP_H
 
-#include "std.h"
 #include "ASTNode.h"
 #include "Type.h"
 
