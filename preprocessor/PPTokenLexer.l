@@ -11,8 +11,6 @@ L               [a-zA-Z_]
 N               ([0-9a-zA-Z_\.]|([EePp][+-]))
 HW              [ \t\v\f\r]
 
-STRING          \"(\\.|[^\\"\n])*\"
-    
 %xstate PP_TOKENS
 %xstate DIRECTIVE
 
@@ -30,7 +28,7 @@ STRING          \"(\\.|[^\\"\n])*\"
 // This is the state at the start of each line. From here, switch to state
 // DIRECTIVE or PP_TOKENS, depending on first non-white-space character.
 <INITIAL> {
-"#"             { start(DIRECTIVE); return TOK_PP_CONTROL; }
+"#"             { start(DIRECTIVE); return '#'; }
 .               { matcher().less(0); start(PP_TOKENS); }
 }
 
@@ -66,6 +64,7 @@ L?'(\\.|[^\\'\n])*'         { return TOK_CHAR_LITERAL; }
 ">="            { return TOK_GE_OP; }
 "=="            { return TOK_EQ_OP; }
 "!="            { return TOK_NE_OP; }
+"##"            { return TOK_SHARP_SHARP; }
 ";"             { return ';'; }
 ("{"|"<%")      { return '{'; }
 ("}"|"%>")      { return '}'; }
@@ -90,6 +89,7 @@ L?'(\\.|[^\\'\n])*'         { return TOK_CHAR_LITERAL; }
 "^"             { return '^'; }
 "|"             { return '|'; }
 "?"             { return '?'; }
+"#"             { return '#'; }
 
 }
 

@@ -66,6 +66,7 @@ enum TokenKind {
     TOK_OR_ASSIGN,
 
     TOK_ELLIPSIS,
+    TOK_SHARP_SHARP,
 
     // Tokens below use the digits range so they don't overlap punctuators.
     TOK_CHAR_LITERAL = '0',
@@ -77,8 +78,7 @@ enum TokenKind {
     TOK_PP_UNTERMINATED_COMMENT,
 
     // Tokens below use the upper case letter range so they don't overlap punctuators.
-    TOK_PP_CONTROL = 'A',
-    TOK_PP_DEFINE,
+    TOK_PP_DEFINE = 'A',
     TOK_PP_ELIF,
     TOK_PP_ELSE,
     TOK_PP_EMPTY,
