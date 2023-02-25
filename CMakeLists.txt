@@ -24,17 +24,17 @@ add_library(lang_lib STATIC
     SymbolMap.cpp
     Type.cpp
     TypeContext.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/lex.yy.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/CTokenLexer.yy.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/PPTokenLexer.yy.cpp
 )
 
 target_precompile_headers(lang_lib PUBLIC "pch.h")
 
 add_custom_command(
-    DEPENDS reflex Lexer.l
-    OUTPUT  lex.yy.cpp lex.yy.h
-    COMMAND reflex --header-file
-            ${CMAKE_CURRENT_SOURCE_DIR}/Lexer.l
+    DEPENDS reflex CTokenLexer.l
+    OUTPUT  CTokenLexer.yy.cpp CTokenLexer.yy.h
+    COMMAND reflex --header-file=CTokenLexer.yy.h --outfile=CTokenLexer.yy.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/CTokenLexer.l
 )
 
 add_custom_command(

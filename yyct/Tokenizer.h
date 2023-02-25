@@ -24,7 +24,7 @@ struct Tokenizer {
     void histogram(const string& source);
     void write_identifiers(ostream& stream);
     void align_token(ostream& stream, const Phase3Lexer& lexer);
-    void write_token(ostream& stream, const Phase3Lexer& lexer);
+    void write_token(ostream& stream, const char* str, size_t size);
     void rewrite(ostream& stream, const string& source);
     void process(ostream& stream, const string& source);
 };

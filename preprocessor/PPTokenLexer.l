@@ -30,10 +30,8 @@ STRING          \"(\\.|[^\\"\n])*\"
 // This is the state at the start of each line. From here, switch to state
 // DIRECTIVE or PP_TOKENS, depending on first non-white-space character.
 <INITIAL> {
-
 "#"             { start(DIRECTIVE); return TOK_PP_CONTROL; }
-.               { matcher().wunput(matcher().wchr()); start(PP_TOKENS); }
-
+.               { matcher().less(0); start(PP_TOKENS); }
 }
 
 // Tokenize regular text-line
@@ -93,14 +91,12 @@ L?'(\\.|[^\\'\n])*'         { return TOK_CHAR_LITERAL; }
 "|"             { return '|'; }
 "?"             { return '?'; }
 
-.               { return TOK_PP_UNRECOGNIZED; }
-
 }
 
 // Determine the kind of directive and transition.
 <DIRECTIVE> {
 
-"define"        { start(PP_TOKENS); return TOK_PP_DEFINE; }
+"d"("efine")?   { start(PP_TOKENS); return TOK_PP_DEFINE; }
 "error"         { start(PP_TOKENS); return TOK_PP_ERROR; }
 "elif"          { start(PP_TOKENS); return TOK_PP_ELIF; }
 "else"          { start(PP_TOKENS); return TOK_PP_ELSE; }
@@ -113,8 +109,12 @@ L?'(\\.|[^\\'\n])*'         { return TOK_CHAR_LITERAL; }
 "pragma"        { start(PP_TOKENS); return TOK_PP_PRAGMA; }
 "undef"         { start(PP_TOKENS); return TOK_PP_UNDEF; }
 
-.               { start(PP_TOKENS); return TOK_PP_NONDIRECTIVE; }
+({L}|{D})+      { start(PP_TOKENS); return TOK_PP_NONDIRECTIVE; }
 
+}
+
+<PP_TOKENS,DIRECTIVE> {
+.               { return TOK_PP_UNRECOGNIZED; }
 }
 
 %%

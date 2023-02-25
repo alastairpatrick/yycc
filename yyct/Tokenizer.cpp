@@ -57,8 +57,9 @@ void Tokenizer::histogram(const string& source) {
     } while (kind);
 }
 
-// Characters (0, '\n'] are new-line characters with varying line number adjustment
-const int max_vert_adjust = '\n' - 1;
+// Character \n adjusts vertically by 1
+// Characters 1..8 adjust vertically by 2..9
+const int max_vert_adjust = 9;
 
 // Characters ('\n', ' '] are space characters with varying column number adjustment
 const int max_horz_adjust = ' ' - '\n' - 1;
@@ -70,23 +71,29 @@ static char horz_space_char(int columns) {
 }
 
 static char vert_space_char(int lines) {
-    assert(lines <= max_vert_adjust);
-    return '\n' - (lines - 1);
+    assert(2 <= lines && lines <= max_vert_adjust);
+    return lines - 1;
 }
 
 void Tokenizer::align_token(ostream& stream, const Phase3Lexer& lexer) {
     int target_line = lexer.lineno();
     int target_column = lexer.columno();
 
-    while (target_line - current_line > max_vert_adjust) {
+    while (target_line - 1 - current_line >= max_vert_adjust) {
         stream << vert_space_char(max_vert_adjust);
         current_line += max_vert_adjust;
         current_column = 0;
     }
 
-    if (target_line > current_line) {
-        stream << vert_space_char(target_line - current_line);
-        current_line = target_line;
+    if (target_line - 1 - current_line >= 2) {
+        stream << vert_space_char(target_line - 1 - current_line);
+        current_line = target_line - 1;
+        current_column = 0;
+    }
+
+    while (target_line > current_line) {
+        stream << '\n';
+        ++current_line;
         current_column = 0;
     }
 
@@ -101,10 +108,9 @@ void Tokenizer::align_token(ostream& stream, const Phase3Lexer& lexer) {
     }
 }
 
-void Tokenizer::write_token(ostream& stream, const Phase3Lexer& lexer) {
-    align_token(stream, lexer);
-    stream.write(lexer.matcher().begin(), lexer.size());
-    current_column += lexer.size();
+void Tokenizer::write_token(ostream& stream, const char* str, size_t size) {
+    stream.write(str, size);
+    current_column += size;
 }
 
 void Tokenizer::rewrite(ostream& stream, const string& source) {
@@ -115,33 +121,26 @@ void Tokenizer::rewrite(ostream& stream, const string& source) {
     TokenKind token;
     do {
         token = TokenKind(lexer.lex());
+        if (token != '\n') {
+            align_token(stream, lexer);
+        }
 
         switch (token) {
               default: {
-                write_token(stream, lexer);
+                write_token(stream, lexer.matcher().begin(), lexer.size());
                 break;
             } case TOK_IDENTIFIER: {
                 auto& identifier = identifier_map[lexer.str()];
                 if (should_inline(identifier)) {
-                    write_token(stream, lexer);
+                    write_token(stream, lexer.matcher().begin(), lexer.size());
                 } else {
-                    align_token(stream, lexer);
                     stream << '\0';
                     write_varuint(stream, identifier.index);
                     current_column += identifier.text.length();
                 }
                 break;
-            } case TOK_PP_INCLUDE:
-              case TOK_PP_DEFINE:
-              case TOK_PP_IF:
-              case TOK_PP_IFDEF:
-              case TOK_PP_IFNDEF:
-              case TOK_PP_ELIF:
-              case TOK_PP_ELSE:
-              case TOK_PP_ENDIF: {
-                align_token(stream, lexer);
-                stream.write((const char*) &token, 1);
-                current_column += lexer.size();
+            } case TOK_PP_DEFINE: {
+                write_token(stream, "d", 1);
                 break;
             } case '\n': {
                 break;

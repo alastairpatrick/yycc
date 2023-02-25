@@ -4,7 +4,7 @@
 #include "Constant.h"
 #include "Decl.h"
 #include "Expr.h"
-#include "lex.yy.h"
+#include "CTokenLexer.yy.h"
 #include "Statement.h"
 #include "SymbolMap.h"
 #include "Token.h"
