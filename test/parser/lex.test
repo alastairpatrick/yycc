@@ -81,11 +81,47 @@ EXPECT_MESSAGE
 foo.c:7:1: error unexpected character '@'
 
 
+BEGIN Line directive filename is unescaped
+1
+#line 7 "\\foo.c"
+@
+EXPECT_MESSAGE
+\foo.c:7:1: error unexpected character '@'
+
+
+BEGIN Invalid line in line directive (1)
+1
+#line "foo.c" 7
+EXPECT_MESSAGE
+:2:7: error unexpected token in directive
+
+
+BEGIN Invalid line in line directive (1)
+1
+#line 0 "foo.c"
+EXPECT_MESSAGE
+:2:7: error unexpected token in directive
+
+
+BEGIN Invalid file in line directive
+1
+#line 7 13
+EXPECT_MESSAGE
+:2:9: error unexpected token in directive
+
+
+BEGIN Extra tokens in line directive
+1
+#line 7 "foo.c" 123
+EXPECT_MESSAGE
+:2:17: error unexpected token in directive
+
+
 BEGIN Error directive
 #error Hello, World!
 1
 EXPECT_MESSAGE
-:1:1: error Hello, World!
+:1:2: error Hello, World!
 EXPECT_AST
 "Si1"
 
@@ -94,7 +130,7 @@ BEGIN Error directive with embedded comment
 #error Hello,/* hidden */World!
 1
 EXPECT_MESSAGE
-:1:1: error Hello, World!
+:1:2: error Hello,/* hidden */World!
 EXPECT_AST
 "Si1"
 
@@ -104,6 +140,6 @@ BEGIN Error on unrecognized directive
 #hello
 1
 EXPECT_MESSAGE
-:2:1: error unexpected directive
+:2:2: error unexpected token in directive
 EXPECT_AST
 "Si1"

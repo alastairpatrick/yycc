@@ -41,7 +41,7 @@ void Tokenizer::write_identifiers(ostream& stream) {
 
 void Tokenizer::histogram(const string& source) {
     Input input(source);
-    Phase3Lexer lexer(input);
+    PPTokenLexer lexer(input);
     auto& matcher = lexer.matcher();
 
     TokenKind kind;
@@ -75,7 +75,7 @@ static char vert_space_char(int lines) {
     return lines - 1;
 }
 
-void Tokenizer::align_token(ostream& stream, const Phase3Lexer& lexer) {
+void Tokenizer::align_token(ostream& stream, const PPTokenLexer& lexer) {
     int target_line = lexer.lineno();
     int target_column = lexer.columno();
 
@@ -115,7 +115,7 @@ void Tokenizer::write_token(ostream& stream, const char* str, size_t size) {
 
 void Tokenizer::rewrite(ostream& stream, const string& source) {
     Input input(source);
-    Phase3Lexer lexer(input);
+    PPTokenLexer lexer(input);
     auto& matcher = lexer.matcher();
 
     TokenKind token;

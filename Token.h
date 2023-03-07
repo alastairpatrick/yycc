@@ -74,7 +74,6 @@ enum TokenKind {
     TOK_HEADER_NAME,
     TOK_PP_NUMBER,
     TOK_PP_UNRECOGNIZED,
-    TOK_PP_NONDIRECTIVE,
     TOK_PP_UNTERMINATED_COMMENT,
 
     // Tokens below use the upper case letter range so they don't overlap punctuators.

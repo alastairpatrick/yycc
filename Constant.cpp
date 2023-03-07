@@ -239,7 +239,7 @@ void FloatingPointConstant::print(ostream& stream) const {
     stream << '"' << type << value << '"';
 }
 
-string parse_string(const char* text, size_t capacity_hint, const Location& location) {
+string unescape_string(const char* text, size_t capacity_hint, const Location& location) {
     std::string value;
     value.reserve(capacity_hint);
 
@@ -279,7 +279,7 @@ StringConstant* StringConstant::of(const char* text, size_t capacity_hint, const
         ++p;
     }
 
-    auto value = parse_string(p, capacity_hint, location);
+    auto value = unescape_string(p, capacity_hint, location);
 
     return new StringConstant(move(value), IntegerType::of_char(is_wide), location);
 }

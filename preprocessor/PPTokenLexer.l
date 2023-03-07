@@ -1,8 +1,10 @@
-%option fast
-%option lexer=Phase3Lexer
+%option lexer=PPTokenLexer
+%option prefix=PPTokenLexer
+%option lex=lex
 %option yylineno
+%option fast
 
-%top {
+%{
 #include "../Token.h"
 %}
 
@@ -16,7 +18,7 @@ HW              [ \t\v\f\r]
 
 %%
 
-<INITIAL,PP_TOKENS,DIRECTIVE> {
+<*> {
 
 "/*"            { if (!matcher().skip("*/")) return TOK_PP_UNTERMINATED_COMMENT; }
 "//"[^\n]*      { }
@@ -64,7 +66,7 @@ L?'(\\.|[^\\'\n])*'         { return TOK_CHAR_LITERAL; }
 ">="            { return TOK_GE_OP; }
 "=="            { return TOK_EQ_OP; }
 "!="            { return TOK_NE_OP; }
-"##"            { return TOK_SHARP_SHARP; }
+("##"|"%:%:")   { return TOK_SHARP_SHARP; }
 ";"             { return ';'; }
 ("{"|"<%")      { return '{'; }
 ("}"|"%>")      { return '}'; }
@@ -89,7 +91,7 @@ L?'(\\.|[^\\'\n])*'         { return TOK_CHAR_LITERAL; }
 "^"             { return '^'; }
 "|"             { return '|'; }
 "?"             { return '?'; }
-"#"             { return '#'; }
+("#"|"%:")      { return '#'; }
 
 }
 
@@ -108,8 +110,6 @@ L?'(\\.|[^\\'\n])*'         { return TOK_CHAR_LITERAL; }
 "line"          { start(PP_TOKENS); return TOK_PP_LINE; }
 "pragma"        { start(PP_TOKENS); return TOK_PP_PRAGMA; }
 "undef"         { start(PP_TOKENS); return TOK_PP_UNDEF; }
-
-({L}|{D})+      { start(PP_TOKENS); return TOK_PP_NONDIRECTIVE; }
 
 }
 

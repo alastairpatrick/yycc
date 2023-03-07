@@ -4,13 +4,13 @@
 #include "Constant.h"
 #include "Decl.h"
 #include "Expr.h"
-#include "CTokenLexer.yy.h"
 #include "Statement.h"
 #include "SymbolMap.h"
 #include "Token.h"
+#include "preprocessor/TokenConverter.h"
 
 struct Parser {
-    Lexer lexer;
+    TokenConverter lexer;
     TokenKind token;
     SymbolMap symbols;
     ASTNodeVector extern_decls;
