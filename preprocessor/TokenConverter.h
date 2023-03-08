@@ -2,6 +2,8 @@
 #define TOKEN_CONVERTER_H
 
 #include "Identifier.h"
+#include "IdentifierLexer.yy.h"
+#include "PPNumberLexer.yy.h"
 #include "PPTokenLexer.yy.h"
 #include "Location.h"
 #include "Token.h"
@@ -19,11 +21,11 @@ struct TokenConverter: PPTokenLexer {
         return matcher().first();
     }
 
-    int lex();
+    int next_token();
     Identifier TokenConverter::identifier() const;
 
 private:
-    TokenKind lex_internal();
+    TokenKind next_token_internal();
     void handle_directive();
     void handle_error_directive();
     void handle_line_directive();
@@ -34,6 +36,9 @@ private:
 
     unordered_set<string> filenames;
     const char* current_filename = "";
+
+    IdentifierLexer id_lexer;
+    PPNumberLexer num_lexer;
 };
 
 #endif

@@ -1,9 +1,10 @@
 %option lexer=IdentifierLexer
 %option prefix=IdentifierLexer
-%option lex=lex
+%option lex=next_token
+%option token-type=TokenKind
 %option fast
 
-%{
+%top {
 #include "Token.h"
 %}
 

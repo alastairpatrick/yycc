@@ -16,11 +16,11 @@ struct Parser {
     ASTNodeVector extern_decls;
 
     explicit Parser(const reflex::Input& input): lexer(input) {
-        token = TokenKind(lexer.lex());
+        token = TokenKind(lexer.next_token());
     }
 
     void consume() {
-        token = TokenKind(lexer.lex());
+        token = TokenKind(lexer.next_token());
     }
 
     bool consume(int t, Location* location = nullptr) {

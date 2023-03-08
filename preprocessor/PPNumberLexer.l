@@ -1,10 +1,11 @@
 %option lexer=PPNumberLexer
 %option prefix=PPNumberLexer
-%option lex=lex
+%option lex=next_token
+%option token-type=TokenKind
 %option case-insensitive
 %option fast
 
-%{
+%top {
 #include "Token.h"
 %}
 

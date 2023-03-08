@@ -1,6 +1,6 @@
 %option lexer=PPTokenLexer
 %option prefix=PPTokenLexer
-%option lex=lex
+%option lex=next_token
 %option yylineno
 %option fast
 

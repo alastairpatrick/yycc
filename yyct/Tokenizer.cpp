@@ -46,7 +46,7 @@ void Tokenizer::histogram(const string& source) {
 
     TokenKind kind;
     do {
-        kind = TokenKind(lexer.lex());
+        kind = TokenKind(lexer.next_token());
 
         if (kind == TOK_IDENTIFIER) {
             auto text = lexer.str();
@@ -120,7 +120,7 @@ void Tokenizer::rewrite(ostream& stream, const string& source) {
 
     TokenKind token;
     do {
-        token = TokenKind(lexer.lex());
+        token = TokenKind(lexer.next_token());
         if (token != '\n') {
             align_token(stream, lexer);
         }
