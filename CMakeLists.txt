@@ -24,11 +24,12 @@ add_library(lang_lib STATIC
     SymbolMap.cpp
     Type.cpp
     TypeContext.cpp
+
     preprocessor/TokenConverter.cpp
+
     ${CMAKE_CURRENT_BINARY_DIR}/PPNumberLexer.yy.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/PPTokenLexer.yy.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/IdentifierLexer.yy.cpp
-    #${CMAKE_CURRENT_BINARY_DIR}/CTokenLexer.yy.cpp
 )
 
 target_precompile_headers(lang_lib PUBLIC "pch.h")
