@@ -8,17 +8,18 @@ using json = nlohmann::json;
 Constant::Constant(const Location& location): Expr(location) {
 }
 
-static IntegerConstant* parse_integer_literal(const char* text, int radix, const Location& location) {
-    char* p;
-    auto value = strtoull(text, &p, radix);
-    if (errno == ERANGE) {
+static IntegerConstant* parse_integer_literal(string_view text, int radix, const Location& location) {
+    unsigned long long value;
+    auto result = from_chars(text.data(), text.data() + text.size(), value, radix);
+    if (result.ec != errc{}) {
         // TODO: warn about truncation of int literal
     }
+    text.remove_prefix(result.ptr - text.data());
 
     auto signedness = IntegerSignedness::SIGNED;
     int longs = 0;
-    for (; *p; ++p) {
-        char c = toupper(*p);
+    for (; text.size(); text.remove_prefix(1)) {
+        char c = toupper(text[0]);
         if (c == 'U') signedness = IntegerSignedness::UNSIGNED;
         else if (c == 'L') ++longs;
         else assert(false);
@@ -47,13 +48,13 @@ static IntegerConstant* parse_integer_literal(const char* text, int radix, const
     return new IntegerConstant(value, IntegerType::of(signedness, size), location);
 }
 
-static wchar_t parse_char_code(const char** text, int num_digits, int radix, const Location& location) {
+static wchar_t parse_char_code(string_view& text, size_t num_digits, int radix, const Location& location) {
     char digits[9];
     assert(num_digits <= 8);
 
-    const char* src = *text;
-    int i;
-    for (i = 0; i < num_digits; ++i) {
+    const char* src = text.data();
+    size_t i;
+    for (i = 0; i < min(text.size(), num_digits); ++i) {
         if (src[i] == 0) break;
         digits[i] = src[i];
     }
@@ -65,59 +66,68 @@ static wchar_t parse_char_code(const char** text, int num_digits, int radix, con
     if (end - digits != num_digits) {
         message(Severity::ERROR, location) << "truncated character escape code\n";
     }
-    *text += end - digits;
+    text.remove_prefix(end - digits);
 
     return result;
 }
 
-static uint32_t unescape_char(const char** p, const Location& location) {
-    uint32_t c = **p;
-    (*p)++;
+static uint32_t unescape_char(string_view& text, const Location& location) {
+    uint32_t c = text[0];
+    text.remove_prefix(1);
 
     if (c == '\\') {
-        c = **p;
-        (*p)++;
+        c = text[0];
 
         switch (c) {
         case 'a':
+            text.remove_prefix(1);
             c = '\a';
             break;
         case 'b':
+            text.remove_prefix(1);
             c = '\b';
             break;
         case 'f':
+            text.remove_prefix(1);
             c = '\f';
             break;
         case 'n':
+            text.remove_prefix(1);
             c = '\n';
             break;
         case 'r':
+            text.remove_prefix(1);
             c = '\r';
             break;
         case 't':
+            text.remove_prefix(1);
             c = '\t';
             break;
         case 'v':
+            text.remove_prefix(1);
             c = '\v';
             break;
         case 'u':
-            c = parse_char_code(p, 4, 16, location);
+            text.remove_prefix(1);
+            c = parse_char_code(text, 4, 16, location);
             break;
         case 'U':
-            c = parse_char_code(p, 8, 16, location);
+            text.remove_prefix(1);
+            c = parse_char_code(text, 8, 16, location);
             break;
         case 'x':
-            c = parse_char_code(p, 2, 16, location);
+            text.remove_prefix(1);
+            c = parse_char_code(text, 2, 16, location);
             break;
         case '\'':
         case '"':
         case '?':
         case '\\':
+            text.remove_prefix(1);
             break;
         default:
             if (c >= '0' && c <= '9') {
-                (*p)--;
-                c = parse_char_code(p, 3, 8, location);
+                c = parse_char_code(text, 3, 8, location);
                 break;
             }
             message(Severity::ERROR, location) << "unrecognized escape sequence\n";
@@ -127,18 +137,18 @@ static uint32_t unescape_char(const char** p, const Location& location) {
     } else if ((c & 0x80) == 0) {
         return c;
     } else {
-        char b1 = **p;
-        (*p)++;
+        char b1 = text[0];
+        text.remove_prefix(1);
         if ((b1 & 0xC0) != 0x80) return 0;
         if ((c & 0xE0) == 0xC0) return ((c & 0x1F) << 6) | (b1 & 0x3F);
 
-        char b2 = **p;
-        (*p)++;
+        char b2 = text[0];
+        text.remove_prefix(1);
         if ((b2 & 0xC0) != 0x80) return 0;
         if ((c & 0xF0) == 0xE0) return ((c & 0xF) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F);
 
-        char b3 = **p;
-        (*p)++;
+        char b3 = text[0];
+        text.remove_prefix(1);
         if ((b3 & 0xC0) != 0x80) return 0;
         return ((c & 0b111) << 18) | ((b1 & 0x3F) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F);;
     }
@@ -146,23 +156,22 @@ static uint32_t unescape_char(const char** p, const Location& location) {
     return 0;
 }
 
-static IntegerConstant* parse_char_literal(const char* text, const Location& location) {
-    const char* p = text;
+static IntegerConstant* parse_char_literal(string_view text, const Location& location) {
     bool is_wide = false;
-    if (*p == 'L') {
+    if (text[0] == 'L') {
         is_wide = true;
-        ++p;
+        text.remove_prefix(1);
     }
 
-    assert(*p == '\'');
-    ++p;
+    assert(text[0] == '\'');
+    text.remove_prefix(1);
 
     uint32_t c = 0;
-    if (*p == '\'') {
+    if (text[0] == '\'') {
         message(Severity::ERROR, location) << "character literal may only have one character\n";
     } else {
-        c = unescape_char(&p, location);
-        if (*p != '\'') {
+        c = unescape_char(text, location);
+        if (text[0] != '\'') {
             message(Severity::ERROR, location) << "character literal may only have one character\n";
         }
     }
@@ -170,16 +179,18 @@ static IntegerConstant* parse_char_literal(const char* text, const Location& loc
     return new IntegerConstant(c, IntegerType::of_char(is_wide), location);
 }
 
-IntegerConstant* IntegerConstant::of(const char* text, int token, const Location& location) {
+IntegerConstant* IntegerConstant::of(string_view text, TokenKind token, const Location& location) {
     switch (token) {
     case TOK_BIN_INT_LITERAL:
-        return parse_integer_literal(text+2, 2, location);
+        text.remove_prefix(2);
+        return parse_integer_literal(text, 2, location);
     case TOK_OCT_INT_LITERAL:
         return parse_integer_literal(text, 8, location);
     case TOK_DEC_INT_LITERAL:
         return parse_integer_literal(text, 10, location);
     case TOK_HEX_INT_LITERAL:
-        return parse_integer_literal(text+2, 16, location);
+        text.remove_prefix(2);
+        return parse_integer_literal(text, 16, location);
     case TOK_CHAR_LITERAL:
         return parse_char_literal(text, location);
     default:
@@ -205,15 +216,22 @@ void IntegerConstant::print(ostream& stream) const {
 }
 
 
-FloatingPointConstant* FloatingPointConstant::of(const char* text, const Location& location) {
-    char* p;
-    double value = strtod(text, &p);
-    if (errno == ERANGE) {
+FloatingPointConstant* FloatingPointConstant::of(string_view text, TokenKind token, const Location& location) {
+    chars_format format = chars_format::general;
+    if (token == TOK_HEX_FLOAT_LITERAL) {
+        format = chars_format::hex;
+        text.remove_prefix(2);
     }
 
+    double value;
+    auto result = from_chars(text.data(), text.data() + text.size(), value, format);
+    if (result.ec != errc{}) {
+    }
+    text.remove_prefix(result.ptr - text.data());
+
     auto size = FloatingPointSize::DOUBLE;
-    for (; *p; ++p) {
-        char c = toupper(*p);
+    for (; text.size(); text.remove_prefix(1)) {
+        char c = toupper(text[0]);
         if (c == 'F') size = FloatingPointSize::FLOAT;
         else if (c == 'L') size = FloatingPointSize::LONG_DOUBLE;
         else assert(false);
@@ -239,18 +257,17 @@ void FloatingPointConstant::print(ostream& stream) const {
     stream << '"' << type << value << '"';
 }
 
-string unescape_string(const char* text, size_t capacity_hint, const Location& location) {
+string unescape_string(string_view text, const Location& location) {
     std::string value;
-    value.reserve(capacity_hint);
+    value.reserve(text.size());
 
-    const char* p = text;
-    assert(*p == '"');
-    ++p;
+    assert(text[0] == '"');
+    text.remove_prefix(1);
 
-    while (*p != '"') {
-        assert(*p);
+    while (text[0] != '"') {
+        assert(text.size());
 
-        auto c = unescape_char(&p, location);
+        auto c = unescape_char(text, location);
         if (c < 0x80) {
             value += c;
         } else if (c < 0x800) {
@@ -271,15 +288,14 @@ string unescape_string(const char* text, size_t capacity_hint, const Location& l
     return value;
 }
 
-StringConstant* StringConstant::of(const char* text, size_t capacity_hint, const Location& location) {
-    const char* p = text;
+StringConstant* StringConstant::of(string_view text, const Location& location) {
     bool is_wide = false;
-    if (*p == 'L') {
+    if (text[0] == 'L') {
         is_wide = true;
-        ++p;
+        text.remove_prefix(1);
     }
 
-    auto value = unescape_string(p, capacity_hint, location);
+    auto value = unescape_string(text, location);
 
     return new StringConstant(move(value), IntegerType::of_char(is_wide), location);
 }

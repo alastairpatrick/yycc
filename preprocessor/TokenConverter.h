@@ -4,24 +4,29 @@
 #include "Identifier.h"
 #include "IdentifierLexer.yy.h"
 #include "PPNumberLexer.yy.h"
-#include "PPTokenLexer.yy.h"
+#include "PPTokenLexerSource.h"
 #include "Location.h"
 #include "Token.h"
 
 #include "std.h"
 
-struct TokenConverter: PPTokenLexer {
-    TokenConverter(const reflex::Input& input): PPTokenLexer(input) {}
+struct TokenConverter {
+    TokenConverter(const reflex::Input& input): source(input) {}
+
+    int next_token();
+
+    string_view text() const {
+        return source.text();
+    }
 
     Location location() const {
-        return Location { lineno(), columno() + 1, current_filename };
+        return source.location();
     }
 
     size_t byte_offset() const {
-        return matcher().first();
+        return source.byte_offset();
     }
 
-    int next_token();
     Identifier TokenConverter::identifier() const;
 
 private:
@@ -34,9 +39,7 @@ private:
 
     TokenKind token;
 
-    unordered_set<string> filenames;
-    const char* current_filename = "";
-
+    PPTokenLexerSource source;
     IdentifierLexer id_lexer;
     PPNumberLexer num_lexer;
 };

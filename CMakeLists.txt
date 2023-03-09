@@ -25,6 +25,7 @@ add_library(lang_lib STATIC
     Type.cpp
     TypeContext.cpp
 
+    preprocessor/PPTokenLexerSource.cpp
     preprocessor/TokenConverter.cpp
 
     ${CMAKE_CURRENT_BINARY_DIR}/PPNumberLexer.yy.cpp

@@ -116,13 +116,13 @@ struct Parser {
                 consume();
                 break;
             }
-            else if (token == TOK_FLOAT_LITERAL) {
-                result = FloatingPointConstant::of(lexer.text(), lexer.location());
+            else if (token == TOK_DEC_FLOAT_LITERAL || token == TOK_HEX_FLOAT_LITERAL) {
+                result = FloatingPointConstant::of(lexer.text(), token, lexer.location());
                 consume();
                 break;
             }
             else if (token == TOK_STRING_LITERAL) {
-                result = StringConstant::of(lexer.text(), lexer.size(), lexer.location());
+                result = StringConstant::of(lexer.text(), lexer.location());
                 consume();
                 break;
             }

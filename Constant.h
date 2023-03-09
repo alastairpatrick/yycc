@@ -15,7 +15,7 @@ struct IntegerConstant: Constant {
     const IntegerType* type{};
     unsigned long long value;
 
-    static IntegerConstant* of(const char* text, int token, const Location& location);
+    static IntegerConstant* of(string_view text, TokenKind token, const Location& location);
 
     IntegerConstant(unsigned long long int_value, const IntegerType* type, const Location& location);
 
@@ -28,7 +28,7 @@ struct FloatingPointConstant: Constant {
     const FloatingPointType* type{};
     double value;
 
-    static FloatingPointConstant* of(const char* text, const Location& location);
+    static FloatingPointConstant* of(string_view text, TokenKind token, const Location& location);
 
     FloatingPointConstant(double float_value, const FloatingPointType* type, const Location& location);
 
@@ -41,7 +41,7 @@ struct StringConstant: Constant {
     const IntegerType* char_type{};
     string utf8_literal;
 
-    static StringConstant* of(const char* text, size_t capacity_hint, const Location& location);
+    static StringConstant* of(string_view text, const Location& location);
 
     StringConstant(string&& utf8_literal, const IntegerType* char_type, const Location& location);
 

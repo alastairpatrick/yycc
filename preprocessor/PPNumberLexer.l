@@ -24,11 +24,11 @@ IS              (u|u?(l|ll)|(l|ll)u)
 0 [0-7]* {IS}?              { return TOK_OCT_INT_LITERAL; }
 [1-9] {D}* {IS}?            { return TOK_DEC_INT_LITERAL; }
 
-{D}+ {E} {FS}?              { return TOK_FLOAT_LITERAL; }
-{D}* "." {D}+ {E}? {FS}?    { return TOK_FLOAT_LITERAL; }
-{D}+ "." {D}* {E}? {FS}?    { return TOK_FLOAT_LITERAL; }
-0x {H}+ {P} {FS}?           { return TOK_FLOAT_LITERAL; }
-0x {H}* "." {H}+ {P}? {FS}? { return TOK_FLOAT_LITERAL; }
-0x {H}+ "." {H}* {P}? {FS}? { return TOK_FLOAT_LITERAL;; }
+{D}+ {E} {FS}?              { return TOK_DEC_FLOAT_LITERAL; }
+{D}* "." {D}+ {E}? {FS}?    { return TOK_DEC_FLOAT_LITERAL; }
+{D}+ "." {D}* {E}? {FS}?    { return TOK_DEC_FLOAT_LITERAL; }
+0x {H}+ {P} {FS}?           { return TOK_HEX_FLOAT_LITERAL; }
+0x {H}* "." {H}+ {P}? {FS}? { return TOK_HEX_FLOAT_LITERAL; }
+0x {H}+ "." {H}* {P}? {FS}? { return TOK_HEX_FLOAT_LITERAL;; }
 
 [\s\S]                      { return TOK_PP_NUMBER; }

@@ -4,7 +4,7 @@
 
 using reflex::Input;
 
-string unescape_string(const char* text, size_t capacity_hint, const Location& location);
+string unescape_string(string_view text, const Location& location);
 
 int TokenConverter::next_token() {
     for (;;) {
@@ -13,11 +13,11 @@ int TokenConverter::next_token() {
             default: {
               return token;
           } case TOK_IDENTIFIER: {
-              token = id_lexer.next_token(Input(matcher().begin(), size()));
-              return id_lexer.size() == size() ? token : TOK_IDENTIFIER;
+              token = id_lexer.next_token(source.token_input());
+              return id_lexer.size() == source.text().size() ? token : TOK_IDENTIFIER;
           } case TOK_PP_NUMBER: {
-              token = num_lexer.next_token(Input(matcher().begin(), size()));
-              return num_lexer.size() == size() ? token : TOK_PP_NUMBER;
+              token = num_lexer.next_token(source.token_input());
+              return num_lexer.size() == source.text().size() ? token : TOK_PP_NUMBER;
           } case '\n': {
               continue;
           } case '#': {
@@ -65,10 +65,10 @@ void TokenConverter::handle_directive() {
 void TokenConverter::handle_error_directive() {
     auto& stream = message(Severity::ERROR, location());
     next_token_internal();
-    auto begin = matcher().begin();
+    auto begin = source.text().data();
     auto end = begin;
     while (token && token != '\n') {
-        end = matcher().end();
+        end = source.text().data() + source.text().size();
         next_token_internal();
     }
 
@@ -80,23 +80,23 @@ void TokenConverter::handle_line_directive() {
 
     if (token != TOK_PP_NUMBER) return;
 
-    char* end;
-    auto line = strtoll(text(), &end, 10);
-    if (line <= 0 || end != matcher().end()) return;
+    size_t line;
+    auto result = from_chars(text().data(), text().data() + text().size(), line, 10);
+    if (result.ec != errc{} || line <= 0 || result.ptr != text().data() + text().size()) return;
 
     next_token_internal();
 
     string filename;
     if (token == TOK_STRING_LITERAL) {
-        filename = unescape_string(text(), size(), location());
+        filename = unescape_string(text(), location());
         next_token_internal();
     }
 
     if (token != '\n') return;
 
-    lineno(line - 1);
+    source.set_lineno(line - 1);
     if (!filename.empty()) {
-        current_filename = filenames.insert(filename).first->c_str();
+        source.set_filename(filename);
     }
 }
 
@@ -111,13 +111,13 @@ void TokenConverter::skip_to_eol() {
 }
 
 TokenKind TokenConverter::next_token_internal() {
-    return token = TokenKind(PPTokenLexer::next_token());
+    return token = source.next_token();
 }
 
 Identifier TokenConverter::identifier() const
 {
     Identifier result;
-    result.name = InternString(string_view(matcher().begin(), matcher().size()));
+    result.name = InternString(text());
     result.byte_offset = byte_offset();
     return result;
 }
