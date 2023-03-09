@@ -24,7 +24,7 @@ CompileContext::~CompileContext() {
 
 ostream& message(Severity severity, const Location& location) {
     auto &stream = CompileContext::it->message_stream;
-    stream << location.file << ':' << location.line << ':' << location.column << ": ";
+    stream << location.filename << ':' << location.line << ':' << location.column << ": ";
 
     switch (severity) {
     case Severity::WARNING:

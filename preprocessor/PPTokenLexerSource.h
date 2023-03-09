@@ -40,7 +40,7 @@ private:
   PPTokenLexer lexer;
 
   unordered_set<string> filenames;
-  const char* current_filename = "";
+  string_view current_filename;
 };
 
 #endif
