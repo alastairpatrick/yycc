@@ -67,7 +67,7 @@ L?  ' (\\. | [^\\'\n])*  '  { return TOK_CHAR_LITERAL; }
 ">="            { return TOK_GE_OP; }
 "=="            { return TOK_EQ_OP; }
 "!="            { return TOK_NE_OP; }
-"##" | "%:%:"   { return TOK_SHARP_SHARP; }
+"##" | "%:%:"   { return TOK_PP_CONCAT; }
 ";"             { return ';'; }
 "{" | "<%"      { return '{'; }
 "}" | "%>"      { return '}'; }
@@ -92,25 +92,25 @@ L?  ' (\\. | [^\\'\n])*  '  { return TOK_CHAR_LITERAL; }
 "^"             { return '^'; }
 "|"             { return '|'; }
 "?"             { return '?'; }
-"#" | "%:"    { return '#'; }
+"#" | "%:"      { return '#'; }
 
 }
 
 // Determine the kind of directive and transition.
 <DIRECTIVE> {
 
-d(efine)?           { start(PP_TOKENS); return TOK_PP_DEFINE; }
-error               { start(PP_TOKENS); return TOK_PP_ERROR; }
-elif                { start(PP_TOKENS); return TOK_PP_ELIF; }
-else                { start(PP_TOKENS); return TOK_PP_ELSE; }
-endif               { start(PP_TOKENS); return TOK_PP_ENDIF; }
-if                  { start(PP_TOKENS); return TOK_PP_IF; }
-ifdef               { start(PP_TOKENS); return TOK_PP_IFDEF; }
-ifndef              { start(PP_TOKENS); return TOK_PP_IFNDEF; }
-include             { start(PP_TOKENS); return TOK_PP_INCLUDE; }
-line                { start(PP_TOKENS); return TOK_PP_LINE; }
-pragma              { start(PP_TOKENS); return TOK_PP_PRAGMA; }
-undef               { start(PP_TOKENS); return TOK_PP_UNDEF; }
+d(efine)?       { start(PP_TOKENS); return TOK_PP_DEFINE; }
+error           { start(PP_TOKENS); return TOK_PP_ERROR; }
+elif            { start(PP_TOKENS); return TOK_PP_ELIF; }
+else            { start(PP_TOKENS); return TOK_PP_ELSE; }
+endif           { start(PP_TOKENS); return TOK_PP_ENDIF; }
+if              { start(PP_TOKENS); return TOK_PP_IF; }
+ifdef           { start(PP_TOKENS); return TOK_PP_IFDEF; }
+ifndef          { start(PP_TOKENS); return TOK_PP_IFNDEF; }
+include         { start(PP_TOKENS); return TOK_PP_INCLUDE; }
+line            { start(PP_TOKENS); return TOK_PP_LINE; }
+pragma          { start(PP_TOKENS); return TOK_PP_PRAGMA; }
+undef           { start(PP_TOKENS); return TOK_PP_UNDEF; }
 
 }
 

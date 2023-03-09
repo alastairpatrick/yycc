@@ -66,13 +66,13 @@ enum TokenKind {
     TOK_OR_ASSIGN,
 
     TOK_ELLIPSIS,
-    TOK_SHARP_SHARP,
 
     // Tokens below use the digits range so they don't overlap punctuators.
     TOK_CHAR_LITERAL = '0',
     TOK_STRING_LITERAL,
     TOK_HEADER_NAME,
     TOK_PP_NUMBER,
+    TOK_PP_CONCAT,
     TOK_PP_UNRECOGNIZED,
     TOK_PP_UNTERMINATED_COMMENT,
 
