@@ -96,7 +96,7 @@ void TokenConverter::handle_line_directive() {
 
     source.set_lineno(line - 1);
     if (!filename.empty()) {
-        source.set_filename(filename);
+        source.set_filename(move(filename));
     }
 }
 

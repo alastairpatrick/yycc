@@ -30,7 +30,7 @@ struct PPTokenLexerSource {
       lexer.lineno(line);
   }
 
-  void set_filename(const string& filename);
+  void set_filename(string&& filename);
 
   size_t byte_offset() const {
     return lexer.matcher().first();
