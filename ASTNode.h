@@ -1,8 +1,6 @@
 #ifndef AST_H
 #define AST_H
 
-#include "llvm-c/Core.h"
-
 #include "Identifier.h"
 #include "Location.h"
 #include "Printable.h"
@@ -15,9 +13,9 @@ struct Type;
 
 struct ASTNode: Printable {
     explicit ASTNode(const Location& location);
+    void operator=(const ASTNode&) = delete;
 
     Location location;
-
     ASTNode* next_delete;
 };
 

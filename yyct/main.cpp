@@ -4,8 +4,6 @@
 
 #define IDENTIFIER_HASHES 0
 
-using reflex::Input;
-
 enum class StringTransform {
     NONE,
     LITERAL,

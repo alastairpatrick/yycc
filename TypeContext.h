@@ -1,15 +1,17 @@
 #ifndef TYPE_CONTEXT_H
 #define TYPE_CONTEXT_H
 
-#include "std.h"
-
 struct Type;
 struct PointerType;
 struct QualifiedType;
 enum class TypeNameKind;
 
 struct TypeContext {
+    TypeContext() = default;
+    TypeContext(const TypeContext&) = delete;
     ~TypeContext();
+
+    void operator=(const TypeContext&) = delete;
 
     const Type* lookup_indexed_type(const string& key);
     void add_indexed_type(const string& key, const Type* type);

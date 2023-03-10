@@ -2,8 +2,6 @@
 
 #include "Identifier.h"
 
-using reflex::Input;
-
 string unescape_string(string_view text, const Location& location);
 
 int TokenConverter::next_token() {
@@ -117,7 +115,7 @@ TokenKind TokenConverter::next_token_internal() {
 Identifier TokenConverter::identifier() const
 {
     Identifier result;
-    result.name = InternString(text());
+    result.name = intern_string(text());
     result.byte_offset = byte_offset();
     return result;
 }

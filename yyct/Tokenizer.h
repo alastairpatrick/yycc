@@ -4,11 +4,11 @@
 #include "PPTokenLexer.yy.h"
 #include "Token.h"
 
-#include "std.h"
-
-using reflex::Input;
-
 struct Tokenizer {
+    Tokenizer() = default;
+    Tokenizer(const Tokenizer&) = delete;
+    void operator=(const Tokenizer&) = delete;
+
     struct Identifier {
         string text;
         size_t frequency{};

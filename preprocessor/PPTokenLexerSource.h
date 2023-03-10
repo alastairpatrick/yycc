@@ -5,10 +5,9 @@
 #include "PPTokenLexer.yy.h"
 #include "Token.h"
 
-#include "std.h"
-
 struct PPTokenLexerSource {
-  PPTokenLexerSource(const reflex::Input& input);
+  explicit PPTokenLexerSource(const Input& input);
+  void operator=(const PPTokenLexerSource&) = delete;
 
   TokenKind next_token() {
       return TokenKind(lexer.next_token());
@@ -18,8 +17,8 @@ struct PPTokenLexerSource {
       return string_view(lexer.matcher().begin(), lexer.size());
   }
 
-  reflex::Input token_input() const {
-      return reflex::Input(lexer.matcher().begin(), lexer.size());
+  Input token_input() const {
+      return Input(lexer.matcher().begin(), lexer.size());
   }
 
   Location location() const {

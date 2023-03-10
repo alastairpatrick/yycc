@@ -16,8 +16,9 @@ enum class Severity {
 struct CompileContext {
     static thread_local CompileContext* it;
 
-    CompileContext(ostream& message_stream);
+    explicit CompileContext(ostream& message_stream);
     ~CompileContext();
+    void operator=(const CompileContext&) = delete;
 
     ostream& message_stream;
 

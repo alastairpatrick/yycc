@@ -1,8 +1,6 @@
 #ifndef TYPE_H
 #define TYPE_H
 
-#include "llvm-c/Core.h"
-
 #include "Identifier.h"
 #include "Printable.h"
 #include "Token.h"
@@ -12,6 +10,10 @@ struct PointerType;
 struct SymbolMap;
 
 struct Type: Printable {
+    Type() = default;
+    Type(const Type&) = delete;
+    void operator=(const Type&) = delete;
+
     virtual unsigned qualifiers() const;
     virtual const Type* unqualified() const;
 

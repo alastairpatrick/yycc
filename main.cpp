@@ -1,12 +1,3 @@
-#include <stdio.h>
-
-#include "llvm-c/Core.h"
-#include "llvm-c/Analysis.h"
-#include "llvm-c/BitWriter.h"
-#include "llvm-c/ExecutionEngine.h"
-#include "llvm-c/Target.h"
-#include "llvm-c/TargetMachine.h"
-
 int do_parse();
 
 /*int main(int argc, const char* argv[]) {

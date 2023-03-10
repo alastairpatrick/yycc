@@ -15,7 +15,7 @@ struct Parser {
     SymbolMap symbols;
     ASTNodeVector extern_decls;
 
-    explicit Parser(const reflex::Input& input): lexer(input) {
+    explicit Parser(const Input& input): lexer(input) {
         token = TokenKind(lexer.next_token());
     }
 
@@ -437,7 +437,7 @@ struct Parser {
             }
 
             auto identifier = lexer.identifier();
-            if (!consume(TOK_IDENTIFIER)) identifier.name = EmptyInternedString;
+            if (!consume(TOK_IDENTIFIER)) identifier.name = empty_interned_string;
 
             Expr* initializer{};
             Decl* decl{};

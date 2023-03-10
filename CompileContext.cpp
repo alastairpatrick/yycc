@@ -8,7 +8,7 @@ CompileContext::CompileContext(ostream& message_stream): message_stream(message_
     assert(!it);
     it = this;
 
-    interned_views.insert(*EmptyInternedString);
+    interned_views.insert(*empty_interned_string);
 }
 
 CompileContext::~CompileContext() {

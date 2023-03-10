@@ -8,10 +8,9 @@
 #include "Location.h"
 #include "Token.h"
 
-#include "std.h"
-
 struct TokenConverter {
-    TokenConverter(const reflex::Input& input): source(input) {}
+    explicit TokenConverter(const Input& input): source(input) {}
+    void operator=(const TokenConverter&) = delete;
 
     int next_token();
 

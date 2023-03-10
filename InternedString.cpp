@@ -2,9 +2,9 @@
 #include "CompileContext.h"
 
 static string_view empty;
-InternedString EmptyInternedString = &empty;
+InternedString empty_interned_string = &empty;
 
-InternedString InternString(string_view source) {
+InternedString intern_string(string_view source) {
     auto& views = CompileContext::it->interned_views;
     auto it = views.find(source);
     if (it != views.end()) return &*it;
