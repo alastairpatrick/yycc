@@ -28,27 +28,17 @@ static IntegerConstant* parse_integer_literal(string_view text, int radix, const
     return new IntegerConstant(value, type, location);
 }
 
-static wchar_t parse_char_code(string_view& text, size_t num_digits, int radix, const Location& location) {
-    char digits[9];
-    assert(num_digits <= 8);
+static uint32_t parse_char_code(string_view& text, size_t num_digits, int radix, const Location& location) {
+    unsigned long long c = 0;
+    auto result = from_chars(text.data(), text.data() + min(text.size(), num_digits), c, radix);
 
-    const char* src = text.data();
-    size_t i;
-    for (i = 0; i < min(text.size(), num_digits); ++i) {
-        if (src[i] == 0) break;
-        digits[i] = src[i];
-    }
-    digits[i] = 0;
-
-    char* end = nullptr;
-    wchar_t result = wchar_t(strtol(digits, &end, radix));
-
-    if (end - digits != num_digits) {
+    if (result.ec != errc{} || result.ptr != text.data() + num_digits) {
         message(Severity::ERROR, location) << "truncated character escape code\n";
     }
-    text.remove_prefix(end - digits);
 
-    return result;
+    text.remove_prefix(result.ptr - text.data());
+
+    return c;
 }
 
 static uint32_t unescape_char(string_view& text, const Location& location) {
