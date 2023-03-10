@@ -9,43 +9,23 @@ Constant::Constant(const Location& location): Expr(location) {
 }
 
 static IntegerConstant* parse_integer_literal(string_view text, int radix, const Location& location) {
-    unsigned long long value;
-    auto result = from_chars(text.data(), text.data() + text.size(), value, radix);
-    if (result.ec != errc{}) {
-        // TODO: warn about truncation of int literal
-    }
-    text.remove_prefix(result.ptr - text.data());
-
     auto signedness = IntegerSignedness::SIGNED;
     int longs = 0;
-    for (; text.size(); text.remove_prefix(1)) {
-        char c = toupper(text[0]);
+    for (; text.size(); text.remove_suffix(1)) {
+        char c = toupper(text.back());
         if (c == 'U') signedness = IntegerSignedness::UNSIGNED;
         else if (c == 'L') ++longs;
-        else assert(false);
+        else break;
     }
 
-    assert(longs <= 2);
+    assert(longs <= 2);  // TODO: error
     auto size = IntegerSize::INT;
     if (longs >= 2) size = IntegerSize::LONG_LONG;
     else if (longs == 1) size = IntegerSize::LONG;
 
-    // TODO: should be checking against target max value.
-    unsigned long long max_value;
-    if (size == IntegerSize::INT) {
-        max_value = UINT_MAX;
-    } else if (size == IntegerSize::LONG) {
-        max_value = ULONG_MAX;
-    } else {
-        max_value = ULLONG_MAX;
-    }
-    
-    if (value > max_value) {
-        // TODO: warn about truncation of int literal
-        value = max_value;
-    }
-
-    return new IntegerConstant(value, IntegerType::of(signedness, size), location);
+    auto type = IntegerType::of(signedness, size);
+    auto value = LLVMConstIntOfStringAndSize(type->llvm_type(), text.data(), text.size(), radix);
+    return new IntegerConstant(value, type, location);
 }
 
 static wchar_t parse_char_code(string_view& text, size_t num_digits, int radix, const Location& location) {
@@ -176,7 +156,15 @@ static IntegerConstant* parse_char_literal(string_view text, const Location& loc
         }
     }
 
-    return new IntegerConstant(c, IntegerType::of_char(is_wide), location);
+    auto type = IntegerType::of_char(is_wide);
+    auto value = LLVMConstInt(type->llvm_type(), c, type->is_signed());
+    return new IntegerConstant(value, type, location);
+}
+
+IntegerConstant* IntegerConstant::default_expr(const Location& location) {
+    auto type = IntegerType::default_type();
+    auto value = LLVMConstInt(type->llvm_type(), 0, type->is_signed());
+    return new IntegerConstant(value, type, location);
 }
 
 IntegerConstant* IntegerConstant::of(string_view text, TokenKind token, const Location& location) {
@@ -199,8 +187,9 @@ IntegerConstant* IntegerConstant::of(string_view text, TokenKind token, const Lo
     }
 }
 
-IntegerConstant::IntegerConstant(unsigned long long value, const IntegerType* type, const Location& location)
+IntegerConstant::IntegerConstant(LLVMValueRef value, const IntegerType* type, const Location& location)
     : Constant(location), type(type), value(value) {
+    assert(value);
 }
 
 const Type* IntegerConstant::get_type() const {
@@ -208,41 +197,33 @@ const Type* IntegerConstant::get_type() const {
 }
 
 LLVMValueRef IntegerConstant::generate_value(CodeGenContext* context) const {
-    return LLVMConstInt(type->llvm_type(), value, type->is_signed());
+    return value;
 }
 
 void IntegerConstant::print(ostream& stream) const {
-    stream << '"' << type << value << '"';
+    auto int_value = LLVMConstIntGetZExtValue(value);
+    stream << '"' << type << int_value << '"';
 }
 
 
 FloatingPointConstant* FloatingPointConstant::of(string_view text, TokenKind token, const Location& location) {
-    chars_format format = chars_format::general;
-    if (token == TOK_HEX_FLOAT_LITERAL) {
-        format = chars_format::hex;
-        text.remove_prefix(2);
-    }
-
-    double value;
-    auto result = from_chars(text.data(), text.data() + text.size(), value, format);
-    if (result.ec != errc{}) {
-    }
-    text.remove_prefix(result.ptr - text.data());
-
     auto size = FloatingPointSize::DOUBLE;
-    for (; text.size(); text.remove_prefix(1)) {
-        char c = toupper(text[0]);
+    for (; text.size(); text.remove_suffix(1)) {
+        char c = toupper(text.back());
         if (c == 'F') size = FloatingPointSize::FLOAT;
         else if (c == 'L') size = FloatingPointSize::LONG_DOUBLE;
-        else assert(false);
+        else break;
     }
 
-    return new FloatingPointConstant(value, FloatingPointType::of(size), location);
+    auto type = FloatingPointType::of(size);
+    auto value = LLVMConstRealOfStringAndSize(type->llvm_type(), text.data(), text.size());
+    return new FloatingPointConstant(value, type, location);
 }
 
 
-FloatingPointConstant::FloatingPointConstant(double value, const FloatingPointType* type, const Location& location)
+FloatingPointConstant::FloatingPointConstant(LLVMValueRef value, const FloatingPointType* type, const Location& location)
     : Constant(location), type(type), value(value) {
+    assert(value);
 }
 
 const Type* FloatingPointConstant::get_type() const {
@@ -250,11 +231,13 @@ const Type* FloatingPointConstant::get_type() const {
 }
 
 LLVMValueRef FloatingPointConstant::generate_value(CodeGenContext* context) const {
-    return LLVMConstReal(type->llvm_type(), value);
+    return value;
 }
 
 void FloatingPointConstant::print(ostream& stream) const {
-    stream << '"' << type << value << '"';
+    LLVMBool loses_info;
+    double float_value = LLVMConstRealGetDouble(value, &loses_info);
+    stream << '"' << type << float_value << '"';
 }
 
 string unescape_string(string_view text, const Location& location) {

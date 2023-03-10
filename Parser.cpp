@@ -135,7 +135,7 @@ struct Parser {
                     result = new NameExpr(decl, lexer.location());
                 } else {
                     message(Severity::ERROR, lexer.location()) << '\'' << lexer.identifier() << "' undeclared\n";
-                    result = new IntegerConstant(0, IntegerType::default_type(), lexer.location());
+                    result = IntegerConstant::default_expr(lexer.location());
                 }
                 consume();
                 break;
@@ -151,7 +151,7 @@ struct Parser {
         if (!result) {
             assert(token == TOK_EOF);
             message(Severity::ERROR, lexer.location()) << "unexpected end of file\n";
-            result = new IntegerConstant(0, IntegerType::default_type(), lexer.location());
+            result = IntegerConstant::default_expr(lexer.location());
         }
 
         return result;

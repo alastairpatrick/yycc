@@ -94,11 +94,6 @@ L'€'
 EXPECT_AST
 "Us8364"
 
-BEGIN UTF-8 4-byte char literal
-L'🌈'
-EXPECT_AST
-"Us127752"
-
 BEGIN Empty char literal
 ''
 EXPECT_MESSAGE

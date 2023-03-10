@@ -13,11 +13,12 @@ struct Constant: Expr {
 
 struct IntegerConstant: Constant {
     const IntegerType* type{};
-    unsigned long long value;
+    LLVMValueRef value;
 
+    static IntegerConstant* default_expr(const Location& location);
     static IntegerConstant* of(string_view text, TokenKind token, const Location& location);
 
-    IntegerConstant(unsigned long long int_value, const IntegerType* type, const Location& location);
+    IntegerConstant(LLVMValueRef value, const IntegerType* type, const Location& location);
 
     virtual const Type* get_type() const;
     virtual LLVMValueRef generate_value(CodeGenContext* context) const;
@@ -26,11 +27,11 @@ struct IntegerConstant: Constant {
 
 struct FloatingPointConstant: Constant {
     const FloatingPointType* type{};
-    double value;
+    LLVMValueRef value;
 
     static FloatingPointConstant* of(string_view text, TokenKind token, const Location& location);
 
-    FloatingPointConstant(double float_value, const FloatingPointType* type, const Location& location);
+    FloatingPointConstant(LLVMValueRef value, const FloatingPointType* type, const Location& location);
 
     virtual const Type* get_type() const;
     virtual LLVMValueRef generate_value(CodeGenContext* context) const;

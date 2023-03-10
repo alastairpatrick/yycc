@@ -69,12 +69,12 @@ EXPECT_AST
 "Fd1"
 
 BEGIN Hexadecimal float (1)
-0x0.1
+0x0.1p0
 EXPECT_AST
 "Fd0.0625"
 
 BEGIN Hexadecimal float (1)
-0X0.1
+0X0.1P0
 EXPECT_AST
 "Fd0.0625"
 
