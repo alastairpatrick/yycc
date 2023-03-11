@@ -19,7 +19,6 @@ struct SymbolMap {
 
     void push_scope();
     void pop_scope();
-    bool at_file_scope() const;
 
     SymbolMap();
 };

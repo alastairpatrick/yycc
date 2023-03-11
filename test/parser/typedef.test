@@ -33,17 +33,17 @@ EXPECT_AST
 ,["typedef", "Ui", "a"]]
 
 
-BEGIN Typedefs use block scope
+BEGIN Typedef in block scope
 typedef int a;
-{
+void f(void) {
     typedef long a;
 }
 EXPECT_AST
 [
     ["typedef", "Si", "a"],
-    ["block", [
+    ["fun","E","()V","f",[""], ["block", [
         ["typedef", "Sl", "a"]]
-    ]
+    ]]
 ]
 
 
@@ -57,7 +57,7 @@ EXPECT_AST
 
 BEGIN Disambiguates between multiplication and variable declaration of pointer type
 int p, q;
-{
+void f(void) {
     q * p; // "q" is not a type so this is multiplication.
     typedef short q;
     q * v; // now "q" is a type so this declares variable "v" with type "q*".
@@ -66,16 +66,16 @@ EXPECT_AST
 [
     ["var", "ES", "Si", "p", ""],
     ["var", "ES", "Si", "q", ""],
-    ["block", [
+    ["fun","E","()V","f",[""], ["block", [
         ["*", "Nq", "Np"],
         ["typedef", "Ss", "q"],
         ["var", "", "PSs", "v", ""]
-    ]
-]]
+    ]]]
+]
 
 
 BEGIN Typedef goes out of scope immediately following block
-{
+void f(void) {
     int p, q;
     {
         typedef long q;
@@ -83,14 +83,14 @@ BEGIN Typedef goes out of scope immediately following block
     q * p; // Identifier "q" immediately follows '}'
 }
 EXPECT_AST
-[["block", [
+[["fun","E","()V","f",[""], ["block", [
     ["var", "", "Si", "p", ""],
     ["var", "", "Si", "q", ""],
     ["block", [
         ["typedef", "Sl", "q"]
     ]],
     ["*", "Nq", "Np"]
-]]]
+]]]]
 
 
 BEGIN Typedef may not be used as a variable.

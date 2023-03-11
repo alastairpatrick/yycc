@@ -67,10 +67,6 @@ struct Parser {
         return false;
     }
 
-    bool at_file_scope() const {
-        return !symbols || symbols->at_file_scope();
-    }
-
     Expr* parse_expr(int min_prec) {
         Location loc;
         auto result = parse_cast_expr();
@@ -161,7 +157,7 @@ struct Parser {
         return result;
     }
 
-    bool parse_decl_specifiers(StorageClass& storage_class, const Type*& type, uint32_t& specifiers) {
+    bool parse_decl_specifiers(IdentifierScope scope, StorageClass& storage_class, const Type*& type, uint32_t& specifiers) {
         const uint32_t storage_class_mask = (1 << TOK_TYPEDEF) | (1 << TOK_EXTERN) | (1 << TOK_STATIC) | (1 << TOK_AUTO) | (1 << TOK_REGISTER);
         const uint32_t type_qualifier_mask = (1 << TOK_CONST) | (1 << TOK_RESTRICT) | (1 << TOK_VOLATILE);
         const uint32_t function_specifier_mask = 1 << TOK_INLINE;
@@ -216,7 +212,7 @@ struct Parser {
                       if (symbols) {
                           typedef_type = symbols->lookup_type(TypeNameKind::ORDINARY, lexer.identifier());
                           if (!typedef_type) {
-                              if (!at_file_scope()) break;
+                              if (scope != IdentifierScope::FILE) break;
                               message(Severity::ERROR, lexer.location()) << "typedef \'" << lexer.identifier() << "' undefined\n";
                               typedef_type = IntegerType::default_type();
                           }
@@ -370,7 +366,7 @@ struct Parser {
         StorageClass storage_class = StorageClass::NONE;
         const Type* type{};
         uint32_t specifiers;
-        if (parse_decl_specifiers(storage_class, type, specifiers)) {
+        if (parse_decl_specifiers(scope, storage_class, type, specifiers)) {
             int decl_count = 0;
             while (token && token != ';') {
                 auto decl = parse_declarator(scope, storage_class, type, specifiers, decl_count == 0, location);
@@ -431,7 +427,7 @@ struct Parser {
         StorageClass storage_class = StorageClass::NONE;
         const Type* type{};
         uint32_t specifiers;
-        if (!parse_decl_specifiers(storage_class, type, specifiers)) {
+        if (!parse_decl_specifiers(IdentifierScope::PROTOTYPE, storage_class, type, specifiers)) {
             // TODO
         }
 
