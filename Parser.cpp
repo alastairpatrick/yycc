@@ -1,9 +1,9 @@
 #include "assoc_prec.h"
 #include "ASTNode.h"
-#include "CompileContext.h"
 #include "Constant.h"
 #include "Decl.h"
 #include "Expr.h"
+#include "Message.h"
 #include "Statement.h"
 #include "SymbolMap.h"
 #include "Token.h"
@@ -12,10 +12,10 @@
 struct Parser {
     TokenConverter lexer;
     TokenKind token;
-    SymbolMap symbols;
+    SymbolMap* symbols;
     ASTNodeVector extern_decls;
 
-    explicit Parser(const Input& input): lexer(input) {
+    Parser(SymbolMap* symbols, const Input& input): symbols(symbols), lexer(input) {
         token = TokenKind(lexer.next_token());
     }
 
@@ -127,7 +127,7 @@ struct Parser {
                 break;
             }
             else if (token == TOK_IDENTIFIER) {
-                Decl* decl = symbols.lookup_decl(TypeNameKind::ORDINARY, lexer.identifier());
+                Decl* decl = symbols->lookup_decl(TypeNameKind::ORDINARY, lexer.identifier());
                 if (decl) {
                     // TokenKind would have to be TOK_TYPEDEF_IDENTIFIER for decl to be a typedef.
                     assert(!dynamic_cast<TypeDef*>(decl));
@@ -164,7 +164,7 @@ struct Parser {
         const uint32_t type_specifier_mask = ~(storage_class_mask | type_qualifier_mask | function_specifier_mask);
 
         Location storage_class_location;
-        Location type_specifier_location;
+        Location type_specifier_location = lexer.location();
         Location function_specifier_location;
         Location qualifier_location;
         uint32_t specifier_set = 0;
@@ -182,55 +182,56 @@ struct Parser {
 
             bool should_consume = false;
             switch (token) {
-            case TOK_TYPEDEF:
-            case TOK_EXTERN:
-            case TOK_STATIC:
-            case TOK_AUTO:
-            case TOK_REGISTER:
-                should_consume = true;
-                storage_class_location = lexer.location();
-                break;
+                case TOK_TYPEDEF:
+                case TOK_EXTERN:
+                case TOK_STATIC:
+                case TOK_AUTO:
+                case TOK_REGISTER: {
+                  should_consume = true;
+                  storage_class_location = lexer.location();
+                  break;
 
-            case TOK_VOID:
-            case TOK_CHAR:
-            case TOK_SHORT:
-            case TOK_INT:
-            case TOK_LONG:
-            case TOK_FLOAT:
-            case TOK_DOUBLE:
-            case TOK_SIGNED:
-            case TOK_UNSIGNED:
-            case TOK_BOOL:
-            case TOK_COMPLEX:
-                should_consume = true;
-                type_specifier_location = lexer.location();                
-                break;
+              } case TOK_VOID:
+                case TOK_CHAR:
+                case TOK_SHORT:
+                case TOK_INT:
+                case TOK_LONG:
+                case TOK_FLOAT:
+                case TOK_DOUBLE:
+                case TOK_SIGNED:
+                case TOK_UNSIGNED:
+                case TOK_BOOL:
+                case TOK_COMPLEX: {
+                  should_consume = true;
+                  type_specifier_location = lexer.location();                
+                  break;
 
-            case TOK_IDENTIFIER: {
-                    auto typedef_type = symbols.lookup_type(TypeNameKind::ORDINARY, lexer.identifier());
-                    if (!typedef_type) break;
+               } case TOK_IDENTIFIER: {
+                  auto typedef_type = symbols ? symbols->lookup_type(TypeNameKind::ORDINARY, lexer.identifier())
+                                              : NamedType::of(TypeNameKind::ORDINARY, lexer.identifier());
+                  if (!typedef_type) break;
 
-                    if ((specifier_set & type_specifier_mask) == 0) {
-                        type = typedef_type;
-                        should_consume = true;
-                        type_specifier_location = lexer.location();                
-                    }
-                }
-                break;
+                  if ((specifier_set & type_specifier_mask) == 0) {
+                      type = typedef_type;
+                      should_consume = true;
+                      type_specifier_location = lexer.location();                
+                  }
+                  break;
 
-            case TOK_INLINE:
-                should_consume = true;
-                function_specifier_location = lexer.location();
-                specifier_set &= ~(1 << token); // function speficiers may be repeated
-                break;
+              } case TOK_INLINE: {
+                  should_consume = true;
+                  function_specifier_location = lexer.location();
+                  specifier_set &= ~(1 << token); // function speficiers may be repeated
+                  break;
 
-            case TOK_CONST:
-            case TOK_RESTRICT:
-            case TOK_VOLATILE:
-                should_consume = true;
-                qualifier_location = lexer.location();
-                specifier_set &= ~(1 << token); // qualifiers may be repeated
-                break;
+              } case TOK_CONST:
+                case TOK_RESTRICT:
+                case TOK_VOLATILE: {
+                  should_consume = true;
+                  qualifier_location = lexer.location();
+                  specifier_set &= ~(1 << token); // qualifiers may be repeated
+                  break;
+              }
             }
 
             if (should_consume) {
@@ -263,66 +264,81 @@ struct Parser {
 
         // Check type specifiers are one of the valid combinations.
         switch (specifier_set & type_specifier_mask) {
-        case (1 << TOK_VOID):
-            type = &VoidType::it;
-            break;
-        case (1 << TOK_CHAR):
-            type = IntegerType::of_char(false);
-            break;
-        case (1 << TOK_SIGNED) | (1 << TOK_CHAR):
-            type = IntegerType::of(IntegerSignedness::SIGNED, IntegerSize::CHAR);
-            break;
-        case (1 << TOK_UNSIGNED) | (1 << TOK_CHAR):
-            type = IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::CHAR);
-            break;
-        case (1 << TOK_SHORT):
-        case (1 << TOK_SIGNED) | (1 << TOK_SHORT):
-        case (1 << TOK_SHORT) | (1 << TOK_INT):
-        case (1 << TOK_SIGNED) | (1 << TOK_SHORT) | (1 << TOK_INT):
-            type = IntegerType::of(IntegerSignedness::SIGNED, IntegerSize::SHORT);
-            break;
-        case (1 << TOK_UNSIGNED) | (1 << TOK_SHORT):
-        case (1 << TOK_UNSIGNED) | (1 << TOK_SHORT) | (1 << TOK_INT):
-            type = IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::SHORT);
-            break;
-        case 0:
-        case (1 << TOK_INT):
-        case (1 << TOK_SIGNED):
-        case (1 << TOK_SIGNED) | (1 << TOK_INT):
-            type = IntegerType::of(IntegerSignedness::SIGNED, IntegerSize::INT);
-            break;
-        case (1 << TOK_UNSIGNED):
-        case (1 << TOK_UNSIGNED) | (1 << TOK_INT):
-            type = IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::INT);
-            break;
-        case (1 << TOK_LONG):
-        case (1 << TOK_SIGNED) | (1 << TOK_LONG):
-        case (1 << TOK_LONG) | (1 << TOK_INT):
-        case (1 << TOK_SIGNED) | (1 << TOK_LONG) | (1 << TOK_INT):
-            type = IntegerType::of(IntegerSignedness::SIGNED, num_longs == 1 ? IntegerSize::LONG : IntegerSize::LONG_LONG);
-            break;
-        case (1 << TOK_UNSIGNED) | (1 << TOK_LONG):
-        case (1 << TOK_UNSIGNED) | (1 << TOK_LONG) | (1 << TOK_INT):
-            type = IntegerType::of(IntegerSignedness::UNSIGNED, num_longs == 1 ? IntegerSize::LONG : IntegerSize::LONG_LONG);
-            break;
-        case (1 << TOK_FLOAT):
-            type = FloatingPointType::of(FloatingPointSize::FLOAT);
-            break;
-        case (1 << TOK_DOUBLE):
-            type = FloatingPointType::of(FloatingPointSize::DOUBLE);
-            break;
-        case (1 << TOK_LONG) | (1 << TOK_DOUBLE):
-            type = FloatingPointType::of(FloatingPointSize::LONG_DOUBLE);
-            break;
-        case (1 << TOK_BOOL):
-            type = IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL);
-            break;
-        case (1 << TOK_IDENTIFIER):
-            break;
-        default:
-            type = IntegerType::default_type();
-            message(Severity::ERROR, type_specifier_location) << "invalid type specifier combination\n";
-            break;
+            default: {
+              type = IntegerType::default_type();
+              message(Severity::ERROR, type_specifier_location) << "invalid type specifier combination\n";
+              break;
+
+          } case (1 << TOK_VOID): {
+              type = &VoidType::it;
+              break;
+
+          } case (1 << TOK_CHAR): {
+              type = IntegerType::of_char(false);
+              break;
+
+          } case (1 << TOK_SIGNED) | (1 << TOK_CHAR): {
+              type = IntegerType::of(IntegerSignedness::SIGNED, IntegerSize::CHAR);
+              break;
+
+          } case (1 << TOK_UNSIGNED) | (1 << TOK_CHAR): {
+              type = IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::CHAR);
+              break;
+
+          } case (1 << TOK_SHORT):
+            case (1 << TOK_SIGNED) | (1 << TOK_SHORT):
+            case (1 << TOK_SHORT) | (1 << TOK_INT):
+            case (1 << TOK_SIGNED) | (1 << TOK_SHORT) | (1 << TOK_INT): {
+              type = IntegerType::of(IntegerSignedness::SIGNED, IntegerSize::SHORT);
+              break;
+
+          } case (1 << TOK_UNSIGNED) | (1 << TOK_SHORT):
+            case (1 << TOK_UNSIGNED) | (1 << TOK_SHORT) | (1 << TOK_INT): {
+              type = IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::SHORT);
+              break;
+
+          } case (1 << TOK_INT):
+            case (1 << TOK_SIGNED):
+            case (1 << TOK_SIGNED) | (1 << TOK_INT): {
+              type = IntegerType::of(IntegerSignedness::SIGNED, IntegerSize::INT);
+              break;
+
+          } case (1 << TOK_UNSIGNED):
+            case (1 << TOK_UNSIGNED) | (1 << TOK_INT): {
+              type = IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::INT);
+              break;
+
+          } case (1 << TOK_LONG):
+            case (1 << TOK_SIGNED) | (1 << TOK_LONG):
+            case (1 << TOK_LONG) | (1 << TOK_INT):
+            case (1 << TOK_SIGNED) | (1 << TOK_LONG) | (1 << TOK_INT): {
+              type = IntegerType::of(IntegerSignedness::SIGNED, num_longs == 1 ? IntegerSize::LONG : IntegerSize::LONG_LONG);
+              break;
+
+          } case (1 << TOK_UNSIGNED) | (1 << TOK_LONG):
+            case (1 << TOK_UNSIGNED) | (1 << TOK_LONG) | (1 << TOK_INT): {
+              type = IntegerType::of(IntegerSignedness::UNSIGNED, num_longs == 1 ? IntegerSize::LONG : IntegerSize::LONG_LONG);
+              break;
+
+          } case (1 << TOK_FLOAT): {
+              type = FloatingPointType::of(FloatingPointSize::FLOAT);
+              break;
+
+          } case (1 << TOK_DOUBLE): {
+              type = FloatingPointType::of(FloatingPointSize::DOUBLE);
+              break;
+
+          } case (1 << TOK_LONG) | (1 << TOK_DOUBLE): {
+              type = FloatingPointType::of(FloatingPointSize::LONG_DOUBLE);
+              break;
+
+          } case (1 << TOK_BOOL): {
+              type = IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL);
+              break;
+
+          } case (1 << TOK_IDENTIFIER): {
+              break;
+          }
         }
 
         if (specifier_set & type_qualifier_mask) {
@@ -379,7 +395,7 @@ struct Parser {
     }
 
     CompoundStatement* parse_compound_statement() {
-        symbols.push_scope();
+        symbols->push_scope();
 
         Location loc;
         require('{', &loc);
@@ -391,7 +407,7 @@ struct Parser {
 
         // Must pop scope before consuming '}' in case '}' is immediately followed by an identifier that the
         // lexer must correctly identify as TOK_IDENTIFIER or TOK_TYPEDEF_IDENTIFIER.
-        symbols.pop_scope();
+        symbols->pop_scope();
 
         require('}');
 
@@ -445,7 +461,7 @@ struct Parser {
             if (consume('=')) {
                 initializer = parse_expr(ASSIGN_PREC);
             } else if (consume('(')) {
-                symbols.push_scope();
+                symbols->push_scope();
 
                 vector<Variable*> params;
                 vector<const Type*> param_types;
@@ -485,7 +501,7 @@ struct Parser {
                                         location);
                 }
 
-                symbols.pop_scope();
+                symbols->pop_scope();
             }
 
             if (!decl && (specifiers & (1 << TOK_INLINE))) {
@@ -503,8 +519,8 @@ struct Parser {
                 decl = new Variable(scope, storage_class, type, identifier, initializer, location);
             }
 
-            if (!identifier.name->empty()) {
-                symbols.add_decl(TypeNameKind::ORDINARY, decl);
+            if (symbols && !identifier.name->empty()) {
+                symbols->add_decl(TypeNameKind::ORDINARY, decl);
             }
 
             return decl;
@@ -518,15 +534,17 @@ struct Parser {
 };
 
 Expr* parse_expr(const string& input) {
-    Parser parser(input);
+    SymbolMap symbols;
+    Parser parser(&symbols, input);
     auto result = parser.parse_expr(0);
     if (!parser.check_eof()) return nullptr;
     return result;
 }
 
-ASTNodeVector parse_statements(const string& input) {
+ASTNodeVector parse_statements(const string& input, bool preparse) {
     ASTNodeVector ast;
-    Parser parser(input);
+    SymbolMap symbols;
+    Parser parser(preparse ? nullptr : &symbols, input);
     while (parser.token != 0) {
         parser.parse_decl_or_statement(IdentifierScope::FILE, ast);
     }

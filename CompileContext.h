@@ -3,15 +3,8 @@
 
 #include "TypeContext.h"
 #include "InternedString.h"
-#include "Location.h"
 
 struct ASTNode;
-
-enum class Severity {
-    INFO,
-    WARNING,
-    ERROR,
-};
 
 struct CompileContext {
     static thread_local CompileContext* it;
@@ -29,8 +22,5 @@ struct CompileContext {
 
     ASTNode* ast_nodes{};
 };
-
-
-ostream& message(Severity severity, const Location& location);
 
 #endif

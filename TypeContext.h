@@ -1,10 +1,12 @@
 #ifndef TYPE_CONTEXT_H
 #define TYPE_CONTEXT_H
 
+#include "Identifier.h"
+
 struct Type;
 struct PointerType;
 struct QualifiedType;
-enum class TypeNameKind;
+struct NamedType;
 
 struct TypeContext {
     TypeContext() = default;
@@ -22,6 +24,9 @@ struct TypeContext {
     const QualifiedType* lookup_qualified_type(const Type* base_type, unsigned qualifiers);
     void add_qualified_type(const QualifiedType* type);
 
+    const NamedType* lookup_named_type(TypeNameKind kind, const Identifier& identifier);
+    void add_named_type(TypeNameKind kind, const Identifier& identifier, const NamedType* type);
+
     // This map is only used for "complicated" types like functions.
     unordered_map<string, const Type*> indexed_types;
 
@@ -31,6 +36,7 @@ struct TypeContext {
     typedef map<pair<const Type*, unsigned>, const QualifiedType*> QualifierTypesMap; 
     QualifierTypesMap qualified_types;
 
+    unordered_map<InternedString, const NamedType*> named_types[unsigned(TypeNameKind::NUM)];
 };
 
 #endif

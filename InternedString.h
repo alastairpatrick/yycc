@@ -9,6 +9,5 @@ typedef const string_view* InternedString;
 extern InternedString empty_interned_string;
 
 InternedString intern_string(string_view source);
-ostream& operator<<(ostream& stream, InternedString s);
 
 #endif

@@ -2,6 +2,7 @@
 #include "CodeGenContext.h"
 #include "CompileContext.h"
 #include "Decl.h"
+#include "InternedString.h"
 #include "SymbolMap.h"
 
 // Type codes
@@ -392,4 +393,43 @@ void FunctionType::print(std::ostream& stream) const {
 
 FunctionType::FunctionType(const Type* return_type, std::vector<const Type*> parameter_types, bool variadic)
     : return_type(return_type), parameter_types(move(parameter_types)), variadic(variadic) {
+}
+
+const NamedType* NamedType::of(TypeNameKind kind, const Identifier& identifier) {
+    auto type = CompileContext::it->type.lookup_named_type(kind, identifier);
+    if (type) return type;
+
+    type = new NamedType(kind, identifier);
+    CompileContext::it->type.add_named_type(kind, identifier, type);
+    return type;
+}
+
+LLVMTypeRef NamedType::llvm_type() const {
+    assert(false);
+    return nullptr;
+}
+
+void NamedType::print(ostream& stream) const {
+    stream << 'N';
+
+    switch (kind) {
+    case TypeNameKind::ENUM:
+        stream << 'e';
+        break;
+    case TypeNameKind::ORDINARY:
+        stream << 't';
+        break;
+    case TypeNameKind::STRUCT:
+        stream << 's';
+        break;
+    case TypeNameKind::UNION:
+        stream << 'u';
+        break;
+    }
+
+    stream << *identifier.name;
+}
+
+NamedType::NamedType(TypeNameKind kind, const Identifier& identifier)
+    : kind(kind), identifier(identifier) {
 }

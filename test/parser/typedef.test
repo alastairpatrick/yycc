@@ -8,6 +8,8 @@ EXPECT_AST
 
 BEGIN Typedef with no declarators
 typedef;
+EXPECT_MESSAGE
+:1:1: error invalid type specifier combination
 EXPECT_AST
 []
 

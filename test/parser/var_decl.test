@@ -1,5 +1,17 @@
-BEGIN Static storage class declaration
+
+
+BEGIN No implicit int declaration
 static x;
+EXPECT_MESSAGE
+:1:1: error invalid type specifier combination
+EXPECT_AST
+[["var","IS","Si","x",""]]
+
+
+
+
+BEGIN Static storage class declaration
+static int x;
 EXPECT_AST
 [["var", "IS", "Si", "x", ""]]
 
@@ -24,7 +36,7 @@ EXPECT_AST
 [["var", "ES", "Si", "x", ""]]
 
 BEGIN Error on declaration with multiple storage classes
-auto register x;
+auto register int x;
 EXPECT_MESSAGE
 :1:6: error too many storage classes
 EXPECT_AST
@@ -182,6 +194,14 @@ EXPECT_AST
 [["var", "ES", "Ub", "x", ""]]
 
 
+BEGIN No implicit int declaration
+static x;
+EXPECT_MESSAGE
+:1:1: error invalid type specifier combination
+EXPECT_AST
+[["var","IS","Si","x",""]]
+
+
 BEGIN Error on duplicate type specifiers (except long)
 short short x;
 EXPECT_MESSAGE
@@ -231,7 +251,7 @@ EXPECT_AST
 
 
 BEGIN Declaration type qualifiers may be repeated
-volatile volatile x;
+volatile volatile int x;
 EXPECT_AST
 [["var", "ES", "QvSi", "x", ""]]
 

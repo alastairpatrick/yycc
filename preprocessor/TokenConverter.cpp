@@ -1,5 +1,6 @@
 #include "TokenConverter.h"
 
+#include "Message.h"
 #include "Identifier.h"
 
 string unescape_string(string_view text, const Location& location);

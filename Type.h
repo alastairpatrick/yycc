@@ -155,12 +155,17 @@ private:
     FunctionType(const Type* return_type, std::vector<const Type*> parameter_types, bool variadic);
 };
 
-enum class TypeNameKind {
-    ENUM,
-    ORDINARY,
-    STRUCT,
-    UNION,
-    NUM
+struct NamedType: Type {
+    static const NamedType* of(TypeNameKind kind, const Identifier& identifier);
+
+    TypeNameKind kind;
+    Identifier identifier;
+    
+    virtual LLVMTypeRef llvm_type() const;
+    virtual void print(ostream& stream) const;
+
+private:
+    NamedType(TypeNameKind kind, const Identifier& identifier);
 };
 
 #endif

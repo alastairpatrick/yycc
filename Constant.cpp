@@ -1,7 +1,7 @@
 #include "nlohmann/json.hpp"
 
 #include "Constant.h"
-#include "CompileContext.h"
+#include "Message.h"
 
 using json = nlohmann::json;
 
@@ -29,7 +29,7 @@ static IntegerConstant* parse_integer_literal(string_view text, int radix, const
 }
 
 static uint32_t parse_char_code(string_view& text, size_t num_digits, int radix, const Location& location) {
-    unsigned long long c = 0;
+    uint32_t c = 0;
     auto result = from_chars(text.data(), text.data() + min(text.size(), num_digits), c, radix);
 
     if (result.ec != errc{} || result.ptr != text.data() + num_digits) {
@@ -49,58 +49,60 @@ static uint32_t unescape_char(string_view& text, const Location& location) {
         c = text[0];
 
         switch (c) {
-        case 'a':
-            text.remove_prefix(1);
-            c = '\a';
-            break;
-        case 'b':
-            text.remove_prefix(1);
-            c = '\b';
-            break;
-        case 'f':
-            text.remove_prefix(1);
-            c = '\f';
-            break;
-        case 'n':
-            text.remove_prefix(1);
-            c = '\n';
-            break;
-        case 'r':
-            text.remove_prefix(1);
-            c = '\r';
-            break;
-        case 't':
-            text.remove_prefix(1);
-            c = '\t';
-            break;
-        case 'v':
-            text.remove_prefix(1);
-            c = '\v';
-            break;
-        case 'u':
-            text.remove_prefix(1);
-            c = parse_char_code(text, 4, 16, location);
-            break;
-        case 'U':
-            text.remove_prefix(1);
-            c = parse_char_code(text, 8, 16, location);
-            break;
-        case 'x':
-            text.remove_prefix(1);
-            c = parse_char_code(text, 2, 16, location);
-            break;
-        case '\'':
-        case '"':
-        case '?':
-        case '\\':
-            text.remove_prefix(1);
-            break;
-        default:
-            if (c >= '0' && c <= '9') {
-                c = parse_char_code(text, 3, 8, location);
-                break;
-            }
-            message(Severity::ERROR, location) << "unrecognized escape sequence\n";
+            default: {
+              if (c >= '0' && c <= '9') {
+                  c = parse_char_code(text, 3, 8, location);
+                  break;
+              }
+              message(Severity::ERROR, location) << "unrecognized escape sequence\n";
+              break;
+          } case 'a': {
+              text.remove_prefix(1);
+              c = '\a';
+              break;
+          } case 'b': {
+              text.remove_prefix(1);
+              c = '\b';
+              break;
+          } case 'f': {
+              text.remove_prefix(1);
+              c = '\f';
+              break;
+          } case 'n': {
+              text.remove_prefix(1);
+              c = '\n';
+              break;
+          } case 'r': {
+              text.remove_prefix(1);
+              c = '\r';
+              break;
+          } case 't': {
+              text.remove_prefix(1);
+              c = '\t';
+              break;
+          } case 'v': {
+              text.remove_prefix(1);
+              c = '\v';
+              break;
+          } case 'u': {
+              text.remove_prefix(1);
+              c = parse_char_code(text, 4, 16, location);
+              break;
+          } case 'U': {
+              text.remove_prefix(1);
+              c = parse_char_code(text, 8, 16, location);
+              break;
+          } case 'x': {
+              text.remove_prefix(1);
+              c = parse_char_code(text, 2, 16, location);
+              break;
+          } case '\'':
+            case '"':
+            case '?':
+            case '\\': {
+              text.remove_prefix(1);
+              break;
+          }
         }
 
         return c;

@@ -18,6 +18,7 @@ add_library(lang_lib STATIC
     Decl.cpp
     Expr.cpp
     InternedString.cpp
+    Message.cpp
     Parser.cpp
     Printable.cpp
     Statement.cpp

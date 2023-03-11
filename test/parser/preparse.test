@@ -1,0 +1,4 @@
+BEGIN Variable declaration of typedef type.
+foo_t foo;
+EXPECT_AST
+[["var", "ES", "Ntfoo_t", "foo", ""]]

@@ -1,5 +1,5 @@
 #include "Decl.h"
-#include "CompileContext.h"
+#include "Message.h"
 #include "Type.h"
 
 ostream& operator<<(ostream& stream, Linkage linkage) {

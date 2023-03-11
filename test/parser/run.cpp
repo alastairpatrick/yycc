@@ -11,6 +11,7 @@ using json = nlohmann::json;
 enum class TestType {
     EXPR,
     STATEMENTS,
+    PREPARSE,
 };
 
 struct Test {
@@ -28,6 +29,9 @@ enum Section {
 };
 
 static const Test tests[] = {
+    { "preparse",           TestType::PREPARSE },
+    //{ "var_decl",           TestType::PREPARSE },
+
     { "typedef",            TestType::STATEMENTS },
     { "var_decl",           TestType::STATEMENTS },
     { "fun_decl",           TestType::STATEMENTS },
@@ -41,7 +45,7 @@ static const Test tests[] = {
 };
 
 Expr* parse_expr(const string& input);
-ASTNodeVector parse_statements(const string& input);
+ASTNodeVector parse_statements(const string& input, bool preparse);
 
 static bool compare_json(const string& l, const string& r) {
 }
@@ -65,7 +69,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
             }
             output_stream << expr;
         } else {
-            auto statements = parse_statements(sections[INPUT]);
+            auto statements = parse_statements(sections[INPUT], test_type == TestType::PREPARSE);
             output_stream << statements;
         }
 

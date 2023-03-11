@@ -50,3 +50,14 @@ const PointerType* TypeContext::lookup_pointer_type(const Type* base_type) {
 void TypeContext::add_pointer_type(const PointerType* type) {
     pointer_types[type->base_type] = type;
 }
+
+const NamedType* TypeContext::lookup_named_type(TypeNameKind kind, const Identifier& identifier) {
+    auto& types = named_types[unsigned(kind)];
+    auto it = types.find(identifier.name);
+    if (it == types.end()) return nullptr;
+    return it->second;
+}
+
+void TypeContext::add_named_type(TypeNameKind kind, const Identifier& identifier, const NamedType* type) {
+    named_types[unsigned(kind)][identifier.name] = type;
+}

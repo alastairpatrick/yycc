@@ -1,7 +1,15 @@
 #ifndef IDENTIFIER_H
 #define IDENTIFIER_H
 
-#include "CompileContext.h"
+#include "InternedString.h"
+
+enum class TypeNameKind {
+    ENUM,
+    ORDINARY,
+    STRUCT,
+    UNION,
+    NUM
+};
 
 struct Identifier {
     InternedString name{};
