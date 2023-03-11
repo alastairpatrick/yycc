@@ -4,6 +4,7 @@
 %option token-type=TokenKind
 %option freespace
 %option case-insensitive
+%option dotall
 %option fast
 
 %top {
@@ -31,4 +32,4 @@ IS              (u|u?(l|ll)|(l|ll)u)
 0x {H}* "." {H}+ {P} {FS}?  { return TOK_HEX_FLOAT_LITERAL; }
 0x {H}+ "." {H}* {P} {FS}?  { return TOK_HEX_FLOAT_LITERAL;; }
 
-[\s\S]                      { return TOK_PP_NUMBER; }
+.                           { return TOK_PP_NUMBER; }

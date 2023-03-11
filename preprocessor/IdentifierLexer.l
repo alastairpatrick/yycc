@@ -3,6 +3,7 @@
 %option lex=next_token
 %option token-type=TokenKind
 %option freespace
+%option dotall
 %option fast
 
 %top {
@@ -53,4 +54,4 @@ while         { return TOK_WHILE; }
 
 // PPTokenLexer already matched the input as an identifier preprocessing token, so this rule just needs to return as soon
 // as it is evident that the input is not a keyword.
-[\s\S]          { return TOK_IDENTIFIER; }
+.             { return TOK_IDENTIFIER; }
