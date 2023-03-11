@@ -1,6 +1,16 @@
+BEGIN Variable declaration of typedef type (preparse).
+typedef short foo_t;
+foo_t foo;
+PREPARSE
+EXPECT_AST
+[["typedef", "Ss", "foo_t"]
+,["var", "ES", "Ntfoo_t", "foo", ""]]
+
+
 BEGIN Variable declaration of typedef type.
 typedef short foo_t;
 foo_t foo;
+STATEMENTS
 EXPECT_AST
 [["typedef", "Ss", "foo_t"]
 ,["var", "ES", "Ss", "foo", ""]]
@@ -25,6 +35,7 @@ EXPECT_AST
 BEGIN Redefinition of typedef with different type
 typedef int a;
 typedef unsigned a;
+STATEMENTS
 EXPECT_MESSAGE
 :2:1: error redeclaration of 'a' with different type
 :1:1: see prior declaration
@@ -38,6 +49,7 @@ typedef int a;
 void f(void) {
     typedef long a;
 }
+STATEMENTS
 EXPECT_AST
 [
     ["typedef", "Si", "a"],
@@ -47,9 +59,19 @@ EXPECT_AST
 ]
 
 
+BEGIN Typedef as self (preparse)
+typedef int a;
+typedef a a;
+PREPARSE
+EXPECT_AST
+[["typedef", "Si", "a"]
+,["typedef", "Nta", "a"]]
+
+
 BEGIN Typedef as self
 typedef int a;
 typedef a a;
+STATEMENTS
 EXPECT_AST
 [["typedef", "Si", "a"]
 ,["typedef", "Si", "a"]]
@@ -62,6 +84,7 @@ void f(void) {
     typedef short q;
     q * v; // now "q" is a type so this declares variable "v" with type "q*".
 }
+STATEMENTS
 EXPECT_AST
 [
     ["var", "ES", "Si", "p", ""],
@@ -82,6 +105,7 @@ void f(void) {
     }
     q * p; // Identifier "q" immediately follows '}'
 }
+STATEMENTS
 EXPECT_AST
 [["fun","E","()V","f",[""], ["block", [
     ["var", "", "Si", "p", ""],
@@ -115,6 +139,7 @@ EXPECT_AST
 BEGIN Typedef may not be redeclared as a variable of same type
 typedef int a;
 int a;
+STATEMENTS
 EXPECT_MESSAGE
 :2:1: error redeclaration of 'a' with different type
 :1:1: see prior declaration

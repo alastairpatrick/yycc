@@ -403,23 +403,35 @@ struct Parser {
     }
 
     CompoundStatement* parse_compound_statement() {
-        symbols->push_scope();
+        if (symbols) {
+            symbols->push_scope();
 
-        Location loc;
-        require('{', &loc);
+            Location loc;
+            require('{', &loc);
 
-        ASTNodeVector list;
-        while (token && token != '}') {
-            parse_decl_or_statement(IdentifierScope::BLOCK, list);
+            ASTNodeVector list;
+            while (token && token != '}') {
+                parse_decl_or_statement(IdentifierScope::BLOCK, list);
+            }
+
+            // Must pop scope before consuming '}' in case '}' is immediately followed by an identifier that the
+            // lexer must correctly identify as TOK_IDENTIFIER or TOK_TYPEDEF_IDENTIFIER.
+            symbols->pop_scope();
+
+            require('}');
+
+            return new CompoundStatement(move(list), loc);
+        } else {
+            auto count = 0;
+            do {
+                if (token == '{') {
+                    ++count;
+                } else if (token == '}') {
+                    --count;
+                }
+                consume();
+            } while (count != 0);
         }
-
-        // Must pop scope before consuming '}' in case '}' is immediately followed by an identifier that the
-        // lexer must correctly identify as TOK_IDENTIFIER or TOK_TYPEDEF_IDENTIFIER.
-        symbols->pop_scope();
-
-        require('}');
-
-        return new CompoundStatement(move(list), loc);
     }
 
     Decl* parse_parameter_decl() {
@@ -469,7 +481,7 @@ struct Parser {
             if (consume('=')) {
                 initializer = parse_expr(ASSIGN_PREC);
             } else if (consume('(')) {
-                symbols->push_scope();
+                if (symbols) symbols->push_scope();
 
                 vector<Variable*> params;
                 vector<const Type*> param_types;
@@ -509,7 +521,7 @@ struct Parser {
                                         location);
                 }
 
-                symbols->pop_scope();
+                if (symbols) symbols->pop_scope();
             }
 
             if (!decl && (specifiers & (1 << TOK_INLINE))) {
