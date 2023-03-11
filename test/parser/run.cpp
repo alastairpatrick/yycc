@@ -9,9 +9,11 @@
 using json = nlohmann::json;
 
 enum class TestType {
-    EXPR,
+    EXPRESSION,
     STATEMENTS,
     PREPARSE,
+
+    NUM
 };
 
 struct Test {
@@ -29,19 +31,18 @@ enum Section {
 };
 
 static const Test tests[] = {
-    { "preparse",           TestType::PREPARSE },
-    //{ "var_decl",           TestType::PREPARSE },
+    { "var_decl",           TestType::PREPARSE },
 
     { "typedef",            TestType::STATEMENTS },
     { "var_decl",           TestType::STATEMENTS },
     { "fun_decl",           TestType::STATEMENTS },
     { "stmt",               TestType::STATEMENTS },
-    { "string_literal",     TestType::EXPR },
-    { "lex",                TestType::EXPR },
-    { "int_literal",        TestType::EXPR },
-    { "conversion",         TestType::EXPR },
-    { "float_literal",      TestType::EXPR },
-    { "expr",               TestType::EXPR },
+    { "string_literal",     TestType::EXPRESSION },
+    { "lex",                TestType::EXPRESSION },
+    { "int_literal",        TestType::EXPRESSION },
+    { "conversion",         TestType::EXPRESSION },
+    { "float_literal",      TestType::EXPRESSION },
+    { "expr",               TestType::EXPRESSION },
 };
 
 Expr* parse_expr(const string& input);
@@ -62,7 +63,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
 
         const Type* type{};
         stringstream output_stream;
-        if (test_type == TestType::EXPR) {
+        if (test_type == TestType::EXPRESSION) {
             auto expr = parse_expr(sections[INPUT]);
             if (!sections[EXPECTED_TYPE].empty()) {
                 type = expr->get_type();
@@ -120,6 +121,8 @@ bool run_parser_tests() {
 
         auto test_line_num = 0;
         auto section = INITIAL;
+        bool enabled_types[unsigned(TestType::NUM)] = {};
+        int num_enabled_types = 0;
 
         for (auto line_num = 1; !file_stream.eof() && !file_stream.fail(); ++line_num) {
             string line;
@@ -127,15 +130,20 @@ bool run_parser_tests() {
 
             if (file_stream.eof() || line.substr(0, 5) == "BEGIN") {
                 if (section != INITIAL) {
-                    if (!test_case(test.type, sections, test_name, test_file_name, test_line_num)) {
-                        ++num_failures;
+                    if (num_enabled_types == 0 || enabled_types[unsigned(test.type)]) {
+                        if (!test_case(test.type, sections, test_name, test_file_name, test_line_num)) {
+                            ++num_failures;
+                        }
+
+                        ++num_tests;
                     }
 
-                    ++num_tests;
                     for (auto i = 0; i < NUM_SECTIONS; ++i) sections[i].clear();
                 }
 
                 section = Section::INPUT;
+                for (unsigned i = 0; i < unsigned(TestType::NUM); ++i) enabled_types[i] = false;
+                num_enabled_types = 0;
                 test_line_num = line_num;
                 if (line.length() >= 6) test_name = line.substr(6);
             } else if (line.substr(0, 10) == "EXPECT_AST") {
@@ -144,6 +152,15 @@ bool run_parser_tests() {
                 section = Section::EXPECTED_TYPE;
             } else if (line.substr(0, 14) == "EXPECT_MESSAGE") {
                 section = Section::EXPECTED_MESSAGE;
+            } else if (line.substr(0, 10) == "EXPRESSION") {
+                enabled_types[unsigned(TestType::EXPRESSION)] = true;
+                ++num_enabled_types;
+            } else if (line.substr(0, 8) == "PREPARSE") {
+                enabled_types[unsigned(TestType::PREPARSE)] = true;
+                ++num_enabled_types;
+            } else if (line.substr(0, 10) == "STATEMENTS") {
+                enabled_types[unsigned(TestType::STATEMENTS)] = true;
+                ++num_enabled_types;
             } else {
                 if (!line.empty()) {
                     if (section == INPUT || section == EXPECTED_MESSAGE) line += '\n';  // getline removes \n

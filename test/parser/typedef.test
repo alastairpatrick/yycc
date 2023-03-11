@@ -75,20 +75,22 @@ EXPECT_AST
 
 
 BEGIN Typedef goes out of scope immediately following block
-int p, q;
 {
-    typedef long q;
+    int p, q;
+    {
+        typedef long q;
+    }
+    q * p; // Identifier "q" immediately follows '}'
 }
-q * p; // Identifier "q" immediately follows '}'
 EXPECT_AST
-[
-    ["var", "ES", "Si", "p", ""],
-    ["var", "ES", "Si", "q", ""],
+[["block", [
+    ["var", "", "Si", "p", ""],
+    ["var", "", "Si", "q", ""],
     ["block", [
         ["typedef", "Sl", "q"]
     ]],
     ["*", "Nq", "Np"]
-]
+]]]
 
 
 BEGIN Typedef may not be used as a variable.

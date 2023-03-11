@@ -46,6 +46,10 @@ void SymbolMap::pop_scope() {
     scopes.pop_front();
 }
 
+bool SymbolMap::at_file_scope() const {
+    return scopes.size() == 1;
+}
+
 SymbolMap::SymbolMap() {
     push_scope();
 }

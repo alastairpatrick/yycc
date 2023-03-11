@@ -67,6 +67,10 @@ struct Parser {
         return false;
     }
 
+    bool at_file_scope() const {
+        return !symbols || symbols->at_file_scope();
+    }
+
     Expr* parse_expr(int min_prec) {
         Location loc;
         auto result = parse_cast_expr();
@@ -207,11 +211,19 @@ struct Parser {
                   break;
 
                } case TOK_IDENTIFIER: {
-                  auto typedef_type = symbols ? symbols->lookup_type(TypeNameKind::ORDINARY, lexer.identifier())
-                                              : NamedType::of(TypeNameKind::ORDINARY, lexer.identifier());
-                  if (!typedef_type) break;
-
                   if ((specifier_set & type_specifier_mask) == 0) {
+                      const Type* typedef_type;
+                      if (symbols) {
+                          typedef_type = symbols->lookup_type(TypeNameKind::ORDINARY, lexer.identifier());
+                          if (!typedef_type) {
+                              if (!at_file_scope()) break;
+                              message(Severity::ERROR, lexer.location()) << "typedef \'" << lexer.identifier() << "' undefined\n";
+                              typedef_type = IntegerType::default_type();
+                          }
+                      } else {
+                          typedef_type = NamedType::of(TypeNameKind::ORDINARY, lexer.identifier());
+                      }
+
                       type = typedef_type;
                       should_consume = true;
                       type_specifier_location = lexer.location();                
