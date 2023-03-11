@@ -1,5 +1,5 @@
-#ifndef AST_H
-#define AST_H
+#ifndef AST_NODE_H
+#define AST_NODE_H
 
 #include "Identifier.h"
 #include "Location.h"
@@ -29,7 +29,7 @@ struct Decl: ASTNode {
 
     IdentifierScope scope;
     Linkage linkage;
-    const Type* type;
+    const Type* type{};
     Identifier identifier;
     Decl* earlier{};
     Decl* definition{};
