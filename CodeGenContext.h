@@ -1,5 +1,5 @@
-#ifndef CODEGEN_H
-#define CODEGEN_H
+#ifndef CODE_GEN_CONTEXT_H
+#define CODE_GEN_CONTEXT_H
 
 struct CodeGenContext {
     LLVMModuleRef mod;
