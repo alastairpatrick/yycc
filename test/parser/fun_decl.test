@@ -91,6 +91,7 @@ EXPECT_AST
 BEGIN Function declaration having internal linkage may not follow function declaration having external linkage
 extern void foo(int);
 static void foo(int);
+STATEMENTS
 EXPECT_MESSAGE
 :2:1: error static declaration of 'foo' follows non-static declaration
 :1:1: see prior declaration
@@ -145,6 +146,7 @@ void foo(int x) {
 }
 void foo(int x) {
 }
+STATEMENTS
 EXPECT_MESSAGE
 :3:1: error redefinition of 'foo'
 :1:1: see prior definition
@@ -155,6 +157,7 @@ void foo(int);
 {
     extern void foo(int);
 }
+STATEMENTS
 EXPECT_AST
 [
     ["fun", "E", "(Si)V", "foo"],
@@ -168,6 +171,7 @@ BEGIN Function definition with local variables
 void foo() {
     int x = 1;
 }
+STATEMENTS
 EXPECT_AST
 [["fun", "E", "()V", "foo", [], ["block", [
     ["var", "", "Si", "x", "Si1"]
@@ -209,18 +213,20 @@ BEGIN Parameters have function prototype scope (2)
 int foo(int bar) {
     int bar;
 }
+STATEMENTS
 EXPECT_AST
 [["fun", "E", "(Si)Si", "foo", ["bar"], ["block", [["var", "", "Si", "bar", ""]]]]]
 
 
 BEGIN Cannot declare static function at block scope
-{
+void f(void) {
     static void foo(void);
 }
+STATEMENTS
 EXPECT_MESSAGE
 :2:5: error invalid storage class
 EXPECT_AST
-[["block", [["fun", "", "()V", "foo"]]]]
+[["fun", "E", "()V", "f", [""], ["block", [["fun", "", "()V", "foo"]]]]]
 
 
 BEGIN Inline function with internal linkage
@@ -248,6 +254,7 @@ BEGIN Extern storage class prevents inline definition (2)
 extern void foo();
 inline void foo() {
 }
+STATEMENTS
 EXPECT_AST
 [["fun","E","()V","foo"]
 ,["fun","E","()V","foo",[],["block",[]]]]
@@ -257,6 +264,7 @@ BEGIN Extern storage class prevents inline definition (3)
 inline void foo() {
 }
 extern void foo();
+STATEMENTS
 EXPECT_AST
 [["fun","E","()V","foo",[],["block",[]]]
 ,["fun","E","()V","foo"]]
@@ -281,6 +289,7 @@ BEGIN Function definition with return statement
 int main(int argc, const char* argv) {
     return argc;
 }
+STATEMENTS
 EXPECT_AST
 [["fun", "E", "(SiPQcC)Si", "main", ["argc", "argv"], ["block", [
     ["return", "Nargc"]

@@ -8,10 +8,14 @@ struct Decl;
 struct Mystery;
 
 struct SymbolMap {
+    explicit SymbolMap(bool preparse);
+    void operator=(const SymbolMap&) = delete;
+
     struct Scope {
         unordered_map<InternedString, Decl*> declarations;
     };
     list<Scope> scopes;
+    const bool preparse;
 
     Decl* lookup_decl(TypeNameKind kind, const Identifier& identifier);
     const Type* lookup_type(TypeNameKind kind, const Identifier& identifier);
@@ -19,8 +23,6 @@ struct SymbolMap {
 
     void push_scope();
     void pop_scope();
-
-    SymbolMap();
 };
 
 #endif

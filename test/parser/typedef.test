@@ -1,19 +1,18 @@
-BEGIN Variable declaration of typedef type (preparse).
-typedef short foo_t;
-foo_t foo;
-PREPARSE
-EXPECT_AST
-[["typedef", "Ss", "foo_t"]
-,["var", "ES", "Ntfoo_t", "foo", ""]]
-
-
 BEGIN Variable declaration of typedef type.
 typedef short foo_t;
 foo_t foo;
-STATEMENTS
 EXPECT_AST
 [["typedef", "Ss", "foo_t"]
 ,["var", "ES", "Ss", "foo", ""]]
+
+
+BEGIN Variable declaration of typedef type (preparse).
+foo_t foo;
+typedef short foo_t;
+PREPARSE
+EXPECT_AST
+[["var", "ES", "Ntfoo_t", "foo", ""]
+,["typedef", "Ss", "foo_t"]]
 
 
 BEGIN Typedef with no declarators
@@ -59,21 +58,20 @@ EXPECT_AST
 ]
 
 
-BEGIN Typedef as self (preparse)
-typedef int a;
-typedef a a;
-PREPARSE
-EXPECT_AST
-[["typedef", "Si", "a"]
-,["typedef", "Nta", "a"]]
-
-
 BEGIN Typedef as self
 typedef int a;
 typedef a a;
-STATEMENTS
 EXPECT_AST
 [["typedef", "Si", "a"]
+,["typedef", "Si", "a"]]
+
+
+BEGIN Typedef as self (preparse)
+typedef a a;
+typedef int a;
+PREPARSE
+EXPECT_AST
+[["typedef", "Nta", "a"]
 ,["typedef", "Si", "a"]]
 
 

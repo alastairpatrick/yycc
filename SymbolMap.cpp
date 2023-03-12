@@ -31,7 +31,7 @@ void SymbolMap::add_decl(TypeNameKind kind, Decl* decl) {
     auto it = scopes.front().declarations.find(decl->identifier.name);
     if (it != scopes.front().declarations.end()) {
         decl->earlier = it->second;
-        decl->combine();
+        if (!preparse) decl->combine();
         it->second = decl;
     } else {
         scopes.front().declarations[decl->identifier.name] = decl;
@@ -46,6 +46,6 @@ void SymbolMap::pop_scope() {
     scopes.pop_front();
 }
 
-SymbolMap::SymbolMap() {
+SymbolMap::SymbolMap(bool preparse): preparse(preparse) {
     push_scope();
 }

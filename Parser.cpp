@@ -12,10 +12,11 @@
 struct Parser {
     TokenConverter lexer;
     TokenKind token;
-    SymbolMap* symbols;
+    SymbolMap symbols;
     ASTNodeVector extern_decls;
+    const bool preparse;
 
-    Parser(SymbolMap* symbols, const Input& input): symbols(symbols), lexer(input) {
+    Parser(const Input& input, bool preparse): lexer(input), preparse(preparse), symbols(preparse) {
         token = TokenKind(lexer.next_token());
     }
 
@@ -127,7 +128,7 @@ struct Parser {
                 break;
             }
             else if (token == TOK_IDENTIFIER) {
-                Decl* decl = symbols->lookup_decl(TypeNameKind::ORDINARY, lexer.identifier());
+                Decl* decl = symbols.lookup_decl(TypeNameKind::ORDINARY, lexer.identifier());
                 if (decl) {
                     // TokenKind would have to be TOK_TYPEDEF_IDENTIFIER for decl to be a typedef.
                     assert(!dynamic_cast<TypeDef*>(decl));
@@ -209,15 +210,16 @@ struct Parser {
                } case TOK_IDENTIFIER: {
                   if ((specifier_set & type_specifier_mask) == 0) {
                       const Type* typedef_type;
-                      if (symbols) {
-                          typedef_type = symbols->lookup_type(TypeNameKind::ORDINARY, lexer.identifier());
-                          if (!typedef_type) {
-                              if (scope != IdentifierScope::FILE) break;
+                      typedef_type = symbols.lookup_type(TypeNameKind::ORDINARY, lexer.identifier());
+                      if (!typedef_type) {
+                          if (scope != IdentifierScope::FILE) break;
+
+                          if (preparse) {
+                              typedef_type = NamedType::of(TypeNameKind::ORDINARY, lexer.identifier());
+                          } else {
                               message(Severity::ERROR, lexer.location()) << "typedef \'" << lexer.identifier() << "' undefined\n";
                               typedef_type = IntegerType::default_type();
                           }
-                      } else {
-                          typedef_type = NamedType::of(TypeNameKind::ORDINARY, lexer.identifier());
                       }
 
                       type = typedef_type;
@@ -403,25 +405,9 @@ struct Parser {
     }
 
     CompoundStatement* parse_compound_statement() {
-        if (symbols) {
-            symbols->push_scope();
-
-            Location loc;
-            require('{', &loc);
-
-            ASTNodeVector list;
-            while (token && token != '}') {
-                parse_decl_or_statement(IdentifierScope::BLOCK, list);
-            }
-
-            // Must pop scope before consuming '}' in case '}' is immediately followed by an identifier that the
-            // lexer must correctly identify as TOK_IDENTIFIER or TOK_TYPEDEF_IDENTIFIER.
-            symbols->pop_scope();
-
-            require('}');
-
-            return new CompoundStatement(move(list), loc);
-        } else {
+        ASTNodeVector list;
+        if (preparse) {
+            Location loc = lexer.location();
             auto count = 0;
             do {
                 if (token == '{') {
@@ -431,6 +417,25 @@ struct Parser {
                 }
                 consume();
             } while (count != 0);
+
+            return new CompoundStatement(move(list), loc);
+        } else {
+            symbols.push_scope();
+
+            Location loc;
+            require('{', &loc);
+
+            while (token && token != '}') {
+                parse_decl_or_statement(IdentifierScope::BLOCK, list);
+            }
+
+            // Must pop scope before consuming '}' in case '}' is immediately followed by an identifier that the
+            // lexer must correctly identify as TOK_IDENTIFIER or TOK_TYPEDEF_IDENTIFIER.
+            symbols.pop_scope();
+
+            require('}');
+
+            return new CompoundStatement(move(list), loc);
         }
     }
 
@@ -481,7 +486,7 @@ struct Parser {
             if (consume('=')) {
                 initializer = parse_expr(ASSIGN_PREC);
             } else if (consume('(')) {
-                if (symbols) symbols->push_scope();
+                symbols.push_scope();
 
                 vector<Variable*> params;
                 vector<const Type*> param_types;
@@ -521,7 +526,7 @@ struct Parser {
                                         location);
                 }
 
-                if (symbols) symbols->pop_scope();
+                symbols.pop_scope();
             }
 
             if (!decl && (specifiers & (1 << TOK_INLINE))) {
@@ -539,8 +544,8 @@ struct Parser {
                 decl = new Variable(scope, storage_class, type, identifier, initializer, location);
             }
 
-            if (symbols && !identifier.name->empty()) {
-                symbols->add_decl(TypeNameKind::ORDINARY, decl);
+            if (!identifier.name->empty()) {
+                symbols.add_decl(TypeNameKind::ORDINARY, decl);
             }
 
             return decl;
@@ -554,8 +559,7 @@ struct Parser {
 };
 
 Expr* parse_expr(const string& input) {
-    SymbolMap symbols;
-    Parser parser(&symbols, input);
+    Parser parser(input, false);
     auto result = parser.parse_expr(0);
     if (!parser.check_eof()) return nullptr;
     return result;
@@ -563,8 +567,7 @@ Expr* parse_expr(const string& input) {
 
 ASTNodeVector parse_statements(const string& input, bool preparse) {
     ASTNodeVector ast;
-    SymbolMap symbols;
-    Parser parser(preparse ? nullptr : &symbols, input);
+    Parser parser(input, preparse);
     while (parser.token != 0) {
         parser.parse_decl_or_statement(IdentifierScope::FILE, ast);
     }
