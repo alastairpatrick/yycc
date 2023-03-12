@@ -50,9 +50,6 @@ static const Test tests[] = {
 Expr* parse_expr(const string& input);
 ASTNodeVector parse_statements(const string& input, bool preparse);
 
-static bool compare_json(const string& l, const string& r) {
-}
-
 static ostream& print_error(const string& name, const string& file, int line) {
     cerr << file << '(' << line << "): " << name << "\n";
     return cerr;
