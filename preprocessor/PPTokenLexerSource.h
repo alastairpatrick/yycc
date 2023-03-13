@@ -21,6 +21,10 @@ struct PPTokenLexerSource {
       return Input(lexer.matcher().begin(), lexer.size());
   }
 
+  size_t byte_offset() const {
+      return lexer.matcher().first();
+  }
+
   Location location() const {
       return Location { lexer.lineno(), lexer.columno() + 1, current_filename };
   }
@@ -30,10 +34,6 @@ struct PPTokenLexerSource {
   }
 
   void set_filename(string&& filename);
-
-  size_t byte_offset() const {
-    return lexer.matcher().first();
-  }
 
 private:
   PPTokenLexer lexer;
