@@ -17,6 +17,7 @@ struct ASTNode: Printable {
     void operator=(const ASTNode&) = delete;
 
     Location location;
+    string_view text;
     ASTNode* next_delete;
 };
 

@@ -51,6 +51,14 @@ struct Parser {
         consume();
     }
 
+    const char* data() const {
+        return lexer.text().data();
+    }
+
+    string_view end_text(const char* begin) const {
+        return string_view(begin, data() - begin);
+    }
+
     OperatorAssoc assoc() {
         assert(token >= 0 && token < TOK_NUM);
         return g_assoc_prec[token].assoc;
@@ -69,6 +77,8 @@ struct Parser {
 
     Expr* parse_expr(int min_prec) {
         Location loc;
+        auto begin_text = lexer.text().data();
+
         auto result = parse_cast_expr();
 
         while (prec() >= min_prec) {
@@ -102,6 +112,8 @@ struct Parser {
                 auto right = parse_expr(next_min_prec);
                 result = new BinaryExpr(result, right, op, loc);
             }
+
+            result->text = end_text(begin_text);
         }
 
         return result;
@@ -109,6 +121,7 @@ struct Parser {
 
     Expr* parse_cast_expr() {
         Expr* result{};
+        auto begin_text = data();
 
         while (token) {
             if (token == TOK_BIN_INT_LITERAL || token == TOK_OCT_INT_LITERAL || token == TOK_DEC_INT_LITERAL || token == TOK_HEX_INT_LITERAL || token == TOK_CHAR_LITERAL) {
@@ -145,6 +158,7 @@ struct Parser {
             }
             else {
                 skip();
+                begin_text = data();
             }
         }
 
@@ -154,6 +168,7 @@ struct Parser {
             result = IntegerConstant::default_expr(lexer.location());
         }
 
+        result->text = end_text(begin_text);
         return result;
     }
 
@@ -363,16 +378,17 @@ struct Parser {
     // declarators, each with a single declarator. The AST has no notion of declarators.
     void parse_declaration_or_statement(IdentifierScope scope, ASTNodeVector& list) {
         auto location = lexer.location();
+        auto begin_text = data();
 
         StorageClass storage_class = StorageClass::NONE;
         const Type* type{};
         uint32_t specifiers;
         if (parse_declaration_specifiers(scope, storage_class, type, specifiers)) {
             auto declaration = new Declaration(scope, storage_class, type, location);;
-
+            
             int declarator_count = 0;
+            bool last_declarator{};
             while (token && token != ';') {
-                bool last_declarator{};
                 auto declarator = parse_declarator(declaration, specifiers, declarator_count == 0, location, &last_declarator);
 
                 if (declarator->identifier.name->empty()) {
@@ -386,29 +402,35 @@ struct Parser {
                 }
 
                 // No ';' or ',' after function definition.
-                if (last_declarator) return;
+                if (last_declarator) break;
 
                 if (!consume(',')) break;
             }
 
-            require(';');
+            if (!last_declarator) require(';');
+
+            declaration->text = end_text(begin_text);
         } else {
-            ASTNode* declarator{};
+            ASTNode* statement{};
             if (token == '{') {
-                declarator = parse_compound_statement();
+                statement = parse_compound_statement();
             } else if (consume(TOK_RETURN)) {
-                declarator = new ReturnStatement(parse_expr(0), location);
+                statement = new ReturnStatement(parse_expr(0), location);
                 require(';');
             } else {
-                declarator = parse_expr(0);
+                statement = parse_expr(0);
                 require(';');
             }
 
-            list.push_back(declarator);
+            list.push_back(statement);
+
+            statement->text = end_text(begin_text);
         }
     }
 
     CompoundStatement* parse_compound_statement() {
+        CompoundStatement* statement{};
+        auto begin_text = data();
         ASTNodeVector list;
         if (preparse) {
             Location loc = lexer.location();
@@ -422,7 +444,7 @@ struct Parser {
                 consume();
             } while (count != 0);
 
-            return new CompoundStatement(move(list), loc);
+           statement = new CompoundStatement(move(list), loc);
         } else {
             symbols.push_scope();
 
@@ -439,12 +461,17 @@ struct Parser {
 
             require('}');
 
-            return new CompoundStatement(move(list), loc);
+            statement = new CompoundStatement(move(list), loc);
         }
+
+        statement->text = end_text(begin_text);
+        return statement;
     }
 
     Declarator* parse_parameter_declarator() {
         auto location = lexer.location();
+        auto begin_declaration_text = data();
+
         StorageClass storage_class = StorageClass::NONE;
         const Type* type{};
         uint32_t specifiers;
@@ -459,12 +486,18 @@ struct Parser {
 
         bool last;
         auto declaration = new Declaration(IdentifierScope::PROTOTYPE, storage_class, type, location);
+
+        auto begin_declarator_text = data();
         auto declarator = parse_declarator(declaration, specifiers, false, location, &last);
+        declarator->text = end_text(begin_declarator_text);
+
         declaration->declarators.push_back(declarator);
+        declaration->text = end_text(begin_declaration_text);
         return declarator;
     }
 
     Declarator* parse_declarator(Declaration* declaration, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last) {
+        auto begin_text = data();
         *last = false;
         if (consume('(')) {
             auto result = parse_declarator(declaration, specifiers, allow_function_def, location, last);
@@ -562,6 +595,7 @@ struct Parser {
                 symbols.add_declarator(TypeNameKind::ORDINARY, declarator);
             }
 
+            declarator->text = end_text(begin_text);
             return declarator;
         }
     }
