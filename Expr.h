@@ -20,9 +20,9 @@ struct ConditionExpr: Expr {
 };
 
 struct NameExpr: Expr {
-    const Decl* decl{};
+    const Declarator* declarator{};
 
-    NameExpr(const Decl* decl, const Location& location);
+    NameExpr(const Declarator* declarator, const Location& location);
 
     virtual const Type* get_type() const;
     virtual LLVMValueRef generate_value(CodeGenContext* context) const;

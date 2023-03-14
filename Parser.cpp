@@ -1,7 +1,7 @@
 #include "assoc_prec.h"
 #include "ASTNode.h"
 #include "Constant.h"
-#include "Decl.h"
+#include "Declaration.h"
 #include "Expr.h"
 #include "Message.h"
 #include "Statement.h"
@@ -13,7 +13,6 @@ struct Parser {
     TokenConverter lexer;
     TokenKind token;
     SymbolMap symbols;
-    ASTNodeVector extern_decls;
     const bool preparse;
 
     Parser(const Input& input, bool preparse): lexer(input), preparse(preparse), symbols(preparse) {
@@ -128,12 +127,12 @@ struct Parser {
                 break;
             }
             else if (token == TOK_IDENTIFIER) {
-                Decl* decl = symbols.lookup_decl(TypeNameKind::ORDINARY, lexer.identifier());
-                if (decl) {
-                    // TokenKind would have to be TOK_TYPEDEF_IDENTIFIER for decl to be a typedef.
-                    assert(!dynamic_cast<TypeDef*>(decl));
+                Declarator* declarator = symbols.lookup_declarator(TypeNameKind::ORDINARY, lexer.identifier());
+                if (declarator) {
+                    // TokenKind would have to be TOK_TYPEDEF_IDENTIFIER for declarator to be a typedef.
+                    assert(!dynamic_cast<TypeDef*>(declarator));
 
-                    result = new NameExpr(decl, lexer.location());
+                    result = new NameExpr(declarator, lexer.location());
                 } else {
                     message(Severity::ERROR, lexer.location()) << '\'' << lexer.identifier() << "' undeclared\n";
                     result = IntegerConstant::default_expr(lexer.location());
@@ -158,7 +157,7 @@ struct Parser {
         return result;
     }
 
-    bool parse_decl_specifiers(IdentifierScope scope, StorageClass& storage_class, const Type*& type, uint32_t& specifiers) {
+    bool parse_declaration_specifiers(IdentifierScope scope, StorageClass& storage_class, const Type*& type, uint32_t& specifiers) {
         const uint32_t storage_class_mask = (1 << TOK_TYPEDEF) | (1 << TOK_EXTERN) | (1 << TOK_STATIC) | (1 << TOK_AUTO) | (1 << TOK_REGISTER);
         const uint32_t type_qualifier_mask = (1 << TOK_CONST) | (1 << TOK_RESTRICT) | (1 << TOK_VOLATILE);
         const uint32_t function_specifier_mask = 1 << TOK_INLINE;
@@ -361,24 +360,30 @@ struct Parser {
 
     // This parses a single declaration or a single statement. It can append multiple items to the
     // statement list when it flattens a single declaration with multiple declarators into multiple
-    // declarations, each with a single declarator. The AST has no notion of declarators.
-    void parse_decl_or_statement(IdentifierScope scope, ASTNodeVector& list) {
+    // declarators, each with a single declarator. The AST has no notion of declarators.
+    void parse_declaration_or_statement(IdentifierScope scope, ASTNodeVector& list) {
         auto location = lexer.location();
 
         StorageClass storage_class = StorageClass::NONE;
         const Type* type{};
         uint32_t specifiers;
-        if (parse_decl_specifiers(scope, storage_class, type, specifiers)) {
-            int decl_count = 0;
+        if (parse_declaration_specifiers(scope, storage_class, type, specifiers)) {
+            Declaration* declaration{};
+
+            int declarator_count = 0;
             while (token && token != ';') {
                 bool last_declarator{};
-                auto decl = parse_declarator(scope, storage_class, type, specifiers, decl_count == 0, location, &last_declarator);
-                ++ decl_count;
+                auto declarator = parse_declarator(scope, storage_class, type, specifiers, declarator_count == 0, location, &last_declarator);
+                ++ declarator_count;
 
-                if (decl->identifier.name->empty()) {
+                if (declarator->identifier.name->empty()) {
                     message(Severity::ERROR, lexer.location()) << "expected identifier\n";
                 } else {
-                    list.push_back(decl);
+                    if (!declaration) {
+                        declaration = new Declaration(location);
+                        list.push_back(declaration);
+                    }
+                    declaration->declarators.push_back(declarator);
                 }
 
                 // No ';' or ',' after function definition.
@@ -389,18 +394,18 @@ struct Parser {
 
             require(';');
         } else {
-            ASTNode* decl{};
+            ASTNode* declarator{};
             if (token == '{') {
-                decl = parse_compound_statement();
+                declarator = parse_compound_statement();
             } else if (consume(TOK_RETURN)) {
-                decl = new ReturnStatement(parse_expr(0), location);
+                declarator = new ReturnStatement(parse_expr(0), location);
                 require(';');
             } else {
-                decl = parse_expr(0);
+                declarator = parse_expr(0);
                 require(';');
             }
 
-            list.push_back(decl);
+            list.push_back(declarator);
         }
     }
 
@@ -426,7 +431,7 @@ struct Parser {
             require('{', &loc);
 
             while (token && token != '}') {
-                parse_decl_or_statement(IdentifierScope::BLOCK, list);
+                parse_declaration_or_statement(IdentifierScope::BLOCK, list);
             }
 
             // Must pop scope before consuming '}' in case '}' is immediately followed by an identifier that the
@@ -439,12 +444,12 @@ struct Parser {
         }
     }
 
-    Decl* parse_parameter_decl() {
+    Declarator* parse_parameter_declarator() {
         auto location = lexer.location();
         StorageClass storage_class = StorageClass::NONE;
         const Type* type{};
         uint32_t specifiers;
-        if (!parse_decl_specifiers(IdentifierScope::PROTOTYPE, storage_class, type, specifiers)) {
+        if (!parse_declaration_specifiers(IdentifierScope::PROTOTYPE, storage_class, type, specifiers)) {
             // TODO
         }
 
@@ -457,7 +462,7 @@ struct Parser {
         return parse_declarator(IdentifierScope::PROTOTYPE, storage_class, type, specifiers, false, location, &last);
     }
 
-    Decl* parse_declarator(IdentifierScope scope, StorageClass storage_class, const Type* declaration_type, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last) {
+    Declarator* parse_declarator(IdentifierScope scope, StorageClass storage_class, const Type* declaration_type, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last) {
         *last = false;
         if (consume('(')) {
             auto result = parse_declarator(scope, storage_class, declaration_type, specifiers, allow_function_def, location, last);
@@ -483,7 +488,7 @@ struct Parser {
             if (!consume(TOK_IDENTIFIER)) identifier.name = empty_interned_string;
 
             Expr* initializer{};
-            Decl* decl{};
+            Declarator* declarator{};
 
             if (consume('=')) {
                 initializer = parse_expr(ASSIGN_PREC);
@@ -494,21 +499,21 @@ struct Parser {
                 vector<const Type*> param_types;
                 bool seen_void = false;
                 while (token && !consume(')')) {
-                    auto decl = parse_parameter_decl();
+                    auto declarator = parse_parameter_declarator();
 
                     // Functions are adjusted to variable of function pointer type.
-                    auto variable = dynamic_cast<Variable*>(decl);
+                    auto variable = dynamic_cast<Variable*>(declarator);
                     assert(variable);
 
                     params.push_back(variable);
 
-                    if (decl->type == &VoidType::it) {
+                    if (declarator->type == &VoidType::it) {
                         if (seen_void || !param_types.empty()) {
-                            message(Severity::ERROR, decl->location) << "a parameter may not have void type\n";
+                            message(Severity::ERROR, declarator->location) << "a parameter may not have void type\n";
                         }
                         seen_void = true;
                     } else {
-                        param_types.push_back(decl->type);
+                        param_types.push_back(declarator->type);
                     }
                     consume(',');
                 }
@@ -524,7 +529,7 @@ struct Parser {
                         *last = true;
                     }
                     
-                    decl = new Function(scope,
+                    declarator = new Function(scope,
                                         storage_class,
                                         static_cast<const FunctionType*>(type),
                                         specifiers,
@@ -537,32 +542,27 @@ struct Parser {
                 symbols.pop_scope();
             }
 
-            if (!decl && (specifiers & (1 << TOK_INLINE))) {
+            if (!declarator && (specifiers & (1 << TOK_INLINE))) {
                 message(Severity::ERROR, location) << "'inline' may only appear on function\n";
             }
 
             if (storage_class == StorageClass::TYPEDEF) {
-                decl = new TypeDef(scope, type, identifier, location);
+                declarator = new TypeDef(scope, type, identifier, location);
             }
 
-            if (!decl) {
+            if (!declarator) {
                 if (!initializer && storage_class != StorageClass::EXTERN) {
                     initializer = new DefaultExpr(type, location);
                 }
-                decl = new Variable(scope, storage_class, type, identifier, initializer, location);
+                declarator = new Variable(scope, storage_class, type, identifier, initializer, location);
             }
 
             if (!identifier.name->empty()) {
-                symbols.add_decl(TypeNameKind::ORDINARY, decl);
+                symbols.add_declarator(TypeNameKind::ORDINARY, declarator);
             }
 
-            return decl;
+            return declarator;
         }
-    }
-
-    void insert_externs(ASTNodeVector& ast) {
-        ast.insert(ast.begin(), extern_decls.begin(), extern_decls.end());
-        extern_decls.clear();
     }
 };
 
@@ -577,9 +577,8 @@ ASTNodeVector parse_statements(const string& input, bool preparse) {
     ASTNodeVector ast;
     Parser parser(input, preparse);
     while (parser.token != 0) {
-        parser.parse_decl_or_statement(IdentifierScope::FILE, ast);
+        parser.parse_declaration_or_statement(IdentifierScope::FILE, ast);
     }
-    parser.insert_externs(ast);
 
     return ast;
 }

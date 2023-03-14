@@ -50,9 +50,9 @@ void ConditionExpr::print(ostream& stream) const {
     stream << "[\"?:\", " << condition << ", " << then_expr << ", " << else_expr << "]";
 }
 
-NameExpr::NameExpr(const Decl* decl, const Location& location)
-    : Expr(location), decl(decl) {
-    assert(decl);
+NameExpr::NameExpr(const Declarator* declarator, const Location& location)
+    : Expr(location), declarator(declarator) {
+    assert(declarator);
 }
 
 const Type* NameExpr::get_type() const {
@@ -66,7 +66,7 @@ LLVMValueRef NameExpr::generate_value(CodeGenContext* context) const {
 }
 
 void NameExpr::print(ostream& stream) const {
-    stream << "\"N" << decl->identifier << '"';
+    stream << "\"N" << declarator->identifier << '"';
 }
 
 BinaryExpr::BinaryExpr(Expr* left, Expr* right, BinaryOp op, const Location& location)

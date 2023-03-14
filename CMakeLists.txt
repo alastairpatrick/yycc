@@ -15,7 +15,7 @@ add_library(lang_lib STATIC
     ASTNode.cpp
     CompileContext.cpp
     Constant.cpp
-    Decl.cpp
+    Declaration.cpp
     Expr.cpp
     InternedString.cpp
     Message.cpp

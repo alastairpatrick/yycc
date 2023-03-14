@@ -3,7 +3,7 @@
 #include "ASTNode.h"
 #include "CompileContext.h"
 #include "Expr.h"
-#include "Decl.h"
+#include "Declaration.h"
 #include "Statement.h"
 
 using json = nlohmann::json;

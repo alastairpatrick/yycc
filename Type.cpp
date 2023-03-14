@@ -1,7 +1,7 @@
 #include "Type.h"
 #include "CodeGenContext.h"
 #include "CompileContext.h"
-#include "Decl.h"
+#include "Declaration.h"
 #include "InternedString.h"
 #include "SymbolMap.h"
 

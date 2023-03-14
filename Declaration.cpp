@@ -1,4 +1,4 @@
-#include "Decl.h"
+#include "Declaration.h"
 #include "Message.h"
 #include "Type.h"
 
@@ -27,7 +27,20 @@ ostream& operator<<(ostream& stream, StorageDuration duration) {
     return stream;
 }
 
-Decl::Decl(IdentifierScope scope, StorageClass storage_class, const Type* type, const Identifier &identifier, const Location& location)
+Declaration::Declaration(const Location& location)
+    : ASTNode(location) {
+}
+
+void Declaration::print(ostream& stream) const {
+    auto separate = false;
+    for (auto& declarator : declarators) {
+        if (separate) stream << ", ";
+        separate = true;
+        stream << declarator;
+    }
+}
+
+Declarator::Declarator(IdentifierScope scope, StorageClass storage_class, const Type* type, const Identifier &identifier, const Location& location)
     : ASTNode(location), scope(scope), type(type), identifier(identifier) {
     if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
         linkage = Linkage::INTERNAL;
@@ -38,11 +51,11 @@ Decl::Decl(IdentifierScope scope, StorageClass storage_class, const Type* type, 
     }
 }
 
-const Type* Decl::to_type() const {
+const Type* Declarator::to_type() const {
     return nullptr;
 }
 
-void Decl::combine() {
+void Declarator::combine() {
     if (type != earlier->type || typeid(*this) != typeid(*earlier)) {
         message(Severity::ERROR, location) << "redeclaration of '" << identifier << "' with different type\n";
         message(Severity::INFO, earlier->location) << "see prior declaration\n";
@@ -55,7 +68,7 @@ void Decl::combine() {
 }
 
 Variable::Variable(IdentifierScope scope, StorageClass storage_class, const Type* type, const Identifier& identifier, Expr* initializer, const Location& location)
-    : Decl(scope, storage_class, type, identifier, location), initializer(initializer) {
+    : Declarator(scope, storage_class, type, identifier, location), initializer(initializer) {
     if (storage_class == StorageClass::EXTERN || storage_class == StorageClass::STATIC || scope == IdentifierScope::FILE) {
         storage_duration = StorageDuration::STATIC;
     } else {
@@ -66,7 +79,7 @@ Variable::Variable(IdentifierScope scope, StorageClass storage_class, const Type
 }
 
 void Variable::combine() {
-    Decl::combine();
+    Declarator::combine();
 
     auto earlier_var = dynamic_cast<Variable*>(earlier);
     if (!earlier_var) return;
@@ -94,7 +107,7 @@ void Variable::print(ostream& stream) const {
 }
 
 Function::Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, uint32_t specifiers, const Identifier& identifier, vector<Variable*>&& params, Statement* body, const Location& location)
-    : Decl(scope, storage_class, type, identifier, location), params(move(params)), body(body) {
+    : Declarator(scope, storage_class, type, identifier, location), params(move(params)), body(body) {
     if ((storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) ||
         (storage_class == StorageClass::STATIC && scope != IdentifierScope::FILE)) {
         message(Severity::ERROR, location) << "invalid storage class\n";
@@ -108,7 +121,7 @@ Function::Function(IdentifierScope scope, StorageClass storage_class, const Func
 }
 
 void Function::combine() {
-    Decl::combine();
+    Declarator::combine();
 
     auto earlier_fn = dynamic_cast<Function*>(earlier);
     if (!earlier_fn) return;
@@ -151,7 +164,7 @@ void Function::print(ostream& stream) const {
 }
 
 TypeDef::TypeDef(IdentifierScope scope, const Type* type, const Identifier& identifier, const Location& location)
-    : Decl(scope, StorageClass::TYPEDEF, type, identifier, location) {
+    : Declarator(scope, StorageClass::TYPEDEF, type, identifier, location) {
 }
 
 const Type* TypeDef::to_type() const {

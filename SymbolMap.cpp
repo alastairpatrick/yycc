@@ -1,19 +1,19 @@
 #include "SymbolMap.h"
 #include "CompileContext.h"
-#include "Decl.h"
+#include "Declaration.h"
 
-Decl* SymbolMap::lookup_decl(TypeNameKind kind, const Identifier& identifier) {
+Declarator* SymbolMap::lookup_declarator(TypeNameKind kind, const Identifier& identifier) {
     // TODO: consider kind
     for (auto& scope : scopes) {
-        auto it = scope.declarations.find(identifier.name);
-        if (it != scope.declarations.end()) {
-            auto decl = it->second;
+        auto it = scope.declarators.find(identifier.name);
+        if (it != scope.declarators.end()) {
+            auto declarator = it->second;
 
-            while (decl && decl->identifier.byte_offset > identifier.byte_offset) {
-                decl = decl->earlier;
+            while (declarator && declarator->identifier.byte_offset > identifier.byte_offset) {
+                declarator = declarator->earlier;
             }
 
-            return decl;
+            return declarator;
         }
     }
 
@@ -21,20 +21,20 @@ Decl* SymbolMap::lookup_decl(TypeNameKind kind, const Identifier& identifier) {
 }
 
 const Type* SymbolMap::lookup_type(TypeNameKind kind, const Identifier& identifier) {
-    auto decl = lookup_decl(kind, identifier);
-    if (!decl) return nullptr;
+    auto declarator = lookup_declarator(kind, identifier);
+    if (!declarator) return nullptr;
 
-    return decl->to_type();
+    return declarator->to_type();
 }
 
-void SymbolMap::add_decl(TypeNameKind kind, Decl* decl) {
-    auto it = scopes.front().declarations.find(decl->identifier.name);
-    if (it != scopes.front().declarations.end()) {
-        decl->earlier = it->second;
-        if (!preparse) decl->combine();
-        it->second = decl;
+void SymbolMap::add_declarator(TypeNameKind kind, Declarator* declarator) {
+    auto it = scopes.front().declarators.find(declarator->identifier.name);
+    if (it != scopes.front().declarators.end()) {
+        declarator->earlier = it->second;
+        if (!preparse) declarator->combine();
+        it->second = declarator;
     } else {
-        scopes.front().declarations[decl->identifier.name] = decl;
+        scopes.front().declarators[declarator->identifier.name] = declarator;
     }
 }
 
