@@ -35,15 +35,18 @@ ostream& operator<<(ostream& stream, Linkage linkage);
 ostream& operator<<(ostream& stream, StorageDuration duration);
 
 struct Declaration: ASTNode {
-    explicit Declaration(const Location& location);
+    explicit Declaration(IdentifierScope scope, StorageClass storage_class, const Type* base_type, const Location& location);
 
+    IdentifierScope scope;
+    StorageClass storage_class;
+    const Type* base_type;
     vector<Declarator*> declarators;
 
     virtual void print(ostream& stream) const;
 };
 
 struct Variable: Declarator {
-    Variable(IdentifierScope scope, StorageClass storage_class, const Type* type, const Identifier& identifier, Expr* initializer, const Location& location);
+    Variable(Declaration* declaration, const Type* type, const Identifier& identifier, Expr* initializer, const Location& location);
 
     StorageDuration storage_duration;
     Expr* initializer{};
@@ -53,7 +56,7 @@ struct Variable: Declarator {
 };
 
 struct Function: Declarator {
-    Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, uint32_t specifiers, const Identifier& identifier, vector<Variable*>&& params, Statement* body, const Location& location);
+    Function(Declaration* declaration, const FunctionType* type, uint32_t specifiers, const Identifier& identifier, vector<Variable*>&& params, Statement* body, const Location& location);
 
     vector<Variable*> params;
     Statement* body{};
@@ -65,7 +68,7 @@ struct Function: Declarator {
 };
 
 struct TypeDef: Declarator {
-    TypeDef(IdentifierScope scope, const Type* type, const Identifier& identifier, const Location& location);
+    TypeDef(Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location);
 
     virtual const Type* to_type() const;
     virtual void print(ostream& stream) const;

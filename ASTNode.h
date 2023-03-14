@@ -25,10 +25,9 @@ typedef vector<ASTNode*> ASTNodeVector;
 ostream& operator<<(ostream& stream, const ASTNodeVector& items);
 
 struct Declarator: ASTNode {
-    Declarator(IdentifierScope scope, StorageClass storage_class, const Type* type, const Identifier& identifier, const Location& location);
+    Declarator(Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location);
 
     Declaration* declaration{};
-    IdentifierScope scope;
     Linkage linkage;
     const Type* type{};
     Identifier identifier;

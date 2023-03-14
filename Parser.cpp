@@ -368,22 +368,21 @@ struct Parser {
         const Type* type{};
         uint32_t specifiers;
         if (parse_declaration_specifiers(scope, storage_class, type, specifiers)) {
-            Declaration* declaration{};
+            auto declaration = new Declaration(scope, storage_class, type, location);;
 
             int declarator_count = 0;
             while (token && token != ';') {
                 bool last_declarator{};
-                auto declarator = parse_declarator(scope, storage_class, type, specifiers, declarator_count == 0, location, &last_declarator);
-                ++ declarator_count;
+                auto declarator = parse_declarator(declaration, specifiers, declarator_count == 0, location, &last_declarator);
 
                 if (declarator->identifier.name->empty()) {
                     message(Severity::ERROR, lexer.location()) << "expected identifier\n";
                 } else {
-                    if (!declaration) {
-                        declaration = new Declaration(location);
+                    declaration->declarators.push_back(declarator);
+                    if (declarator_count == 0) {
                         list.push_back(declaration);
                     }
-                    declaration->declarators.push_back(declarator);
+                    ++declarator_count;
                 }
 
                 // No ';' or ',' after function definition.
@@ -459,17 +458,20 @@ struct Parser {
         }
 
         bool last;
-        return parse_declarator(IdentifierScope::PROTOTYPE, storage_class, type, specifiers, false, location, &last);
+        auto declaration = new Declaration(IdentifierScope::PROTOTYPE, storage_class, type, location);
+        auto declarator = parse_declarator(declaration, specifiers, false, location, &last);
+        declaration->declarators.push_back(declarator);
+        return declarator;
     }
 
-    Declarator* parse_declarator(IdentifierScope scope, StorageClass storage_class, const Type* declaration_type, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last) {
+    Declarator* parse_declarator(Declaration* declaration, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last) {
         *last = false;
         if (consume('(')) {
-            auto result = parse_declarator(scope, storage_class, declaration_type, specifiers, allow_function_def, location, last);
+            auto result = parse_declarator(declaration, specifiers, allow_function_def, location, last);
             require(')');
             return result;
         } else {
-            const Type* type = declaration_type;
+            const Type* type = declaration->base_type;
             while (consume('*')) {
                 type = type->pointer_to();
 
@@ -520,23 +522,22 @@ struct Parser {
 
                 type = FunctionType::of(type, move(param_types), false);
 
-                if (scope == IdentifierScope::PROTOTYPE) {
+                if (declaration->scope == IdentifierScope::PROTOTYPE) {
                     type = type->pointer_to();
-                } else if (storage_class != StorageClass::TYPEDEF) {
+                } else if (declaration->storage_class != StorageClass::TYPEDEF) {
                     CompoundStatement* body{};
                     if (allow_function_def && token == '{') {
                         body = parse_compound_statement();
                         *last = true;
                     }
                     
-                    declarator = new Function(scope,
-                                        storage_class,
-                                        static_cast<const FunctionType*>(type),
-                                        specifiers,
-                                        identifier,
-                                        move(params),
-                                        body,
-                                        location);
+                    declarator = new Function(declaration,
+                                              static_cast<const FunctionType*>(type),
+                                              specifiers,
+                                              identifier,
+                                              move(params),
+                                              body,
+                                              location);
                 }
 
                 symbols.pop_scope();
@@ -546,15 +547,15 @@ struct Parser {
                 message(Severity::ERROR, location) << "'inline' may only appear on function\n";
             }
 
-            if (storage_class == StorageClass::TYPEDEF) {
-                declarator = new TypeDef(scope, type, identifier, location);
+            if (declaration->storage_class == StorageClass::TYPEDEF) {
+                declarator = new TypeDef(declaration, type, identifier, location);
             }
 
             if (!declarator) {
-                if (!initializer && storage_class != StorageClass::EXTERN) {
+                if (!initializer && declaration->storage_class != StorageClass::EXTERN) {
                     initializer = new DefaultExpr(type, location);
                 }
-                declarator = new Variable(scope, storage_class, type, identifier, initializer, location);
+                declarator = new Variable(declaration, type, identifier, initializer, location);
             }
 
             if (!identifier.name->empty()) {

@@ -27,8 +27,8 @@ ostream& operator<<(ostream& stream, StorageDuration duration) {
     return stream;
 }
 
-Declaration::Declaration(const Location& location)
-    : ASTNode(location) {
+Declaration::Declaration(IdentifierScope scope, StorageClass storage_class, const Type* base_type, const Location& location)
+    : ASTNode(location), scope(scope), storage_class(storage_class), base_type(base_type) {
 }
 
 void Declaration::print(ostream& stream) const {
@@ -40,8 +40,11 @@ void Declaration::print(ostream& stream) const {
     }
 }
 
-Declarator::Declarator(IdentifierScope scope, StorageClass storage_class, const Type* type, const Identifier &identifier, const Location& location)
-    : ASTNode(location), scope(scope), type(type), identifier(identifier) {
+Declarator::Declarator(Declaration* declaration, const Type* type, const Identifier &identifier, const Location& location)
+    : ASTNode(location), declaration(declaration), type(type), identifier(identifier) {
+    auto scope = declaration->scope;
+    auto storage_class = declaration->storage_class;
+
     if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
         linkage = Linkage::INTERNAL;
     } else if (storage_class == StorageClass::EXTERN || scope == IdentifierScope::FILE) {
@@ -67,8 +70,11 @@ void Declarator::combine() {
     }
 }
 
-Variable::Variable(IdentifierScope scope, StorageClass storage_class, const Type* type, const Identifier& identifier, Expr* initializer, const Location& location)
-    : Declarator(scope, storage_class, type, identifier, location), initializer(initializer) {
+Variable::Variable(Declaration* declaration, const Type* type, const Identifier& identifier, Expr* initializer, const Location& location)
+    : Declarator(declaration, type, identifier, location), initializer(initializer) {
+    auto scope = declaration->scope;
+    auto storage_class = declaration->storage_class;
+
     if (storage_class == StorageClass::EXTERN || storage_class == StorageClass::STATIC || scope == IdentifierScope::FILE) {
         storage_duration = StorageDuration::STATIC;
     } else {
@@ -106,8 +112,11 @@ void Variable::print(ostream& stream) const {
     stream << ']';
 }
 
-Function::Function(IdentifierScope scope, StorageClass storage_class, const FunctionType* type, uint32_t specifiers, const Identifier& identifier, vector<Variable*>&& params, Statement* body, const Location& location)
-    : Declarator(scope, storage_class, type, identifier, location), params(move(params)), body(body) {
+Function::Function(Declaration* declaration, const FunctionType* type, uint32_t specifiers, const Identifier& identifier, vector<Variable*>&& params, Statement* body, const Location& location)
+    : Declarator(declaration, type, identifier, location), params(move(params)), body(body) {
+    auto scope = declaration->scope;
+    auto storage_class = declaration->storage_class;
+
     if ((storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) ||
         (storage_class == StorageClass::STATIC && scope != IdentifierScope::FILE)) {
         message(Severity::ERROR, location) << "invalid storage class\n";
@@ -163,8 +172,8 @@ void Function::print(ostream& stream) const {
     stream << ']';
 }
 
-TypeDef::TypeDef(IdentifierScope scope, const Type* type, const Identifier& identifier, const Location& location)
-    : Declarator(scope, StorageClass::TYPEDEF, type, identifier, location) {
+TypeDef::TypeDef(Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location)
+    : Declarator(declaration, type, identifier, location) {
 }
 
 const Type* TypeDef::to_type() const {
