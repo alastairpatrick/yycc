@@ -42,10 +42,6 @@ const Type* Decl::to_type() const {
     return nullptr;
 }
 
-bool Decl::is_function_definition() const {
-    return false;
-}
-
 void Decl::combine() {
     if (type != earlier->type || typeid(*this) != typeid(*earlier)) {
         message(Severity::ERROR, location) << "redeclaration of '" << identifier << "' with different type\n";
@@ -109,10 +105,6 @@ Function::Function(IdentifierScope scope, StorageClass storage_class, const Func
     // It's very valuable to determine which functions with external linkage are inline definitions, because they don't need to be
     // written to the AST file; another translation unit is guaranteed to have an external definition.
     inline_definition = (linkage == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
-}
-
-bool Function::is_function_definition() const {
-    return body != nullptr;
 }
 
 void Function::combine() {

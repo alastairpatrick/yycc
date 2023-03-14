@@ -35,7 +35,6 @@ struct Decl: ASTNode {
     Decl* definition{};
 
     virtual const Type* to_type() const;
-    virtual bool is_function_definition() const;
     virtual void combine();
     virtual void print(ostream& stream) const = 0;
 };

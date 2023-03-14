@@ -52,7 +52,6 @@ struct Function: Decl {
 
     bool inline_definition;
 
-    virtual bool is_function_definition() const;
     virtual void combine();
     virtual void print(ostream& stream) const;
 };

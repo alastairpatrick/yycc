@@ -371,18 +371,18 @@ struct Parser {
         if (parse_decl_specifiers(scope, storage_class, type, specifiers)) {
             int decl_count = 0;
             while (token && token != ';') {
-                auto decl = parse_declarator(scope, storage_class, type, specifiers, decl_count == 0, location);
+                bool last_declarator{};
+                auto decl = parse_declarator(scope, storage_class, type, specifiers, decl_count == 0, location, &last_declarator);
                 ++ decl_count;
 
-                auto is_function_definition = decl->is_function_definition();
                 if (decl->identifier.name->empty()) {
                     message(Severity::ERROR, lexer.location()) << "expected identifier\n";
                 } else {
                     list.push_back(decl);
                 }
 
-                // No ';' after function definition.
-                if (is_function_definition) return;
+                // No ';' or ',' after function definition.
+                if (last_declarator) return;
 
                 if (!consume(',')) break;
             }
@@ -453,12 +453,14 @@ struct Parser {
             storage_class = StorageClass::NONE;
         }
 
-        return parse_declarator(IdentifierScope::PROTOTYPE, storage_class, type, specifiers, false, location);        
+        bool last;
+        return parse_declarator(IdentifierScope::PROTOTYPE, storage_class, type, specifiers, false, location, &last);
     }
 
-    Decl* parse_declarator(IdentifierScope scope, StorageClass storage_class, const Type* declaration_type, uint32_t specifiers, bool allow_function_def, const Location& location) {
+    Decl* parse_declarator(IdentifierScope scope, StorageClass storage_class, const Type* declaration_type, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last) {
+        *last = false;
         if (consume('(')) {
-            auto result = parse_declarator(scope, storage_class, declaration_type, specifiers, allow_function_def, location);
+            auto result = parse_declarator(scope, storage_class, declaration_type, specifiers, allow_function_def, location, last);
             require(')');
             return result;
         } else {
@@ -516,13 +518,19 @@ struct Parser {
                 if (scope == IdentifierScope::PROTOTYPE) {
                     type = type->pointer_to();
                 } else if (storage_class != StorageClass::TYPEDEF) {
+                    CompoundStatement* body{};
+                    if (allow_function_def && token == '{') {
+                        body = parse_compound_statement();
+                        *last = true;
+                    }
+                    
                     decl = new Function(scope,
                                         storage_class,
                                         static_cast<const FunctionType*>(type),
                                         specifiers,
                                         identifier,
                                         move(params),
-                                        allow_function_def && token == '{' ? parse_compound_statement() : nullptr,
+                                        body,
                                         location);
                 }
 
