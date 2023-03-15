@@ -20,7 +20,7 @@ typedef;
 EXPECT_MESSAGE
 :1:1: error invalid type specifier combination
 EXPECT_AST
-[]
+[[]]
 
 
 BEGIN Redefinition of typedef
@@ -85,8 +85,8 @@ void f(void) {
 STATEMENTS
 EXPECT_AST
 [
-    ["var", "ES", "Si", "p", ""],
-    ["var", "ES", "Si", "q", ""],
+    [["var", "ES", "Si", "p", ""],
+     ["var", "ES", "Si", "q", ""]],
     ["fun","E","()V","f",[""], ["block", [
         ["*", "Nq", "Np"],
         ["typedef", "Ss", "q"],
@@ -106,8 +106,8 @@ void f(void) {
 STATEMENTS
 EXPECT_AST
 [["fun","E","()V","f",[""], ["block", [
-    ["var", "", "Si", "p", ""],
-    ["var", "", "Si", "q", ""],
+    [["var", "", "Si", "p", ""],
+     ["var", "", "Si", "q", ""]],
     ["block", [
         ["typedef", "Sl", "q"]
     ]],
@@ -117,13 +117,16 @@ EXPECT_AST
 
 BEGIN Typedef may not be used as a variable.
 typedef long p;
-p+p;
+void f(void) {
+    p+p;
+}
+STATEMENTS
 EXPECT_MESSAGE
-:2:2: error expected identifier
-:2:2: error unexpected token
-:2:3: error unexpected token
+:3:6: error expected identifier
+:3:6: error unexpected token
+:3:7: error unexpected token
 EXPECT_AST
-[["typedef", "Sl", "p"]]
+[["typedef","Sl","p"],["fun","E","()V","f",[""],["block",[[]]]]]
 
 
 BEGIN Typedef may not be inline

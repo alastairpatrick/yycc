@@ -16,7 +16,7 @@ struct Parser {
     void operator=(const Parser&) = delete;
 
     Expr* parse_expr(int min_prec);
-    void parse_declaration_or_statement(IdentifierScope scope, ASTNodeVector& list);
+    ASTNode* parse_declaration_or_statement(IdentifierScope scope);
     bool is_eof();
     bool check_eof();
 

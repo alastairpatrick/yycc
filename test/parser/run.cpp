@@ -64,7 +64,7 @@ ASTNodeVector parse_statements(const string& input, bool preparse) {
     ASTNodeVector declarations;
     Parser parser(input, preparse);
     while (!parser.is_eof()!= 0) {
-        parser.parse_declaration_or_statement(IdentifierScope::FILE, declarations);
+        declarations.push_back(parser.parse_declaration_or_statement(IdentifierScope::FILE));
     }
 
     return declarations;

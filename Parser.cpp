@@ -370,7 +370,7 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
     return true;
 }
 
-void Parser::parse_declaration_or_statement(IdentifierScope scope, ASTNodeVector& list) {
+ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
     auto location = lexer.location();
     auto begin_text = data();
 
@@ -389,9 +389,6 @@ void Parser::parse_declaration_or_statement(IdentifierScope scope, ASTNodeVector
                 message(Severity::ERROR, lexer.location()) << "expected identifier\n";
             } else {
                 declaration->declarators.push_back(declarator);
-                if (declarator_count == 0) {
-                    list.push_back(declaration);
-                }
                 ++declarator_count;
             }
 
@@ -404,6 +401,7 @@ void Parser::parse_declaration_or_statement(IdentifierScope scope, ASTNodeVector
         if (!last_declarator) require(';');
 
         declaration->text = end_text(begin_text);
+        return declaration;
     } else {
         ASTNode* statement{};
         if (token == '{') {
@@ -416,9 +414,8 @@ void Parser::parse_declaration_or_statement(IdentifierScope scope, ASTNodeVector
             require(';');
         }
 
-        list.push_back(statement);
-
         statement->text = end_text(begin_text);
+        return statement;
     }
 }
 
@@ -446,7 +443,7 @@ CompoundStatement* Parser::parse_compound_statement() {
         require('{', &loc);
 
         while (token && token != '}') {
-            parse_declaration_or_statement(IdentifierScope::BLOCK, list);
+            list.push_back(parse_declaration_or_statement(IdentifierScope::BLOCK));
         }
 
         // Must pop scope before consuming '}' in case '}' is immediately followed by an identifier that the

@@ -247,14 +247,14 @@ EXPECT_AST
 BEGIN Multiple declarators
 int x, y;
 EXPECT_AST
-[["var", "ES", "Si", "x", ""]
-,["var", "ES", "Si", "y", ""]]
+[[["var", "ES", "Si", "x", ""]
+ ,["var", "ES", "Si", "y", ""]]]
 
 
 BEGIN Declaration with no declarators
 short;
 EXPECT_AST
-[]
+[[]]
 
 
 BEGIN Declaration with missing declarator identifiers
@@ -262,7 +262,7 @@ short,;
 EXPECT_MESSAGE
 :1:6: error expected identifier
 EXPECT_AST
-[]
+[[]]
 
 
 BEGIN Declarators must be separated by comma
@@ -276,8 +276,8 @@ EXPECT_AST
 BEGIN Pointer declarators
 int **x, *y;
 EXPECT_AST
-[["var", "ES", "PPSi", "x", ""]
-,["var", "ES", "PSi", "y", ""]]
+[[["var", "ES", "PPSi", "x", ""]
+ ,["var", "ES", "PSi", "y", ""]]]
 
 
 BEGIN Const declarator
@@ -301,22 +301,22 @@ EXPECT_AST
 BEGIN Declarator with multiple qualifiers interleaved with pointers
 int x, * const * volatile restrict y;
 EXPECT_AST
-[["var", "ES", "Si", "x", ""]
-,["var", "ES", "QrvPQcPSi", "y", ""]]
+[[["var", "ES", "Si", "x", ""]
+ ,["var", "ES", "QrvPQcPSi", "y", ""]]]
 
 
 BEGIN Declarator initializers
 int x = 1, y = 2;
 EXPECT_AST
-[["var", "ES", "Si", "x", "Si1"]
-,["var", "ES", "Si", "y", "Si2"]]
+[[["var", "ES", "Si", "x", "Si1"]
+ ,["var", "ES", "Si", "y", "Si2"]]]
 
 
 BEGIN Declarators in parentheses
 int ((x)), (*y);
 EXPECT_AST
-[["var", "ES", "Si", "x", ""]
-,["var", "ES", "PSi", "y", ""]]
+[[["var", "ES", "Si", "x", ""]
+ ,["var", "ES", "PSi", "y", ""]]]
 
 
 BEGIN Variable redeclarations having external linkage

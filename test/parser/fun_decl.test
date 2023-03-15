@@ -185,8 +185,8 @@ EXPECT_MESSAGE
 :1:21: error unexpected token
 :2:1: error unexpected token
 EXPECT_AST
-[["var", "ES", "Si", "foo", ""]
-,["fun", "E", "(Si)Si", "bar"]]
+[[["var", "ES", "Si", "foo", ""]
+ ,["fun", "E", "(Si)Si", "bar"]]]
 
 
 BEGIN Function definition may not share external declaration with declarators (2)
