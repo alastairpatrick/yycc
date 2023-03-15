@@ -62,10 +62,6 @@ OperatorPrec Parser::prec() {
     return g_assoc_prec[token].prec;
 }
 
-bool Parser::is_eof() {
-    return token == TOK_EOF;
-}
-
 bool Parser::check_eof() {
     if (token == TOK_EOF) return true;
     message(Severity::ERROR, lexer.location()) << "expected end of file\n";
@@ -368,6 +364,12 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
 
     specifiers = specifier_set & function_specifier_mask;
     return true;
+}
+
+void Parser::parse_unit() {
+    while (token) {
+        declarations.push_back(parse_declaration_or_statement(IdentifierScope::FILE));
+    }
 }
 
 ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {

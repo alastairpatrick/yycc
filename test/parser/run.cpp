@@ -11,7 +11,7 @@ using json = nlohmann::json;
 
 enum class TestType {
     EXPRESSION,
-    STATEMENTS,
+    DECLARATIONS,
     PREPARSE,
 
     NUM
@@ -36,10 +36,10 @@ static const Test tests[] = {
     { "var_decl",           TestType::PREPARSE },
     { "fun_decl",           TestType::PREPARSE },
 
-    { "typedef",            TestType::STATEMENTS },
-    { "var_decl",           TestType::STATEMENTS },
-    { "fun_decl",           TestType::STATEMENTS },
-    { "stmt",               TestType::STATEMENTS },
+    { "typedef",            TestType::DECLARATIONS },
+    { "var_decl",           TestType::DECLARATIONS },
+    { "fun_decl",           TestType::DECLARATIONS },
+    { "stmt",               TestType::DECLARATIONS },
     { "string_literal",     TestType::EXPRESSION },
     { "lex",                TestType::EXPRESSION },
     { "int_literal",        TestType::EXPRESSION },
@@ -60,14 +60,10 @@ Expr* parse_expr(const string& input) {
     return result;
 }
 
-ASTNodeVector parse_statements(const string& input, bool preparse) {
-    ASTNodeVector declarations;
+ASTNodeVector parse_declarations(const string& input, bool preparse) {
     Parser parser(input, preparse);
-    while (!parser.is_eof()!= 0) {
-        declarations.push_back(parser.parse_declaration_or_statement(IdentifierScope::FILE));
-    }
-
-    return declarations;
+    parser.parse_unit();
+    return move(parser.declarations);
 }
 
 static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], const string& name, const string& file, int line) {
@@ -84,7 +80,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
             }
             output_stream << expr;
         } else {
-            auto statements = parse_statements(sections[INPUT], test_type == TestType::PREPARSE);
+            auto statements = parse_declarations(sections[INPUT], test_type == TestType::PREPARSE);
             output_stream << statements;
         }
 
@@ -172,8 +168,8 @@ bool run_parser_tests() {
             } else if (line.substr(0, 8) == "PREPARSE") {
                 enabled_types[unsigned(TestType::PREPARSE)] = true;
                 ++num_enabled_types;
-            } else if (line.substr(0, 10) == "STATEMENTS") {
-                enabled_types[unsigned(TestType::STATEMENTS)] = true;
+            } else if (line.substr(0, 12) == "DECLARATIONS") {
+                enabled_types[unsigned(TestType::DECLARATIONS)] = true;
                 ++num_enabled_types;
             } else {
                 if (!line.empty()) {

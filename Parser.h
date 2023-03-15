@@ -10,14 +10,14 @@ struct Declarator;
 struct Expr;
 
 struct Parser {
+    ASTNodeVector declarations;
     SymbolMap symbols;
 
     Parser(const Input& input, bool preparse);
     void operator=(const Parser&) = delete;
 
     Expr* parse_expr(int min_prec);
-    ASTNode* parse_declaration_or_statement(IdentifierScope scope);
-    bool is_eof();
+    void parse_unit();
     bool check_eof();
 
 private:
@@ -36,6 +36,7 @@ private:
 
     Expr* parse_cast_expr();
     bool parse_declaration_specifiers(IdentifierScope scope, StorageClass& storage_class, const Type*& type, uint32_t& specifiers);
+    ASTNode* parse_declaration_or_statement(IdentifierScope scope);
     CompoundStatement* parse_compound_statement();
     Declarator* parse_parameter_declarator();
     Declarator* parse_declarator(Declaration* declaration, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last);

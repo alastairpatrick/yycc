@@ -34,7 +34,7 @@ EXPECT_AST
 BEGIN Redefinition of typedef with different type
 typedef int a;
 typedef unsigned a;
-STATEMENTS
+DECLARATIONS
 EXPECT_MESSAGE
 :2:1: error redeclaration of 'a' with different type
 :1:1: see prior declaration
@@ -48,7 +48,7 @@ typedef int a;
 void f(void) {
     typedef long a;
 }
-STATEMENTS
+DECLARATIONS
 EXPECT_AST
 [
     ["typedef", "Si", "a"],
@@ -82,7 +82,7 @@ void f(void) {
     typedef short q;
     q * v; // now "q" is a type so this declares variable "v" with type "q*".
 }
-STATEMENTS
+DECLARATIONS
 EXPECT_AST
 [
     [["var", "ES", "Si", "p", ""],
@@ -103,7 +103,7 @@ void f(void) {
     }
     q * p; // Identifier "q" immediately follows '}'
 }
-STATEMENTS
+DECLARATIONS
 EXPECT_AST
 [["fun","E","()V","f",[""], ["block", [
     [["var", "", "Si", "p", ""],
@@ -120,7 +120,7 @@ typedef long p;
 void f(void) {
     p+p;
 }
-STATEMENTS
+DECLARATIONS
 EXPECT_MESSAGE
 :3:6: error expected identifier
 :3:6: error unexpected token
@@ -140,7 +140,7 @@ EXPECT_AST
 BEGIN Typedef may not be redeclared as a variable of same type
 typedef int a;
 int a;
-STATEMENTS
+DECLARATIONS
 EXPECT_MESSAGE
 :2:1: error redeclaration of 'a' with different type
 :1:1: see prior declaration

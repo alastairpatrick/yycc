@@ -184,7 +184,7 @@ EXPECT_AST
 
 BEGIN No implicit int declaration
 static x;
-STATEMENTS
+DECLARATIONS
 EXPECT_MESSAGE
 :1:8: error typedef 'x' undefined
 EXPECT_AST
@@ -330,7 +330,7 @@ EXPECT_AST
 BEGIN Variable declaration with internal linkage may not follow variable declaration with external linkage
 extern int x;
 static int x;
-STATEMENTS
+DECLARATIONS
 EXPECT_MESSAGE
 :2:1: error static declaration of 'x' follows non-static declaration
 :1:1: see prior declaration
@@ -342,7 +342,7 @@ EXPECT_AST
 BEGIN Variable declaration having internal linkage may preceed variable declaration having external linkage
 static int x;
 extern int x;
-STATEMENTS
+DECLARATIONS
 EXPECT_AST
 [["var","IS","Si","x", ""]
 ,["var","ES","Si","x"]]
@@ -351,7 +351,7 @@ EXPECT_AST
 BEGIN Multiple variable declarations having internal linkage not allowed
 static int x;
 static int x;
-STATEMENTS
+DECLARATIONS
 EXPECT_MESSAGE
 :2:1: error redefinition of 'x'
 :1:1: see prior definition
