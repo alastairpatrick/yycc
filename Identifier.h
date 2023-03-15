@@ -12,10 +12,8 @@ enum class TypeNameKind {
 };
 
 struct Identifier {
+    explicit Identifier(string_view s): name(intern_string(s)) {}
     InternedString name{};
-
-    // This is a byte offset in the preprocessed source text. It is used to lookup declarators in the symbol map as they were earlier in the source.
-    size_t byte_offset = 0;
 };
 
 inline ostream& operator<<(ostream& stream, const Identifier& identifier) {

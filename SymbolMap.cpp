@@ -2,26 +2,20 @@
 #include "CompileContext.h"
 #include "Declaration.h"
 
-Declarator* SymbolMap::lookup_declarator(TypeNameKind kind, const Identifier& identifier) {
-    // TODO: consider kind
+Declarator* SymbolMap::lookup_declarator(bool tag, const Identifier& identifier) const {
+    // TODO: consider tag
     for (auto& scope : scopes) {
         auto it = scope.declarators.find(identifier.name);
         if (it != scope.declarators.end()) {
-            auto declarator = it->second;
-
-            while (declarator && declarator->identifier.byte_offset > identifier.byte_offset) {
-                declarator = declarator->earlier;
-            }
-
-            return declarator;
+            return it->second;
         }
     }
 
     return nullptr;
 }
 
-const Type* SymbolMap::lookup_type(TypeNameKind kind, const Identifier& identifier) {
-    auto declarator = lookup_declarator(kind, identifier);
+const Type* SymbolMap::lookup_type(bool tag, const Identifier& identifier) const {
+    auto declarator = lookup_declarator(tag, identifier);
     if (!declarator) return nullptr;
 
     return declarator->to_type();

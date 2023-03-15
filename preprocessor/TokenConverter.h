@@ -22,10 +22,6 @@ struct TokenConverter {
         return source.location();
     }
 
-    size_t byte_offset() const {
-        return source.byte_offset();
-    }
-
     Identifier TokenConverter::identifier() const;
 
 private:

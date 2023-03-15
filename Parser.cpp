@@ -140,7 +140,7 @@ struct Parser {
                 break;
             }
             else if (token == TOK_IDENTIFIER) {
-                Declarator* declarator = symbols.lookup_declarator(TypeNameKind::ORDINARY, lexer.identifier());
+                Declarator* declarator = symbols.lookup_declarator(false, lexer.identifier());
                 if (declarator) {
                     // TokenKind would have to be TOK_TYPEDEF_IDENTIFIER for declarator to be a typedef.
                     assert(!dynamic_cast<TypeDef*>(declarator));
@@ -224,7 +224,7 @@ struct Parser {
                } case TOK_IDENTIFIER: {
                   if ((specifier_set & type_specifier_mask) == 0) {
                       const Type* typedef_type;
-                      typedef_type = symbols.lookup_type(TypeNameKind::ORDINARY, lexer.identifier());
+                      typedef_type = symbols.lookup_type(false, lexer.identifier());
                       if (!typedef_type) {
                           if (scope != IdentifierScope::FILE) break;
 
@@ -609,11 +609,11 @@ Expr* parse_expr(const string& input) {
 }
 
 ASTNodeVector parse_statements(const string& input, bool preparse) {
-    ASTNodeVector ast;
+    ASTNodeVector declarations;
     Parser parser(input, preparse);
     while (parser.token != 0) {
-        parser.parse_declaration_or_statement(IdentifierScope::FILE, ast);
+        parser.parse_declaration_or_statement(IdentifierScope::FILE, declarations);
     }
 
-    return ast;
+    return declarations;
 }

@@ -115,8 +115,5 @@ TokenKind TokenConverter::next_token_internal() {
 
 Identifier TokenConverter::identifier() const
 {
-    Identifier result;
-    result.name = intern_string(text());
-    result.byte_offset = byte_offset();
-    return result;
+    return Identifier(text());
 }
