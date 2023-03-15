@@ -10,18 +10,20 @@ struct Declarator;
 struct Expr;
 
 struct Parser {
-    TokenConverter lexer;
-    TokenKind token;
     SymbolMap symbols;
-    const bool preparse;
 
     Parser(const Input& input, bool preparse);
 
     Expr* parse_expr(int min_prec);
     void parse_declaration_or_statement(IdentifierScope scope, ASTNodeVector& list);
+    bool is_eof();
     bool check_eof();
 
 private:
+    TokenConverter lexer;
+    TokenKind token;
+    const bool preparse;
+
     void consume();
     bool consume(int t, Location* location = nullptr);
     bool require(int t, Location* location = nullptr);

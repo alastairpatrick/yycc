@@ -63,7 +63,7 @@ Expr* parse_expr(const string& input) {
 ASTNodeVector parse_statements(const string& input, bool preparse) {
     ASTNodeVector declarations;
     Parser parser(input, preparse);
-    while (parser.token != 0) {
+    while (!parser.is_eof()!= 0) {
         parser.parse_declaration_or_statement(IdentifierScope::FILE, declarations);
     }
 

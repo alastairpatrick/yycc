@@ -62,6 +62,10 @@ OperatorPrec Parser::prec() {
     return g_assoc_prec[token].prec;
 }
 
+bool Parser::is_eof() {
+    return token == TOK_EOF;
+}
+
 bool Parser::check_eof() {
     if (token == TOK_EOF) return true;
     message(Severity::ERROR, lexer.location()) << "expected end of file\n";
