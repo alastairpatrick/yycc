@@ -4,6 +4,7 @@
 #include "CompileContext.h"
 #include "Expr.h"
 #include "Declaration.h"
+#include "Parser.h"
 #include "Statement.h"
 
 using json = nlohmann::json;
@@ -47,12 +48,26 @@ static const Test tests[] = {
     { "expr",               TestType::EXPRESSION },
 };
 
-Expr* parse_expr(const string& input);
-ASTNodeVector parse_statements(const string& input, bool preparse);
-
 static ostream& print_error(const string& name, const string& file, int line) {
     cerr << file << '(' << line << "): " << name << "\n";
     return cerr;
+}
+
+Expr* parse_expr(const string& input) {
+    Parser parser(input, false);
+    auto result = parser.parse_expr(0);
+    if (!parser.check_eof()) return nullptr;
+    return result;
+}
+
+ASTNodeVector parse_statements(const string& input, bool preparse) {
+    ASTNodeVector declarations;
+    Parser parser(input, preparse);
+    while (parser.token != 0) {
+        parser.parse_declaration_or_statement(IdentifierScope::FILE, declarations);
+    }
+
+    return declarations;
 }
 
 static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], const string& name, const string& file, int line) {
