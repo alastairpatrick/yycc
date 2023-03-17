@@ -1,5 +1,5 @@
-#ifndef SYMBOL_MAP_H
-#define SYMBOL_MAP_H
+#ifndef AST_SYMBOL_MAP_H
+#define AST_SYMBOL_MAP_H
 
 #include "ASTNode.h"
 #include "Type.h"

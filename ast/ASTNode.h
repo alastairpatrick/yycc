@@ -1,8 +1,8 @@
-#ifndef AST_NODE_H
-#define AST_NODE_H
+#ifndef AST_AST_NODE_H
+#define AST_AST_NODE_H
 
 #include "Identifier.h"
-#include "Location.h"
+#include "lexer/Location.h"
 #include "Printable.h"
 
 struct CodeGenContext;

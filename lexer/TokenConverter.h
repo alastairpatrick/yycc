@@ -1,5 +1,5 @@
-#ifndef TOKEN_CONVERTER_H
-#define TOKEN_CONVERTER_H
+#ifndef LEXER_TOKEN_CONVERTER_H
+#define LEXER_TOKEN_CONVERTER_H
 
 #include "Identifier.h"
 #include "IdentifierLexer.yy.h"

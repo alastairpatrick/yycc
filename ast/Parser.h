@@ -1,8 +1,8 @@
-#ifndef PARSER_H
-#define PARSER_H
+#ifndef AST_PARSER_H
+#define AST_PARSER_H
 
 #include "assoc_prec.h"
-#include "preprocessor/TokenConverter.h"
+#include "lexer/TokenConverter.h"
 #include "SymbolMap.h"
 
 struct CompoundStatement;

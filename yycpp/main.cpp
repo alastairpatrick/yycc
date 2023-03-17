@@ -1,14 +1,6 @@
-#include "lexer/Token.h"
-#include "PPTokenLexer.yy.h"
-#include "Tokenizer.h"
+#include "CompileContext.h"
 
-#define IDENTIFIER_HASHES 0
-
-enum class StringTransform {
-    NONE,
-    LITERAL,
-    HEADER_NAME,
-};
+void sweep(ostream& stream, const string& translation_unit);
 
 static string remap_chars(FILE* file) {
     Input file_input(file);
@@ -48,6 +40,8 @@ static void splice_physical_lines(string& source) {
 }
 
 int main(int argc, const char* argv[]) {
+    CompileContext context(cerr);
+
     auto errors = 0;
 
     for (auto i = 1; i < argc; ++i) {
@@ -57,15 +51,14 @@ int main(int argc, const char* argv[]) {
             ++errors;
         } else {
             // Translation phases 1 - 3
-            string source = remap_chars(in_file);
+            string unit = remap_chars(in_file);
             fclose(in_file);
 
-            splice_physical_lines(source);
+            splice_physical_lines(unit);
 
             fstream out_file(string(argv[i]) + "~", ios_base::out | ios_base::trunc | ios_base::binary);
-
-            Tokenizer tokenizer;
-            tokenizer.process(out_file, source);
+            
+            sweep(out_file, unit);
         }
     }
 }

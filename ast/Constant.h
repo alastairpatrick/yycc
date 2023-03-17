@@ -1,8 +1,8 @@
-#ifndef CONSTANT_H
-#define CONSTANT_H
+#ifndef AST_CONSTANT_H
+#define AST_CONSTANT_H
 
 #include "ASTNode.h"
-#include "Token.h"
+#include "lexer/Token.h"
 #include "Type.h"
 
 struct Constant: Expr {

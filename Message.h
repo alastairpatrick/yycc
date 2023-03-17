@@ -1,4 +1,4 @@
-#include "Location.h"
+#include "lexer/Location.h"
 
 enum class Severity {
     INFO,

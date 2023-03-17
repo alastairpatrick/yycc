@@ -1,5 +1,5 @@
-#ifndef DECL_H
-#define DECL_H
+#ifndef AST_DECLARATION_H
+#define AST_DECLARATION_H
 
 #include "ASTNode.h"
 

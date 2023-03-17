@@ -1,8 +1,8 @@
-#ifndef EXPR_H
-#define EXPR_H
+#ifndef AST_EXPR_H
+#define AST_EXPR_H
 
 #include "ASTNode.h"
-#include "Token.h"
+#include "lexer/Token.h"
 #include "Type.h"
 
 struct Decl;

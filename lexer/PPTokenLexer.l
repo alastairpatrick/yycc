@@ -6,7 +6,7 @@
 %option fast
 
 %{
-#include "../Token.h"
+#include "lexer/Token.h"
 %}
 
 D               [0-9]

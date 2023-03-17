@@ -1,5 +1,5 @@
-#ifndef LOCATION_H
-#define LOCATION_H
+#ifndef LEXER_LOCATION_H
+#define LEXER_LOCATION_H
 
 struct Location {
     size_t line{};

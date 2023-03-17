@@ -8,53 +8,54 @@ find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 
 add_library(lang_lib_c STATIC
-    assoc_prec.c
+    "assoc_prec.c"
 )
 
 add_library(lang_lib STATIC
-    ASTNode.cpp
-    CompileContext.cpp
-    Constant.cpp
-    Declaration.cpp
-    Expr.cpp
-    InternedString.cpp
-    Message.cpp
-    Parser.cpp
-    Printable.cpp
-    Statement.cpp
-    SymbolMap.cpp
-    Type.cpp
-    TypeContext.cpp
+    "CompileContext.cpp"
+    "InternedString.cpp"
+    "Message.cpp"
+    "Printable.cpp"
 
-    preprocessor/PPTokenLexerSource.cpp
-    preprocessor/TokenConverter.cpp
+    "ast/ASTNode.cpp"
+    "ast/Constant.cpp"
+    "ast/Declaration.cpp"
+    "ast/Expr.cpp"
+    "ast/Parser.cpp"
+    "ast/Statement.cpp"
+    "ast/SymbolMap.cpp"
+    "ast/Type.cpp"
+    "ast/TypeContext.cpp"
 
-    ${CMAKE_CURRENT_BINARY_DIR}/PPNumberLexer.yy.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/PPTokenLexer.yy.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/IdentifierLexer.yy.cpp
+    "lexer/PPTokenLexerSource.cpp"
+    "lexer/TokenConverter.cpp"
+
+    "${CMAKE_CURRENT_BINARY_DIR}/PPNumberLexer.yy.cpp"
+    "${CMAKE_CURRENT_BINARY_DIR}/PPTokenLexer.yy.cpp"
+    "${CMAKE_CURRENT_BINARY_DIR}/IdentifierLexer.yy.cpp"
 )
 
 target_precompile_headers(lang_lib PUBLIC "pch.h")
 
 add_custom_command(
-    DEPENDS reflex preprocessor/PPTokenLexer.l
+    DEPENDS reflex lexer/PPTokenLexer.l
     OUTPUT  PPTokenLexer.yy.cpp PPTokenLexer.yy.h
     COMMAND reflex --header-file=PPTokenLexer.yy.h --outfile=PPTokenLexer.yy.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/preprocessor/PPTokenLexer.l
+            ${CMAKE_CURRENT_SOURCE_DIR}/lexer/PPTokenLexer.l
 )
 
 add_custom_command(
-    DEPENDS reflex preprocessor/IdentifierLexer.l
+    DEPENDS reflex lexer/IdentifierLexer.l
     OUTPUT  IdentifierLexer.yy.cpp IdentifierLexer.yy.h
     COMMAND reflex --header-file=IdentifierLexer.yy.h --outfile=IdentifierLexer.yy.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/preprocessor/IdentifierLexer.l
+            ${CMAKE_CURRENT_SOURCE_DIR}/lexer/IdentifierLexer.l
 )
 
 add_custom_command(
-    DEPENDS reflex preprocessor/PPNumberLexer.l
+    DEPENDS reflex lexer/PPNumberLexer.l
     OUTPUT  PPNumberLexer.yy.cpp PPNumberLexer.yy.h
     COMMAND reflex --header-file=PPNumberLexer.yy.h --outfile=PPNumberLexer.yy.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/preprocessor/PPNumberLexer.l
+            ${CMAKE_CURRENT_SOURCE_DIR}/lexer/PPNumberLexer.l
 )
 
 target_include_directories(lang_lib
@@ -87,4 +88,5 @@ target_link_libraries(lang PRIVATE lang_lib)
 
 add_subdirectory(test)
 add_subdirectory(third_party)
+add_subdirectory(yycpp)
 add_subdirectory(yyct)

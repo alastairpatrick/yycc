@@ -1,5 +1,5 @@
-#ifndef TYPE_CONTEXT_H
-#define TYPE_CONTEXT_H
+#ifndef AST_TYPE_CONTEXT_H
+#define AST_TYPE_CONTEXT_H
 
 #include "Identifier.h"
 

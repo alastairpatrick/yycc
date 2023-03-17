@@ -1,5 +1,5 @@
-#ifndef TOKEN_H
-#define TOKEN_H
+#ifndef LEXER_TOKEN_H
+#define LEXER_TOKEN_H
 
 enum TokenKind {
     TOK_EOF,

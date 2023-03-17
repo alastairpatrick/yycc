@@ -1,4 +1,5 @@
 #include "Type.h"
+
 #include "CodeGenContext.h"
 #include "CompileContext.h"
 #include "Declaration.h"

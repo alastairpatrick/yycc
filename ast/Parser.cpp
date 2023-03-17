@@ -4,9 +4,9 @@
 #include "Constant.h"
 #include "Declaration.h"
 #include "Expr.h"
+#include "lexer/Token.h"
 #include "Message.h"
 #include "Statement.h"
-#include "Token.h"
 
 Parser::Parser(const Input& input, bool preparse): lexer(input), preparse(preparse), symbols(preparse) {
     token = TokenKind(lexer.next_token());

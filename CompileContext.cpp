@@ -1,6 +1,6 @@
 #include "CompileContext.h"
 
-#include "ASTNode.h"
+#include "ast/ASTNode.h"
 #include "Message.h"
 
 thread_local CompileContext* CompileContext::it;

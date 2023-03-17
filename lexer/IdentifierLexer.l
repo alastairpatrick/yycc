@@ -7,7 +7,7 @@
 %option fast
 
 %top {
-#include "Token.h"
+#include "lexer/Token.h"
 %}
 
 

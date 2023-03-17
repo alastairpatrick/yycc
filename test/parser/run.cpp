@@ -1,11 +1,11 @@
 #include "nlohmann/json.hpp"
 
-#include "ASTNode.h"
+#include "ast/ASTNode.h"
+#include "ast/Expr.h"
+#include "ast/Declaration.h"
+#include "ast/Parser.h"
+#include "ast/Statement.h"
 #include "CompileContext.h"
-#include "Expr.h"
-#include "Declaration.h"
-#include "Parser.h"
-#include "Statement.h"
 
 using json = nlohmann::json;
 
