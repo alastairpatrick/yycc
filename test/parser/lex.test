@@ -22,24 +22,25 @@ EXPECT_AST
 
 BEGIN Unterminated comment
 1 /* foo
-EXPECT_AST
-"Si1"
 EXPECT_MESSAGE
 :1:1: error unterminated comment
+EXPECT_AST
+"Si1"
 
 
 BEGIN Skips unexpected character
 @ 1
-EXPECT_AST
-"Si1"
 EXPECT_MESSAGE
 :1:1: error unexpected character '@'
+EXPECT_AST
+"Si1"
 
 
 BEGIN Tab is 8 characters for message purposes
 	@ 1
 EXPECT_MESSAGE
 :1:9: error unexpected character '@'
+END
 
 
 BEGIN Skips pragma
@@ -71,6 +72,7 @@ BEGIN Line directive resets line
 @
 EXPECT_MESSAGE
 :7:1: error unexpected character '@'
+END
 
 
 BEGIN Line directive resets line and optionally filename
@@ -79,6 +81,7 @@ BEGIN Line directive resets line and optionally filename
 @
 EXPECT_MESSAGE
 foo.c:7:1: error unexpected character '@'
+END
 
 
 BEGIN Line directive filename is unescaped
@@ -87,6 +90,7 @@ BEGIN Line directive filename is unescaped
 @
 EXPECT_MESSAGE
 \foo.c:7:1: error unexpected character '@'
+END
 
 
 BEGIN Invalid line in line directive (1)
@@ -94,6 +98,7 @@ BEGIN Invalid line in line directive (1)
 #line "foo.c" 7
 EXPECT_MESSAGE
 :2:7: error unexpected token in directive
+END
 
 
 BEGIN Invalid line in line directive (1)
@@ -101,6 +106,7 @@ BEGIN Invalid line in line directive (1)
 #line 0 "foo.c"
 EXPECT_MESSAGE
 :2:7: error unexpected token in directive
+END
 
 
 BEGIN Invalid file in line directive
@@ -108,6 +114,7 @@ BEGIN Invalid file in line directive
 #line 7 13
 EXPECT_MESSAGE
 :2:9: error unexpected token in directive
+END
 
 
 BEGIN Extra tokens in line directive
@@ -115,6 +122,7 @@ BEGIN Extra tokens in line directive
 #line 7 "foo.c" 123
 EXPECT_MESSAGE
 :2:17: error unexpected token in directive
+END
 
 
 BEGIN Error directive

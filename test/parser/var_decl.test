@@ -187,7 +187,7 @@ static x;
 DECLARATIONS
 EXPECT_MESSAGE
 :1:8: error typedef 'x' undefined
-EXPECT_AST
+END
 
 
 BEGIN Error on duplicate type specifiers (except long)

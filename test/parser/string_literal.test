@@ -147,11 +147,13 @@ BEGIN Truncated digits (1)
 L"\U0000010"
 EXPECT_MESSAGE
 :1:1: error truncated character escape code
+END
 
 BEGIN Truncated digits (2)
 "\x1"
 EXPECT_MESSAGE
 :1:1: error truncated character escape code
+END
 
 BEGIN UTF-8 2-byte string literal
 L"π"
@@ -167,3 +169,4 @@ BEGIN Unrecognized escape sequence
 "\y"
 EXPECT_MESSAGE
 :1:1: error unrecognized escape sequence
+END

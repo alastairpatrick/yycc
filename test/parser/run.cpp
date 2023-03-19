@@ -24,6 +24,7 @@ struct Test {
 
 enum Section {
     INITIAL,
+    NONE,
     INPUT,
     EXPECTED_AST,
     EXPECTED_TYPE,
@@ -158,6 +159,8 @@ bool run_parser_tests() {
                 if (line.length() >= 6) test_name = line.substr(6);
             } else if (line.substr(0, 10) == "EXPECT_AST") {
                 section = Section::EXPECTED_AST;
+            } else if (line.substr(0, 3) == "END") {
+                section = Section::NONE;
             } else if (line.substr(0, 11) == "EXPECT_TYPE") {
                 section = Section::EXPECTED_TYPE;
             } else if (line.substr(0, 14) == "EXPECT_MESSAGE") {
@@ -172,9 +175,10 @@ bool run_parser_tests() {
                 enabled_types[unsigned(TestType::DECLARATIONS)] = true;
                 ++num_enabled_types;
             } else {
-                if (!line.empty()) {
-                    if (section == INPUT || section == EXPECTED_MESSAGE) line += '\n';  // getline removes \n
-                    sections[section] += line;
+                if (section == EXPECTED_TYPE) {
+                    if (line.length()) sections[section] += line;
+                } else {
+                    sections[section] += line + "\n";
                 }
             }
         }
