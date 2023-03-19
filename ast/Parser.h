@@ -13,7 +13,7 @@ struct Parser {
     ASTNodeVector declarations;
     SymbolMap symbols;
 
-    Parser(const Input& input, bool preparse);
+    Parser(string_view input, bool preparse);
     void operator=(const Parser&) = delete;
 
     Expr* parse_expr(int min_prec);

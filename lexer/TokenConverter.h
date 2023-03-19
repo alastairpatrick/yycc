@@ -9,7 +9,9 @@
 #include "Token.h"
 
 struct TokenConverter {
-    explicit TokenConverter(const Input& input): source(input) {}
+    explicit TokenConverter(string_view view): source(view) {
+    }
+
     void operator=(const TokenConverter&) = delete;
 
     int next_token();

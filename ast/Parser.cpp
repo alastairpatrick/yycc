@@ -8,7 +8,7 @@
 #include "Message.h"
 #include "Statement.h"
 
-Parser::Parser(const Input& input, bool preparse): lexer(input), preparse(preparse), symbols(preparse) {
+Parser::Parser(string_view input, bool preparse): lexer(input), preparse(preparse), symbols(preparse) {
     token = TokenKind(lexer.next_token());
 }
 

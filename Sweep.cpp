@@ -1,7 +1,7 @@
 #include "ast/Declaration.h"
 #include "ast/Parser.h"
 #include "ast/SymbolMap.h"
-#include "PPTokenLexer.yy.h"
+#include "lexer/TokenConverter.h"
 
 struct DeclarationMarker {
     DeclarationMarker(const ASTNodeVector& declarations, const SymbolMap& symbols): declarations(declarations), symbols(symbols) {
@@ -27,13 +27,13 @@ struct DeclarationMarker {
             auto declaration = *it;
             assert(declaration->text.length());
 
-            PPTokenLexer lexer(Input(declaration->text.data(), declaration->text.length()));
+            PPTokenLexerSource lexer(declaration->text);
             for (;;) {
                 TokenKind token = TokenKind(lexer.next_token());
                 if (!token) break;
                 if (token != TOK_IDENTIFIER) continue;
 
-                Identifier id(string_view(lexer.matcher().begin(), lexer.size()));
+                Identifier id(lexer.text());
                 lookup(false, id);
                 lookup(true, id);
             }
@@ -53,21 +53,63 @@ struct DeclarationMarker {
         }
     }
 
-    bool is_marked(const ASTNode* declaration) {
+    bool is_marked(const ASTNode* declaration) const {
         return marked.find(declaration) != marked.end();
     }
 };
 
-void sweep(ostream& stream, const string& translation_unit) {
-    Parser parser(Input(translation_unit), true);
+void sweep(ostream& stream, string_view input) {
+    Parser parser(input, true);
     parser.parse_unit();
 
     DeclarationMarker marker(parser.declarations, parser.symbols);
     marker.mark("");
 
-    for (auto declaration: parser.declarations) {
+    TokenConverter lexer(input);
+    auto token = TokenKind(lexer.next_token());
+    auto line = 1;
+    auto col = 1;
+    string_view filename;
+
+    for (auto declaration : parser.declarations) {
         if (!marker.is_marked(declaration)) continue;
+
+        while (token && lexer.text().data() < declaration->text.data()) {
+            token = TokenKind(lexer.next_token());
+        }
+
+        while (token && lexer.text().data() < (declaration->text.data() + declaration->text.length())) {
+            auto location = lexer.location();
+
+            if (location.filename != filename) {
+                stream << "\n#line " << location.line << " \"" << location.filename << "\"\n";
+                line = location.line;
+                col = 1;
+                filename = location.filename;
+            } else if (location.line - line < 5) {
+                while (location.line > line) {
+                    stream << '\n';
+                    ++line;
+                    col = 1;
+                }
+            } else if (location.line != line) {
+                stream << "\n#line " << location.line << "\n";
+                line = location.line;
+                col = 1;
+            }
+
+            while (col < location.column) {
+                stream << ' ';
+                ++col;
+            }
+
+            stream << lexer.text();
+            col += lexer.text().size();
         
-        stream << declaration->text;
+            token = TokenKind(lexer.next_token());
+        }
+
+        if (!token) break;
     }
+
 }

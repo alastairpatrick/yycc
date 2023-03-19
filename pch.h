@@ -47,6 +47,7 @@ using std::min;
 using std::move;
 using std::ostream;
 using std::pair;
+using std::remove_if;
 using std::stack;
 using std::string;
 using std::stringstream;

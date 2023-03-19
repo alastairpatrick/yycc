@@ -30,6 +30,8 @@ add_library(lang_lib STATIC
     "lexer/PPTokenLexerSource.cpp"
     "lexer/TokenConverter.cpp"
 
+    "Sweep.cpp"
+
     "${CMAKE_CURRENT_BINARY_DIR}/PPNumberLexer.yy.cpp"
     "${CMAKE_CURRENT_BINARY_DIR}/PPTokenLexer.yy.cpp"
     "${CMAKE_CURRENT_BINARY_DIR}/IdentifierLexer.yy.cpp"
@@ -86,7 +88,7 @@ add_executable(lang
 
 target_link_libraries(lang PRIVATE lang_lib)
 
+add_subdirectory(command)
 add_subdirectory(test)
 add_subdirectory(third_party)
-add_subdirectory(yycpp)
 add_subdirectory(yyct)

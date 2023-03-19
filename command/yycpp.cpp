@@ -1,6 +1,6 @@
 #include "CompileContext.h"
 
-void sweep(ostream& stream, const string& translation_unit);
+void sweep(ostream& stream, string_view input);
 
 static string remap_chars(FILE* file) {
     Input file_input(file);
@@ -58,7 +58,9 @@ int main(int argc, const char* argv[]) {
 
             fstream out_file(string(argv[i]) + "~", ios_base::out | ios_base::trunc | ios_base::binary);
             
-            sweep(out_file, unit);
+            string_view view(unit);
+
+            sweep(out_file, view);
         }
     }
 }

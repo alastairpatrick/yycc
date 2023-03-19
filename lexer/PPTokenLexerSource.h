@@ -6,7 +6,10 @@
 #include "Token.h"
 
 struct PPTokenLexerSource {
-  explicit PPTokenLexerSource(const Input& input);
+  explicit PPTokenLexerSource(string_view view) {
+      lexer.buffer((char*) view.data(), view.size() + 1);
+  }
+
   void operator=(const PPTokenLexerSource&) = delete;
 
   TokenKind next_token() {
@@ -19,10 +22,6 @@ struct PPTokenLexerSource {
 
   Input token_input() const {
       return Input(lexer.matcher().begin(), lexer.size());
-  }
-
-  size_t byte_offset() const {
-      return lexer.matcher().first();
   }
 
   Location location() const {

@@ -599,6 +599,8 @@ class AbstractMatcher {
   {
     if (chr_ == '\0')
     {
+      // TODO: changed
+      assert(false);
       chr_ = txt_[len_];
       txt_[len_] = '\0';
     }
@@ -1565,6 +1567,8 @@ class AbstractMatcher {
   {
     if (chr_ != '\0')
     {
+      // TODO: changed
+      assert(false);
       txt_[len_] = chr_;
       chr_ = '\0';
     }
