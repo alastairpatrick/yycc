@@ -112,4 +112,5 @@ void sweep(ostream& stream, string_view input) {
         if (!token) break;
     }
 
+    stream << '\n';
 }

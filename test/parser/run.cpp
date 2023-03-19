@@ -13,6 +13,7 @@ enum class TestType {
     EXPRESSION,
     DECLARATIONS,
     PREPARSE,
+    PREPROCESS,
 
     NUM
 };
@@ -29,10 +30,13 @@ enum Section {
     EXPECTED_AST,
     EXPECTED_TYPE,
     EXPECTED_MESSAGE,
+    EXPECTED_TEXT,
     NUM_SECTIONS,
 };
 
 static const Test tests[] = {
+    { "preprocess",         TestType::PREPROCESS },
+
     { "typedef",            TestType::PREPARSE },
     { "var_decl",           TestType::PREPARSE },
     { "fun_decl",           TestType::PREPARSE },
@@ -67,6 +71,8 @@ ASTNodeVector parse_declarations(const string& input, bool preparse) {
     return move(parser.declarations);
 }
 
+void sweep(ostream& stream, string_view input);
+
 static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], const string& name, const string& file, int line) {
     //try {
         stringstream message_stream;
@@ -80,6 +86,8 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
                 type = expr->get_type();
             }
             output_stream << expr;
+        } else if (test_type == TestType::PREPROCESS) {
+            sweep(output_stream, sections[INPUT]);
         } else {
             auto statements = parse_declarations(sections[INPUT], test_type == TestType::PREPARSE);
             output_stream << statements;
@@ -109,6 +117,14 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
                 return false;
             }
         }
+
+        if (!sections[EXPECTED_TEXT].empty()) {
+            if (output_stream.str() != sections[EXPECTED_TEXT]) {
+                print_error(name, file, line) << "Expected text: " << sections[EXPECTED_TEXT] << "\n  Actual text: " << output_stream.str() << "\n";
+                return false;
+            }
+        }
+
     //} catch (exception& e) {
     //	print_error(name, file, line) << "Exception thrown: " << e.what() << "\n";
     //	return false;
@@ -165,14 +181,19 @@ bool run_parser_tests() {
                 section = Section::EXPECTED_TYPE;
             } else if (line.substr(0, 14) == "EXPECT_MESSAGE") {
                 section = Section::EXPECTED_MESSAGE;
+            } else if (line.substr(0, 11) == "EXPECT_TEXT") {
+                section = Section::EXPECTED_TEXT;
             } else if (line.substr(0, 10) == "EXPRESSION") {
                 enabled_types[unsigned(TestType::EXPRESSION)] = true;
+                ++num_enabled_types;
+            } else if (line.substr(0, 12) == "DECLARATIONS") {
+                enabled_types[unsigned(TestType::DECLARATIONS)] = true;
                 ++num_enabled_types;
             } else if (line.substr(0, 8) == "PREPARSE") {
                 enabled_types[unsigned(TestType::PREPARSE)] = true;
                 ++num_enabled_types;
-            } else if (line.substr(0, 12) == "DECLARATIONS") {
-                enabled_types[unsigned(TestType::DECLARATIONS)] = true;
+            } else if (line.substr(0, 10) == "PREPROCESS") {
+                enabled_types[unsigned(TestType::PREPROCESS)] = true;
                 ++num_enabled_types;
             } else {
                 if (section == EXPECTED_TYPE) {

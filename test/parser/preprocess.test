@@ -1,0 +1,6 @@
+BEGIN preprocess
+void foo() {}
+PREPROCESS
+EXPECT_TEXT
+void foo() {}
+END
