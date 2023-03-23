@@ -1,11 +1,11 @@
-#include "TokenConverter.h"
+#include "Preprocessor.h"
 
 #include "Message.h"
 #include "Identifier.h"
 
 string unescape_string(string_view text, const Location& location);
 
-int TokenConverter::next_token() {
+int Preprocessor::next_token() {
     for (;;) {
         next_token_internal();
         switch (token) {
@@ -33,7 +33,7 @@ int TokenConverter::next_token() {
     }
 }
 
-void TokenConverter::handle_directive() {
+void Preprocessor::handle_directive() {
     next_token_internal();
     switch (token) {
         default: {
@@ -61,7 +61,7 @@ void TokenConverter::handle_directive() {
     skip_to_eol();
 }
 
-void TokenConverter::handle_error_directive() {
+void Preprocessor::handle_error_directive() {
     auto& stream = message(Severity::ERROR, location());
     next_token_internal();
     auto begin = source.text().data();
@@ -74,7 +74,7 @@ void TokenConverter::handle_error_directive() {
     stream << string_view(begin, end - begin) << '\n';
 }
 
-void TokenConverter::handle_line_directive() {
+void Preprocessor::handle_line_directive() {
     next_token_internal();
 
     if (token != TOK_PP_NUMBER) return;
@@ -99,21 +99,21 @@ void TokenConverter::handle_line_directive() {
     }
 }
 
-void TokenConverter::handle_pragma_directive() {
+void Preprocessor::handle_pragma_directive() {
     skip_to_eol();
 }
 
-void TokenConverter::skip_to_eol() {
+void Preprocessor::skip_to_eol() {
     while (token && token != '\n') {
         next_token_internal();
     }
 }
 
-TokenKind TokenConverter::next_token_internal() {
+TokenKind Preprocessor::next_token_internal() {
     return token = source.next_token();
 }
 
-Identifier TokenConverter::identifier() const
+Identifier Preprocessor::identifier() const
 {
     return Identifier(text());
 }

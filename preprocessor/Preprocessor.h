@@ -1,18 +1,18 @@
-#ifndef LEXER_TOKEN_CONVERTER_H
-#define LEXER_TOKEN_CONVERTER_H
+#ifndef PREPROCESSOR_PREPROCESSOR_H
+#define PREPROCESSOR_PREPROCESSOR_H
 
 #include "Identifier.h"
 #include "IdentifierLexer.yy.h"
+#include "lexer/Location.h"
+#include "lexer/PPTokenLexerSource.h"
+#include "lexer/Token.h"
 #include "PPNumberLexer.yy.h"
-#include "PPTokenLexerSource.h"
-#include "Location.h"
-#include "Token.h"
 
-struct TokenConverter {
-    explicit TokenConverter(string_view view): source(view) {
+struct Preprocessor {
+    explicit Preprocessor(string_view view): source(view) {
     }
 
-    void operator=(const TokenConverter&) = delete;
+    void operator=(const Preprocessor&) = delete;
 
     int next_token();
 
@@ -24,7 +24,7 @@ struct TokenConverter {
         return source.location();
     }
 
-    Identifier TokenConverter::identifier() const;
+    Identifier identifier() const;
 
 private:
     TokenKind next_token_internal();

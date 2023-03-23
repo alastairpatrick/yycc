@@ -8,18 +8,18 @@
 #include "Message.h"
 #include "Statement.h"
 
-Parser::Parser(string_view input, bool preparse): lexer(input), preparse(preparse), symbols(preparse) {
-    token = TokenKind(lexer.next_token());
+Parser::Parser(string_view input, bool preparse): preprocessor(input), preparse(preparse), symbols(preparse) {
+    token = TokenKind(preprocessor.next_token());
 }
 
 void Parser::consume() {
-    token = TokenKind(lexer.next_token());
+    token = TokenKind(preprocessor.next_token());
 }
 
 bool Parser::consume(int t, Location* location) {
     if (token != t) return false;
     if (location) {
-        *location = lexer.location();
+        *location = preprocessor.location();
     }
     consume();
     return true;
@@ -31,7 +31,7 @@ bool Parser::require(int t, Location* location) {
     }
     if (token == t) {
         if (location) {
-            *location = lexer.location();
+            *location = preprocessor.location();
         }
         consume();
         return true;
@@ -40,12 +40,12 @@ bool Parser::require(int t, Location* location) {
 }
 
 void Parser::skip() {
-    message(Severity::ERROR, lexer.location()) << "unexpected token\n";
+    message(Severity::ERROR, preprocessor.location()) << "unexpected token\n";
     consume();
 }
 
 const char* Parser::data() const {
-    return lexer.text().data();
+    return preprocessor.text().data();
 }
 
 string_view Parser::end_text(const char* begin) const {
@@ -64,13 +64,13 @@ OperatorPrec Parser::prec() {
 
 bool Parser::check_eof() {
     if (token == TOK_EOF) return true;
-    message(Severity::ERROR, lexer.location()) << "expected end of file\n";
+    message(Severity::ERROR, preprocessor.location()) << "expected end of file\n";
     return false;
 }
 
 Expr* Parser::parse_expr(int min_prec) {
     Location loc;
-    auto begin_text = lexer.text().data();
+    auto begin_text = preprocessor.text().data();
 
     auto result = parse_cast_expr();
 
@@ -94,7 +94,7 @@ Expr* Parser::parse_expr(int min_prec) {
             case '*':
             case '/':
             case '%':
-                loc = lexer.location();
+                loc = preprocessor.location();
                 op = BinaryOp(token);
                 consume();
                 break;
@@ -118,30 +118,30 @@ Expr* Parser::parse_cast_expr() {
 
     while (token) {
         if (token == TOK_BIN_INT_LITERAL || token == TOK_OCT_INT_LITERAL || token == TOK_DEC_INT_LITERAL || token == TOK_HEX_INT_LITERAL || token == TOK_CHAR_LITERAL) {
-            result = IntegerConstant::of(lexer.text(), token, lexer.location());
+            result = IntegerConstant::of(preprocessor.text(), token, preprocessor.location());
             consume();
             break;
         }
         else if (token == TOK_DEC_FLOAT_LITERAL || token == TOK_HEX_FLOAT_LITERAL) {
-            result = FloatingPointConstant::of(lexer.text(), token, lexer.location());
+            result = FloatingPointConstant::of(preprocessor.text(), token, preprocessor.location());
             consume();
             break;
         }
         else if (token == TOK_STRING_LITERAL) {
-            result = StringConstant::of(lexer.text(), lexer.location());
+            result = StringConstant::of(preprocessor.text(), preprocessor.location());
             consume();
             break;
         }
         else if (token == TOK_IDENTIFIER) {
-            Declarator* declarator = symbols.lookup_declarator(false, lexer.identifier());
+            Declarator* declarator = symbols.lookup_declarator(false, preprocessor.identifier());
             if (declarator) {
                 // TokenKind would have to be TOK_TYPEDEF_IDENTIFIER for declarator to be a typedef.
                 assert(!dynamic_cast<TypeDef*>(declarator));
 
-                result = new NameExpr(declarator, lexer.location());
+                result = new NameExpr(declarator, preprocessor.location());
             } else {
-                message(Severity::ERROR, lexer.location()) << '\'' << lexer.identifier() << "' undeclared\n";
-                result = IntegerConstant::default_expr(lexer.location());
+                message(Severity::ERROR, preprocessor.location()) << '\'' << preprocessor.identifier() << "' undeclared\n";
+                result = IntegerConstant::default_expr(preprocessor.location());
             }
             consume();
             break;
@@ -157,8 +157,8 @@ Expr* Parser::parse_cast_expr() {
 
     if (!result) {
         assert(token == TOK_EOF);
-        message(Severity::ERROR, lexer.location()) << "unexpected end of file\n";
-        result = IntegerConstant::default_expr(lexer.location());
+        message(Severity::ERROR, preprocessor.location()) << "unexpected end of file\n";
+        result = IntegerConstant::default_expr(preprocessor.location());
     }
 
     result->text = end_text(begin_text);
@@ -172,7 +172,7 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
     const uint32_t type_specifier_mask = ~(storage_class_mask | type_qualifier_mask | function_specifier_mask);
 
     Location storage_class_location;
-    Location type_specifier_location = lexer.location();
+    Location type_specifier_location = preprocessor.location();
     Location function_specifier_location;
     Location qualifier_location;
     uint32_t specifier_set = 0;
@@ -183,7 +183,7 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
         if (token == TOK_LONG) {
             ++num_longs;
             if (num_longs > 2) {
-                message(Severity::ERROR, lexer.location()) << "invalid type specifier combination\n";
+                message(Severity::ERROR, preprocessor.location()) << "invalid type specifier combination\n";
             }
             specifier_set &= ~(1 << token);
         }
@@ -196,7 +196,7 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
             case TOK_AUTO:
             case TOK_REGISTER: {
               should_consume = true;
-              storage_class_location = lexer.location();
+              storage_class_location = preprocessor.location();
               break;
 
           } case TOK_VOID:
@@ -211,33 +211,33 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
             case TOK_BOOL:
             case TOK_COMPLEX: {
               should_consume = true;
-              type_specifier_location = lexer.location();                
+              type_specifier_location = preprocessor.location();                
               break;
 
             } case TOK_IDENTIFIER: {
               if ((specifier_set & type_specifier_mask) == 0) {
                   const Type* typedef_type;
-                  typedef_type = symbols.lookup_type(false, lexer.identifier());
+                  typedef_type = symbols.lookup_type(false, preprocessor.identifier());
                   if (!typedef_type) {
                       if (scope != IdentifierScope::FILE) break;
 
                       if (preparse) {
-                          typedef_type = NamedType::of(TypeNameKind::ORDINARY, lexer.identifier());
+                          typedef_type = NamedType::of(TypeNameKind::ORDINARY, preprocessor.identifier());
                       } else {
-                          message(Severity::ERROR, lexer.location()) << "typedef \'" << lexer.identifier() << "' undefined\n";
+                          message(Severity::ERROR, preprocessor.location()) << "typedef \'" << preprocessor.identifier() << "' undefined\n";
                           typedef_type = IntegerType::default_type();
                       }
                   }
 
                   type = typedef_type;
                   should_consume = true;
-                  type_specifier_location = lexer.location();                
+                  type_specifier_location = preprocessor.location();                
               }
               break;
 
           } case TOK_INLINE: {
               should_consume = true;
-              function_specifier_location = lexer.location();
+              function_specifier_location = preprocessor.location();
               specifier_set &= ~(1 << token); // function speficiers may be repeated
               break;
 
@@ -245,7 +245,7 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
             case TOK_RESTRICT:
             case TOK_VOLATILE: {
               should_consume = true;
-              qualifier_location = lexer.location();
+              qualifier_location = preprocessor.location();
               specifier_set &= ~(1 << token); // qualifiers may be repeated
               break;
           }
@@ -255,7 +255,7 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
             assert(token < 32);
             is_declaration = true;
             if (specifier_set & (1 << token)) {
-                message(Severity::ERROR, lexer.location()) << "invalid declaration specifier or type qualifier combination\n";
+                message(Severity::ERROR, preprocessor.location()) << "invalid declaration specifier or type qualifier combination\n";
             }
             specifier_set |= 1 << token;
             consume();
@@ -373,7 +373,7 @@ void Parser::parse_unit() {
 }
 
 ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
-    auto location = lexer.location();
+    auto location = preprocessor.location();
     auto begin_text = data();
 
     StorageClass storage_class = StorageClass::NONE;
@@ -388,7 +388,7 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
             auto declarator = parse_declarator(declaration, specifiers, declarator_count == 0, location, &last_declarator);
 
             if (declarator->identifier.name->empty()) {
-                message(Severity::ERROR, lexer.location()) << "expected identifier\n";
+                message(Severity::ERROR, preprocessor.location()) << "expected identifier\n";
             } else {
                 declaration->declarators.push_back(declarator);
                 ++declarator_count;
@@ -426,7 +426,7 @@ CompoundStatement* Parser::parse_compound_statement() {
     auto begin_text = data();
     ASTNodeVector list;
     if (preparse) {
-        Location loc = lexer.location();
+        Location loc = preprocessor.location();
         auto count = 0;
         do {
             if (token == '{') {
@@ -449,7 +449,7 @@ CompoundStatement* Parser::parse_compound_statement() {
         }
 
         // Must pop scope before consuming '}' in case '}' is immediately followed by an identifier that the
-        // lexer must correctly identify as TOK_IDENTIFIER or TOK_TYPEDEF_IDENTIFIER.
+        // preprocessor must correctly identify as TOK_IDENTIFIER or TOK_TYPEDEF_IDENTIFIER.
         symbols.pop_scope();
 
         require('}');
@@ -462,7 +462,7 @@ CompoundStatement* Parser::parse_compound_statement() {
 }
 
 Declarator* Parser::parse_parameter_declarator() {
-    auto location = lexer.location();
+    auto location = preprocessor.location();
     auto begin_declaration_text = data();
 
     StorageClass storage_class = StorageClass::NONE;
@@ -512,7 +512,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, uint32_t specifie
             }
         }
 
-        auto identifier = lexer.identifier();
+        auto identifier = preprocessor.identifier();
         if (!consume(TOK_IDENTIFIER)) identifier.name = empty_interned_string;
 
         Expr* initializer{};

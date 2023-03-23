@@ -28,7 +28,7 @@ add_library(lang_lib STATIC
     "parser/TypeContext.cpp"
 
     "lexer/PPTokenLexerSource.cpp"
-    "lexer/TokenConverter.cpp"
+    "preprocessor/Preprocessor.cpp"
 
     "Sweep.cpp"
 

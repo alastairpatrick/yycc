@@ -1,7 +1,7 @@
 #include "parser/Declaration.h"
 #include "parser/Parser.h"
 #include "parser/SymbolMap.h"
-#include "lexer/TokenConverter.h"
+#include "preprocessor/Preprocessor.h"
 
 struct DeclarationMarker {
     DeclarationMarker(const ASTNodeVector& declarations, const SymbolMap& symbols): declarations(declarations), symbols(symbols) {
@@ -27,13 +27,13 @@ struct DeclarationMarker {
             auto declaration = *it;
             assert(declaration->text.length());
 
-            PPTokenLexerSource lexer(declaration->text);
+            PPTokenLexerSource preprocessor(declaration->text);
             for (;;) {
-                TokenKind token = TokenKind(lexer.next_token());
+                TokenKind token = TokenKind(preprocessor.next_token());
                 if (!token) break;
                 if (token != TOK_IDENTIFIER) continue;
 
-                Identifier id(lexer.text());
+                Identifier id(preprocessor.text());
                 lookup(false, id);
                 lookup(true, id);
             }
@@ -65,8 +65,8 @@ void sweep(ostream& stream, string_view input) {
     DeclarationMarker marker(parser.declarations, parser.symbols);
     marker.mark("");
 
-    TokenConverter lexer(input);
-    auto token = TokenKind(lexer.next_token());
+    Preprocessor preprocessor(input);
+    auto token = TokenKind(preprocessor.next_token());
     auto line = 1;
     auto col = 1;
     string_view filename;
@@ -74,12 +74,12 @@ void sweep(ostream& stream, string_view input) {
     for (auto declaration : parser.declarations) {
         if (!marker.is_marked(declaration)) continue;
 
-        while (token && lexer.text().data() < declaration->text.data()) {
-            token = TokenKind(lexer.next_token());
+        while (token && preprocessor.text().data() < declaration->text.data()) {
+            token = TokenKind(preprocessor.next_token());
         }
 
-        while (token && lexer.text().data() < (declaration->text.data() + declaration->text.length())) {
-            auto location = lexer.location();
+        while (token && preprocessor.text().data() < (declaration->text.data() + declaration->text.length())) {
+            auto location = preprocessor.location();
 
             if (location.filename != filename) {
                 stream << "\n#line " << location.line << " \"" << location.filename << "\"\n";
@@ -103,10 +103,10 @@ void sweep(ostream& stream, string_view input) {
                 ++col;
             }
 
-            stream << lexer.text();
-            col += lexer.text().size();
+            stream << preprocessor.text();
+            col += preprocessor.text().size();
         
-            token = TokenKind(lexer.next_token());
+            token = TokenKind(preprocessor.next_token());
         }
 
         if (!token) break;
