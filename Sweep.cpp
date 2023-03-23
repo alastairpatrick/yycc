@@ -2,6 +2,7 @@
 #include "parser/Parser.h"
 #include "parser/SymbolMap.h"
 #include "preprocessor/Preprocessor2.h"
+#include "TextStream.h"
 
 struct DeclarationMarker {
     DeclarationMarker(const ASTNodeVector& declarations, const SymbolMap& symbols): declarations(declarations), symbols(symbols) {
@@ -67,9 +68,8 @@ void sweep(ostream& stream, string_view input) {
 
     Preprocessor2 preprocessor(input);
     auto token = TokenKind(preprocessor.next_token());
-    auto line = 1;
-    auto col = 1;
-    string_view filename;
+
+    TextStream text_stream(stream);
 
     for (auto declaration : parser.declarations) {
         if (!marker.is_marked(declaration)) continue;
@@ -80,37 +80,13 @@ void sweep(ostream& stream, string_view input) {
 
         while (token && preprocessor.text().data() < (declaration->text.data() + declaration->text.length())) {
             auto location = preprocessor.location();
+            text_stream.write(preprocessor.text(), location);
 
-            if (location.filename != filename) {
-                stream << "\n#line " << location.line << " \"" << location.filename << "\"\n";
-                line = location.line;
-                col = 1;
-                filename = location.filename;
-            } else if (location.line - line < 5) {
-                while (location.line > line) {
-                    stream << '\n';
-                    ++line;
-                    col = 1;
-                }
-            } else if (location.line != line) {
-                stream << "\n#line " << location.line << "\n";
-                line = location.line;
-                col = 1;
-            }
-
-            while (col < location.column) {
-                stream << ' ';
-                ++col;
-            }
-
-            stream << preprocessor.text();
-            col += preprocessor.text().size();
-        
             token = TokenKind(preprocessor.next_token());
         }
 
         if (!token) break;
     }
 
-    stream << '\n';
+    text_stream.stream << "\n";
 }

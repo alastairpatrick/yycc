@@ -120,7 +120,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
 
         if (!sections[EXPECTED_TEXT].empty()) {
             if (output_stream.str() != sections[EXPECTED_TEXT]) {
-                print_error(name, file, line) << "Expected text: " << sections[EXPECTED_TEXT] << "\n  Actual text: " << output_stream.str() << "\n";
+                print_error(name, file, line) << "Expected text:\n" << sections[EXPECTED_TEXT] << "\n  Actual text:\n" << output_stream.str() << "\n";
                 return false;
             }
         }

@@ -34,6 +34,7 @@ add_library(lang_lib STATIC
     "preprocessor/Preprocessor2.cpp"
 
     "Sweep.cpp"
+    "TextStream.cpp"
 
     "${GENERATED_DIR}/PPNumberLexer.yy.cpp"
     "${GENERATED_DIR}/PPTokenLexer.yy.cpp"
