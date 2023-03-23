@@ -1,12 +1,12 @@
 #ifndef PREPROCESSOR_PREPROCESSOR_H
 #define PREPROCESSOR_PREPROCESSOR_H
 
+#include "generated/IdentifierLexer.yy.h"
+#include "generated/PPNumberLexer.yy.h"
 #include "Identifier.h"
-#include "IdentifierLexer.yy.h"
 #include "lexer/Location.h"
 #include "lexer/PPTokenLexerSource.h"
 #include "lexer/Token.h"
-#include "PPNumberLexer.yy.h"
 
 struct Preprocessor {
     explicit Preprocessor(string_view view): source(view) {

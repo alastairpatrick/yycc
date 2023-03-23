@@ -1,8 +1,8 @@
 #ifndef PP_TOKEN_LEXER_STREAM_H
 #define PP_TOKEN_LEXER_STREAM_H
 
+#include "generated/PPTokenLexer.yy.h"
 #include "Location.h"
-#include "PPTokenLexer.yy.h"
 #include "Token.h"
 
 struct PPTokenLexerSource {

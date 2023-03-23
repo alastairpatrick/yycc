@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 
+set(GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+
 add_library(lang_lib_c STATIC
     "assoc_prec.c"
 )
@@ -32,31 +34,31 @@ add_library(lang_lib STATIC
 
     "Sweep.cpp"
 
-    "${CMAKE_CURRENT_BINARY_DIR}/PPNumberLexer.yy.cpp"
-    "${CMAKE_CURRENT_BINARY_DIR}/PPTokenLexer.yy.cpp"
-    "${CMAKE_CURRENT_BINARY_DIR}/IdentifierLexer.yy.cpp"
+    "${GENERATED_DIR}/PPNumberLexer.yy.cpp"
+    "${GENERATED_DIR}/PPTokenLexer.yy.cpp"
+    "${GENERATED_DIR}/IdentifierLexer.yy.cpp"
 )
 
 target_precompile_headers(lang_lib PUBLIC "pch.h")
 
 add_custom_command(
     DEPENDS reflex lexer/PPTokenLexer.l
-    OUTPUT  PPTokenLexer.yy.cpp PPTokenLexer.yy.h
-    COMMAND reflex --header-file=PPTokenLexer.yy.h --outfile=PPTokenLexer.yy.cpp
+    OUTPUT  "${GENERATED_DIR}/PPTokenLexer.yy.cpp" "${GENERATED_DIR}/PPTokenLexer.yy.h"
+    COMMAND reflex "--header-file=${GENERATED_DIR}/PPTokenLexer.yy.h" "--outfile=${GENERATED_DIR}/PPTokenLexer.yy.cpp"
             ${CMAKE_CURRENT_SOURCE_DIR}/lexer/PPTokenLexer.l
 )
 
 add_custom_command(
     DEPENDS reflex lexer/IdentifierLexer.l
-    OUTPUT  IdentifierLexer.yy.cpp IdentifierLexer.yy.h
-    COMMAND reflex --header-file=IdentifierLexer.yy.h --outfile=IdentifierLexer.yy.cpp
+    OUTPUT  "${GENERATED_DIR}/IdentifierLexer.yy.cpp" "${GENERATED_DIR}/IdentifierLexer.yy.h"
+    COMMAND reflex "--header-file=${GENERATED_DIR}/IdentifierLexer.yy.h" "--outfile=${GENERATED_DIR}/IdentifierLexer.yy.cpp"
             ${CMAKE_CURRENT_SOURCE_DIR}/lexer/IdentifierLexer.l
 )
 
 add_custom_command(
     DEPENDS reflex lexer/PPNumberLexer.l
-    OUTPUT  PPNumberLexer.yy.cpp PPNumberLexer.yy.h
-    COMMAND reflex --header-file=PPNumberLexer.yy.h --outfile=PPNumberLexer.yy.cpp
+    OUTPUT  "${GENERATED_DIR}/PPNumberLexer.yy.cpp" "${GENERATED_DIR}/PPNumberLexer.yy.h"
+    COMMAND reflex "--header-file=${GENERATED_DIR}/PPNumberLexer.yy.h" "--outfile=${GENERATED_DIR}/PPNumberLexer.yy.cpp"
             ${CMAKE_CURRENT_SOURCE_DIR}/lexer/PPNumberLexer.l
 )
 

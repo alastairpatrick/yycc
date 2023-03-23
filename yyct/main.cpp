@@ -1,5 +1,5 @@
+#include "generated/PPTokenLexer.yy.h"
 #include "lexer/Token.h"
-#include "PPTokenLexer.yy.h"
 #include "Tokenizer.h"
 
 #define IDENTIFIER_HASHES 0

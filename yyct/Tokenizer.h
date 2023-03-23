@@ -1,8 +1,8 @@
 #ifndef TOKENIZER_H
 #define TOKENIZER_H
 
+#include "generated/PPTokenLexer.yy.h"
 #include "lexer/Token.h"
-#include "PPTokenLexer.yy.h"
 
 struct Tokenizer {
     Tokenizer() = default;
