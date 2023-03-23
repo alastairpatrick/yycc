@@ -30,6 +30,7 @@ protected:
     TokenKind next_token_internal();
     virtual void handle_directive() = 0;
     void skip_to_eol();
+    void require_eol();
 
     TokenKind token;
 

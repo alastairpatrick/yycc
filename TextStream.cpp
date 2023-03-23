@@ -5,6 +5,11 @@ TextStream::TextStream(ostream& stream): stream(stream) {
     current_location.column = 1;
 }
 
+void TextStream::write(string_view text) {
+    stream << text;
+    current_location.column += text.length();
+}
+
 void TextStream::write(string_view text, const Location& location) {
    if (location.filename != current_location.filename) {
         stream << "\n#line " << location.line << " \"" << location.filename << "\"\n";
@@ -27,6 +32,5 @@ void TextStream::write(string_view text, const Location& location) {
         ++current_location.column;
     }
 
-    stream << text;
-    current_location.column += text.length();
+    write(text);
 }

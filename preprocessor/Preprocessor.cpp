@@ -42,17 +42,21 @@ void Preprocessor::handle_directive() {
       }
     }
 
-    if (token != '\n') {
-        message(Severity::ERROR, location()) << "unexpected token in directive\n";
-    }
-
-    skip_to_eol();
+    require_eol();
 }
 
 void Preprocessor::skip_to_eol() {
     while (token && token != '\n') {
         next_token_internal();
     }
+}
+
+void Preprocessor::require_eol() {
+    if (token != '\n') {
+        message(Severity::ERROR, location()) << "unexpected token in directive\n";
+    }
+
+    skip_to_eol();
 }
 
 TokenKind Preprocessor::next_token_internal() {

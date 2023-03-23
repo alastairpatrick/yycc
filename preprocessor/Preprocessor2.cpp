@@ -11,16 +11,12 @@ void Preprocessor2::handle_directive() {
           handle_error_directive();
           break;
       } case TOK_PP_PRAGMA: {
-          handle_pragma_directive();
+          handle_pragma_directive(); 
           break;
       }
     }
 
-    if (token != '\n') {
-        message(Severity::ERROR, location()) << "unexpected token in directive\n";
-    }
-
-    skip_to_eol();
+    require_eol();
 }
 
 void Preprocessor2::handle_error_directive() {
