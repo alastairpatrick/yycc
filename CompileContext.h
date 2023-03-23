@@ -1,7 +1,7 @@
 #ifndef COMPILE_CONTEXT_H
 #define COMPILE_CONTEXT_H
 
-#include "ast/TypeContext.h"
+#include "parser/TypeContext.h"
 #include "InternedString.h"
 
 struct ASTNode;

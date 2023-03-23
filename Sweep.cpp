@@ -1,6 +1,6 @@
-#include "ast/Declaration.h"
-#include "ast/Parser.h"
-#include "ast/SymbolMap.h"
+#include "parser/Declaration.h"
+#include "parser/Parser.h"
+#include "parser/SymbolMap.h"
 #include "lexer/TokenConverter.h"
 
 struct DeclarationMarker {
