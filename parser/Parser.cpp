@@ -9,11 +9,11 @@
 #include "Statement.h"
 
 Parser::Parser(string_view input, bool preparse): preprocessor(input), preparse(preparse), symbols(preparse) {
-    token = TokenKind(preprocessor.next_token());
+    token = preprocessor.next_token();
 }
 
 void Parser::consume() {
-    token = TokenKind(preprocessor.next_token());
+    token = preprocessor.next_token();
 }
 
 bool Parser::consume(int t, Location* location) {

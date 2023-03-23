@@ -9,12 +9,9 @@
 #include "lexer/Token.h"
 
 struct Preprocessor {
-    explicit Preprocessor(string_view view): source(view) {
-    }
-
     void operator=(const Preprocessor&) = delete;
 
-    int next_token();
+    TokenKind next_token();
 
     string_view text() const {
         return source.text();
@@ -26,15 +23,18 @@ struct Preprocessor {
 
     Identifier identifier() const;
 
-private:
+protected:
+    explicit Preprocessor(string_view view): source(view) {
+    }
+
     TokenKind next_token_internal();
-    void handle_directive();
-    void handle_error_directive();
-    void handle_line_directive();
-    void handle_pragma_directive();
+    virtual void handle_directive() = 0;
     void skip_to_eol();
 
     TokenKind token;
+
+private:
+    void handle_line_directive();
 
     PPTokenLexerSource source;
     IdentifierLexer id_lexer;

@@ -31,6 +31,7 @@ add_library(lang_lib STATIC
 
     "lexer/PPTokenLexerSource.cpp"
     "preprocessor/Preprocessor.cpp"
+    "preprocessor/Preprocessor2.cpp"
 
     "Sweep.cpp"
 

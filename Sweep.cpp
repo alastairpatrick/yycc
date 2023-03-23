@@ -1,7 +1,7 @@
 #include "parser/Declaration.h"
 #include "parser/Parser.h"
 #include "parser/SymbolMap.h"
-#include "preprocessor/Preprocessor.h"
+#include "preprocessor/Preprocessor2.h"
 
 struct DeclarationMarker {
     DeclarationMarker(const ASTNodeVector& declarations, const SymbolMap& symbols): declarations(declarations), symbols(symbols) {
@@ -65,7 +65,7 @@ void sweep(ostream& stream, string_view input) {
     DeclarationMarker marker(parser.declarations, parser.symbols);
     marker.mark("");
 
-    Preprocessor preprocessor(input);
+    Preprocessor2 preprocessor(input);
     auto token = TokenKind(preprocessor.next_token());
     auto line = 1;
     auto col = 1;

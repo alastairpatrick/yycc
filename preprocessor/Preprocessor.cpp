@@ -5,7 +5,7 @@
 
 string unescape_string(string_view text, const Location& location);
 
-int Preprocessor::next_token() {
+TokenKind Preprocessor::next_token() {
     for (;;) {
         next_token_internal();
         switch (token) {
@@ -20,6 +20,7 @@ int Preprocessor::next_token() {
           } case '\n': {
               continue;
           } case '#': {
+              next_token_internal();
               handle_directive();
               continue;
           } case TOK_PP_UNRECOGNIZED: {
@@ -34,22 +35,9 @@ int Preprocessor::next_token() {
 }
 
 void Preprocessor::handle_directive() {
-    next_token_internal();
     switch (token) {
-        default: {
-          // All other directives should have been handled by the preprocessor.
-          assert(false);
-          break;
-      } case TOK_PP_ERROR: {
-          handle_error_directive();
-          break;
-      } case TOK_PP_LINE: {
+        case TOK_PP_LINE: {
           handle_line_directive();
-          break;
-      } case TOK_PP_PRAGMA: {
-          skip_to_eol();
-          break;
-      } case TOK_PP_UNRECOGNIZED: {
           break;
       }
     }
@@ -61,17 +49,19 @@ void Preprocessor::handle_directive() {
     skip_to_eol();
 }
 
-void Preprocessor::handle_error_directive() {
-    auto& stream = message(Severity::ERROR, location());
-    next_token_internal();
-    auto begin = source.text().data();
-    auto end = begin;
+void Preprocessor::skip_to_eol() {
     while (token && token != '\n') {
-        end = source.text().data() + source.text().size();
         next_token_internal();
     }
+}
 
-    stream << string_view(begin, end - begin) << '\n';
+TokenKind Preprocessor::next_token_internal() {
+    return token = source.next_token();
+}
+
+Identifier Preprocessor::identifier() const
+{
+    return Identifier(text());
 }
 
 void Preprocessor::handle_line_directive() {
@@ -97,23 +87,4 @@ void Preprocessor::handle_line_directive() {
     if (!filename.empty()) {
         source.set_filename(move(filename));
     }
-}
-
-void Preprocessor::handle_pragma_directive() {
-    skip_to_eol();
-}
-
-void Preprocessor::skip_to_eol() {
-    while (token && token != '\n') {
-        next_token_internal();
-    }
-}
-
-TokenKind Preprocessor::next_token_internal() {
-    return token = source.next_token();
-}
-
-Identifier Preprocessor::identifier() const
-{
-    return Identifier(text());
 }
