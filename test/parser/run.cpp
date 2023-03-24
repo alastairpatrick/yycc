@@ -58,38 +58,40 @@ static ostream& print_error(const string& name, const string& file, int line) {
     return cerr;
 }
 
-Expr* parse_expr(const string& input) {
-    Parser parser(input, false);
+Expr* parse_expr() {
+    Parser parser(false);
     auto result = parser.parse_expr(0);
     if (!parser.check_eof()) return nullptr;
     return result;
 }
 
-ASTNodeVector parse_declarations(const string& input, bool preparse) {
-    Parser parser(input, preparse);
+ASTNodeVector parse_declarations(bool preparse) {
+    Parser parser(preparse);
     parser.parse_unit();
     return move(parser.declarations);
 }
 
-void sweep(ostream& stream, string_view input);
+void sweep(ostream& stream);
 
 static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], const string& name, const string& file, int line) {
     //try {
         stringstream message_stream;
         CompileContext compile_context(message_stream);
 
+        CompileContext::it->lexer.input = sections[INPUT];
+
         const Type* type{};
         stringstream output_stream;
         if (test_type == TestType::EXPRESSION) {
-            auto expr = parse_expr(sections[INPUT]);
+            auto expr = parse_expr();
             if (!sections[EXPECTED_TYPE].empty()) {
                 type = expr->get_type();
             }
             output_stream << expr;
         } else if (test_type == TestType::PREPROCESS) {
-            sweep(output_stream, sections[INPUT]);
+            sweep(output_stream);
         } else {
-            auto statements = parse_declarations(sections[INPUT], test_type == TestType::PREPARSE);
+            auto statements = parse_declarations(test_type == TestType::PREPARSE);
             output_stream << statements;
         }
 

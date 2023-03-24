@@ -9,8 +9,6 @@
 // the text of a declaration can be held in a single string_view, since it cannot span multiple files. It still handles other directives not handled or only
 // partially handled by Preprocessor1, such as #error, some #pragma, etc.
 struct Preprocessor2: Preprocessor {
-    explicit Preprocessor2(string_view content): Preprocessor(content) {}
-
 protected:
     virtual void handle_directive();
     void handle_error_directive();

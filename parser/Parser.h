@@ -13,7 +13,7 @@ struct Parser {
     ASTNodeVector declarations;
     SymbolMap symbols;
 
-    Parser(string_view input, bool preparse);
+    explicit Parser(bool preparse);
     void operator=(const Parser&) = delete;
 
     Expr* parse_expr(int min_prec);
@@ -29,8 +29,8 @@ private:
     bool consume(int t, Location* location = nullptr);
     bool require(int t, Location* location = nullptr);
     void skip();
-    const char* data() const;
-    string_view end_text(const char* begin) const;
+    size_t position() const;
+    Fragment end_fragment(size_t begin_position) const;
     OperatorAssoc assoc();
     OperatorPrec prec();
 

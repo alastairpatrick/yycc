@@ -1,6 +1,7 @@
 #include "CompileContext.h"
+#include "lexer/Fragment.h"
 
-void sweep(ostream& stream, string_view input);
+void sweep(ostream& stream);
 
 static string remap_chars(FILE* file) {
     Input file_input(file);
@@ -51,16 +52,16 @@ int main(int argc, const char* argv[]) {
             ++errors;
         } else {
             // Translation phases 1 - 3
-            string unit = remap_chars(in_file);
+            string input = remap_chars(in_file);
             fclose(in_file);
 
-            splice_physical_lines(unit);
+            splice_physical_lines(input);
+
+            CompileContext::it->lexer.input = input;
 
             fstream out_file(string(argv[i]) + "~", ios_base::out | ios_base::trunc | ios_base::binary);
-            
-            string_view view(unit);
 
-            sweep(out_file, view);
+            sweep(out_file);
         }
     }
 }

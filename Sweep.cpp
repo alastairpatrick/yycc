@@ -26,15 +26,16 @@ struct DeclarationMarker {
         while (todo.size()) {
             auto it = todo.begin();
             auto declaration = *it;
-            assert(declaration->text.length());
+            assert(declaration->fragment.length);
 
-            PPTokenLexerSource preprocessor(declaration->text);
+            PPTokenLexerSource lexer;
+            lexer.set_input(declaration->fragment);
             for (;;) {
-                TokenKind token = TokenKind(preprocessor.next_token());
+                TokenKind token = TokenKind(lexer.next_token());
                 if (!token) break;
                 if (token != TOK_IDENTIFIER) continue;
 
-                Identifier id(preprocessor.text());
+                Identifier id(lexer.fragment().text());
                 lookup(false, id);
                 lookup(true, id);
             }
@@ -59,14 +60,15 @@ struct DeclarationMarker {
     }
 };
 
-void sweep(ostream& stream, string_view input) {
-    Parser parser(input, true);
+void sweep(ostream& stream) {
+    Parser parser(true);
     parser.parse_unit();
 
     DeclarationMarker marker(parser.declarations, parser.symbols);
     marker.mark("");
 
-    Preprocessor2 preprocessor(input);
+    Preprocessor2 preprocessor;
+    preprocessor.set_input(Fragment::context());
     auto token = TokenKind(preprocessor.next_token());
 
     TextStream text_stream(stream);
@@ -74,13 +76,13 @@ void sweep(ostream& stream, string_view input) {
     for (auto declaration : parser.declarations) {
         if (!marker.is_marked(declaration)) continue;
 
-        while (token && preprocessor.text().data() < declaration->text.data()) {
+        while (token && preprocessor.fragment().position < declaration->fragment.position) {
             token = TokenKind(preprocessor.next_token());
         }
 
-        while (token && preprocessor.text().data() < (declaration->text.data() + declaration->text.length())) {
+        while (token && preprocessor.fragment().position < (declaration->fragment.position + declaration->fragment.length)) {
             auto location = preprocessor.location();
-            text_stream.write(preprocessor.text(), location);
+            text_stream.write(preprocessor.fragment().text(), location);
 
             token = TokenKind(preprocessor.next_token());
         }

@@ -1,6 +1,7 @@
 #ifndef COMPILE_CONTEXT_H
 #define COMPILE_CONTEXT_H
 
+#include "lexer/LexerContext.h"
 #include "parser/TypeContext.h"
 #include "InternedString.h"
 
@@ -16,6 +17,7 @@ struct CompileContext {
     ostream& message_stream;
 
     TypeContext type;
+    LexerContext lexer;
 
     list<string> interned_strings; // TODO: bump allocator
     unordered_set<string_view> interned_views;

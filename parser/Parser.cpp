@@ -8,7 +8,8 @@
 #include "Message.h"
 #include "Statement.h"
 
-Parser::Parser(string_view input, bool preparse): preprocessor(input), preparse(preparse), symbols(preparse) {
+Parser::Parser(bool preparse): preparse(preparse), symbols(preparse) {
+    preprocessor.set_input(Fragment::context());
     token = preprocessor.next_token();
 }
 
@@ -44,12 +45,12 @@ void Parser::skip() {
     consume();
 }
 
-const char* Parser::data() const {
-    return preprocessor.text().data();
+size_t Parser::position() const {
+    return preprocessor.fragment().position;
 }
 
-string_view Parser::end_text(const char* begin) const {
-    return string_view(begin, data() - begin);
+Fragment Parser::end_fragment(size_t begin_position) const {
+    return Fragment(begin_position, position() - begin_position);
 }
 
 OperatorAssoc Parser::assoc() {
@@ -70,7 +71,7 @@ bool Parser::check_eof() {
 
 Expr* Parser::parse_expr(int min_prec) {
     Location loc;
-    auto begin_text = preprocessor.text().data();
+    auto begin = position();
 
     auto result = parse_cast_expr();
 
@@ -106,7 +107,7 @@ Expr* Parser::parse_expr(int min_prec) {
             result = new BinaryExpr(result, right, op, loc);
         }
 
-        result->text = end_text(begin_text);
+        result->fragment = end_fragment(begin);
     }
 
     return result;
@@ -114,21 +115,21 @@ Expr* Parser::parse_expr(int min_prec) {
 
 Expr* Parser::parse_cast_expr() {
     Expr* result{};
-    auto begin_text = data();
+    auto begin = position();
 
     while (token) {
         if (token == TOK_BIN_INT_LITERAL || token == TOK_OCT_INT_LITERAL || token == TOK_DEC_INT_LITERAL || token == TOK_HEX_INT_LITERAL || token == TOK_CHAR_LITERAL) {
-            result = IntegerConstant::of(preprocessor.text(), token, preprocessor.location());
+            result = IntegerConstant::of(preprocessor.fragment().text(), token, preprocessor.location());
             consume();
             break;
         }
         else if (token == TOK_DEC_FLOAT_LITERAL || token == TOK_HEX_FLOAT_LITERAL) {
-            result = FloatingPointConstant::of(preprocessor.text(), token, preprocessor.location());
+            result = FloatingPointConstant::of(preprocessor.fragment().text(), token, preprocessor.location());
             consume();
             break;
         }
         else if (token == TOK_STRING_LITERAL) {
-            result = StringConstant::of(preprocessor.text(), preprocessor.location());
+            result = StringConstant::of(preprocessor.fragment().text(), preprocessor.location());
             consume();
             break;
         }
@@ -151,7 +152,7 @@ Expr* Parser::parse_cast_expr() {
         }
         else {
             skip();
-            begin_text = data();
+            begin = position();
         }
     }
 
@@ -161,7 +162,7 @@ Expr* Parser::parse_cast_expr() {
         result = IntegerConstant::default_expr(preprocessor.location());
     }
 
-    result->text = end_text(begin_text);
+    result->fragment = end_fragment(begin);
     return result;
 }
 
@@ -374,7 +375,7 @@ void Parser::parse_unit() {
 
 ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
     auto location = preprocessor.location();
-    auto begin_text = data();
+    auto begin = position();
 
     StorageClass storage_class = StorageClass::NONE;
     const Type* type{};
@@ -402,7 +403,7 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
 
         if (!last_declarator) require(';');
 
-        declaration->text = end_text(begin_text);
+        declaration->fragment = end_fragment(begin);
         return declaration;
     } else {
         ASTNode* statement{};
@@ -416,14 +417,14 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
             require(';');
         }
 
-        statement->text = end_text(begin_text);
+        statement->fragment = end_fragment(begin);
         return statement;
     }
 }
 
 CompoundStatement* Parser::parse_compound_statement() {
     CompoundStatement* statement{};
-    auto begin_text = data();
+    auto begin = position();
     ASTNodeVector list;
     if (preparse) {
         Location loc = preprocessor.location();
@@ -457,13 +458,13 @@ CompoundStatement* Parser::parse_compound_statement() {
         statement = new CompoundStatement(move(list), loc);
     }
 
-    statement->text = end_text(begin_text);
+    statement->fragment = end_fragment(begin);
     return statement;
 }
 
 Declarator* Parser::parse_parameter_declarator() {
     auto location = preprocessor.location();
-    auto begin_declaration_text = data();
+    auto begin_declaration = position();
 
     StorageClass storage_class = StorageClass::NONE;
     const Type* type{};
@@ -480,17 +481,17 @@ Declarator* Parser::parse_parameter_declarator() {
     bool last;
     auto declaration = new Declaration(IdentifierScope::PROTOTYPE, storage_class, type, location);
 
-    auto begin_declarator_text = data();
+    auto begin_declarator = position();
     auto declarator = parse_declarator(declaration, specifiers, false, location, &last);
-    declarator->text = end_text(begin_declarator_text);
+    declarator->fragment = end_fragment(begin_declarator);
 
     declaration->declarators.push_back(declarator);
-    declaration->text = end_text(begin_declaration_text);
+    declaration->fragment = end_fragment(begin_declaration);
     return declarator;
 }
 
 Declarator* Parser::parse_declarator(Declaration* declaration, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last) {
-    auto begin_text = data();
+    auto begin = position();
     *last = false;
     if (consume('(')) {
         auto result = parse_declarator(declaration, specifiers, allow_function_def, location, last);
@@ -588,7 +589,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, uint32_t specifie
             symbols.add_declarator(TypeNameKind::ORDINARY, declarator);
         }
 
-        declarator->text = end_text(begin_text);
+        declarator->fragment = end_fragment(begin);
         return declarator;
     }
 }

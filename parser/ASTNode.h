@@ -2,6 +2,7 @@
 #define AST_AST_NODE_H
 
 #include "Identifier.h"
+#include "lexer/Fragment.h"
 #include "lexer/Location.h"
 #include "Printable.h"
 
@@ -17,7 +18,7 @@ struct ASTNode: Printable {
     void operator=(const ASTNode&) = delete;
 
     Location location;
-    string_view text;
+    Fragment fragment;
     ASTNode* next_delete;
 };
 

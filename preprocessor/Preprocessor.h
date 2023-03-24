@@ -11,22 +11,22 @@
 struct Preprocessor {
     void operator=(const Preprocessor&) = delete;
 
+    void set_input(const Input& input);
+    void set_input(const Fragment& fragment);
+
     TokenKind next_token();
 
-    string_view text() const {
-        return source.text();
+    Fragment fragment() const {
+        return lexer.fragment();
     }
 
     Location location() const {
-        return source.location();
+        return lexer.location();
     }
 
     Identifier identifier() const;
 
 protected:
-    explicit Preprocessor(string_view view): source(view) {
-    }
-
     TokenKind next_token_internal();
     virtual void handle_directive() = 0;
     void skip_to_eol();
@@ -37,7 +37,7 @@ protected:
 private:
     void handle_line_directive();
 
-    PPTokenLexerSource source;
+    PPTokenLexerSource lexer;
     IdentifierLexer id_lexer;
     PPNumberLexer num_lexer;
 };

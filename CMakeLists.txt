@@ -19,6 +19,9 @@ add_library(lang_lib STATIC
     "Message.cpp"
     "Printable.cpp"
 
+    "lexer/PPTokenLexerSource.cpp"
+    "lexer/Fragment.cpp"
+
     "parser/ASTNode.cpp"
     "parser/Constant.cpp"
     "parser/Declaration.cpp"
@@ -29,7 +32,6 @@ add_library(lang_lib STATIC
     "parser/Type.cpp"
     "parser/TypeContext.cpp"
 
-    "lexer/PPTokenLexerSource.cpp"
     "preprocessor/Preprocessor.cpp"
     "preprocessor/Preprocessor2.cpp"
 
