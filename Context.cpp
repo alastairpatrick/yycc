@@ -1,18 +1,18 @@
-#include "CompileContext.h"
+#include "Context.h"
 
 #include "parser/ASTNode.h"
 #include "Message.h"
 
-thread_local CompileContext* CompileContext::it;
+thread_local Context* Context::it;
 
-CompileContext::CompileContext(ostream& message_stream): message_stream(message_stream) {
+Context::Context(ostream& message_stream): message_stream(message_stream) {
     assert(!it);
     it = this;
 
     interned_views.insert(*empty_interned_string);
 }
 
-CompileContext::~CompileContext() {
+Context::~Context() {
     while (ast_nodes) {
         auto node = ast_nodes;
         ast_nodes = ast_nodes->next_delete;

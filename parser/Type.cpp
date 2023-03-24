@@ -1,7 +1,7 @@
 #include "Type.h"
 
 #include "CodeGenContext.h"
-#include "CompileContext.h"
+#include "Context.h"
 #include "Declaration.h"
 #include "InternedString.h"
 #include "SymbolMap.h"
@@ -41,11 +41,11 @@ LLVMValueRef Type::convert_to_type(CodeGenContext* context, LLVMValueRef value, 
 }
 
 const PointerType* Type::pointer_to() const {
-    auto type = CompileContext::it->type.lookup_pointer_type(this);
+    auto type = Context::it->type.lookup_pointer_type(this);
     if (type) return type;
 
     type = new PointerType(this);
-    CompileContext::it->type.add_pointer_type(type);
+    Context::it->type.add_pointer_type(type);
 
     return type;
 }
@@ -309,11 +309,11 @@ const QualifiedType* QualifiedType::of(const Type* base_type, unsigned qualifier
     qualifiers |= base_type->qualifiers();
     base_type = base_type->unqualified();
 
-    auto type = CompileContext::it->type.lookup_qualified_type(base_type, qualifiers);
+    auto type = Context::it->type.lookup_qualified_type(base_type, qualifiers);
     if (type) return type;
 
     type = new QualifiedType(base_type, qualifiers);
-    CompileContext::it->type.add_qualified_type(type);
+    Context::it->type.add_qualified_type(type);
     return type;
 }
 
@@ -358,11 +358,11 @@ const FunctionType* FunctionType::of(const Type* return_type, std::vector<const 
     stringstream key_stream;
     print_function_type(key_stream, return_type, parameter_types, variadic);
 
-    auto type = static_cast<const FunctionType*>(CompileContext::it->type.lookup_indexed_type(key_stream.str()));
+    auto type = static_cast<const FunctionType*>(Context::it->type.lookup_indexed_type(key_stream.str()));
     if (type) return type;
 
     type = new FunctionType(return_type, move(parameter_types), variadic);
-    CompileContext::it->type.add_indexed_type(key_stream.str(), type);
+    Context::it->type.add_indexed_type(key_stream.str(), type);
     return type;
 }
 
@@ -397,11 +397,11 @@ FunctionType::FunctionType(const Type* return_type, std::vector<const Type*> par
 }
 
 const NamedType* NamedType::of(TypeNameKind kind, const Identifier& identifier) {
-    auto type = CompileContext::it->type.lookup_named_type(kind, identifier);
+    auto type = Context::it->type.lookup_named_type(kind, identifier);
     if (type) return type;
 
     type = new NamedType(kind, identifier);
-    CompileContext::it->type.add_named_type(kind, identifier, type);
+    Context::it->type.add_named_type(kind, identifier, type);
     return type;
 }
 

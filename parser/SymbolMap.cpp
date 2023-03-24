@@ -1,5 +1,4 @@
 #include "SymbolMap.h"
-#include "CompileContext.h"
 #include "Declaration.h"
 
 Declarator* SymbolMap::lookup_declarator(bool tag, const Identifier& identifier) const {

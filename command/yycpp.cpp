@@ -1,4 +1,4 @@
-#include "CompileContext.h"
+#include "Context.h"
 #include "lexer/Fragment.h"
 
 void sweep(ostream& stream);
@@ -41,7 +41,7 @@ static void splice_physical_lines(string& source) {
 }
 
 int main(int argc, const char* argv[]) {
-    CompileContext context(cerr);
+    Context context(cerr);
 
     auto errors = 0;
 
@@ -57,7 +57,7 @@ int main(int argc, const char* argv[]) {
 
             splice_physical_lines(input);
 
-            CompileContext::it->lexer.input = input;
+            Context::it->lexer.input = input;
 
             fstream out_file(string(argv[i]) + "~", ios_base::out | ios_base::trunc | ios_base::binary);
 

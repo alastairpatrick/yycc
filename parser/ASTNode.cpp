@@ -1,9 +1,9 @@
 #include "ASTNode.h"
 
-#include "CompileContext.h"
+#include "Context.h"
 
 ASTNode::ASTNode(const Location& location): location(location) {
-    auto context = CompileContext::it;
+    auto context = Context::it;
     next_delete = context->ast_nodes;
     context->ast_nodes = this;
 }

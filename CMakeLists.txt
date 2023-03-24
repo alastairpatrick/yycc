@@ -14,7 +14,7 @@ add_library(lang_lib_c STATIC
 )
 
 add_library(lang_lib STATIC
-    "CompileContext.cpp"
+    "Context.cpp"
     "InternedString.cpp"
     "Message.cpp"
     "Printable.cpp"

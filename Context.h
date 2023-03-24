@@ -7,12 +7,12 @@
 
 struct ASTNode;
 
-struct CompileContext {
-    static thread_local CompileContext* it;
+struct Context {
+    static thread_local Context* it;
 
-    explicit CompileContext(ostream& message_stream);
-    ~CompileContext();
-    void operator=(const CompileContext&) = delete;
+    explicit Context(ostream& message_stream);
+    ~Context();
+    void operator=(const Context&) = delete;
 
     ostream& message_stream;
 

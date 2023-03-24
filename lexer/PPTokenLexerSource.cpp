@@ -1,7 +1,5 @@
 #include "PPTokenLexerSource.h"
 
-#include "CompileContext.h"
-
 void PPTokenLexerSource::set_input(const Input& input) {
     lexer.in(input);
 }

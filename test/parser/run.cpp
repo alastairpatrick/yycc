@@ -5,7 +5,7 @@
 #include "parser/Declaration.h"
 #include "parser/Parser.h"
 #include "parser/Statement.h"
-#include "CompileContext.h"
+#include "Context.h"
 
 using json = nlohmann::json;
 
@@ -76,9 +76,9 @@ void sweep(ostream& stream);
 static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], const string& name, const string& file, int line) {
     //try {
         stringstream message_stream;
-        CompileContext compile_context(message_stream);
+        Context compile_context(message_stream);
 
-        CompileContext::it->lexer.input = sections[INPUT];
+        Context::it->lexer.input = sections[INPUT];
 
         const Type* type{};
         stringstream output_stream;
