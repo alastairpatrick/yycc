@@ -5,12 +5,12 @@
 
 string unescape_string(string_view text, const Location& location);
 
-void Preprocessor::set_input(const Input& input) {
-    lexer.set_input(input);
+void Preprocessor::in(const Input& input) {
+    lexer.in(input);
 }
 
-void Preprocessor::set_input(string_view input) {
-    lexer.set_input(input);
+void Preprocessor::buffer(string_view input) {
+    lexer.buffer(input);
 }
 
 TokenKind Preprocessor::next_token() {
@@ -20,10 +20,12 @@ TokenKind Preprocessor::next_token() {
             default: {
               return token;
           } case TOK_IDENTIFIER: {
-              token = id_lexer.next_token(lexer.token_input());
+              id_lexer.buffer(lexer.text());
+              token = id_lexer.next_token();
               return id_lexer.size() == lexer.fragment().length ? token : TOK_IDENTIFIER;
           } case TOK_PP_NUMBER: {
-              token = num_lexer.next_token(lexer.token_input());
+              num_lexer.buffer(lexer.text());
+              token = num_lexer.next_token();
               return num_lexer.size() == lexer.fragment().length ? token : TOK_PP_NUMBER;
           } case '\n': {
               continue;
@@ -68,7 +70,7 @@ void Preprocessor::require_eol() {
 }
 
 TokenKind Preprocessor::next_token_internal() {
-    return token = lexer.next_token();
+    return token = TokenKind(lexer.next_token());
 }
 
 Identifier Preprocessor::identifier() const
@@ -96,7 +98,7 @@ void Preprocessor::handle_line_directive() {
 
     if (token != '\n') return;
 
-    lexer.set_lineno(line - 1);
+    lexer.lineno(line - 1);
     if (!filename.empty()) {
         lexer.set_filename(move(filename));
     }

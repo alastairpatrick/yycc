@@ -3,16 +3,16 @@
 
 #include "generated/IdentifierLexer.yy.h"
 #include "generated/PPNumberLexer.yy.h"
+#include "generated/PPTokenLexer.yy.h"
 #include "Identifier.h"
 #include "lexer/Location.h"
-#include "lexer/PPTokenLexerSource.h"
 #include "lexer/Token.h"
 
 struct Preprocessor {
     void operator=(const Preprocessor&) = delete;
 
-    void set_input(const Input& input);
-    void set_input(string_view fragment);
+    void in(const Input& input);
+    void buffer(string_view fragment);
 
     TokenKind next_token();
 
@@ -37,7 +37,7 @@ protected:
     void require_eol();
 
     TokenKind token;
-    PPTokenLexerSource lexer;
+    PPTokenLexer lexer;
 
 private:
     void handle_line_directive();

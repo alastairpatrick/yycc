@@ -30,8 +30,8 @@ struct DeclarationMarker {
             auto declaration = *it;
             assert(declaration->fragment.length);
 
-            PPTokenLexerSource lexer;
-            lexer.set_input(declaration->fragment.text(input));
+            PPTokenLexer lexer;
+            lexer.buffer(declaration->fragment.text(input));
             for (;;) {
                 TokenKind token = TokenKind(lexer.next_token());
                 if (!token) break;
@@ -70,7 +70,7 @@ void sweep(ostream& stream, string_view input) {
     marker.mark("");
 
     Preprocessor2 preprocessor;
-    preprocessor.set_input(input);
+    preprocessor.buffer(input);
     auto token = TokenKind(preprocessor.next_token());
 
     TextStream text_stream(stream);

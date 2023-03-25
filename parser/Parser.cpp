@@ -9,12 +9,12 @@
 #include "Statement.h"
 
 Parser::Parser(const Input& input, bool preparse): preparse(preparse), symbols(preparse) {
-    preprocessor.set_input(input);
+    preprocessor.in(input);
     token = preprocessor.next_token();
 }
 
 Parser::Parser(string_view input, bool preparse): preparse(preparse), symbols(preparse) {
-    preprocessor.set_input(input);
+    preprocessor.buffer(input);
     token = preprocessor.next_token();
 }
 

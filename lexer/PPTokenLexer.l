@@ -5,9 +5,36 @@
 %option yylineno
 %option fast
 
-%{
+%top {
+#include "lexer/Fragment.h"
+#include "lexer/Location.h"
 #include "lexer/Token.h"
-%}
+}
+
+%class {
+public:
+    void buffer(string_view input);
+
+    string_view text() const {
+        return string_view(matcher().begin(), size());
+    }
+
+    Fragment fragment() const {
+        return Fragment(matcher().first(), size());
+    }
+
+    Location location() const {
+        return Location { lineno(), columno() + 1, current_filename };
+    }
+
+    void set_filename(string&& filename);
+
+    const char* rest() = delete;
+
+private:
+    unordered_set<string> filenames;
+    string_view current_filename;
+}
 
 D               [0-9]
 L               [a-zA-Z_]
@@ -119,3 +146,12 @@ undef           { start(PP_TOKENS); return TOK_PP_UNDEF; }
 }
 
 %%
+
+void PPTokenLexer::buffer(string_view input) {
+    AbstractBaseLexer::buffer((char*) input.data(), input.size() + 1);
+}
+
+void PPTokenLexer::set_filename(string&& filename) {
+    auto& str = *filenames.insert(move(filename)).first;
+    current_filename = string_view(str.data(), str.length());
+}

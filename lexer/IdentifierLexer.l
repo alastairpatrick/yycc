@@ -10,6 +10,18 @@
 #include "lexer/Token.h"
 %}
 
+%class {
+public:
+    void buffer(string_view input) {
+        AbstractBaseLexer::buffer((char*) input.data(), input.size() + 1);
+    }
+
+    string_view text() const {
+        return string_view(matcher().begin(), size());
+    }
+
+    const char* rest() = delete;
+}
 
 %%
 

@@ -19,8 +19,6 @@ add_library(lang_lib STATIC
     "Message.cpp"
     "Printable.cpp"
 
-    "lexer/PPTokenLexerSource.cpp"
-
     "parser/ASTNode.cpp"
     "parser/Constant.cpp"
     "parser/Declaration.cpp"
