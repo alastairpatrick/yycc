@@ -70,7 +70,7 @@ void Preprocessor::require_eol() {
 }
 
 TokenKind Preprocessor::next_token_internal() {
-    return token = TokenKind(lexer.next_token());
+    return token = lexer.next_token();
 }
 
 Identifier Preprocessor::identifier() const

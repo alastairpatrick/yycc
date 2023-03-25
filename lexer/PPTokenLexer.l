@@ -1,6 +1,7 @@
 %option lexer=PPTokenLexer
 %option prefix=PPTokenLexer
 %option lex=next_token
+%option token-type=TokenKind
 %option freespace
 %option yylineno
 %option fast
@@ -51,14 +52,14 @@ HW              [ \t\v\f\r]
 "/*"            { if (!matcher().skip("*/")) return TOK_PP_UNTERMINATED_COMMENT; }
 "//" [^\n]*     { }
 {HW}+           { }
-\n              { start(INITIAL); return '\n'; }
+\n              { start(INITIAL); return TokenKind('\n'); }
 
 }
 
 // This is the state at the start of each line. From here, switch to state
 // DIRECTIVE or PP_TOKENS, depending on first non-white-space character.
 <INITIAL> {
-"#"             { start(DIRECTIVE); return '#'; }
+"#"             { start(DIRECTIVE); return TokenKind('#'); }
 .               { matcher().less(0); start(PP_TOKENS); }
 }
 
@@ -95,31 +96,31 @@ L?  ' (\\. | [^\\'\n])*  '  { return TOK_CHAR_LITERAL; }
 "=="            { return TOK_EQ_OP; }
 "!="            { return TOK_NE_OP; }
 "##" | "%:%:"   { return TOK_PP_CONCAT; }
-";"             { return ';'; }
-"{" | "<%"      { return '{'; }
-"}" | "%>"      { return '}'; }
-","             { return ','; }
-":"             { return ':'; }
-"="             { return '='; }
-"("             { return '('; }
-")"             { return ')'; }
-"[" | "<:"      { return '['; }
-"]" | ":>"      { return ']'; }
-"."             { return '.'; }
-"&"             { return '&'; }
-"!"             { return '!'; }
-"~"             { return '~'; }
-"-"             { return '-'; }
-"+"             { return '+'; }
-"*"             { return '*'; }
-"/"             { return '/'; }
-"%"             { return '%'; }
-"<"             { return '<'; }
-">"             { return '>'; }
-"^"             { return '^'; }
-"|"             { return '|'; }
-"?"             { return '?'; }
-"#" | "%:"      { return '#'; }
+";"             { return TokenKind(';'); }
+"{" | "<%"      { return TokenKind('{'); }
+"}" | "%>"      { return TokenKind('}'); }
+","             { return TokenKind(','); }
+":"             { return TokenKind(':'); }
+"="             { return TokenKind('='); }
+"("             { return TokenKind('('); }
+")"             { return TokenKind(')'); }
+"[" | "<:"      { return TokenKind('['); }
+"]" | ":>"      { return TokenKind(']'); }
+"."             { return TokenKind('.'); }
+"&"             { return TokenKind('&'); }
+"!"             { return TokenKind('!'); }
+"~"             { return TokenKind('~'); }
+"-"             { return TokenKind('-'); }
+"+"             { return TokenKind('+'); }
+"*"             { return TokenKind('*'); }
+"/"             { return TokenKind('/'); }
+"%"             { return TokenKind('%'); }
+"<"             { return TokenKind('<'); }
+">"             { return TokenKind('>'); }
+"^"             { return TokenKind('^'); }
+"|"             { return TokenKind('|'); }
+"?"             { return TokenKind('?'); }
+"#" | "%:"      { return TokenKind('#'); }
 
 }
 
