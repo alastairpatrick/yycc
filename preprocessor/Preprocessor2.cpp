@@ -22,14 +22,15 @@ void Preprocessor2::handle_directive() {
 void Preprocessor2::handle_error_directive() {
     auto& stream = message(Severity::ERROR, location());
     next_token_internal();
-    auto begin = fragment().position;
+    auto begin = lexer.text().data();
     auto end = begin;
     while (token && token != '\n') {
-        end = fragment().position + fragment().length;
+        auto text = lexer.text();
+        end = text.data() + text.length();
         next_token_internal();
     }
 
-    stream << Fragment(begin, end - begin).text() << '\n';
+    stream << string_view(begin, end - begin) << '\n';
 }
 
 void Preprocessor2::handle_pragma_directive() {

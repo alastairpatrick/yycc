@@ -8,8 +8,13 @@
 #include "Message.h"
 #include "Statement.h"
 
-Parser::Parser(bool preparse): preparse(preparse), symbols(preparse) {
-    preprocessor.set_input(Fragment::context());
+Parser::Parser(const Input& input, bool preparse): preparse(preparse), symbols(preparse) {
+    preprocessor.set_input(input);
+    token = preprocessor.next_token();
+}
+
+Parser::Parser(string_view input, bool preparse): preparse(preparse), symbols(preparse) {
+    preprocessor.set_input(input);
     token = preprocessor.next_token();
 }
 
@@ -119,17 +124,17 @@ Expr* Parser::parse_cast_expr() {
 
     while (token) {
         if (token == TOK_BIN_INT_LITERAL || token == TOK_OCT_INT_LITERAL || token == TOK_DEC_INT_LITERAL || token == TOK_HEX_INT_LITERAL || token == TOK_CHAR_LITERAL) {
-            result = IntegerConstant::of(preprocessor.fragment().text(), token, preprocessor.location());
+            result = IntegerConstant::of(preprocessor.text(), token, preprocessor.location());
             consume();
             break;
         }
         else if (token == TOK_DEC_FLOAT_LITERAL || token == TOK_HEX_FLOAT_LITERAL) {
-            result = FloatingPointConstant::of(preprocessor.fragment().text(), token, preprocessor.location());
+            result = FloatingPointConstant::of(preprocessor.text(), token, preprocessor.location());
             consume();
             break;
         }
         else if (token == TOK_STRING_LITERAL) {
-            result = StringConstant::of(preprocessor.fragment().text(), preprocessor.location());
+            result = StringConstant::of(preprocessor.text(), preprocessor.location());
             consume();
             break;
         }

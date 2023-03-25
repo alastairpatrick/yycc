@@ -4,9 +4,8 @@ void PPTokenLexerSource::set_input(const Input& input) {
     lexer.in(input);
 }
 
-void PPTokenLexerSource::set_input(const Fragment& fragment) {
-    auto text = fragment.text();
-    lexer.buffer((char*) text.data(), text.size() + 1);
+void PPTokenLexerSource::set_input(const string_view& input) {
+    lexer.buffer((char*) input.data(), input.size() + 1);
 }
 
 void PPTokenLexerSource::set_filename(string&& filename) {

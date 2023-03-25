@@ -9,8 +9,8 @@ void Preprocessor::set_input(const Input& input) {
     lexer.set_input(input);
 }
 
-void Preprocessor::set_input(const Fragment& fragment) {
-    lexer.set_input(fragment);
+void Preprocessor::set_input(string_view input) {
+    lexer.set_input(input);
 }
 
 TokenKind Preprocessor::next_token() {
@@ -32,7 +32,7 @@ TokenKind Preprocessor::next_token() {
               handle_directive();
               continue;
           } case TOK_PP_UNRECOGNIZED: {
-              message(Severity::ERROR, location()) << "unexpected character '" << fragment().text() << "'\n";
+              message(Severity::ERROR, location()) << "unexpected character '" << lexer.text() << "'\n";
               continue;
           } case TOK_PP_UNTERMINATED_COMMENT: {
               message(Severity::ERROR, location()) << "unterminated comment\n";
@@ -73,7 +73,7 @@ TokenKind Preprocessor::next_token_internal() {
 
 Identifier Preprocessor::identifier() const
 {
-    return Identifier(fragment().text());
+    return Identifier(lexer.text());
 }
 
 void Preprocessor::handle_line_directive() {
@@ -82,7 +82,7 @@ void Preprocessor::handle_line_directive() {
     if (token != TOK_PP_NUMBER) return;
 
     size_t line;
-    auto text = fragment().text();
+    auto text = lexer.text();
     auto result = from_chars(text.data(), text.data() + text.size(), line, 10);
     if (result.ec != errc{} || line <= 0 || result.ptr != text.data() + text.size()) return;
 
@@ -90,7 +90,7 @@ void Preprocessor::handle_line_directive() {
 
     string filename;
     if (token == TOK_STRING_LITERAL) {
-        filename = unescape_string(fragment().text(), location());
+        filename = unescape_string(lexer.text(), location());
         next_token_internal();
     }
 

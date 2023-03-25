@@ -8,12 +8,16 @@
 
 struct PPTokenLexerSource {
     void set_input(const Input& input);
-    void set_input(const Fragment& fragment);
+    void set_input(const string_view& input);
 
     void operator=(const PPTokenLexerSource&) = delete;
 
     TokenKind next_token() {
         return TokenKind(lexer.next_token());
+    }
+
+    string_view text() const {
+        return string_view(lexer.matcher().begin(), lexer.size());
     }
 
     // Returns valid Fragment only if input is a Fragment.

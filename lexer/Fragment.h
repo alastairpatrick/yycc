@@ -8,9 +8,10 @@ struct Fragment {
     size_t position{};
     size_t length{};
 
-    string_view text() const;
-
-    static Fragment context();
+    string_view text(string_view source) const {
+        assert(position + length <= source.size());
+        return string_view(source.data() + position, length);
+    }
 };
 
 #endif

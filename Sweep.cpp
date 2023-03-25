@@ -5,9 +5,11 @@
 #include "TextStream.h"
 
 struct DeclarationMarker {
-    DeclarationMarker(const ASTNodeVector& declarations, const SymbolMap& symbols): declarations(declarations), symbols(symbols) {
+    DeclarationMarker(string_view input, const ASTNodeVector& declarations, const SymbolMap& symbols)
+        : input(input), declarations(declarations), symbols(symbols) {
     }
 
+    string_view input;
     const ASTNodeVector& declarations;
     const SymbolMap& symbols;
     unordered_set<const Declaration*> todo;
@@ -29,13 +31,13 @@ struct DeclarationMarker {
             assert(declaration->fragment.length);
 
             PPTokenLexerSource lexer;
-            lexer.set_input(declaration->fragment);
+            lexer.set_input(declaration->fragment.text(input));
             for (;;) {
                 TokenKind token = TokenKind(lexer.next_token());
                 if (!token) break;
                 if (token != TOK_IDENTIFIER) continue;
 
-                Identifier id(lexer.fragment().text());
+                Identifier id(lexer.text());
                 lookup(false, id);
                 lookup(true, id);
             }
@@ -60,15 +62,15 @@ struct DeclarationMarker {
     }
 };
 
-void sweep(ostream& stream) {
-    Parser parser(true);
+void sweep(ostream& stream, string_view input) {
+    Parser parser(input, true);
     parser.parse_unit();
 
-    DeclarationMarker marker(parser.declarations, parser.symbols);
+    DeclarationMarker marker(input, parser.declarations, parser.symbols);
     marker.mark("");
 
     Preprocessor2 preprocessor;
-    preprocessor.set_input(Fragment::context());
+    preprocessor.set_input(input);
     auto token = TokenKind(preprocessor.next_token());
 
     TextStream text_stream(stream);
@@ -82,7 +84,7 @@ void sweep(ostream& stream) {
 
         while (token && preprocessor.fragment().position < (declaration->fragment.position + declaration->fragment.length)) {
             auto location = preprocessor.location();
-            text_stream.write(preprocessor.fragment().text(), location);
+            text_stream.write(preprocessor.text(), location);
 
             token = TokenKind(preprocessor.next_token());
         }

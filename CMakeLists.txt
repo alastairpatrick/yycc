@@ -20,7 +20,6 @@ add_library(lang_lib STATIC
     "Printable.cpp"
 
     "lexer/PPTokenLexerSource.cpp"
-    "lexer/Fragment.cpp"
 
     "parser/ASTNode.cpp"
     "parser/Constant.cpp"

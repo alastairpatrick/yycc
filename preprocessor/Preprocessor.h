@@ -12,9 +12,13 @@ struct Preprocessor {
     void operator=(const Preprocessor&) = delete;
 
     void set_input(const Input& input);
-    void set_input(const Fragment& fragment);
+    void set_input(string_view fragment);
 
     TokenKind next_token();
+
+    string_view text() const {
+        return lexer.text();
+    }
 
     Fragment fragment() const {
         return lexer.fragment();
@@ -33,11 +37,11 @@ protected:
     void require_eol();
 
     TokenKind token;
+    PPTokenLexerSource lexer;
 
 private:
     void handle_line_directive();
 
-    PPTokenLexerSource lexer;
     IdentifierLexer id_lexer;
     PPNumberLexer num_lexer;
 };

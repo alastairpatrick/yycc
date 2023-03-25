@@ -1,7 +1,7 @@
 #include "Context.h"
 #include "lexer/Fragment.h"
 
-void sweep(ostream& stream);
+void sweep(ostream& stream, string_view input);
 
 static string remap_chars(FILE* file) {
     Input file_input(file);
@@ -57,11 +57,9 @@ int main(int argc, const char* argv[]) {
 
             splice_physical_lines(input);
 
-            Context::it->lexer.input = input;
-
             fstream out_file(string(argv[i]) + "~", ios_base::out | ios_base::trunc | ios_base::binary);
 
-            sweep(out_file);
+            sweep(out_file, input);
         }
     }
 }
