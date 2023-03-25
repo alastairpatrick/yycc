@@ -1,7 +1,7 @@
 #include "parser/Declaration.h"
 #include "parser/Parser.h"
 #include "parser/SymbolMap.h"
-#include "preprocessor/Preprocessor2.h"
+#include "preprocessor/Preprocessor.h"
 #include "TextStream.h"
 
 struct DeclarationMarker {
@@ -69,7 +69,7 @@ void sweep(ostream& stream, string_view input) {
     DeclarationMarker marker(input, parser.declarations, parser.symbols);
     marker.mark("");
 
-    Preprocessor2 preprocessor;
+    Preprocessor preprocessor(false);
     preprocessor.buffer(input);
     auto token = TokenKind(preprocessor.next_token());
 

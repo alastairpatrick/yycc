@@ -8,12 +8,12 @@
 #include "Message.h"
 #include "Statement.h"
 
-Parser::Parser(const Input& input, bool preparse): preparse(preparse), symbols(preparse) {
+Parser::Parser(const Input& input, bool preparse): preprocessor(preparse), preparse(preparse), symbols(preparse) {
     preprocessor.in(input);
     token = preprocessor.next_token();
 }
 
-Parser::Parser(string_view input, bool preparse): preparse(preparse), symbols(preparse) {
+Parser::Parser(string_view input, bool preparse): preprocessor(preparse), preparse(preparse), symbols(preparse) {
     preprocessor.buffer(input);
     token = preprocessor.next_token();
 }

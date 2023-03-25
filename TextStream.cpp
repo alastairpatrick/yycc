@@ -15,7 +15,7 @@ void TextStream::write(string_view text, const Location& location) {
         stream << "\n#line " << location.line << " \"" << location.filename << "\"\n";
         current_location = location;
         current_location.column = 1;
-    } else if (location.line - current_location.line < 5) {
+    } else if (location.line - current_location.line >= 0 && location.line - current_location.line < 5) {
         while (location.line > current_location.line) {
             stream << '\n';
             ++current_location.line;

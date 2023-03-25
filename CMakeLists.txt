@@ -30,7 +30,7 @@ add_library(lang_lib STATIC
     "parser/TypeContext.cpp"
 
     "preprocessor/Preprocessor.cpp"
-    "preprocessor/Preprocessor2.cpp"
+    
 
     "Sweep.cpp"
     "TextStream.cpp"

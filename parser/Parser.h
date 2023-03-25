@@ -2,7 +2,7 @@
 #define AST_PARSER_H
 
 #include "assoc_prec.h"
-#include "preprocessor/Preprocessor2.h"
+#include "preprocessor/Preprocessor.h"
 #include "SymbolMap.h"
 
 struct CompoundStatement;
@@ -22,7 +22,7 @@ struct Parser {
     bool check_eof();
 
 private:
-    Preprocessor2 preprocessor;
+    Preprocessor preprocessor;
     TokenKind token;
     const bool preparse;
 

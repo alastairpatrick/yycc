@@ -5,6 +5,9 @@
 
 string unescape_string(string_view text, const Location& location);
 
+Preprocessor::Preprocessor(bool preparse): preparse(preparse), output(output_stream) {
+}
+
 void Preprocessor::in(const Input& input) {
     lexer.in(input);
 }
@@ -18,15 +21,15 @@ TokenKind Preprocessor::next_token() {
         next_token_internal();
         switch (token) {
             default: {
-              return token;
+              return commit_token(token, text());
           } case TOK_IDENTIFIER: {
-              id_lexer.buffer(lexer.text());
+              id_lexer.buffer(text());
               token = id_lexer.next_token();
-              return id_lexer.size() == lexer.fragment().length ? token : TOK_IDENTIFIER;
+              return commit_token(id_lexer.size() == lexer.fragment().length ? token : TOK_IDENTIFIER, text());
           } case TOK_PP_NUMBER: {
-              num_lexer.buffer(lexer.text());
+              num_lexer.buffer(text());
               token = num_lexer.next_token();
-              return num_lexer.size() == lexer.fragment().length ? token : TOK_PP_NUMBER;
+              return commit_token(num_lexer.size() == lexer.fragment().length ? token : TOK_PP_NUMBER, text());
           } case '\n': {
               continue;
           } case '#': {
@@ -52,6 +55,18 @@ void Preprocessor::handle_directive() {
       }
     }
 
+    if (!preparse) {
+      switch (token) {
+          case TOK_PP_ERROR: {
+            handle_error_directive();
+            break;
+        } case TOK_PP_PRAGMA: {
+            handle_pragma_directive(); 
+            break;
+        }
+      }
+    }
+
     require_eol();
 }
 
@@ -71,6 +86,13 @@ void Preprocessor::require_eol() {
 
 TokenKind Preprocessor::next_token_internal() {
     return token = lexer.next_token();
+}
+
+TokenKind Preprocessor::commit_token(TokenKind token, string_view text) {
+    if (preparse) {
+        output.write(text, lexer.location());
+    }
+    return token;
 }
 
 Identifier Preprocessor::identifier() const
@@ -102,4 +124,22 @@ void Preprocessor::handle_line_directive() {
     if (!filename.empty()) {
         lexer.set_filename(move(filename));
     }
+}
+
+void Preprocessor::handle_error_directive() {
+    auto& stream = message(Severity::ERROR, location());
+    next_token_internal();
+    auto begin = lexer.text().data();
+    auto end = begin;
+    while (token && token != '\n') {
+        auto text = lexer.text();
+        end = text.data() + text.length();
+        next_token_internal();
+    }
+
+    stream << string_view(begin, end - begin) << '\n';
+}
+
+void Preprocessor::handle_pragma_directive() {
+    skip_to_eol();
 }
