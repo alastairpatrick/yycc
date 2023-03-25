@@ -23,7 +23,7 @@ EXPECT_AST
 BEGIN Unterminated comment
 1 /* foo
 EXPECT_MESSAGE
-:1:1: error unterminated comment
+:2:1: error unterminated comment
 EXPECT_AST
 "Si1"
 

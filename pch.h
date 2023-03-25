@@ -16,7 +16,7 @@
 #include <iostream>
 #include <list>
 #include <map>
-#include <sstream>
+#include <strstream>
 #include <stack>
 #include <string>
 #include <string_view>
@@ -46,7 +46,7 @@ using std::max;
 using std::min;
 using std::move;
 using std::ostream;
-using std::ostringstream;
+using std::strstream;
 using std::pair;
 using std::remove_if;
 using std::stack;

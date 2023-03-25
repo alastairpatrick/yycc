@@ -1,7 +1,7 @@
 #include "Context.h"
 #include "lexer/Fragment.h"
 
-void sweep(ostream& stream, string_view input);
+void sweep(ostream& stream, const Input& input);
 
 static string remap_chars(FILE* file) {
     Input file_input(file);

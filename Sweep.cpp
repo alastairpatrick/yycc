@@ -62,35 +62,38 @@ struct DeclarationMarker {
     }
 };
 
-void sweep(ostream& stream, string_view input) {
-    Parser parser(input, true);
+void sweep(ostream& stream, const Input& input) {
+    Preprocessor preprocessor1(true);
+    preprocessor1.in(input);
+
+    Parser parser(preprocessor1, true);
     parser.parse_unit();
 
-    DeclarationMarker marker(input, parser.declarations, parser.symbols);
+    DeclarationMarker marker(preprocessor1.output(), parser.declarations, parser.symbols);
     marker.mark("");
 
-    Preprocessor preprocessor(false);
-    preprocessor.buffer(input);
-    auto token = TokenKind(preprocessor.next_token());
+    Preprocessor preprocessor2(false);
+    preprocessor2.buffer(preprocessor1.output());
+    auto token = preprocessor2.next_token();
 
     TextStream text_stream(stream);
 
     for (auto declaration : parser.declarations) {
         if (!marker.is_marked(declaration)) continue;
 
-        while (token && preprocessor.fragment().position < declaration->fragment.position) {
-            token = TokenKind(preprocessor.next_token());
+        while (token && preprocessor2.fragment().position < declaration->fragment.position) {
+            token = preprocessor2.next_token();
         }
 
-        while (token && preprocessor.fragment().position < (declaration->fragment.position + declaration->fragment.length)) {
-            auto location = preprocessor.location();
-            text_stream.write(preprocessor.text(), location);
+        while (token && preprocessor2.fragment().position < (declaration->fragment.position + declaration->fragment.length)) {
+            auto location = preprocessor2.location();
+            text_stream.write(preprocessor2.text(), location);
 
-            token = TokenKind(preprocessor.next_token());
+            token = TokenKind(preprocessor2.next_token());
         }
 
         if (!token) break;
     }
 
-    text_stream.stream << "\n";
+    stream << "\n";
 }

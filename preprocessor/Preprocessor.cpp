@@ -5,7 +5,7 @@
 
 string unescape_string(string_view text, const Location& location);
 
-Preprocessor::Preprocessor(bool preparse): preparse(preparse), output(output_stream) {
+Preprocessor::Preprocessor(bool preparse): preparse(preparse), text_stream(string_stream) {
 }
 
 void Preprocessor::in(const Input& input) {
@@ -90,7 +90,7 @@ TokenKind Preprocessor::next_token_internal() {
 
 TokenKind Preprocessor::commit_token(TokenKind token, string_view text) {
     if (preparse) {
-        output.write(text, lexer.location());
+        text_stream.write(text, lexer.location());
     }
     return token;
 }
@@ -98,6 +98,10 @@ TokenKind Preprocessor::commit_token(TokenKind token, string_view text) {
 Identifier Preprocessor::identifier() const
 {
     return Identifier(lexer.text());
+}
+
+string_view Preprocessor::output() {
+    return string_view(string_stream.str(), string_stream.pcount());
 }
 
 void Preprocessor::handle_line_directive() {

@@ -58,20 +58,24 @@ static ostream& print_error(const string& name, const string& file, int line) {
     return cerr;
 }
 
-Expr* parse_expr(string_view input) {
-    Parser parser(input, false);
+Expr* parse_expr(const Input& input) {
+    Preprocessor preprocessor(false);
+    preprocessor.in(input);
+    Parser parser(preprocessor, false);
     auto result = parser.parse_expr(0);
     if (!parser.check_eof()) return nullptr;
     return result;
 }
 
-ASTNodeVector parse_declarations(string_view input, bool preparse) {
-    Parser parser(input, preparse);
+ASTNodeVector parse_declarations(const Input& input, bool preparse) {
+    Preprocessor preprocessor(false);
+    preprocessor.in(input);
+    Parser parser(preprocessor, preparse);
     parser.parse_unit();
     return move(parser.declarations);
 }
 
-void sweep(ostream& stream, string_view input);
+void sweep(ostream& stream, const Input& input);
 
 static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], const string& name, const string& file, int line) {
     //try {

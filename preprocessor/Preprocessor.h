@@ -32,6 +32,8 @@ struct Preprocessor {
 
     Identifier identifier() const;
 
+    string_view output();
+
 private:
     TokenKind next_token_internal();
     TokenKind commit_token(TokenKind token, string_view text);
@@ -47,8 +49,8 @@ private:
     PPTokenLexer lexer;
     IdentifierLexer id_lexer;
     PPNumberLexer num_lexer;
-    TextStream output;
-    ostringstream output_stream;
+    TextStream text_stream;
+    strstream string_stream;
 };
 
 #endif
