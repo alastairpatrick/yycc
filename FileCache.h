@@ -2,13 +2,11 @@
 #define FILE_CACHE_H
 
 struct File {
+    File() = default;
     explicit File(const string& text);
     void operator=(const File&) = delete;
 
-    File(File&&) = default;
-    File& operator=(File&&) = default;
-
-    const string text;
+    string text;
 };
 
 struct FileCache {
@@ -18,9 +16,7 @@ struct FileCache {
     ~FileCache();
 
     const File* read(const string& path);
-    const File* add(const string& path, const Input& input);
 
-private:
     const bool access_file_system;
     unordered_map<string, File> files;
 };

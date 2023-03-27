@@ -6,6 +6,6 @@ FetchContent_MakeAvailable(json)
 add_executable(test
     parser/run.cpp
     main.cpp
-)
+ )
 
 target_link_libraries(test PRIVATE lang_lib nlohmann_json::nlohmann_json)

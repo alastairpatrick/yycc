@@ -70,19 +70,12 @@ const File* FileCache::read(const string& path) {
     if (access_file_system) {
         auto file = fopen(path.c_str(), "rb");
         if (file) {
-            auto result = add(path, Input(file));
+            auto& result = files[path];
+            result.text = splice_physical_lines(Input(file));
             fclose(file);
-            return result;
+            return &result;
         }
     }
 
     return nullptr;
 }
-
-const File* FileCache::add(const string& path, const Input& input) {
-    string text = splice_physical_lines(input);
-    File file(text);
-    auto& result = files.emplace(path, move(file)).first->second;
-    return &result;
-}
-

@@ -32,6 +32,7 @@ enum Section {
     EXPECTED_TYPE,
     EXPECTED_MESSAGE,
     EXPECTED_TEXT,
+    FILE_SECTION,
     NUM_SECTIONS,
 };
 
@@ -80,7 +81,6 @@ void sweep(ostream& stream, const File& file);
 
 static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], const string& name, const string& file, int line) {
     //try {
-        FileCache file_cache(false);
         stringstream message_stream;
         Context compile_context(message_stream);
 
@@ -157,6 +157,9 @@ bool run_parser_tests() {
         bool enabled_types[unsigned(TestType::NUM)] = {};
         int num_enabled_types = 0;
 
+        FileCache file_cache(false);
+        File* file{};
+
         for (auto line_num = 1; !file_stream.eof() && !file_stream.fail(); ++line_num) {
             string line;
             getline(file_stream, line);
@@ -179,31 +182,37 @@ bool run_parser_tests() {
                 num_enabled_types = 0;
                 test_line_num = line_num;
                 if (line.length() >= 6) test_name = line.substr(6);
-            } else if (line.substr(0, 10) == "EXPECT_AST") {
+            } else if (line.substr(0, 4) == "FILE") {
+                section = Section::FILE_SECTION;
+                string path = line.substr(5);
+                file = &file_cache.files[path];
+            } else if (line == "EXPECT_AST") {
                 section = Section::EXPECTED_AST;
-            } else if (line.substr(0, 3) == "END") {
+            } else if (line == "END") {
                 section = Section::NONE;
-            } else if (line.substr(0, 11) == "EXPECT_TYPE") {
+            } else if (line == "EXPECT_TYPE") {
                 section = Section::EXPECTED_TYPE;
-            } else if (line.substr(0, 14) == "EXPECT_MESSAGE") {
+            } else if (line == "EXPECT_MESSAGE") {
                 section = Section::EXPECTED_MESSAGE;
-            } else if (line.substr(0, 11) == "EXPECT_TEXT") {
+            } else if (line == "EXPECT_TEXT") {
                 section = Section::EXPECTED_TEXT;
-            } else if (line.substr(0, 10) == "EXPRESSION") {
+            } else if (line == "EXPRESSION") {
                 enabled_types[unsigned(TestType::EXPRESSION)] = true;
                 ++num_enabled_types;
-            } else if (line.substr(0, 12) == "DECLARATIONS") {
+            } else if (line == "DECLARATIONS") {
                 enabled_types[unsigned(TestType::DECLARATIONS)] = true;
                 ++num_enabled_types;
-            } else if (line.substr(0, 8) == "PREPARSE") {
+            } else if (line == "PREPARSE") {
                 enabled_types[unsigned(TestType::PREPARSE)] = true;
                 ++num_enabled_types;
-            } else if (line.substr(0, 10) == "PREPROCESS") {
+            } else if (line == "PREPROCESS") {
                 enabled_types[unsigned(TestType::PREPROCESS)] = true;
                 ++num_enabled_types;
             } else {
                 if (section == EXPECTED_TYPE) {
                     if (line.length()) sections[section] += line;
+                } else if (section == FILE_SECTION) {
+                    file->text += line + "\n";
                 } else {
                     sections[section] += line + "\n";
                 }
