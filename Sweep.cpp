@@ -16,7 +16,7 @@ struct DeclarationMarker {
     unordered_set<const Declaration*> todo;
     unordered_set<const ASTNode*> marked;
 
-    void mark(string_view filename) {
+    void mark(InternedString filename) {
         for (auto node : declarations) {
             if (node->location.filename != filename) continue;
 
@@ -71,7 +71,7 @@ void sweep(ostream& stream, const File& file) {
     parser.parse_unit();
 
     DeclarationMarker marker(preprocessor1.output(), parser.declarations, parser.symbols);
-    marker.mark("");
+    marker.mark(empty_interned_string);
 
     Preprocessor preprocessor2(false);
     preprocessor2.buffer(preprocessor1.output());

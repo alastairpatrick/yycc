@@ -133,7 +133,7 @@ void Preprocessor::handle_line_directive() {
 
     lexer.lineno(line - 1);
     if (!filename.empty()) {
-        lexer.set_filename(move(filename));
+        lexer.set_filename(intern_string(filename));
     }
 }
 

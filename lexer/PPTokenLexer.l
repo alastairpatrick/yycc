@@ -7,6 +7,7 @@
 %option fast
 
 %top {
+#include "InternedString.h"
 #include "lexer/Fragment.h"
 #include "lexer/Location.h"
 #include "lexer/Token.h"
@@ -28,13 +29,12 @@ public:
         return Location { lineno(), columno() + 1, current_filename };
     }
 
-    void set_filename(string&& filename);
+    void set_filename(InternedString filename);
 
     const char* rest() = delete;
 
 private:
-    unordered_set<string> filenames;
-    string_view current_filename;
+    InternedString current_filename = empty_interned_string;
 }
 
 D               [0-9]
@@ -152,7 +152,6 @@ void PPTokenLexer::buffer(string_view input) {
     AbstractBaseLexer::buffer((char*) input.data(), input.size() + 1);
 }
 
-void PPTokenLexer::set_filename(string&& filename) {
-    auto& str = *filenames.insert(move(filename)).first;
-    current_filename = string_view(str.data(), str.length());
+void PPTokenLexer::set_filename(InternedString filename) {
+    current_filename = filename;
 }
