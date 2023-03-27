@@ -1,5 +1,6 @@
 #include "nlohmann/json.hpp"
 
+#include "FileCache.h"
 #include "parser/ASTNode.h"
 #include "parser/Expr.h"
 #include "parser/Declaration.h"
@@ -75,10 +76,11 @@ ASTNodeVector parse_declarations(const Input& input, bool preparse) {
     return move(parser.declarations);
 }
 
-void sweep(ostream& stream, const Input& input);
+void sweep(ostream& stream, const File& file);
 
 static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], const string& name, const string& file, int line) {
     //try {
+        FileCache file_cache(false);
         stringstream message_stream;
         Context compile_context(message_stream);
 
@@ -91,7 +93,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
             }
             output_stream << expr;
         } else if (test_type == TestType::PREPROCESS) {
-            sweep(output_stream, sections[INPUT]);
+            sweep(output_stream, File(sections[INPUT]));
         } else {
             auto statements = parse_declarations(sections[INPUT], test_type == TestType::PREPARSE);
             output_stream << statements;

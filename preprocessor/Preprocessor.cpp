@@ -90,8 +90,15 @@ TokenKind Preprocessor::next_token_internal() {
 
 TokenKind Preprocessor::commit_token(TokenKind token, string_view text) {
     if (preparse) {
-        text_stream.write(text, lexer.location());
+        text_stream.locate(lexer.location());
+        auto begin = string_stream.pcount();
+        text_stream.write(text);
+        auto end = string_stream.pcount();
+        fragment = Fragment(begin, end - begin);
+    } else {
+        fragment = lexer.fragment();
     }
+
     return token;
 }
 

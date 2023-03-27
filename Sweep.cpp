@@ -1,3 +1,4 @@
+#include "FileCache.h"
 #include "parser/Declaration.h"
 #include "parser/Parser.h"
 #include "parser/SymbolMap.h"
@@ -62,9 +63,9 @@ struct DeclarationMarker {
     }
 };
 
-void sweep(ostream& stream, const Input& input) {
+void sweep(ostream& stream, const File& file) {
     Preprocessor preprocessor1(true);
-    preprocessor1.in(input);
+    preprocessor1.buffer(file.text);
 
     Parser parser(preprocessor1, true);
     parser.parse_unit();
@@ -81,13 +82,13 @@ void sweep(ostream& stream, const Input& input) {
     for (auto declaration : parser.declarations) {
         if (!marker.is_marked(declaration)) continue;
 
-        while (token && preprocessor2.fragment().position < declaration->fragment.position) {
+        while (token && preprocessor2.fragment.position < declaration->fragment.position) {
             token = preprocessor2.next_token();
         }
 
-        while (token && preprocessor2.fragment().position < (declaration->fragment.position + declaration->fragment.length)) {
-            auto location = preprocessor2.location();
-            text_stream.write(preprocessor2.text(), location);
+        while (token && preprocessor2.fragment.position < (declaration->fragment.position + declaration->fragment.length)) {
+            text_stream.locate(preprocessor2.location());
+            text_stream.write(preprocessor2.text());
 
             token = TokenKind(preprocessor2.next_token());
         }

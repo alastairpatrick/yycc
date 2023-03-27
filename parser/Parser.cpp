@@ -45,7 +45,7 @@ void Parser::skip() {
 }
 
 size_t Parser::position() const {
-    return preprocessor.fragment().position;
+    return preprocessor.fragment.position;
 }
 
 Fragment Parser::end_fragment(size_t begin_position) const {

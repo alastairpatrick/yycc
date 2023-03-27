@@ -15,6 +15,7 @@ add_library(lang_lib_c STATIC
 
 add_library(lang_lib STATIC
     "Context.cpp"
+    "FileCache.cpp"
     "InternedString.cpp"
     "Message.cpp"
     "Printable.cpp"
@@ -94,4 +95,3 @@ target_link_libraries(lang PRIVATE lang_lib)
 add_subdirectory(command)
 add_subdirectory(test)
 add_subdirectory(third_party)
-add_subdirectory(yyct)

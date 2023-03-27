@@ -22,10 +22,6 @@ struct Preprocessor {
         return lexer.text();
     }
 
-    Fragment fragment() const {
-        return lexer.fragment();
-    }
-
     Location location() const {
         return lexer.location();
     }
@@ -33,6 +29,9 @@ struct Preprocessor {
     Identifier identifier() const;
 
     string_view output();
+
+    TokenKind token;
+    Fragment fragment;
 
 private:
     TokenKind next_token_internal();
@@ -45,7 +44,6 @@ private:
     void require_eol();
 
     const bool preparse;
-    TokenKind token;
     PPTokenLexer lexer;
     IdentifierLexer id_lexer;
     PPNumberLexer num_lexer;

@@ -11,8 +11,8 @@ struct TextStream {
     ostream& stream;
     Location current_location;
 
+    void locate(const Location& location);
     void write(string_view text);
-    void write(string_view text, const Location& location);
 };
 
 #endif
