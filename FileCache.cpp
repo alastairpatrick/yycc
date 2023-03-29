@@ -63,19 +63,27 @@ static string splice_physical_lines(const Input& input) {
     return text;
 }
 
-const File* FileCache::read(const string& path) {
-    auto it = files.find(path);
+const File* FileCache::read(string_view filename) {
+    auto it = files.find(filename);
     if (it != files.end()) return &it->second;
 
     if (access_file_system) {
-        auto file = fopen(path.c_str(), "rb");
+        string filename_str(filename);
+        auto file = fopen(filename_str.c_str(), "rb");
         if (file) {
-            auto& result = files[path];
-            result.text = splice_physical_lines(Input(file));
+            auto result = add(filename);
+            result->text = splice_physical_lines(Input(file));
             fclose(file);
-            return &result;
+            return result;
         }
     }
 
     return nullptr;
+}
+
+File* FileCache::add(string_view filename) {
+    filenames.push_back(string(filename));
+    auto& filename_str = filenames.back();
+    auto& result = files[filename_str];
+    return &result;
 }

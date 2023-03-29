@@ -6,6 +6,17 @@ void foo() {}
 END
 
 
+BEGIN valid #line directive
+#line 7
+int x;
+PREPROCESS
+EXPECT_TEXT
+
+#line 7
+int x;
+END
+
+
 BEGIN valid #include directive
 #include "a.h"
  int x;
@@ -90,3 +101,17 @@ extern int x;
 int x;
 END
 
+
+BEGIN #include directive with backslash in filename
+#include "c:\a.h"
+ int x;
+PREPROCESS
+FILE c:\a.h
+  extern int x;
+EXPECT_TEXT
+
+#line 1 "c:\\a.h"
+  extern int x;
+#line 2 ""
+ int x;
+END

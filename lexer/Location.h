@@ -6,6 +6,8 @@
 struct Location {
     size_t line{};
     size_t column{};
+
+    // Filename might contain backslash escape sequences.
     InternedString filename = empty_interned_string;
 };
 

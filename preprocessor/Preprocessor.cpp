@@ -130,6 +130,12 @@ string_view Preprocessor::output() {
     return string_view(string_stream.str(), string_stream.pcount());
 }
 
+static string_view parse_filename(string_view text) {
+    text.remove_prefix(1);
+    text.remove_suffix(1);
+    return text;
+}
+
 void Preprocessor::handle_line_directive() {
     next_token_internal();
 
@@ -144,7 +150,7 @@ void Preprocessor::handle_line_directive() {
 
     InternedString filename{};
     if (token == TOK_STRING_LITERAL) {
-        filename = intern_string(unescape_string(lexer.text(), location()));
+        filename = intern_string(parse_filename(lexer.text()));
         next_token_internal();
     }
 
@@ -170,6 +176,19 @@ void Preprocessor::handle_error_directive() {
     stream << string_view(begin, end - begin) << '\n';
 }
 
+static InternedString escape_filename(string_view filename) {
+    string escaped;
+
+    for (char c : filename) {
+        if (c == '\\') {
+            escaped += c;
+        }
+        escaped += c;
+    }
+
+    return intern_string(escaped);
+}
+
 void Preprocessor::handle_include_directive() {
     next_token_internal();
 
@@ -179,7 +198,8 @@ void Preprocessor::handle_include_directive() {
         return;
     }
 
-    auto filename = unescape_string(lexer.text(), location());
+    auto filename = parse_filename(lexer.text());
+
     auto file = FileCache::it->read(filename);
     if (!file) {
         message(Severity::ERROR, location()) << "cannot read file '" << filename << "'\n";
@@ -200,7 +220,7 @@ void Preprocessor::handle_include_directive() {
 
     lexer.push_matcher(matcher);
     lexer.lineno(1);
-    lexer.set_filename(intern_string(filename));
+    lexer.set_filename(escape_filename(filename));
 }
 
 void Preprocessor::handle_pragma_directive() {

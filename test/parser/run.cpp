@@ -186,7 +186,7 @@ bool run_parser_tests() {
             } else if (line.substr(0, 4) == "FILE") {
                 section = Section::FILE_SECTION;
                 string path = line.substr(5);
-                file = &file_cache.files[path];
+                file = file_cache.add(path);
             } else if (line == "EXPECT_AST") {
                 section = Section::EXPECTED_AST;
             } else if (line == "END") {
