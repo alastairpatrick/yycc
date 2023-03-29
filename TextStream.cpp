@@ -6,8 +6,8 @@ TextStream::TextStream(ostream& stream): stream(stream) {
 }
 
 void TextStream::locate(const Location& location) {
-   if (location.filename != current_location.filename) {
-        stream << "\n#line " << location.line << " \"" << location.filename << "\"\n";
+    if (location.filename != current_location.filename) {
+        stream << "\n#line " << location.line << " \"" << *location.filename << "\"\n";
         current_location = location;
         current_location.column = 1;
     } else if (location.line - current_location.line >= 0 && location.line - current_location.line < 5) {

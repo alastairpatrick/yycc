@@ -1,5 +1,6 @@
 #include "Preprocessor.h"
 
+#include "FileCache.h"
 #include "Message.h"
 #include "Identifier.h"
 
@@ -49,7 +50,10 @@ TokenKind Preprocessor::next_token() {
 
 void Preprocessor::handle_directive() {
     switch (token) {
-        case TOK_PP_LINE: {
+        case TOK_PP_INCLUDE: {
+          handle_include_directive();
+          return;
+      } case TOK_PP_LINE: {
           handle_line_directive();
           break;
       }
@@ -78,14 +82,30 @@ void Preprocessor::skip_to_eol() {
 
 void Preprocessor::require_eol() {
     if (token != '\n') {
-        message(Severity::ERROR, location()) << "unexpected token in directive\n";
+        unexpected_directive_token();
     }
 
     skip_to_eol();
 }
 
+void Preprocessor::unexpected_directive_token() {
+    message(Severity::ERROR, location()) << "unexpected token in directive\n";
+}
+
 TokenKind Preprocessor::next_token_internal() {
-    return token = lexer.next_token();
+    for (;;) {
+        token = lexer.next_token();
+        if (token != TOK_EOF || include_stack.empty()) break;
+
+        lexer.pop_matcher();
+
+        auto location = include_stack.back();
+        include_stack.pop_back();
+
+        lexer.lineno(location.line);
+        lexer.set_filename(location.filename);
+    }
+    return token;
 }
 
 TokenKind Preprocessor::commit_token(TokenKind token, string_view text) {
@@ -123,17 +143,17 @@ void Preprocessor::handle_line_directive() {
 
     next_token_internal();
 
-    string filename;
+    InternedString filename{};
     if (token == TOK_STRING_LITERAL) {
-        filename = unescape_string(lexer.text(), location());
+        filename = intern_string(unescape_string(lexer.text(), location()));
         next_token_internal();
     }
 
     if (token != '\n') return;
 
     lexer.lineno(line - 1);
-    if (!filename.empty()) {
-        lexer.set_filename(intern_string(filename));
+    if (filename) {
+        lexer.set_filename(filename);
     }
 }
 
@@ -149,6 +169,39 @@ void Preprocessor::handle_error_directive() {
     }
 
     stream << string_view(begin, end - begin) << '\n';
+}
+
+void Preprocessor::handle_include_directive() {
+    next_token_internal();
+
+    if (token != TOK_STRING_LITERAL) {
+        unexpected_directive_token();
+        skip_to_eol();
+        return;
+    }
+
+    auto filename = unescape_string(lexer.text(), location());
+    auto file = FileCache::it->read(filename);
+    if (!file) {
+        message(Severity::ERROR, location()) << "cannot read file '" << filename << "'\n";
+        skip_to_eol();
+        return;
+    }
+
+    next_token_internal();
+    if (token != '\n') {
+        unexpected_directive_token();
+        skip_to_eol();
+    }
+
+    include_stack.push_back(lexer.location());
+
+    auto matcher = lexer.new_matcher();
+    matcher->buffer((char*) file->text.c_str(), file->text.length() + 1);
+
+    lexer.push_matcher(matcher);
+    lexer.lineno(1);
+    lexer.set_filename(intern_string(filename));
 }
 
 void Preprocessor::handle_pragma_directive() {

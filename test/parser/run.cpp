@@ -180,6 +180,7 @@ bool run_parser_tests() {
                 section = Section::INPUT;
                 for (unsigned i = 0; i < unsigned(TestType::NUM); ++i) enabled_types[i] = false;
                 num_enabled_types = 0;
+                file_cache.files.clear();
                 test_line_num = line_num;
                 if (line.length() >= 6) test_name = line.substr(6);
             } else if (line.substr(0, 4) == "FILE") {
