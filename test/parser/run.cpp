@@ -93,7 +93,9 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
             }
             output_stream << expr;
         } else if (test_type == TestType::PREPROCESS) {
-            sweep(output_stream, File(sections[INPUT]));
+            File file;
+            file.text = sections[INPUT];
+            sweep(output_stream, file);
         } else {
             auto statements = parse_declarations(sections[INPUT], test_type == TestType::PREPARSE);
             output_stream << statements;
@@ -185,8 +187,9 @@ bool run_parser_tests() {
                 if (line.length() >= 6) test_name = line.substr(6);
             } else if (line.substr(0, 4) == "FILE") {
                 section = Section::FILE_SECTION;
-                string path = line.substr(5);
-                file = file_cache.add(path);
+                string header_name = line.substr(5);
+                file = file_cache.add(header_name);
+                file->path = header_name.substr(1, header_name.length() - 2);
             } else if (line == "EXPECT_AST") {
                 section = Section::EXPECTED_AST;
             } else if (line == "END") {

@@ -5,9 +5,20 @@ TextStream::TextStream(ostream& stream): stream(stream) {
     current_location.column = 1;
 }
 
+static void output_filename(ostream& stream, string_view filename) {
+    for (char c : filename) {
+        if (c == '\\') {
+            stream << c;
+        }
+        stream << c;
+    }
+}
+
 void TextStream::locate(const Location& location) {
     if (location.filename != current_location.filename) {
-        stream << "\n#line " << location.line << " \"" << *location.filename << "\"\n";
+        stream << "\n#line " << location.line << " \"";
+        output_filename(stream, *location.filename);
+        stream << "\"\n";
         current_location = location;
         current_location.column = 1;
     } else if (location.line - current_location.line >= 0 && location.line - current_location.line < 5) {

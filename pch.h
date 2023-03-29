@@ -12,6 +12,7 @@
 #include <cassert>
 #include <charconv>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <list>
@@ -57,3 +58,5 @@ using std::unordered_map;
 using std::unordered_set;
 using std::vector;
 using std::wstring;
+
+namespace filesystem = std::filesystem;

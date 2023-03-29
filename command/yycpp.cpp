@@ -13,13 +13,13 @@ int main(int argc, const char* argv[]) {
         TranslationUnitContext context(cerr);
 
         auto in_file = FileCache::it->read(argv[i]);
-        if (!in_file) {
+        if (!in_file.exists) {
             fprintf(stderr, "Could not open input file '%s'", argv[i]);
             ++errors;
         } else {
             fstream out_file(string(argv[i]) + "~", ios_base::out | ios_base::trunc | ios_base::binary);
 
-            sweep(out_file, *in_file);
+            sweep(out_file, in_file);
         }
     }
 }

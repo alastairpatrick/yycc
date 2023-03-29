@@ -2,9 +2,6 @@
 
 #include "Message.h"
 
-File::File(const string& text): text(text) {
-}
-
 FileCache* FileCache::it;
 
 FileCache::FileCache(bool access_file_system): access_file_system(access_file_system) {
@@ -63,18 +60,50 @@ static string splice_physical_lines(const Input& input) {
     return text;
 }
 
-const File* FileCache::read(string_view header_name) {
+File FileCache::read(const filesystem::path& path) {
+    filesystem::path preferred(path);
+    preferred.make_preferred();
+
+#ifdef _WIN32
+    auto file = _wfopen(preferred.c_str(), L"rb");
+#else
+    auto file = fopen(preferred.c_str(), "rb");
+#endif
+    File result;
+    if (file) {
+        result.exists = true;
+        result.path = path;
+        result.text = splice_physical_lines(Input(file));
+        fclose(file);
+    }
+    return result;
+}
+
+void FileCache::add_search_directory(bool system, string_view path) {
+    directories.push_back(Directory { system, path });
+}
+
+const File* FileCache::search(string_view header_name) {
     auto it = files.find(header_name);
     if (it != files.end()) return &it->second;
 
     if (access_file_system) {
-        string str(header_name);
-        auto file = fopen(str.c_str(), "rb");
-        if (file) {
-            auto result = add(header_name);
-            result->text = splice_physical_lines(Input(file));
-            fclose(file);
-            return result;
+        auto system_only = header_name.front() == '<';
+
+        auto filename = header_name;
+        filename.remove_prefix(1);
+        filename.remove_suffix(1);
+
+        for (auto& directory : directories) {
+            if (system_only && !directory.system) continue;
+
+            auto path = directory.path / filename;
+            auto file = read(path);
+            if (file.exists) {
+                auto perm_file = add(header_name);
+                *perm_file = move(file);
+                return perm_file;
+            }
         }
     }
 

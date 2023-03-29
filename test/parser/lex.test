@@ -84,12 +84,12 @@ foo.c:7:1: error unexpected character '@'
 END
 
 
-BEGIN Line directive filename is not unescaped
+BEGIN Line directive filename is not escaped
 1
 #line 7 "\\foo.c"
 @
 EXPECT_MESSAGE
-\\foo.c:7:1: error unexpected character '@'
+\foo.c:7:1: error unexpected character '@'
 END
 
 
