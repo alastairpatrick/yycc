@@ -379,9 +379,11 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
     StorageClass storage_class = StorageClass::NONE;
     const Type* type{};
     uint32_t specifiers;
+    auto mark_root = preprocessor.mark_root();
     if (parse_declaration_specifiers(scope, storage_class, type, specifiers)) {
-        auto declaration = new Declaration(scope, storage_class, type, location);;
-            
+        auto declaration = new Declaration(scope, storage_class, type, location);
+        declaration->mark_root = mark_root;
+
         int declarator_count = 0;
         bool last_declarator{};
         while (token && token != ';') {

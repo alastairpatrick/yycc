@@ -17,6 +17,40 @@ int x;
 END
 
 
+BEGIN valid #line directive with path
+#line 7 "foo.h"
+int x;
+PREPROCESS
+EXPECT_TEXT
+
+#line 7 "foo.h"
+int x;
+END
+
+
+BEGIN valid #line directive with path with escape sequence
+#line 7 "\\foo.h"
+int x;
+PREPROCESS
+EXPECT_TEXT
+
+#line 7 "\\foo.h"
+int x;
+END
+
+
+BEGIN combines #line directives
+#line 6
+#line 7
+int x;
+PREPROCESS
+EXPECT_TEXT
+
+#line 7
+int x;
+END
+
+
 BEGIN valid #include directive
 #include "a.h"
  int x;

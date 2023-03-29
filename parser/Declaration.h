@@ -41,6 +41,7 @@ struct Declaration: ASTNode {
     StorageClass storage_class;
     const Type* base_type;
     vector<Declarator*> declarators;
+    bool mark_root{};
 
     virtual void print(ostream& stream) const;
 };

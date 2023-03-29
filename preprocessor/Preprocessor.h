@@ -28,6 +28,8 @@ struct Preprocessor {
 
     Identifier identifier() const;
 
+    bool mark_root() const;
+
     string_view output();
 
     TokenKind token;
