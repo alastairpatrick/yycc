@@ -1,9 +1,9 @@
 #include "ASTNode.h"
 
-#include "Context.h"
+#include "TranslationUnitContext.h"
 
 ASTNode::ASTNode(const Location& location): location(location) {
-    auto context = Context::it;
+    auto context = TranslationUnitContext::it;
     next_delete = context->ast_nodes;
     context->ast_nodes = this;
 }

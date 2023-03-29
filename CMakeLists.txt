@@ -14,11 +14,11 @@ add_library(lang_lib_c STATIC
 )
 
 add_library(lang_lib STATIC
-    "Context.cpp"
     "FileCache.cpp"
     "InternedString.cpp"
     "Message.cpp"
     "Printable.cpp"
+    "TranslationUnitContext.cpp"
 
     "parser/ASTNode.cpp"
     "parser/Constant.cpp"

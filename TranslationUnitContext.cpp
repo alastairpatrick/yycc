@@ -1,18 +1,18 @@
-#include "Context.h"
+#include "TranslationUnitContext.h"
 
 #include "parser/ASTNode.h"
 #include "Message.h"
 
-thread_local Context* Context::it;
+thread_local TranslationUnitContext* TranslationUnitContext::it;
 
-Context::Context(ostream& message_stream): message_stream(message_stream) {
+TranslationUnitContext::TranslationUnitContext(ostream& message_stream): message_stream(message_stream) {
     assert(!it);
     it = this;
 
     interned_views.insert(*empty_interned_string);
 }
 
-Context::~Context() {
+TranslationUnitContext::~TranslationUnitContext() {
     while (ast_nodes) {
         auto node = ast_nodes;
         ast_nodes = ast_nodes->next_delete;

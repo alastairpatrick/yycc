@@ -6,12 +6,12 @@
 
 struct ASTNode;
 
-struct Context {
-    static thread_local Context* it;
+struct TranslationUnitContext {
+    static thread_local TranslationUnitContext* it;
 
-    explicit Context(ostream& message_stream);
-    ~Context();
-    void operator=(const Context&) = delete;
+    explicit TranslationUnitContext(ostream& message_stream);
+    ~TranslationUnitContext();
+    void operator=(const TranslationUnitContext&) = delete;
 
     ostream& message_stream;
 

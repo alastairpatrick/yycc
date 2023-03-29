@@ -1,9 +1,9 @@
 #include "Message.h"
 
-#include "Context.h"
+#include "TranslationUnitContext.h"
 
 ostream& message(Severity severity, const Location& location) {
-    auto &stream = Context::it->message_stream;
+    auto &stream = TranslationUnitContext::it->message_stream;
     stream << *location.filename << ':' << location.line << ':' << location.column << ": ";
 
     switch (severity) {

@@ -1,4 +1,4 @@
-#include "Context.h"
+#include "TranslationUnitContext.h"
 #include "lexer/Fragment.h"
 #include "FileCache.h"
 
@@ -10,7 +10,7 @@ int main(int argc, const char* argv[]) {
     auto errors = 0;
 
     for (auto i = 1; i < argc; ++i) {
-        Context context(cerr);
+        TranslationUnitContext context(cerr);
 
         auto in_file = FileCache::it->read(argv[i]);
         if (!in_file) {
