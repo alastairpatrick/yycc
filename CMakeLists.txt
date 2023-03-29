@@ -20,6 +20,8 @@ add_library(lang_lib STATIC
     "Printable.cpp"
     "TranslationUnitContext.cpp"
 
+    "lexer/Unescape.cpp"
+
     "parser/ASTNode.cpp"
     "parser/Constant.cpp"
     "parser/Declaration.cpp"

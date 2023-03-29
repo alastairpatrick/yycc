@@ -1,10 +1,9 @@
 #include "Preprocessor.h"
 
 #include "FileCache.h"
+#include "lexer/Unescape.h"
 #include "Message.h"
 #include "Identifier.h"
-
-string unescape_string(string_view text, const Location& location);
 
 Preprocessor::Preprocessor(bool preparse): preparse(preparse), text_stream(string_stream) {
 }
