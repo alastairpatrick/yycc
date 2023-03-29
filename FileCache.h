@@ -15,11 +15,11 @@ struct FileCache {
     explicit FileCache(bool access_file_system);
     ~FileCache();
 
-    const File* read(string_view filename);
-    File* add(string_view filename);
+    const File* read(string_view header_name);
+    File* add(string_view header_name);
 
     const bool access_file_system;
-    list<string> filenames;
+    list<string> header_names;
     unordered_map<string_view, File> files;
 };
 

@@ -44,6 +44,7 @@ HW              [ \t\v\f\r]
 
 %xstate PP_TOKENS
 %xstate DIRECTIVE
+%xstate INCLUDE
 
 %%
 
@@ -64,7 +65,7 @@ HW              [ \t\v\f\r]
 }
 
 // Tokenize regular text-line
-<PP_TOKENS> {
+<PP_TOKENS,INCLUDE> {
 
 {L} ({L} | {D})*            { return TOK_IDENTIFIER; }
 
@@ -124,6 +125,10 @@ L?  ' (\\. | [^\\'\n])*  '  { return TOK_CHAR_LITERAL; }
 
 }
 
+<PP_TOKENS,DIRECTIVE,INCLUDE> {
+.               { return TOK_PP_UNRECOGNIZED; }
+}
+
 // Determine the kind of directive and transition.
 <DIRECTIVE> {
 
@@ -135,15 +140,15 @@ endif           { start(PP_TOKENS); return TOK_PP_ENDIF; }
 if              { start(PP_TOKENS); return TOK_PP_IF; }
 ifdef           { start(PP_TOKENS); return TOK_PP_IFDEF; }
 ifndef          { start(PP_TOKENS); return TOK_PP_IFNDEF; }
-include         { start(PP_TOKENS); return TOK_PP_INCLUDE; }
+include         { start(INCLUDE); return TOK_PP_INCLUDE; }
 line            { start(PP_TOKENS); return TOK_PP_LINE; }
 pragma          { start(PP_TOKENS); return TOK_PP_PRAGMA; }
 undef           { start(PP_TOKENS); return TOK_PP_UNDEF; }
 
 }
 
-<PP_TOKENS,DIRECTIVE> {
-.               { return TOK_PP_UNRECOGNIZED; }
+<INCLUDE> {
+"<" (\\. | [^>\n])* ">"     { start(PP_TOKENS); return TOK_STRING_LITERAL; }
 }
 
 %%

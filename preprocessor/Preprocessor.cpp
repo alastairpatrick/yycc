@@ -180,7 +180,11 @@ void Preprocessor::handle_error_directive() {
     stream << string_view(begin, end - begin) << '\n';
 }
 
-static InternedString escape_filename(string_view filename) {
+static InternedString escape_header_name(string_view header_name) {
+    string_view filename(header_name);
+    filename.remove_prefix(1);
+    filename.remove_suffix(1);
+
     string escaped;
 
     for (char c : filename) {
@@ -202,11 +206,11 @@ void Preprocessor::handle_include_directive() {
         return;
     }
 
-    auto filename = parse_filename(lexer.text());
+    auto header_name = lexer.text();
 
-    auto file = FileCache::it->read(filename);
+    auto file = FileCache::it->read(header_name);
     if (!file) {
-        message(Severity::ERROR, location()) << "cannot read file '" << filename << "'\n";
+        message(Severity::ERROR, location()) << "cannot read file " << header_name << '\n';
         skip_to_eol();
         return;
     }
@@ -224,7 +228,7 @@ void Preprocessor::handle_include_directive() {
 
     lexer.push_matcher(matcher);
     lexer.lineno(1);
-    lexer.set_filename(escape_filename(filename));
+    lexer.set_filename(escape_header_name(header_name));
 }
 
 void Preprocessor::handle_pragma_directive() {
