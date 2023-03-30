@@ -1,7 +1,7 @@
 #include "nlohmann/json.hpp"
 
 #include "Constant.h"
-#include "lexer/Unescape.h""
+#include "lexer/Unescape.h"
 #include "Message.h"
 
 using json = nlohmann::json;
@@ -83,6 +83,10 @@ IntegerConstant* IntegerConstant::of(string_view text, TokenKind token, const Lo
 IntegerConstant::IntegerConstant(LLVMValueRef value, const IntegerType* type, const Location& location)
     : Constant(location), type(type), value(value) {
     assert(value);
+}
+
+long long IntegerConstant::int_value() const {
+    return LLVMConstIntGetSExtValue(value);
 }
 
 const Type* IntegerConstant::get_type() const {

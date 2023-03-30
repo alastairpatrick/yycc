@@ -280,6 +280,14 @@ EXPECT_AST
  ,["var", "ES", "PSi", "y", ""]]]
 
 
+BEGIN Array declarators
+int x[], y[1], z[1][2][];
+EXPECT_AST
+[[["var", "ES", "ASi", "x", ""]
+ ,["var", "ES", "A1Si", "y", ""]
+ ,["var", "ES", "AA2A1Si", "z", ""]]]
+
+
 BEGIN Const declarator
 int* const y;
 EXPECT_AST

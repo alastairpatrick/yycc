@@ -38,6 +38,7 @@ enum Section {
 
 static const Test tests[] = {
     { "preprocess",         TestType::PREPROCESS },
+    { "sweep",              TestType::PREPROCESS },
 
     { "typedef",            TestType::PREPARSE },
     { "var_decl",           TestType::PREPARSE },

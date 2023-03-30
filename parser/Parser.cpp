@@ -520,6 +520,16 @@ Declarator* Parser::parse_declarator(Declaration* declaration, uint32_t specifie
         Expr* initializer{};
         Declarator* declarator{};
 
+        while (consume('[')) {
+            Expr* array_size{};
+            if (token != ']') {
+                array_size = parse_expr(ASSIGN_PREC);
+            }
+            require(']');
+
+            type = new ArrayType(type, array_size);
+        }
+
         if (consume('=')) {
             initializer = parse_expr(ASSIGN_PREC);
         } else if (consume('(')) {

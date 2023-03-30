@@ -6,6 +6,7 @@
 #include "Printable.h"
 
 struct CodeGenContext;
+struct Expr;
 struct PointerType;
 struct SymbolMap;
 
@@ -110,6 +111,19 @@ private:
 
     mutable LLVMTypeRef llvm = nullptr;
     explicit PointerType(const Type* base_type);
+};
+
+struct ArrayType: Type {
+    ArrayType(const Type* element_type, const Expr* size);
+
+    const Type* const element_type;
+    const Expr* size;
+
+    virtual const Type* resolve(SymbolMap& scope) const;
+
+    virtual LLVMTypeRef llvm_type() const;
+
+    virtual void print(std::ostream& stream) const;
 };
 
 enum TypeQualifiers {

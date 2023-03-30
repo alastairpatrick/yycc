@@ -1,12 +1,14 @@
 #include "Type.h"
 
 #include "CodeGenContext.h"
+#include "Constant.h"
 #include "TranslationUnitContext.h"
 #include "Declaration.h"
 #include "InternedString.h"
 #include "SymbolMap.h"
 
 // Type codes
+// A array
 // C char
 // F float: Ff float, Fd double, Fl long double
 // N name: Ns<id> struct, Nu<id> union, Ne<id> enum, Nt<id> typedef
@@ -303,6 +305,32 @@ void PointerType::print(std::ostream& stream) const {
 
 PointerType::PointerType(const Type* base_type)
     : base_type(base_type) {
+}
+
+const Type* ArrayType::resolve(SymbolMap& scope) const {
+    auto e = element_type->resolve(scope);
+
+    // TODO: evaluate constant size expression and return canonical representation of array type.
+    assert(false);
+    return nullptr;
+}
+
+LLVMTypeRef ArrayType::llvm_type() const {
+    // TODO
+    assert(false);
+    return nullptr;
+}
+
+void ArrayType::print(std::ostream& stream) const {
+    stream << "A";
+    if (auto size_constant = dynamic_cast<const IntegerConstant*>(size)) {
+        stream << size_constant->int_value();
+    }
+    stream << element_type;
+}
+
+ArrayType::ArrayType(const Type* element_type, const Expr* size)
+    : element_type(element_type), size(size) {
 }
 
 const QualifiedType* QualifiedType::of(const Type* base_type, unsigned qualifiers) {
