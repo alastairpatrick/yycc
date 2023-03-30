@@ -40,8 +40,12 @@ bool Parser::require(int t, Location* location) {
 }
 
 void Parser::skip() {
-    message(Severity::ERROR, preprocessor.location()) << "unexpected token\n";
+    unexpected_token();
     consume();
+}
+
+void Parser::unexpected_token() {
+    message(Severity::ERROR, preprocessor.location()) << "unexpected token\n";
 }
 
 size_t Parser::position() const {
@@ -133,7 +137,7 @@ Expr* Parser::parse_cast_expr() {
             break;
         }
         else if (token == TOK_IDENTIFIER) {
-            Declarator* declarator = symbols.lookup_declarator(false, preprocessor.identifier());
+            Declarator* declarator = symbols.lookup_declarator(preprocessor.identifier());
             if (declarator) {
                 // TokenKind would have to be TOK_TYPEDEF_IDENTIFIER for declarator to be a typedef.
                 assert(!dynamic_cast<TypeDef*>(declarator));
@@ -188,15 +192,17 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
             specifier_set &= ~(1 << token);
         }
 
-        bool should_consume = false;
+        Location specifier_location = preprocessor.location();
+        TokenKind found_specifier{};
         switch (token) {
             case TOK_TYPEDEF:
             case TOK_EXTERN:
             case TOK_STATIC:
             case TOK_AUTO:
             case TOK_REGISTER: {
-              should_consume = true;
+              found_specifier = token;
               storage_class_location = preprocessor.location();
+              consume();
               break;
 
           } case TOK_VOID:
@@ -210,14 +216,15 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
             case TOK_UNSIGNED:
             case TOK_BOOL:
             case TOK_COMPLEX: {
-              should_consume = true;
+              found_specifier = token;
               type_specifier_location = preprocessor.location();                
+              consume();
               break;
 
-            } case TOK_IDENTIFIER: {
+          } case TOK_IDENTIFIER: {
               if ((specifier_set & type_specifier_mask) == 0) {
                   const Type* typedef_type;
-                  typedef_type = symbols.lookup_type(false, preprocessor.identifier());
+                  typedef_type = symbols.lookup_type(preprocessor.identifier());
                   if (!typedef_type) {
                       if (scope != IdentifierScope::FILE) break;
 
@@ -230,35 +237,80 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
                   }
 
                   type = typedef_type;
-                  should_consume = true;
+                  found_specifier = token;
                   type_specifier_location = preprocessor.location();                
+                  consume();
               }
               break;
 
+          } case TOK_STRUCT: {
+              found_specifier = token;
+              type_specifier_location = preprocessor.location();
+              consume();
+
+              Identifier identifier;
+              if (token == TOK_IDENTIFIER) {
+                  identifier = preprocessor.identifier();
+                  consume();
+              }
+
+              if (consume('{')) {
+                  vector<Declaration*> members;
+                  while (token && token != '}') {
+                      auto node = parse_declaration_or_statement(IdentifierScope::FILE);
+                      members.push_back(dynamic_cast<Declaration*>(node));
+                  }
+
+                  require('}');
+
+                  type = new StructType(move(members), type_specifier_location);
+              }
+
+              if (identifier.name->empty()) {
+                  if (!type) {
+                      unexpected_token();
+                  }
+              } else {
+                  if (type) {
+                      auto declarator = new TypeDef(nullptr, type, identifier, type_specifier_location);
+                      type = new DeclarationType(declarator);
+                      symbols.add_declarator(declarator);
+                  } else {
+                      if (preparse) {
+                          type = NamedType::of(TypeNameKind::STRUCT, identifier);
+                      } else {
+                          // TODO
+                      }
+                  }
+              }
+
+              break;
+
           } case TOK_INLINE: {
-              should_consume = true;
+              found_specifier = token;
               function_specifier_location = preprocessor.location();
               specifier_set &= ~(1 << token); // function speficiers may be repeated
+              consume();
               break;
 
           } case TOK_CONST:
             case TOK_RESTRICT:
             case TOK_VOLATILE: {
-              should_consume = true;
+              found_specifier = token;
               qualifier_location = preprocessor.location();
               specifier_set &= ~(1 << token); // qualifiers may be repeated
+              consume();
               break;
           }
         }
 
-        if (should_consume) {
-            assert(token < 32);
+        if (found_specifier) {
+            assert(found_specifier < 32);
             is_declaration = true;
-            if (specifier_set & (1 << token)) {
-                message(Severity::ERROR, preprocessor.location()) << "invalid declaration specifier or type qualifier combination\n";
+            if (specifier_set & (1 << found_specifier)) {
+                message(Severity::ERROR, specifier_location) << "invalid declaration specifier or type qualifier combination\n";
             }
-            specifier_set |= 1 << token;
-            consume();
+            specifier_set |= 1 << found_specifier;
         } else {
             break;
         }
@@ -353,7 +405,8 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
           type = IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL);
           break;
 
-      } case (1 << TOK_IDENTIFIER): {
+      } case (1 << TOK_IDENTIFIER):
+        case (1 << TOK_STRUCT): {
           break;
       }
     }
@@ -383,6 +436,11 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
     if (parse_declaration_specifiers(scope, storage_class, type, specifiers)) {
         auto declaration = new Declaration(scope, storage_class, type, location);
         declaration->mark_root = mark_root;
+
+        if (auto declaration_type = dynamic_cast<const DeclarationType*>(type)) {
+            auto declarator = const_cast<TypeDef*>(declaration_type->declarator);
+            declarator->declaration = declaration;
+        }
 
         int declarator_count = 0;
         bool last_declarator{};
@@ -597,7 +655,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, uint32_t specifie
         }
 
         if (!identifier.name->empty()) {
-            symbols.add_declarator(TypeNameKind::ORDINARY, declarator);
+            symbols.add_declarator(declarator);
         }
 
         declarator->fragment = end_fragment(begin);

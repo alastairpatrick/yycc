@@ -2,13 +2,17 @@
 #define AST_TYPE_H
 
 #include "Identifier.h"
+#include "lexer/Location.h"
 #include "lexer/Token.h"
 #include "Printable.h"
 
 struct CodeGenContext;
+struct Declaration;
 struct Expr;
+enum class IdentifierScope;
 struct PointerType;
 struct SymbolMap;
+struct TypeDef;
 
 struct Type: Printable {
     Type() = default;
@@ -152,7 +156,7 @@ private:
 };
 
 struct FunctionType: Type {
-    static const FunctionType* of(const Type* return_type, std::vector<const Type*> parameter_types, bool variadic);
+    static const FunctionType* of(const Type* return_type, vector<const Type*> parameter_types, bool variadic);
 
     const Type* return_type;
     const std::vector<const Type*> parameter_types;
@@ -169,12 +173,34 @@ private:
     FunctionType(const Type* return_type, std::vector<const Type*> parameter_types, bool variadic);
 };
 
+struct StructType: Type {
+    StructType(vector<Declaration*>&& members, const Location& location);
+
+    const Location location;
+    const vector<Declaration*> members;
+
+    virtual LLVMTypeRef llvm_type() const;
+
+    virtual void print(std::ostream& stream) const;
+};
+
+struct DeclarationType: Type {
+    explicit DeclarationType(TypeDef* declarator);
+
+    const TypeDef* declarator;
+
+    virtual LLVMTypeRef llvm_type() const;
+
+    virtual void print(std::ostream& stream) const;
+};
+
+// This type is only used during preparsing, when names cannot necessarily be bound to declarations.
 struct NamedType: Type {
     static const NamedType* of(TypeNameKind kind, const Identifier& identifier);
 
     TypeNameKind kind;
     Identifier identifier;
-    
+
     virtual LLVMTypeRef llvm_type() const;
     virtual void print(ostream& stream) const;
 

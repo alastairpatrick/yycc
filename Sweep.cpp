@@ -14,7 +14,7 @@ struct DeclarationMarker {
     const ASTNodeVector& declarations;
     const SymbolMap& symbols;
     unordered_set<const Declaration*> todo;
-    unordered_set<const ASTNode*> marked;
+    unordered_set<const Declaration*> marked;
 
     void mark() {
         for (auto node : declarations) {
@@ -37,10 +37,7 @@ struct DeclarationMarker {
                 TokenKind token = TokenKind(lexer.next_token());
                 if (!token) break;
                 if (token != TOK_IDENTIFIER) continue;
-
-                Identifier id(lexer.text());
-                lookup(false, id);
-                lookup(true, id);
+                lookup(Identifier(lexer.text()));
             }
 
             todo.erase(it);
@@ -48,8 +45,8 @@ struct DeclarationMarker {
         }
     }
 
-    void lookup(bool tag, const Identifier& id) {
-        auto declarator = symbols.lookup_declarator(tag, id);
+    void lookup(const Identifier& id) {
+        auto declarator = symbols.lookup_declarator(id);
         while (declarator) {
             if (!is_marked(declarator->declaration)) {
                 todo.insert(declarator->declaration);
@@ -58,7 +55,7 @@ struct DeclarationMarker {
         }
     }
 
-    bool is_marked(const ASTNode* declaration) const {
+    bool is_marked(const Declaration* declaration) const {
         return marked.find(declaration) != marked.end();
     }
 };
@@ -79,8 +76,14 @@ void sweep(ostream& stream, const File& file) {
 
     TextStream text_stream(stream);
 
-    for (auto declaration : parser.declarations) {
-        if (!marker.is_marked(declaration)) continue;
+    vector<const Declaration*> marked(marker.marked.begin(), marker.marked.end());
+    sort(marked.begin(), marked.end(), [](const Declaration* a, const Declaration* b) {
+        return a->fragment.position > b->fragment.position;
+    });
+
+    while (token && marked.size()) {
+        auto declaration = marked.back();
+        marked.pop_back();
 
         while (token && preprocessor2.fragment.position < declaration->fragment.position) {
             token = preprocessor2.next_token();
@@ -92,8 +95,6 @@ void sweep(ostream& stream, const File& file) {
 
             token = TokenKind(preprocessor2.next_token());
         }
-
-        if (!token) break;
     }
 
     stream << "\n";

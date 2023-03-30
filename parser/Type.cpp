@@ -2,6 +2,7 @@
 
 #include "CodeGenContext.h"
 #include "Constant.h"
+#include "Declaration.h"
 #include "TranslationUnitContext.h"
 #include "Declaration.h"
 #include "InternedString.h"
@@ -10,10 +11,12 @@
 // Type codes
 // A array
 // C char
+// D declaration
 // F float: Ff float, Fd double, Fl long double
 // N name: Ns<id> struct, Nu<id> union, Ne<id> enum, Nt<id> typedef
 // P pointer
 // Q qualified: Qc const, Qv volatile, Qr restrict, Qcrv const restrict volatile, etc
+// R struct
 // S signed: Sc signed char, Ss signed short, Si signed int, Sl signed long, Sm signed long long
 // U unsigned: Ub bool, Uc unsigned char, Us unsigned short, Ui unsigned int, Ul unsigned long, Um unsigned long long
 // V void
@@ -322,7 +325,7 @@ LLVMTypeRef ArrayType::llvm_type() const {
 }
 
 void ArrayType::print(std::ostream& stream) const {
-    stream << "A";
+    stream << 'A';
     if (auto size_constant = dynamic_cast<const IntegerConstant*>(size)) {
         stream << size_constant->int_value();
     }
@@ -422,6 +425,43 @@ void FunctionType::print(std::ostream& stream) const {
 
 FunctionType::FunctionType(const Type* return_type, std::vector<const Type*> parameter_types, bool variadic)
     : return_type(return_type), parameter_types(move(parameter_types)), variadic(variadic) {
+}
+
+StructType::StructType(vector<Declaration*>&& members, const Location& location)
+    : members(members), location(location) {
+}
+
+LLVMTypeRef StructType::llvm_type() const {
+    assert(false);
+    return nullptr;
+}
+
+void StructType::print(std::ostream& stream) const {
+    stream << "Rs{";
+
+    auto separator = false;
+    for (auto member : members) {
+        if (separator) stream << ';';
+        separator = true;
+        for (auto declarator : member->declarators) {
+            stream << declarator->type << declarator->identifier;
+        }
+    }
+
+    stream << '}';
+}
+
+DeclarationType::DeclarationType(TypeDef* declarator)
+    : declarator(declarator) {
+}
+
+LLVMTypeRef DeclarationType::llvm_type() const {
+    assert(false);
+    return nullptr;
+}
+
+void DeclarationType::print(std::ostream& stream) const {
+    stream << 'D' << declarator->type << declarator->identifier;
 }
 
 const NamedType* NamedType::of(TypeNameKind kind, const Identifier& identifier) {

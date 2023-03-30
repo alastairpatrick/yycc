@@ -29,6 +29,13 @@ ostream& operator<<(ostream& stream, StorageDuration duration) {
 
 Declaration::Declaration(IdentifierScope scope, StorageClass storage_class, const Type* base_type, const Location& location)
     : ASTNode(location), scope(scope), storage_class(storage_class), base_type(base_type) {
+    if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
+        linkage = Linkage::INTERNAL;
+    } else if (storage_class == StorageClass::EXTERN || scope == IdentifierScope::FILE) {
+        linkage = Linkage::EXTERNAL;
+    } else {
+        linkage = Linkage::NONE;
+    }
 }
 
 void Declaration::print(ostream& stream) const {
@@ -44,18 +51,8 @@ void Declaration::print(ostream& stream) const {
     if (declarators.size() != 1) stream << ']';
 }
 
-Declarator::Declarator(Declaration* declaration, const Type* type, const Identifier &identifier, const Location& location)
+Declarator::Declarator(const Declaration* declaration, const Type* type, const Identifier &identifier, const Location& location)
     : ASTNode(location), declaration(declaration), type(type), identifier(identifier) {
-    auto scope = declaration->scope;
-    auto storage_class = declaration->storage_class;
-
-    if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
-        linkage = Linkage::INTERNAL;
-    } else if (storage_class == StorageClass::EXTERN || scope == IdentifierScope::FILE) {
-        linkage = Linkage::EXTERNAL;
-    } else {
-        linkage = Linkage::NONE;
-    }
 }
 
 const Type* Declarator::to_type() const {
@@ -68,13 +65,13 @@ void Declarator::combine() {
         message(Severity::INFO, earlier->location) << "see prior declaration\n";
     }
 
-    if (linkage == Linkage::INTERNAL && earlier->linkage != Linkage::INTERNAL) {
+    if (declaration->linkage == Linkage::INTERNAL && earlier->declaration->linkage != Linkage::INTERNAL) {
         message(Severity::ERROR, location) << "static declaration of '" << identifier << "' follows non-static declaration\n";
         message(Severity::INFO, earlier->location) << "see prior declaration\n";
     }
 }
 
-Variable::Variable(Declaration* declaration, const Type* type, const Identifier& identifier, Expr* initializer, const Location& location)
+Variable::Variable(const Declaration* declaration, const Type* type, const Identifier& identifier, Expr* initializer, const Location& location)
     : Declarator(declaration, type, identifier, location), initializer(initializer) {
     auto scope = declaration->scope;
     auto storage_class = declaration->storage_class;
@@ -107,7 +104,7 @@ void Variable::combine() {
 }
 
 void Variable::print(ostream& stream) const {
-    stream << "[\"var\", \"" << linkage << storage_duration;
+    stream << "[\"var\", \"" << declaration->linkage << storage_duration;
 
     stream << "\", \"" << type << "\", \"" << identifier  << "\"";
     if (initializer) {
@@ -116,7 +113,7 @@ void Variable::print(ostream& stream) const {
     stream << ']';
 }
 
-Function::Function(Declaration* declaration, const FunctionType* type, uint32_t specifiers, const Identifier& identifier, vector<Variable*>&& params, Statement* body, const Location& location)
+Function::Function(const Declaration* declaration, const FunctionType* type, uint32_t specifiers, const Identifier& identifier, vector<Variable*>&& params, Statement* body, const Location& location)
     : Declarator(declaration, type, identifier, location), params(move(params)), body(body) {
     auto scope = declaration->scope;
     auto storage_class = declaration->storage_class;
@@ -130,7 +127,7 @@ Function::Function(Declaration* declaration, const FunctionType* type, uint32_t 
 
     // It's very valuable to determine which functions with external linkage are inline definitions, because they don't need to be
     // written to the AST file; another translation unit is guaranteed to have an external definition.
-    inline_definition = (linkage == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
+    inline_definition = (declaration->linkage == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
 }
 
 void Function::combine() {
@@ -157,7 +154,7 @@ void Function::combine() {
 }
 
 void Function::print(ostream& stream) const {
-    stream << "[\"fun\", \"" << linkage;
+    stream << "[\"fun\", \"" << declaration->linkage;
 
     if (inline_definition) {
         stream << 'i';
@@ -176,7 +173,7 @@ void Function::print(ostream& stream) const {
     stream << ']';
 }
 
-TypeDef::TypeDef(Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location)
+TypeDef::TypeDef(const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location)
     : Declarator(declaration, type, identifier, location) {
 }
 

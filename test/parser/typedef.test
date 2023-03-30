@@ -144,3 +144,10 @@ DECLARATIONS
 EXPECT_MESSAGE
 :2:1: error redeclaration of 'a' with different type
 :1:1: see prior declaration
+END
+
+
+BEGIN Struct typedef
+typedef struct { int x; int y; } z;
+EXPECT_AST
+[["typedef", "Rs{Six;Siy}", "z"]]

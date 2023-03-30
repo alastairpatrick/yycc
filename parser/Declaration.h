@@ -39,6 +39,7 @@ struct Declaration: ASTNode {
 
     IdentifierScope scope;
     StorageClass storage_class;
+    Linkage linkage;
     const Type* base_type;
     vector<Declarator*> declarators;
     bool mark_root{};
@@ -47,7 +48,7 @@ struct Declaration: ASTNode {
 };
 
 struct Variable: Declarator {
-    Variable(Declaration* declaration, const Type* type, const Identifier& identifier, Expr* initializer, const Location& location);
+    Variable(const Declaration* declaration, const Type* type, const Identifier& identifier, Expr* initializer, const Location& location);
 
     StorageDuration storage_duration;
     Expr* initializer{};
@@ -57,7 +58,7 @@ struct Variable: Declarator {
 };
 
 struct Function: Declarator {
-    Function(Declaration* declaration, const FunctionType* type, uint32_t specifiers, const Identifier& identifier, vector<Variable*>&& params, Statement* body, const Location& location);
+    Function(const Declaration* declaration, const FunctionType* type, uint32_t specifiers, const Identifier& identifier, vector<Variable*>&& params, Statement* body, const Location& location);
 
     vector<Variable*> params;
     Statement* body{};
@@ -69,7 +70,7 @@ struct Function: Declarator {
 };
 
 struct TypeDef: Declarator {
-    TypeDef(Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location);
+    TypeDef(const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location);
 
     virtual const Type* to_type() const;
     virtual void print(ostream& stream) const;

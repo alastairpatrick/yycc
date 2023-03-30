@@ -288,6 +288,33 @@ EXPECT_AST
  ,["var", "ES", "AA2A1Si", "z", ""]]]
 
 
+BEGIN Unnamed struct definition
+struct { int x; int y; } z;
+EXPECT_AST
+[["var", "ES", "Rs{Six;Siy}", "z", ""]]
+
+
+BEGIN Named struct definition
+struct S { int x; int y; } z;
+EXPECT_AST
+[["var", "ES", "DRs{Six;Siy}S", "z", ""]]
+
+
+BEGIN Named struct
+struct S z;
+PREPARSE
+EXPECT_AST
+[["var", "ES", "NsS", "z", ""]]
+
+
+BEGIN Error on standalone struct keyword
+struct;
+EXPECT_MESSAGE
+:1:7: error unexpected token
+EXPECT_AST
+[[]]
+
+
 BEGIN Const declarator
 int* const y;
 EXPECT_AST

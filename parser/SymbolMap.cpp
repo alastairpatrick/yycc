@@ -1,8 +1,7 @@
 #include "SymbolMap.h"
 #include "Declaration.h"
 
-Declarator* SymbolMap::lookup_declarator(bool tag, const Identifier& identifier) const {
-    // TODO: consider tag
+Declarator* SymbolMap::lookup_declarator(const Identifier& identifier) const {
     for (auto& scope : scopes) {
         auto it = scope.declarators.find(identifier.name);
         if (it != scope.declarators.end()) {
@@ -13,14 +12,14 @@ Declarator* SymbolMap::lookup_declarator(bool tag, const Identifier& identifier)
     return nullptr;
 }
 
-const Type* SymbolMap::lookup_type(bool tag, const Identifier& identifier) const {
-    auto declarator = lookup_declarator(tag, identifier);
+const Type* SymbolMap::lookup_type(const Identifier& identifier) const {
+    auto declarator = lookup_declarator(identifier);
     if (!declarator) return nullptr;
 
     return declarator->to_type();
 }
 
-void SymbolMap::add_declarator(TypeNameKind kind, Declarator* declarator) {
+void SymbolMap::add_declarator(Declarator* declarator) {
     auto it = scopes.front().declarators.find(declarator->identifier.name);
     if (it != scopes.front().declarators.end()) {
         declarator->earlier = it->second;

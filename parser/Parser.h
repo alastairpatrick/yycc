@@ -29,6 +29,8 @@ private:
     bool consume(int t, Location* location = nullptr);
     bool require(int t, Location* location = nullptr);
     void skip();
+    void unexpected_token();
+
     size_t position() const;
     Fragment end_fragment(size_t begin_position) const;
     OperatorAssoc assoc();
