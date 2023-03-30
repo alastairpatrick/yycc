@@ -427,17 +427,17 @@ FunctionType::FunctionType(const Type* return_type, std::vector<const Type*> par
     : return_type(return_type), parameter_types(move(parameter_types)), variadic(variadic) {
 }
 
-StructType::StructType(vector<Declaration*>&& members, const Location& location)
-    : members(members), location(location) {
+StructuredType::StructuredType(vector<Declaration*>&& members, const Location& location)
+    : members(move(members)), location(location) {
 }
 
-LLVMTypeRef StructType::llvm_type() const {
+LLVMTypeRef StructuredType::llvm_type() const {
     assert(false);
     return nullptr;
 }
 
-void StructType::print(std::ostream& stream) const {
-    stream << "Rs{";
+void StructuredType::print(std::ostream& stream) const {
+    stream << "{";
 
     auto separator = false;
     for (auto member : members) {
@@ -449,6 +449,24 @@ void StructType::print(std::ostream& stream) const {
     }
 
     stream << '}';
+}
+
+StructType::StructType(vector<Declaration*>&& members, const Location& location)
+    : StructuredType(move(members), location) {
+}
+
+void StructType::print(std::ostream& stream) const {
+    stream << "Rs";
+    StructuredType::print(stream);
+}
+
+UnionType::UnionType(vector<Declaration*>&& members, const Location& location)
+    : StructuredType(move(members), location) {
+}
+
+void UnionType::print(std::ostream& stream) const {
+    stream << "Ru";
+    StructuredType::print(stream);
 }
 
 DeclarationType::DeclarationType(TypeDef* declarator)

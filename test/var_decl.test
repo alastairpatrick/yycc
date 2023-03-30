@@ -324,6 +324,25 @@ EXPECT_AST
 [["typedef","Ff","T"],["var","ES","Si","v",""]]
 
 
+BEGIN Unnamed union definition
+union { int x; int y; } z;
+EXPECT_AST
+[["var", "ES", "Ru{Six;Siy}", "z", ""]]
+
+
+BEGIN Named union definition
+union S { int x; int y; } z;
+EXPECT_AST
+[["var", "ES", "DRu{Six;Siy}S", "z", ""]]
+
+
+BEGIN Named union
+union S z;
+PREPARSE
+EXPECT_AST
+[["var", "ES", "NuS", "z", ""]]
+
+
 BEGIN Const declarator
 int* const y;
 EXPECT_AST

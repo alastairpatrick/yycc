@@ -243,7 +243,8 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
               }
               break;
 
-          } case TOK_STRUCT: {
+          } case TOK_STRUCT:
+            case TOK_UNION: {
               found_specifier = token;
               type_specifier_location = preprocessor.location();
               consume();
@@ -263,7 +264,11 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
 
                   require('}');
 
-                  type = new StructType(move(members), type_specifier_location);
+                  if (found_specifier == TOK_STRUCT) {
+                      type = new StructType(move(members), type_specifier_location);
+                  } else {
+                      type = new UnionType(move(members), type_specifier_location);
+                  }
               }
 
               if (identifier.name->empty()) {
@@ -277,7 +282,11 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
                       symbols.add_declarator(declarator);
                   } else {
                       if (preparse) {
-                          type = NamedType::of(TypeNameKind::STRUCT, identifier);
+                          if (found_specifier == TOK_STRUCT) {
+                              type = NamedType::of(TypeNameKind::STRUCT, identifier);
+                          } else {
+                              type = NamedType::of(TypeNameKind::UNION, identifier);
+                          }
                       } else {
                           // TODO
                       }
@@ -406,7 +415,8 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
           break;
 
       } case (1 << TOK_IDENTIFIER):
-        case (1 << TOK_STRUCT): {
+        case (1 << TOK_STRUCT):
+        case (1 << TOK_UNION): {
           break;
       }
     }

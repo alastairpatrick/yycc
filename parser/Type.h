@@ -173,14 +173,24 @@ private:
     FunctionType(const Type* return_type, std::vector<const Type*> parameter_types, bool variadic);
 };
 
-struct StructType: Type {
-    StructType(vector<Declaration*>&& members, const Location& location);
+struct StructuredType: Type {
+    StructuredType(vector<Declaration*>&& members, const Location& location);
 
     const Location location;
     const vector<Declaration*> members;
 
     virtual LLVMTypeRef llvm_type() const;
 
+    virtual void print(std::ostream& stream) const;
+};
+
+struct StructType: StructuredType {
+    StructType(vector<Declaration*>&& members, const Location& location);
+    virtual void print(std::ostream& stream) const;
+};
+
+struct UnionType: StructuredType {
+    UnionType(vector<Declaration*>&& members, const Location& location);
     virtual void print(std::ostream& stream) const;
 };
 
