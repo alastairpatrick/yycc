@@ -34,7 +34,7 @@ const Type* Type::promote() const {
     return this;
 }
 
-const Type* Type::resolve(SymbolMap& scope) const {
+const Type* Type::resolve(SymbolMap& symbols) const {
     return this;
 }
 
@@ -293,8 +293,8 @@ const Type* convert_arithmetic(const Type* left, const Type* right) {
     return nullptr;
 }
 
-const Type* PointerType::resolve(SymbolMap& scope) const {
-    return base_type->resolve(scope)->pointer_to();
+const Type* PointerType::resolve(SymbolMap& symbols) const {
+    return base_type->resolve(symbols)->pointer_to();
 }
 
 LLVMTypeRef PointerType::llvm_type() const {
@@ -310,8 +310,8 @@ PointerType::PointerType(const Type* base_type)
     : base_type(base_type) {
 }
 
-const Type* ArrayType::resolve(SymbolMap& scope) const {
-    auto e = element_type->resolve(scope);
+const Type* ArrayType::resolve(SymbolMap& symbols) const {
+    auto e = element_type->resolve(symbols);
 
     // TODO: evaluate constant size expression and return canonical representation of array type.
     assert(false);
@@ -356,8 +356,8 @@ const Type* QualifiedType::unqualified() const {
     return base_type;
 }
 
-const Type* QualifiedType::resolve(SymbolMap& scope) const {
-    return QualifiedType::of(base_type->resolve(scope), qualifier_flags);
+const Type* QualifiedType::resolve(SymbolMap& symbols) const {
+    return QualifiedType::of(base_type->resolve(symbols), qualifier_flags);
 }
 
 LLVMTypeRef QualifiedType::llvm_type() const {
@@ -397,11 +397,11 @@ const FunctionType* FunctionType::of(const Type* return_type, std::vector<const 
     return type;
 }
 
-const Type* FunctionType::resolve(SymbolMap& scope) const {
-    auto resolved_return_type = return_type->resolve(scope);
+const Type* FunctionType::resolve(SymbolMap& symbols) const {
+    auto resolved_return_type = return_type->resolve(symbols);
     auto resolved_param_types(parameter_types);
     for (auto& param_type : resolved_param_types) {
-        param_type = param_type->resolve(scope);
+        param_type = param_type->resolve(symbols);
     }
     return FunctionType::of(resolved_return_type, resolved_param_types, variadic);
 }

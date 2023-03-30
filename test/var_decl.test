@@ -315,6 +315,15 @@ EXPECT_AST
 [[]]
 
 
+BEGIN Error on combination of struct specifier and type specifier
+typedef float T;
+T struct S v;
+EXPECT_MESSAGE
+:2:3: error invalid type specifier combination
+EXPECT_AST
+[["typedef","Ff","T"],["var","ES","Si","v",""]]
+
+
 BEGIN Const declarator
 int* const y;
 EXPECT_AST

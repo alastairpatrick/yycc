@@ -4,8 +4,8 @@ FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download
 FetchContent_MakeAvailable(json)
 
 add_executable(test
-    parser/run.cpp
-    main.cpp
+    "run.cpp"
+    "main.cpp"
  )
 
 target_link_libraries(test PRIVATE lang_lib nlohmann_json::nlohmann_json)

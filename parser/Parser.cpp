@@ -283,7 +283,7 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
                       }
                   }
               }
-
+              
               break;
 
           } case TOK_INLINE: {
