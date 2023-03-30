@@ -8,6 +8,7 @@
 
 struct CodeGenContext;
 struct Declaration;
+struct EnumConstant;
 struct Expr;
 enum class IdentifierScope;
 struct PointerType;
@@ -29,6 +30,8 @@ struct Type: Printable {
     virtual const Type* resolve(SymbolMap& scope) const;
 
     virtual LLVMValueRef convert_to_type(CodeGenContext* context, LLVMValueRef value, const Type* to_type) const;
+
+    virtual void fix_up_declaration(const Declaration* declaration) const;
 
     virtual LLVMTypeRef llvm_type() const = 0;
 };
@@ -194,6 +197,17 @@ struct UnionType: StructuredType {
     virtual void print(std::ostream& stream) const;
 };
 
+struct EnumType: Type {
+    EnumType(vector<EnumConstant*>&& constants, const Location& location);
+    
+    const Location location;
+    const vector<EnumConstant*> constants;
+    
+    virtual LLVMTypeRef llvm_type() const;
+    virtual void fix_up_declaration(const Declaration* declaration) const;
+    virtual void print(std::ostream& stream) const;
+};
+
 struct DeclarationType: Type {
     explicit DeclarationType(TypeDef* declarator);
 
@@ -201,21 +215,23 @@ struct DeclarationType: Type {
 
     virtual LLVMTypeRef llvm_type() const;
 
+    virtual void fix_up_declaration(const Declaration* declaration) const;
+
     virtual void print(std::ostream& stream) const;
 };
 
 // This type is only used during preparsing, when names cannot necessarily be bound to declarations.
 struct NamedType: Type {
-    static const NamedType* of(TypeNameKind kind, const Identifier& identifier);
+    static const NamedType* of(TokenKind kind, const Identifier& identifier);
 
-    TypeNameKind kind;
+    TokenKind kind;
     Identifier identifier;
 
     virtual LLVMTypeRef llvm_type() const;
     virtual void print(ostream& stream) const;
 
 private:
-    NamedType(TypeNameKind kind, const Identifier& identifier);
+    NamedType(TokenKind kind, const Identifier& identifier);
 };
 
 #endif

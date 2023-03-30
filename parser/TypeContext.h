@@ -2,6 +2,7 @@
 #define AST_TYPE_CONTEXT_H
 
 #include "Identifier.h"
+#include "lexer/Token.h"
 
 struct Type;
 struct PointerType;
@@ -24,8 +25,8 @@ struct TypeContext {
     const QualifiedType* lookup_qualified_type(const Type* base_type, unsigned qualifiers);
     void add_qualified_type(const QualifiedType* type);
 
-    const NamedType* lookup_named_type(TypeNameKind kind, const Identifier& identifier);
-    void add_named_type(TypeNameKind kind, const Identifier& identifier, const NamedType* type);
+    const NamedType* lookup_named_type(TokenKind kind, const Identifier& identifier);
+    void add_named_type(TokenKind kind, const Identifier& identifier, const NamedType* type);
 
     // This map is only used for "complicated" types like functions.
     unordered_map<string, const Type*> indexed_types;
@@ -36,7 +37,7 @@ struct TypeContext {
     typedef map<pair<const Type*, unsigned>, const QualifiedType*> QualifierTypesMap; 
     QualifierTypesMap qualified_types;
 
-    unordered_map<InternedString, const NamedType*> named_types[unsigned(TypeNameKind::NUM)];
+    map<pair<TokenKind, InternedString>, const NamedType*> named_types;
 };
 
 #endif

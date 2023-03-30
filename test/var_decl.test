@@ -343,6 +343,25 @@ EXPECT_AST
 [["var", "ES", "NuS", "z", ""]]
 
 
+BEGIN Unnamed enum definition
+enum { A=1, B } z;
+EXPECT_AST
+[["var", "ES", "Re{A=1,B}", "z", ""]]
+
+
+BEGIN Named enum definition
+enum E { A=1, B } z;
+EXPECT_AST
+[["var", "ES", "DRe{A=1,B}E", "z", ""]]
+
+
+BEGIN Named enum
+enum E z;
+PREPARSE
+EXPECT_AST
+[["var", "ES", "NeE", "z", ""]]
+
+
 BEGIN Const declarator
 int* const y;
 EXPECT_AST

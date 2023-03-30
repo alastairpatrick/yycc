@@ -76,4 +76,12 @@ struct TypeDef: Declarator {
     virtual void print(ostream& stream) const;
 };
 
+struct EnumConstant: Declarator {
+    EnumConstant(const Identifier& identifier, Expr* constant, const Location& location);
+
+    Expr* constant{};
+
+    virtual void print(ostream& stream) const;
+};
+
 #endif

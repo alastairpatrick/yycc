@@ -1,4 +1,6 @@
 #include "Declaration.h"
+
+#include "Constant.h"
 #include "Message.h"
 #include "Type.h"
 
@@ -183,4 +185,15 @@ const Type* TypeDef::to_type() const {
 
 void TypeDef::print(ostream& stream) const {
     stream << "[\"typedef\", \"" << type << "\", \"" << identifier  << "\"]";
+}
+
+EnumConstant::EnumConstant(const Identifier& identifier, Expr* constant, const Location& location)
+    : Declarator(nullptr, IntegerType::default_type(), identifier, location), constant(constant) {
+}
+
+void EnumConstant::print(ostream& stream) const {
+    stream << identifier;
+    if (auto int_constant = dynamic_cast<const IntegerConstant*>(constant)) {
+        stream << '=' << int_constant->int_value();
+    }
 }

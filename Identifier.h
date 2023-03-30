@@ -3,14 +3,6 @@
 
 #include "InternedString.h"
 
-enum class TypeNameKind {
-    ENUM,
-    ORDINARY,
-    STRUCT,
-    UNION,
-    NUM
-};
-
 struct Identifier {
     Identifier() : name(empty_interned_string) {}
     explicit Identifier(string_view s): name(intern_string(s)) {}

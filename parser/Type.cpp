@@ -47,6 +47,9 @@ LLVMValueRef Type::convert_to_type(CodeGenContext* context, LLVMValueRef value, 
     return value;
 }
 
+void Type::fix_up_declaration(const Declaration* declaration) const {
+}
+
 const PointerType* Type::pointer_to() const {
     auto type = TranslationUnitContext::it->type.lookup_pointer_type(this);
     if (type) return type;
@@ -475,9 +478,9 @@ void StructuredType::print(std::ostream& stream) const {
 
     auto separator = false;
     for (auto member : members) {
-        if (separator) stream << ';';
-        separator = true;
         for (auto declarator : member->declarators) {
+            if (separator) stream << ';';
+            separator = true;
             stream << declarator->type << declarator->identifier;
         }
     }
@@ -513,6 +516,38 @@ void UnionType::print(std::ostream& stream) const {
 
 #pragma endregion UnionType
 
+
+#pragma region EnumType
+
+EnumType::EnumType(vector<EnumConstant*>&& constants, const Location& location)
+    : constants(move(constants)), location(location) {
+}
+
+LLVMTypeRef EnumType::llvm_type() const {
+    assert(false); // TODO
+    return nullptr;
+}
+
+void EnumType::fix_up_declaration(const Declaration* declaration) const {
+    for (auto constant : constants) {
+        constant->declaration = declaration;
+    }
+}
+
+void EnumType::print(std::ostream& stream) const {
+    stream << "Re{";
+
+    auto separator = false;
+    for (auto constant : constants) {
+        if (separator) stream << ',';
+        separator = true;
+        stream << constant;
+    }
+
+    stream << '}';
+}
+
+#pragma endregion UnionType
 #pragma region DeclarationType
 
 DeclarationType::DeclarationType(TypeDef* declarator)
@@ -524,6 +559,13 @@ LLVMTypeRef DeclarationType::llvm_type() const {
     return nullptr;
 }
 
+void DeclarationType::fix_up_declaration(const Declaration* declaration) const {
+    auto td = const_cast<TypeDef*>(declarator);
+    td->declaration = declaration;
+
+    td->type->fix_up_declaration(declaration);
+}
+
 void DeclarationType::print(std::ostream& stream) const {
     stream << 'D' << declarator->type << declarator->identifier;
 }
@@ -532,7 +574,7 @@ void DeclarationType::print(std::ostream& stream) const {
 
 #pragma region NamedType
 
-const NamedType* NamedType::of(TypeNameKind kind, const Identifier& identifier) {
+const NamedType* NamedType::of(TokenKind kind, const Identifier& identifier) {
     auto type = TranslationUnitContext::it->type.lookup_named_type(kind, identifier);
     if (type) return type;
 
@@ -550,16 +592,16 @@ void NamedType::print(ostream& stream) const {
     stream << 'N';
 
     switch (kind) {
-    case TypeNameKind::ENUM:
+    case TOK_ENUM:
         stream << 'e';
         break;
-    case TypeNameKind::ORDINARY:
+    case TOK_IDENTIFIER:
         stream << 't';
         break;
-    case TypeNameKind::STRUCT:
+    case TOK_STRUCT:
         stream << 's';
         break;
-    case TypeNameKind::UNION:
+    case TOK_UNION:
         stream << 'u';
         break;
     }
@@ -567,7 +609,7 @@ void NamedType::print(ostream& stream) const {
     stream << *identifier.name;
 }
 
-NamedType::NamedType(TypeNameKind kind, const Identifier& identifier)
+NamedType::NamedType(TokenKind kind, const Identifier& identifier)
     : kind(kind), identifier(identifier) {
 }
 

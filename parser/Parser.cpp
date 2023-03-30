@@ -229,7 +229,7 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
                       if (scope != IdentifierScope::FILE) break;
 
                       if (preparse) {
-                          typedef_type = NamedType::of(TypeNameKind::ORDINARY, preprocessor.identifier());
+                          typedef_type = NamedType::of(TOK_IDENTIFIER, preprocessor.identifier());
                       } else {
                           message(Severity::ERROR, preprocessor.location()) << "typedef \'" << preprocessor.identifier() << "' undefined\n";
                           typedef_type = IntegerType::default_type();
@@ -243,56 +243,12 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
               }
               break;
 
-          } case TOK_STRUCT:
+          } case TOK_ENUM:
+            case TOK_STRUCT:
             case TOK_UNION: {
               found_specifier = token;
               type_specifier_location = preprocessor.location();
-              consume();
-
-              Identifier identifier;
-              if (token == TOK_IDENTIFIER) {
-                  identifier = preprocessor.identifier();
-                  consume();
-              }
-
-              if (consume('{')) {
-                  vector<Declaration*> members;
-                  while (token && token != '}') {
-                      auto node = parse_declaration_or_statement(IdentifierScope::FILE);
-                      members.push_back(dynamic_cast<Declaration*>(node));
-                  }
-
-                  require('}');
-
-                  if (found_specifier == TOK_STRUCT) {
-                      type = new StructType(move(members), type_specifier_location);
-                  } else {
-                      type = new UnionType(move(members), type_specifier_location);
-                  }
-              }
-
-              if (identifier.name->empty()) {
-                  if (!type) {
-                      unexpected_token();
-                  }
-              } else {
-                  if (type) {
-                      auto declarator = new TypeDef(nullptr, type, identifier, type_specifier_location);
-                      type = new DeclarationType(declarator);
-                      symbols.add_declarator(declarator);
-                  } else {
-                      if (preparse) {
-                          if (found_specifier == TOK_STRUCT) {
-                              type = NamedType::of(TypeNameKind::STRUCT, identifier);
-                          } else {
-                              type = NamedType::of(TypeNameKind::UNION, identifier);
-                          }
-                      } else {
-                          // TODO
-                      }
-                  }
-              }
-              
+              type = parse_structured_type();
               break;
 
           } case TOK_INLINE: {
@@ -414,7 +370,8 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
           type = IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL);
           break;
 
-      } case (1 << TOK_IDENTIFIER):
+      } case (1 << TOK_ENUM):
+        case (1 << TOK_IDENTIFIER):
         case (1 << TOK_STRUCT):
         case (1 << TOK_UNION): {
           break;
@@ -446,11 +403,7 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
     if (parse_declaration_specifiers(scope, storage_class, type, specifiers)) {
         auto declaration = new Declaration(scope, storage_class, type, location);
         declaration->mark_root = mark_root;
-
-        if (auto declaration_type = dynamic_cast<const DeclarationType*>(type)) {
-            auto declarator = const_cast<TypeDef*>(declaration_type->declarator);
-            declarator->declaration = declaration;
-        }
+        type->fix_up_declaration(declaration);
 
         int declarator_count = 0;
         bool last_declarator{};
@@ -671,4 +624,87 @@ Declarator* Parser::parse_declarator(Declaration* declaration, uint32_t specifie
         declarator->fragment = end_fragment(begin);
         return declarator;
     }
+}
+
+const Type* Parser::parse_structured_type() {
+    auto specifier = token;
+    auto specifier_location = preprocessor.location();
+    consume();
+
+    Identifier identifier;
+    if (token == TOK_IDENTIFIER) {
+        identifier = preprocessor.identifier();
+        consume();
+    }
+
+    const Type* type{};
+
+    if (consume('{')) {
+        if (specifier != TOK_ENUM) {
+            vector<Declaration*> members;
+            while (token && token != '}') {
+                auto node = parse_declaration_or_statement(IdentifierScope::FILE);
+                members.push_back(dynamic_cast<Declaration*>(node));
+            }
+
+            if (specifier == TOK_STRUCT) {
+                type = new StructType(move(members), specifier_location);
+            } else {
+                type = new UnionType(move(members), specifier_location);
+            }
+        } else {
+            vector<EnumConstant*> constants;
+            while (token && token != '}') {
+                auto constant = parse_enum_constant();
+                constants.push_back(constant);
+            }
+
+            type = new EnumType(move(constants), specifier_location);
+        }
+
+        require('}');
+    }
+
+    if (identifier.name->empty()) {
+        if (!type) {
+            unexpected_token();
+            type = IntegerType::default_type();
+        }
+    } else {
+        if (type) {
+            auto declarator = new TypeDef(nullptr, type, identifier, specifier_location);
+            type = new DeclarationType(declarator);
+            symbols.add_declarator(declarator);
+        } else {
+            if (preparse) {
+                type = NamedType::of(specifier, identifier);
+            } else {
+                // TODO
+            }
+        }
+    }
+
+    return type;
+}
+
+EnumConstant* Parser::parse_enum_constant() {
+    auto location = preprocessor.location();
+
+    auto identifier(token == TOK_IDENTIFIER ? preprocessor.identifier() : Identifier());
+    require(TOK_IDENTIFIER);
+
+    Expr* constant{};
+    if (consume('=')) {
+        constant = parse_expr(ASSIGN_PREC);
+    }
+
+    if (!consume(',')) {
+        if (token != '}') {
+            unexpected();
+        }
+    }
+
+    auto declarator = new EnumConstant(identifier, constant, location);
+    symbols.add_declarator(declarator);
+    return declarator;
 }

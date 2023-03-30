@@ -42,6 +42,8 @@ private:
     CompoundStatement* parse_compound_statement();
     Declarator* parse_parameter_declarator();
     Declarator* parse_declarator(Declaration* declaration, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last);
+    const Type* parse_structured_type();
+    EnumConstant* parse_enum_constant();
 };
 
 #endif
