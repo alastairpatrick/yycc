@@ -22,6 +22,8 @@
 // V void
 // . variadic placeholder
 
+#pragma region Type
+
 unsigned Type::qualifiers() const {
     return 0;
 }
@@ -55,6 +57,10 @@ const PointerType* Type::pointer_to() const {
     return type;
 }
 
+#pragma endregion Type
+
+#pragma region VoidType
+
 const VoidType VoidType::it;
 
 LLVMTypeRef VoidType::llvm_type() const {
@@ -64,6 +70,10 @@ LLVMTypeRef VoidType::llvm_type() const {
 void VoidType::print(std::ostream& stream) const {
     stream << "V";
 }
+
+#pragma endregion VoidType
+
+#pragma region IntegerType
 
 const IntegerType* IntegerType::of_char(bool is_wide) {
     // As with C and C++, and for the same reasons, there are three distinct character
@@ -190,6 +200,10 @@ bool IntegerType::is_signed() const {
 IntegerType::IntegerType(IntegerSignedness signedness, IntegerSize size)
     : signedness(signedness), size(size) {}
 
+#pragma endregion IntegerType
+
+#pragma region FloatingPointType
+
 const FloatingPointType* FloatingPointType::of(FloatingPointSize size) {
     static const FloatingPointType types[int(FloatingPointSize::NUM)] = {
         FloatingPointType(FloatingPointSize::FLOAT),
@@ -240,6 +254,8 @@ void FloatingPointType::print(ostream& stream) const {
     static const char* const types[int(IntegerSize::NUM)] = { "f", "d", "l" };
     stream << 'F' << types[unsigned(size)];
 }
+
+#pragma endregion FloatingPointType
 
 // This is applied to binary expressions and to the second and third operands of a conditional expression.
 const Type* convert_arithmetic(const Type* left, const Type* right) {
@@ -293,6 +309,8 @@ const Type* convert_arithmetic(const Type* left, const Type* right) {
     return nullptr;
 }
 
+#pragma region PointerType
+
 const Type* PointerType::resolve(SymbolMap& symbols) const {
     return base_type->resolve(symbols)->pointer_to();
 }
@@ -309,6 +327,10 @@ void PointerType::print(std::ostream& stream) const {
 PointerType::PointerType(const Type* base_type)
     : base_type(base_type) {
 }
+
+#pragma endregion PointerType
+
+#pragma region ArrayType
 
 const Type* ArrayType::resolve(SymbolMap& symbols) const {
     auto e = element_type->resolve(symbols);
@@ -335,6 +357,10 @@ void ArrayType::print(std::ostream& stream) const {
 ArrayType::ArrayType(const Type* element_type, const Expr* size)
     : element_type(element_type), size(size) {
 }
+
+#pragma endregion ArrayType
+
+#pragma region QualifierType
 
 const QualifiedType* QualifiedType::of(const Type* base_type, unsigned qualifiers) {
     qualifiers |= base_type->qualifiers();
@@ -375,6 +401,10 @@ void QualifiedType::print(std::ostream& stream) const {
 QualifiedType::QualifiedType(const Type* base_type, unsigned qualifiers)
     : base_type(base_type), qualifier_flags(qualifiers) {
 }
+
+#pragma endregion QualifierType
+
+#pragma region FunctionType
 
 static void print_function_type(ostream& stream, const Type* return_type, const std::vector<const Type*>& parameter_types, bool variadic) {
     stream << '(';
@@ -427,6 +457,10 @@ FunctionType::FunctionType(const Type* return_type, std::vector<const Type*> par
     : return_type(return_type), parameter_types(move(parameter_types)), variadic(variadic) {
 }
 
+#pragma endregion FunctionType
+
+#pragma region StructuredType
+
 StructuredType::StructuredType(vector<Declaration*>&& members, const Location& location)
     : members(move(members)), location(location) {
 }
@@ -451,6 +485,10 @@ void StructuredType::print(std::ostream& stream) const {
     stream << '}';
 }
 
+#pragma endregion StructuredType
+
+#pragma region StructType
+
 StructType::StructType(vector<Declaration*>&& members, const Location& location)
     : StructuredType(move(members), location) {
 }
@@ -460,6 +498,10 @@ void StructType::print(std::ostream& stream) const {
     StructuredType::print(stream);
 }
 
+#pragma endregion StructType
+
+#pragma region UnionType
+
 UnionType::UnionType(vector<Declaration*>&& members, const Location& location)
     : StructuredType(move(members), location) {
 }
@@ -468,6 +510,10 @@ void UnionType::print(std::ostream& stream) const {
     stream << "Ru";
     StructuredType::print(stream);
 }
+
+#pragma endregion UnionType
+
+#pragma region DeclarationType
 
 DeclarationType::DeclarationType(TypeDef* declarator)
     : declarator(declarator) {
@@ -481,6 +527,10 @@ LLVMTypeRef DeclarationType::llvm_type() const {
 void DeclarationType::print(std::ostream& stream) const {
     stream << 'D' << declarator->type << declarator->identifier;
 }
+
+#pragma endregion DeclarationType
+
+#pragma region NamedType
 
 const NamedType* NamedType::of(TypeNameKind kind, const Identifier& identifier) {
     auto type = TranslationUnitContext::it->type.lookup_named_type(kind, identifier);
@@ -520,3 +570,6 @@ void NamedType::print(ostream& stream) const {
 NamedType::NamedType(TypeNameKind kind, const Identifier& identifier)
     : kind(kind), identifier(identifier) {
 }
+
+#pragma endregion NamedType
+
