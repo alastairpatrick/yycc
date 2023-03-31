@@ -1,18 +1,18 @@
 BEGIN Expression statement
 7;
 EXPECT_AST
-["Si7"]
+[7]
 
 
 BEGIN Compound statement
 {7;}
 EXPECT_AST
-[["block", ["Si7"]]]
+[["block", [7]]]
 
 
 BEGIN Return statement
 return 7;
 EXPECT_AST
-[["return", "Si7"]]
+[["return", 7]]
 
 

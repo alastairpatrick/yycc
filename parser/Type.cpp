@@ -71,7 +71,7 @@ LLVMTypeRef VoidType::llvm_type() const {
 }
 
 void VoidType::print(std::ostream& stream) const {
-    stream << "V";
+    stream << "\"V\"";
 }
 
 #pragma endregion VoidType
@@ -181,11 +181,11 @@ LLVMTypeRef IntegerType::llvm_type() const {
 
 void IntegerType::print(ostream& stream) const {
     if (signedness == IntegerSignedness::DEFAULT) {
-        stream << 'C';
+        stream << "\"C\"";
     } else {
         static const char* const signednesses[unsigned(IntegerSignedness::NUM)] = { nullptr, "S", "U" };
         static const char* const sizes[unsigned(IntegerSize::NUM)] = { "b", "c", "s", "i", "l", "m" };
-        stream << signednesses[unsigned(signedness)] << sizes[unsigned(size)];
+        stream << '"' << signednesses[unsigned(signedness)] << sizes[unsigned(size)] << '"';
     }
 }
 
@@ -255,7 +255,7 @@ LLVMTypeRef FloatingPointType::llvm_type() const {
 
 void FloatingPointType::print(ostream& stream) const {
     static const char* const types[int(IntegerSize::NUM)] = { "f", "d", "l" };
-    stream << 'F' << types[unsigned(size)];
+    stream << "\"F" << types[unsigned(size)] << '"';
 }
 
 #pragma endregion FloatingPointType
@@ -324,7 +324,7 @@ LLVMTypeRef PointerType::llvm_type() const {
 }
 
 void PointerType::print(std::ostream& stream) const {
-    stream << 'P' << base_type;
+    stream << "[\"P\", " << base_type << ']';
 }
 
 PointerType::PointerType(const Type* base_type)
@@ -350,11 +350,11 @@ LLVMTypeRef ArrayType::llvm_type() const {
 }
 
 void ArrayType::print(std::ostream& stream) const {
-    stream << 'A';
-    if (auto size_constant = dynamic_cast<const IntegerConstant*>(size)) {
-        stream << size_constant->int_value();
+    stream << "[\"A\", " << element_type;
+    if (size) {
+        stream << ", " << size;
     }
-    stream << element_type;
+    stream << ']';
 }
 
 ArrayType::ArrayType(const Type* element_type, const Expr* size)
@@ -394,11 +394,11 @@ LLVMTypeRef QualifiedType::llvm_type() const {
 }
 
 void QualifiedType::print(std::ostream& stream) const {
-    stream << 'Q';
+    stream << "[\"Q";
     if (qualifier_flags & QUAL_CONST) stream << 'c';
     if (qualifier_flags & QUAL_RESTRICT) stream << 'r';
     if (qualifier_flags & QUAL_VOLATILE) stream << 'v';
-    stream << base_type;
+    stream << "\", " << base_type << ']';
 }
 
 QualifiedType::QualifiedType(const Type* base_type, unsigned qualifiers)
@@ -410,12 +410,14 @@ QualifiedType::QualifiedType(const Type* base_type, unsigned qualifiers)
 #pragma region FunctionType
 
 static void print_function_type(ostream& stream, const Type* return_type, const std::vector<const Type*>& parameter_types, bool variadic) {
-    stream << '(';
+    stream << "[\"F\", " << return_type;
 
-    for (auto type: parameter_types) stream << type;
+    for (auto type: parameter_types) {
+        stream << ", " << type;
+    }
 
-    if (variadic) stream << '?';
-    stream << ')' << return_type;
+    if (variadic) stream << ", \"?\"";
+    stream << ']';
 }
 
 const FunctionType* FunctionType::of(const Type* return_type, std::vector<const Type*> parameter_types, bool variadic) {
@@ -474,26 +476,20 @@ LLVMTypeRef StructuredType::llvm_type() const {
 }
 
 void StructuredType::print(std::ostream& stream) const {
-    stream << "{";
-
     auto separator = false;
     for (auto member : members) {
         for (auto declarator : member->declarators) {
-            if (separator) stream << ';';
+            if (separator) stream << ", ";
             separator = true;
-            stream << declarator->type;
-
+            stream << "[\"" << declarator->identifier << "\", " << declarator->type;
             if (auto variable = dynamic_cast<Variable*>(declarator)) {
-                if (auto bit_field_size = dynamic_cast<IntegerConstant*>(variable->bit_field_size)) {
-                    stream << ':' << bit_field_size->int_value();
+                if (variable->bit_field_size) {
+                    stream << ", " << variable->bit_field_size;
                 }
             }
-
-            stream << declarator->identifier;
+            stream << ']';
         }
     }
-
-    stream << '}';
 }
 
 #pragma endregion StructuredType
@@ -505,8 +501,9 @@ StructType::StructType(vector<Declaration*>&& members, const Location& location)
 }
 
 void StructType::print(std::ostream& stream) const {
-    stream << "Rs";
+    stream << "[\"STRUCT\", ";
     StructuredType::print(stream);
+    stream << ']';
 }
 
 #pragma endregion StructType
@@ -518,8 +515,9 @@ UnionType::UnionType(vector<Declaration*>&& members, const Location& location)
 }
 
 void UnionType::print(std::ostream& stream) const {
-    stream << "Ru";
+    stream << "[\"UNION\", ";
     StructuredType::print(stream);
+    stream << ']';
 }
 
 #pragma endregion UnionType
@@ -543,16 +541,16 @@ void EnumType::fix_up_declaration(const Declaration* declaration) const {
 }
 
 void EnumType::print(std::ostream& stream) const {
-    stream << "Re{";
+    stream << "[\"ENUM\", ";
 
     auto separator = false;
     for (auto constant : constants) {
-        if (separator) stream << ',';
+        if (separator) stream << ", ";
         separator = true;
         stream << constant;
     }
 
-    stream << '}';
+    stream << ']';
 }
 
 #pragma endregion UnionType
@@ -575,7 +573,7 @@ void DeclarationType::fix_up_declaration(const Declaration* declaration) const {
 }
 
 void DeclarationType::print(std::ostream& stream) const {
-    stream << 'D' << declarator->type << declarator->identifier;
+    stream << "[\"DECLARE\", \"" << declarator->identifier << "\", " << declarator->type << ']';
 }
 
 #pragma endregion DeclarationType
@@ -597,7 +595,7 @@ LLVMTypeRef NamedType::llvm_type() const {
 }
 
 void NamedType::print(ostream& stream) const {
-    stream << 'N';
+    stream << "\"N";
 
     switch (kind) {
       case TOK_ENUM:
@@ -614,7 +612,7 @@ void NamedType::print(ostream& stream) const {
         break;
     }
 
-    stream << *identifier.name;
+    stream << *identifier.name << '"';
 }
 
 NamedType::NamedType(TokenKind kind, const Identifier& identifier)

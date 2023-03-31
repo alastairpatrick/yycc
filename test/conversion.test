@@ -1,72 +1,72 @@
 BEGIN Binary arithmetic operands are promoted
 'a' + 'b'
 EXPECT_TYPE
-Si
+"Si"
 
 
 BEGIN Binary arithmetic with signed and signed int yields signed
 1LL + 1
 EXPECT_TYPE
-Sm
+"Sm"
 
 
 BEGIN Binary arithmetic with unsigned and unsigned int yields unsigned
 1LLU + 1U
 EXPECT_TYPE
-Um
+"Um"
 
 
 BEGIN Binary arithmetic with signed and unsigned int yields unsigned if unsigned has higher rank
 1LLU + 1
 EXPECT_TYPE
-Um
+"Um"
 
 
 BEGIN Binary arithmetic with unsigned and signed int yields unsigned if unsigned has higher rank
 1 + 1LLU
 EXPECT_TYPE
-Um
+"Um"
 
 
 BEGIN Binary arithmetic with signed and unsigned int yields signed if signed can represent all unsigned values
 1LL + 1U
 EXPECT_TYPE
-Sm
+"Sm"
 
 
 BEGIN Binary arithmetic with unsigned and signed int yields signed if signed can represent all unsigned values
 1U + 1LL
 EXPECT_TYPE
-Sm
+"Sm"
 
 
 BEGIN Binary arithmetic with signed and unsigned int of same bit size yields unsigned
 2 + 1U
 EXPECT_TYPE
-Ui
+"Ui"
 
 
 BEGIN Binary arithmetic with unsigned and signed int of same bit size yields unsigned
 1U + 2
 EXPECT_TYPE
-Ui
+"Ui"
 
 
 BEGIN Binary floating point arithmetic result is wider type
 1.0f + 1.0
 EXPECT_TYPE
-Fd
+"Fd"
 
 
 BEGIN Binary floating point arithmetic between float and int yields float
 1.0f + 1LL
 EXPECT_TYPE
-Ff
+"Ff"
 
 
 BEGIN Binary floating point arithmetic between int and float yields float
 1LL + 1.0f
 EXPECT_TYPE
-Ff
+"Ff"
 
 

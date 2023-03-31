@@ -3,7 +3,7 @@ BEGIN Skips white space
  1 
  
 EXPECT_AST
-"Si1"
+1
 
 
 BEGIN Skips single line comments
@@ -11,13 +11,13 @@ BEGIN Skips single line comments
 1 // bar
 // baz
 EXPECT_AST
-"Si1"
+1
 
 
 BEGIN Skips multi-line comments
 /* bar */ 1 /* baz */
 EXPECT_AST
-"Si1"
+1
 
 
 BEGIN Unterminated comment
@@ -25,7 +25,7 @@ BEGIN Unterminated comment
 EXPECT_MESSAGE
 :2:1: error unterminated comment
 EXPECT_AST
-"Si1"
+1
 
 
 BEGIN Skips unexpected character
@@ -33,7 +33,7 @@ BEGIN Skips unexpected character
 EXPECT_MESSAGE
 :1:1: error unexpected character '@'
 EXPECT_AST
-"Si1"
+1
 
 
 BEGIN Tab is 8 characters for message purposes
@@ -49,7 +49,7 @@ BEGIN Skips pragma
  # /*
 */ pragma
 EXPECT_AST
-"Si1"
+1
 
 
 BEGIN Skips line directive
@@ -63,7 +63,7 @@ BEGIN Skips line directive
 # /*
 */ line 5
 EXPECT_AST
-"Si1"
+1
 
 
 BEGIN Line directive resets line
@@ -131,7 +131,7 @@ BEGIN Error directive
 EXPECT_MESSAGE
 :1:2: error Hello, World!
 EXPECT_AST
-"Si1"
+1
 
 
 BEGIN Error directive with embedded comment
@@ -140,7 +140,7 @@ BEGIN Error directive with embedded comment
 EXPECT_MESSAGE
 :1:2: error Hello,/* hidden */World!
 EXPECT_AST
-"Si1"
+1
 
 
 BEGIN Error on unrecognized directive
@@ -150,4 +150,4 @@ BEGIN Error on unrecognized directive
 EXPECT_MESSAGE
 :2:2: error unexpected token in directive
 EXPECT_AST
-"Si1"
+1

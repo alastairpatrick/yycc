@@ -3,152 +3,152 @@ x
 EXPECT_MESSAGE
 :1:1: error 'x' undeclared
 EXPECT_AST
-"Si0"
+0
 
 
 BEGIN Condition expression
 1 ? 2 : 3
 EXPECT_AST
-["?:", "Si1", "Si2", "Si3"]
+["?:", 1, 2, 3]
 
 
 BEGIN Nested conditions
 1 ? 2 ? 3 : 4 : 5 ? 6 : 7
 EXPECT_AST
-["?:", "Si1"
-       , ["?:", "Si2", "Si3", "Si4"]
-       , ["?:", "Si5", "Si6", "Si7"]]
+["?:", 1
+       , ["?:", 2, 3, 4]
+       , ["?:", 5, 6, 7]]
 
 
 BEGIN Condition with logical or
 1 || 2 ? 3 || 4 : 5 ? 6 : 7
 EXPECT_AST
-["?:", ["||", "Si1", "Si2"]
-       , ["||", "Si3", "Si4"]
-       , ["?:", "Si5", "Si6", "Si7"]]
+["?:", ["||", 1, 2]
+       , ["||", 3, 4]
+       , ["?:", 5, 6, 7]]
 
 
 BEGIN Logical or expression
 1 || 2
 EXPECT_AST
-["||", "Si1", "Si2"]
+["||", 1, 2]
 
 
 BEGIN Logical or left associative
 1 || 2 || 3
 EXPECT_AST
-["||", ["||", "Si1", "Si2"], "Si3"]
+["||", ["||", 1, 2], 3]
 
 
 BEGIN Logical and expression
 1 && 2
 EXPECT_AST
-["&&", "Si1", "Si2"]
+["&&", 1, 2]
 
 
 BEGIN Logical and left associative
 1 && 2 && 3
 EXPECT_AST
-["&&", ["&&", "Si1", "Si2"], "Si3"]
+["&&", ["&&", 1, 2], 3]
 
 
 BEGIN Logical and higher precedence than logical or
 1 || 2 && 3
 EXPECT_AST
-["||", "Si1", ["&&", "Si2", "Si3"]]
+["||", 1, ["&&", 2, 3]]
 
 
 BEGIN Add expression
 1 + 2
 EXPECT_AST
-["+", "Si1", "Si2"]
+["+", 1, 2]
 
 
 BEGIN Add left associative
 1 + 2 + 3
 EXPECT_AST
-["+", ["+", "Si1", "Si2"]
-    , "Si3"]
+["+", ["+", 1, 2]
+    , 3]
 
 
 BEGIN Usb expression
 1 - 2
 EXPECT_AST
-["-", "Si1", "Si2"]
+["-", 1, 2]
 
 
 BEGIN Usb left associative
 1 - 2 - 3
 EXPECT_AST
-["-", ["-", "Si1", "Si2"]
-    , "Si3"]
+["-", ["-", 1, 2]
+    , 3]
 
 
 BEGIN Uml expression
 1 * 2
 EXPECT_AST
-["*", "Si1", "Si2"]
+["*", 1, 2]
 
 
 BEGIN Uml left associative
 1 * 2 * 3
 EXPECT_AST
-["*", ["*", "Si1", "Si2"]
-    , "Si3"]
+["*", ["*", 1, 2]
+    , 3]
 
 
 BEGIN Uml > additive precedence
 1 + 2 * 3
 EXPECT_AST
-["+", "Si1"
-    , ["*", "Si2", "Si3"]]
+["+", 1
+    , ["*", 2, 3]]
 
 
 BEGIN Div expression
 1 / 2
 EXPECT_AST
-["/", "Si1", "Si2"]
+["/", 1, 2]
 
 
 BEGIN Div left associative
 1 / 2 / 3
 EXPECT_AST
-["/", ["/", "Si1", "Si2"]
-      , "Si3"]
+["/", ["/", 1, 2]
+      , 3]
 
 
 BEGIN Div > additive precedence
 1 + 2 / 3
 EXPECT_AST
-["+", "Si1"
-      , ["/", "Si2", "Si3"]]
+["+", 1
+      , ["/", 2, 3]]
 
 
 BEGIN Mod expression
 1 % 2
 EXPECT_AST
-["%", "Si1", "Si2"]
+["%", 1, 2]
 
 
 BEGIN Mod left associative
 1 % 2 % 3
 EXPECT_AST
-["%", ["%", "Si1", "Si2"]
-      , "Si3"]
+["%", ["%", 1, 2]
+      , 3]
 
 
 BEGIN Mod > additive precedence
 1 + 2 % 3
 EXPECT_AST
-["+", "Si1"
-      , ["%", "Si2", "Si3"]]
+["+", 1
+      , ["%", 2, 3]]
 
 
 BEGIN Parentheses
 1 + ( 2 + 3 )
 EXPECT_AST
-["+", "Si1"
-      , ["+", "Si2", "Si3"]]
+["+", 1
+      , ["+", 2, 3]]
 
 
 BEGIN Error on EOF mid expression
@@ -156,4 +156,4 @@ BEGIN Error on EOF mid expression
 EXPECT_MESSAGE
 :2:1: error unexpected end of file
 EXPECT_AST
-["+", "Si1", "Si0"]
+["+", 1, 0]

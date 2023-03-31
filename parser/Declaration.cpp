@@ -108,7 +108,7 @@ void Variable::combine() {
 void Variable::print(ostream& stream) const {
     stream << "[\"var\", \"" << declaration->linkage << storage_duration;
 
-    stream << "\", \"" << type << "\", \"" << identifier  << "\"";
+    stream << "\", " << type << ", \"" << identifier  << "\"";
     if (initializer) {
         stream << ", " << initializer;
     }
@@ -162,7 +162,7 @@ void Function::print(ostream& stream) const {
         stream << 'i';
     }
 
-    stream << "\", \"" << type << "\", \"" << identifier << '"';
+    stream << "\", " << type << ", \"" << identifier << '"';
     if (body) {
         stream << ", [";
         for (auto i = 0; i < params.size(); ++i) {
@@ -184,7 +184,7 @@ const Type* TypeDef::to_type() const {
 }
 
 void TypeDef::print(ostream& stream) const {
-    stream << "[\"typedef\", \"" << type << "\", \"" << identifier  << "\"]";
+    stream << "[\"typedef\", " << type << ", \"" << identifier  << "\"]";
 }
 
 EnumConstant::EnumConstant(const Identifier& identifier, Expr* constant, const Location& location)
@@ -192,8 +192,9 @@ EnumConstant::EnumConstant(const Identifier& identifier, Expr* constant, const L
 }
 
 void EnumConstant::print(ostream& stream) const {
-    stream << identifier;
-    if (auto int_constant = dynamic_cast<const IntegerConstant*>(constant)) {
-        stream << '=' << int_constant->int_value();
+    stream << "[\"" << identifier << '"';
+    if (constant) {
+        stream << ", " << constant;
     }
+    stream << ']';
 }

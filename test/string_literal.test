@@ -2,146 +2,146 @@
 BEGIN UTF-8 4-byte string literal
 L"🌈"
 EXPECT_AST
-"SUs🌈"
+["S", "Us", "🌈"]
 
 BEGIN Simple char literal
 'a'
 EXPECT_AST
-"C97"
+["C", 97]
 
 BEGIN \a char literal
 '\a'
 EXPECT_AST
-"C7"
+["C", 7]
 
 BEGIN \b char literal
 '\b'
 EXPECT_AST
-"C8"
+["C", 8]
 
 BEGIN \f char literal
 '\f'
 EXPECT_AST
-"C12"
+["C", 12]
 
 BEGIN \n char literal
 '\n'
 EXPECT_AST
-"C10"
+["C", 10]
 
 BEGIN \r char literal
 '\r'
 EXPECT_AST
-"C13"
+["C", 13]
 
 BEGIN \t char literal
 '\t'
 EXPECT_AST
-"C9"
+["C", 9]
 
 BEGIN \v char literal
 '\v'
 EXPECT_AST
-"C11"
+["C", 11]
 
 BEGIN \' char literal
 '\''
 EXPECT_AST
-"C39"
+["C", 39]
 
 BEGIN \" char literal
 '"'
 EXPECT_AST
-"C34"
+["C", 34]
 
 BEGIN \? char literal
 '\?'
 EXPECT_AST
-"C63"
+["C", 63]
 
 BEGIN \\ char literal
 '\\'
 EXPECT_AST
-"C92"
+["C", 92]
 
 BEGIN \xnn char literal
 '\x10'
 EXPECT_AST
-"C16"
+["C", 16]
 
 BEGIN \nnn char literal
 '\010'
 EXPECT_AST
-"C8"
+["C", 8]
 
 BEGIN \unnnn char literal
 L'\u0010'
 EXPECT_AST
-"Us16"
+["Us", 16]
 
 BEGIN \Unnnnnnnn char literal
 L'\U00000010'
 EXPECT_AST
-"Us16"
+["Us", 16]
 
 BEGIN UTF-8 2-byte char literal
 L'π'
 EXPECT_AST
-"Us960"
+["Us", 960]
 
 BEGIN UTF-8 3-byte char literal
 L'€'
 EXPECT_AST
-"Us8364"
+["Us", 8364]
 
 BEGIN Empty char literal
 ''
 EXPECT_MESSAGE
 :1:1: error character literal may only have one character
 EXPECT_AST
-"C0"
+["C", 0]
 
 BEGIN Multi-character char literal
 'aa'
 EXPECT_MESSAGE
 :1:1: error character literal may only have one character
 EXPECT_AST
-"C97"
+["C", 97]
 
 BEGIN Empty string literal
 ""
 EXPECT_AST
-"SC"
+["S", "C", ""]
 
 BEGIN String literal
 "abc"
 EXPECT_AST
-"SCabc"
+["S", "C", "abc"]
 
 BEGIN Wide string literal
 L"abc"
 EXPECT_AST
-"SUsabc"
+["S", "Us", "abc"]
 
 BEGIN \xnn string literal
 "\x10"
 EXPECT_AST
-"SC\u0010"
+["S", "C", "\u0010"]
 
 BEGIN \nnn string literal
 "\010"
 EXPECT_AST
-"SC\b"
+["S", "C", "\b"]
 
 BEGIN \unnnn string literal
 L"\u0010"
 EXPECT_AST
-"SUs\u0010"
+["S", "Us", "\u0010"]
 
 BEGIN \Unnnnnnnn string literal
 L"\U00000010"
 EXPECT_AST
-"SUs\u0010"
+["S", "Us", "\u0010"]
 
 BEGIN Truncated digits (1)
 L"\U0000010"
@@ -158,12 +158,12 @@ END
 BEGIN UTF-8 2-byte string literal
 L"π"
 EXPECT_AST
-"SUsπ"
+["S", "Us", "π"]
 
 BEGIN UTF-8 3-byte string literal
 L"€"
 EXPECT_AST
-"SUs€"
+["S", "Us", "€"]
 
 BEGIN Unrecognized escape sequence
 "\y"

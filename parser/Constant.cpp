@@ -99,7 +99,11 @@ LLVMValueRef IntegerConstant::generate_value(CodeGenContext* context) const {
 
 void IntegerConstant::print(ostream& stream) const {
     auto int_value = LLVMConstIntGetZExtValue(value);
-    stream << '"' << type << int_value << '"';
+    if (type == IntegerType::of(IntegerSignedness::SIGNED, IntegerSize::INT)) {
+        stream << int_value;
+    } else {
+        stream << '[' << type << ", " << int_value << ']';
+    }
 }
 
 
@@ -134,7 +138,7 @@ LLVMValueRef FloatingPointConstant::generate_value(CodeGenContext* context) cons
 void FloatingPointConstant::print(ostream& stream) const {
     LLVMBool loses_info;
     double float_value = LLVMConstRealGetDouble(value, &loses_info);
-    stream << '"' << type << float_value << '"';
+    stream << '[' << type << ", " << float_value << ']';
 }
 
 StringConstant* StringConstant::of(string_view text, const Location& location) {
@@ -158,10 +162,8 @@ const Type* StringConstant::get_type() const {
 }
 
 void StringConstant::print(ostream& stream) const {
-    stringstream s;
-    s << 'S' << char_type << utf8_literal;
-    string t(s.str());
-    stream << json(t);
+    string t(utf8_literal);
+    stream << "[\"S\", " << char_type << ", " << json(t) << ']';
 }
 
 LLVMValueRef StringConstant::generate_value(CodeGenContext* context) const {
