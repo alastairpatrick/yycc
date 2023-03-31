@@ -73,8 +73,8 @@ void Declarator::combine() {
     }
 }
 
-Variable::Variable(const Declaration* declaration, const Type* type, const Identifier& identifier, Expr* initializer, const Location& location)
-    : Declarator(declaration, type, identifier, location), initializer(initializer) {
+Variable::Variable(const Declaration* declaration, const Type* type, const Identifier& identifier, Expr* initializer, Expr* bit_field_size, const Location& location)
+    : Declarator(declaration, type, identifier, location), initializer(initializer), bit_field_size(bit_field_size) {
     auto scope = declaration->scope;
     auto storage_class = declaration->storage_class;
 

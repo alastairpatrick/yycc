@@ -77,7 +77,7 @@ int foo(void) {
 END
 
 
-BEGIN keeps identified structs
+BEGIN Keeps marked struct
 #include "a.h"
 int foo(void) {
     S x;
@@ -100,7 +100,7 @@ int foo(void) {
 END
 
 
-BEGIN keeps identified nested structs (1)
+BEGIN Keeps marked nested struct (1)
 #include "a.h"
 int foo(void) {
     S x;
@@ -125,7 +125,7 @@ int foo(void) {
 END
 
 
-BEGIN keeps identified nested structs (2)
+BEGIN Keeps marked nested struct (2)
 #include "a.h"
 int foo(void) {
     S x;
@@ -148,5 +148,24 @@ struct T {
 #line 2 ""
 int foo(void) {
     S x;
+}
+END
+
+
+BEGIN Keeps enum marked via constant
+#include "a.h"
+int foo(void) {
+    return GREEN;
+}
+PREPROCESS
+FILE "a.h"
+enum Color { RED, GREEN, BLUE };
+EXPECT_TEXT
+
+#line 1 "a.h"
+enum Color { RED, GREEN, BLUE };
+#line 2 ""
+int foo(void) {
+    return GREEN;
 }
 END

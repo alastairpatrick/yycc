@@ -307,6 +307,21 @@ EXPECT_AST
 [["var", "ES", "NsS", "z", ""]]
 
 
+BEGIN Bit-field
+struct { int x: 15; int y: 17; } z;
+EXPECT_AST
+[["var", "ES", "Rs{Si:15x;Si:17y}", "z", ""]]
+
+
+BEGIN Error on bit-field variable
+int x: 2;
+EXPECT_MESSAGE
+:1:6: error unexpected token
+:1:8: error unexpected token
+EXPECT_AST
+[["var", "ES", "Si", "x", ""]]
+
+
 BEGIN Error on standalone struct keyword
 struct;
 EXPECT_MESSAGE

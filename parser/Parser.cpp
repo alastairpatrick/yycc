@@ -226,7 +226,7 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
                   const Type* typedef_type;
                   typedef_type = symbols.lookup_type(preprocessor.identifier());
                   if (!typedef_type) {
-                      if (scope != IdentifierScope::FILE) break;
+                      if (scope == IdentifierScope::BLOCK) break;
 
                       if (preparse) {
                           typedef_type = NamedType::of(TOK_IDENTIFIER, preprocessor.identifier());
@@ -551,6 +551,11 @@ Declarator* Parser::parse_declarator(Declaration* declaration, uint32_t specifie
             type = new ArrayType(type, array_size);
         }
 
+        Expr* bit_field_size{};
+        if (declaration->scope == IdentifierScope::STRUCTURED && consume(':')) {
+            bit_field_size = parse_expr(CONDITIONAL_PREC);
+        }
+
         if (consume('=')) {
             initializer = parse_expr(ASSIGN_PREC);
         } else if (consume('(')) {
@@ -614,7 +619,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, uint32_t specifie
             if (!initializer && declaration->storage_class != StorageClass::EXTERN) {
                 initializer = new DefaultExpr(type, location);
             }
-            declarator = new Variable(declaration, type, identifier, initializer, location);
+            declarator = new Variable(declaration, type, identifier, initializer, bit_field_size, location);
         }
 
         if (!identifier.name->empty()) {
@@ -643,7 +648,7 @@ const Type* Parser::parse_structured_type() {
         if (specifier != TOK_ENUM) {
             vector<Declaration*> members;
             while (token && token != '}') {
-                auto node = parse_declaration_or_statement(IdentifierScope::FILE);
+                auto node = parse_declaration_or_statement(IdentifierScope::STRUCTURED);
                 members.push_back(dynamic_cast<Declaration*>(node));
             }
 
@@ -695,7 +700,7 @@ EnumConstant* Parser::parse_enum_constant() {
 
     Expr* constant{};
     if (consume('=')) {
-        constant = parse_expr(ASSIGN_PREC);
+        constant = parse_expr(CONDITIONAL_PREC);
     }
 
     if (!consume(',')) {

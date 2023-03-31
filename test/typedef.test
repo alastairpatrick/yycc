@@ -151,3 +151,12 @@ BEGIN Struct typedef
 typedef struct { int x; int y; } z;
 EXPECT_AST
 [["typedef", "Rs{Six;Siy}", "z"]]
+
+
+BEGIN Error on typedef with bit-field
+typedef int T: 2;
+EXPECT_MESSAGE
+:1:14: error unexpected token
+:1:16: error unexpected token
+EXPECT_AST
+[["typedef", "Si", "T"]]

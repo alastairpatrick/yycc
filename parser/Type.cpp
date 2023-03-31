@@ -481,7 +481,15 @@ void StructuredType::print(std::ostream& stream) const {
         for (auto declarator : member->declarators) {
             if (separator) stream << ';';
             separator = true;
-            stream << declarator->type << declarator->identifier;
+            stream << declarator->type;
+
+            if (auto variable = dynamic_cast<Variable*>(declarator)) {
+                if (auto bit_field_size = dynamic_cast<IntegerConstant*>(variable->bit_field_size)) {
+                    stream << ':' << bit_field_size->int_value();
+                }
+            }
+
+            stream << declarator->identifier;
         }
     }
 

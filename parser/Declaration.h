@@ -7,6 +7,7 @@ enum class IdentifierScope {
     FILE,
     BLOCK,
     PROTOTYPE,
+    STRUCTURED,
 };
 
 enum class StorageClass {
@@ -48,10 +49,11 @@ struct Declaration: ASTNode {
 };
 
 struct Variable: Declarator {
-    Variable(const Declaration* declaration, const Type* type, const Identifier& identifier, Expr* initializer, const Location& location);
+    Variable(const Declaration* declaration, const Type* type, const Identifier& identifier, Expr* initializer, Expr* bit_field_size, const Location& location);
 
     StorageDuration storage_duration;
     Expr* initializer{};
+    Expr* bit_field_size{};
 
     virtual void combine();
     virtual void print(ostream& stream) const;
