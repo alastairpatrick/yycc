@@ -62,21 +62,21 @@ IntegerConstant* IntegerConstant::default_expr(const Location& location) {
 
 IntegerConstant* IntegerConstant::of(string_view text, TokenKind token, const Location& location) {
     switch (token) {
-    case TOK_BIN_INT_LITERAL:
-        text.remove_prefix(2);
-        return parse_integer_literal(text, 2, location);
-    case TOK_OCT_INT_LITERAL:
-        return parse_integer_literal(text, 8, location);
-    case TOK_DEC_INT_LITERAL:
-        return parse_integer_literal(text, 10, location);
-    case TOK_HEX_INT_LITERAL:
-        text.remove_prefix(2);
-        return parse_integer_literal(text, 16, location);
-    case TOK_CHAR_LITERAL:
-        return parse_char_literal(text, location);
-    default:
+      default:
         assert(false);
         return nullptr;
+      case TOK_BIN_INT_LITERAL:
+        text.remove_prefix(2);
+        return parse_integer_literal(text, 2, location);
+      case TOK_OCT_INT_LITERAL:
+        return parse_integer_literal(text, 8, location);
+      case TOK_DEC_INT_LITERAL:
+        return parse_integer_literal(text, 10, location);
+      case TOK_HEX_INT_LITERAL:
+        text.remove_prefix(2);
+        return parse_integer_literal(text, 16, location);
+      case TOK_CHAR_LITERAL:
+        return parse_char_literal(text, location);
     }
 }
 

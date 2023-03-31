@@ -600,16 +600,16 @@ void NamedType::print(ostream& stream) const {
     stream << 'N';
 
     switch (kind) {
-    case TOK_ENUM:
+      case TOK_ENUM:
         stream << 'e';
         break;
-    case TOK_IDENTIFIER:
+      case TOK_IDENTIFIER:
         stream << 't';
         break;
-    case TOK_STRUCT:
+      case TOK_STRUCT:
         stream << 's';
         break;
-    case TOK_UNION:
+      case TOK_UNION:
         stream << 'u';
         break;
     }

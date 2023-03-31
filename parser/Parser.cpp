@@ -91,19 +91,19 @@ Expr* Parser::parse_expr(int min_prec) {
         else {
             BinaryOp op;
             switch (token) {
-            case TOK_OR_OP:
-            case TOK_AND_OP:
-            case '+':
-            case '-':
-            case '*':
-            case '/':
-            case '%':
+              default:
+                return result;
+              case TOK_OR_OP:
+              case TOK_AND_OP:
+              case '+':
+              case '-':
+              case '*':
+              case '/':
+              case '%':
                 loc = preprocessor.location();
                 op = BinaryOp(token);
                 consume();
                 break;
-            default:
-                return result;
             }
 
             auto right = parse_expr(next_min_prec);

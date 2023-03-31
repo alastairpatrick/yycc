@@ -6,12 +6,12 @@
 
 ostream& operator<<(ostream& stream, Linkage linkage) {
     switch (linkage) {
-    case Linkage::NONE:
+      case Linkage::NONE:
         break;
-    case Linkage::INTERNAL:
+      case Linkage::INTERNAL:
         stream << 'I';
         break;
-    case Linkage::EXTERNAL:
+      case Linkage::EXTERNAL:
         stream << 'E';
         break;
     }
@@ -20,9 +20,9 @@ ostream& operator<<(ostream& stream, Linkage linkage) {
 
 ostream& operator<<(ostream& stream, StorageDuration duration) {
     switch (duration) {
-    case StorageDuration::AUTO:
+      case StorageDuration::AUTO:
         break;
-    case StorageDuration::STATIC:
+      case StorageDuration::STATIC:
         stream << 'S';
         break;
     }

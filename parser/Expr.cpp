@@ -91,13 +91,13 @@ LLVMValueRef BinaryExpr::generate_value(CodeGenContext* context) const {
 
     if (auto result_as_int = dynamic_cast<const IntegerType*>(result_type)) {
         switch (op) {
-        case BinaryOp::ADD:
+          case BinaryOp::ADD:
             return LLVMBuildAdd(builder, left_temp, right_temp, "add");
-        case BinaryOp::SUB:
+          case BinaryOp::SUB:
             return LLVMBuildSub(builder, left_temp, right_temp, "sub");
-        case BinaryOp::MUL:
+          case BinaryOp::MUL:
             return LLVMBuildMul(builder, left_temp, right_temp, "mul");
-        case BinaryOp::DIV:
+          case BinaryOp::DIV:
             if (result_as_int->is_signed()) {
                 return LLVMBuildSDiv(builder, left_temp, right_temp, "div");
             } else {
@@ -108,13 +108,13 @@ LLVMValueRef BinaryExpr::generate_value(CodeGenContext* context) const {
 
     if (auto result_as_float = dynamic_cast<const FloatingPointType*>(result_type)) {
         switch (op) {
-        case BinaryOp::ADD:
+          case BinaryOp::ADD:
             return LLVMBuildFAdd(builder, left_temp, right_temp, "fadd");
-        case BinaryOp::SUB:
+          case BinaryOp::SUB:
             return LLVMBuildFSub(builder, left_temp, right_temp, "fsub");
-        case BinaryOp::MUL:
+          case BinaryOp::MUL:
             return LLVMBuildFMul(builder, left_temp, right_temp, "fmul");
-        case BinaryOp::DIV:
+          case BinaryOp::DIV:
             return LLVMBuildFDiv(builder, left_temp, right_temp, "fdiv");
         }
     }
@@ -125,29 +125,29 @@ LLVMValueRef BinaryExpr::generate_value(CodeGenContext* context) const {
 
 void BinaryExpr::print(ostream& stream) const {
     switch (op) {
-    case BinaryOp::LOGICAL_OR:
+      default:
+        stream << "[\"UnknownBinary\", ";
+        break;
+      case BinaryOp::LOGICAL_OR:
         stream << "[\"||\", ";
         break;
-    case BinaryOp::LOGICAL_AND:
+      case BinaryOp::LOGICAL_AND:
         stream << "[\"&&\", ";
         break;
-    case BinaryOp::ADD:
+      case BinaryOp::ADD:
         stream << "[\"+\", ";
         break;
-    case BinaryOp::SUB:
+      case BinaryOp::SUB:
         stream << "[\"-\", ";
         break;
-    case BinaryOp::MUL:
+      case BinaryOp::MUL:
         stream << "[\"*\", ";
         break;
-    case BinaryOp::DIV:
+      case BinaryOp::DIV:
         stream << "[\"/\", ";
         break;
-    case BinaryOp::MOD:
+      case BinaryOp::MOD:
         stream << "[\"%\", ";
-        break;
-    default:
-        stream << "[\"UnknownBinary\", ";
         break;
     }
 
