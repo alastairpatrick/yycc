@@ -20,7 +20,7 @@ struct FileCache {
 
     File read(const filesystem::path& path);
 
-    void add_search_directory(bool system, string_view path);
+    void add_search_directory(bool system, const filesystem::path& path);
     const File* search(string_view header_name);
 
     File* add(string_view header_name);

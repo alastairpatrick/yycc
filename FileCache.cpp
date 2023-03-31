@@ -79,7 +79,7 @@ File FileCache::read(const filesystem::path& path) {
     return result;
 }
 
-void FileCache::add_search_directory(bool system, string_view path) {
+void FileCache::add_search_directory(bool system, const filesystem::path& path) {
     directories.push_back(Directory { system, path });
 }
 
