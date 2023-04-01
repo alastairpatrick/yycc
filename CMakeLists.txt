@@ -10,7 +10,7 @@ message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 set(GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 add_library(lang_lib_c STATIC
-    "assoc_prec.c"
+    "parser/AssocPrec.c"
 )
 
 add_library(lang_lib STATIC

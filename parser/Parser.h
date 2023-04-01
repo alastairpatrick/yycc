@@ -1,7 +1,7 @@
 #ifndef AST_PARSER_H
 #define AST_PARSER_H
 
-#include "assoc_prec.h"
+#include "AssocPrec.h"
 #include "preprocessor/Preprocessor.h"
 #include "SymbolMap.h"
 

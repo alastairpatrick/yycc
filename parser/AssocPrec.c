@@ -1,5 +1,5 @@
-#include "assoc_prec.h"
-#include "lexer/Token.h"
+#include "AssocPrec.h"
+#include "../lexer/Token.h"
 
 const AssocPrec g_assoc_prec[TOK_NUM] = {
     [TOK_EOF]           = { ASSOC_RIGHT, END_PREC },
