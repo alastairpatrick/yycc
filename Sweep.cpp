@@ -15,6 +15,7 @@ struct DeclarationMarker {
     const SymbolMap& symbols;
     unordered_set<const Declaration*> todo;
     unordered_set<const Declaration*> marked;
+    set<string_view> type_names;
 
     void mark() {
         for (auto node : declarations) {
@@ -48,6 +49,9 @@ struct DeclarationMarker {
     void lookup(const Identifier& id) {
         auto declarator = symbols.lookup_declarator(id);
         while (declarator) {
+            if (auto type_def = dynamic_cast<const TypeDef*>(declarator)) {
+                type_names.insert(*type_def->identifier.name);
+            }
             if (!is_marked(declarator->declaration)) {
                 todo.insert(declarator->declaration);
             }
@@ -75,6 +79,20 @@ void sweep(ostream& stream, const File& file) {
     auto token = preprocessor2.next_token();
 
     TextStream text_stream(stream);
+
+    const int max_col = 120;
+    int col = max_col;
+    auto need_newline = false;
+    for (auto type_name : marker.type_names) {
+        if (col + type_name.length() > max_col) {
+            if (need_newline) stream << '\n';
+            need_newline = true;
+            col = 0;
+            stream << "#type";
+        }
+        stream << ' ' << type_name;
+    }
+    if (need_newline) stream << '\n';
 
     vector<const Declaration*> marked(marker.marked.begin(), marker.marked.end());
     sort(marked.begin(), marked.end(), [](const Declaration* a, const Declaration* b) {

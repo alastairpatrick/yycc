@@ -17,6 +17,7 @@
 #include <iostream>
 #include <list>
 #include <map>
+#include <set>
 #include <strstream>
 #include <stack>
 #include <string>
@@ -47,6 +48,7 @@ using std::max;
 using std::min;
 using std::move;
 using std::ostream;
+using std::set;
 using std::strstream;
 using std::pair;
 using std::remove_if;
