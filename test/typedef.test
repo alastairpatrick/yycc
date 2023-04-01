@@ -160,3 +160,10 @@ EXPECT_MESSAGE
 :1:16: error unexpected token
 EXPECT_AST
 [["typedef", "Si", "T"]]
+
+
+BEGIN Typedef of type declared in other translation unit
+typedef T S;
+PREPARSE
+EXPECT_AST
+[["typedef", "NtT", "S"]]

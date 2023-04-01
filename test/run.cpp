@@ -37,17 +37,20 @@ enum Section {
 };
 
 static const Test tests[] = {
-    { "var_decl",           TestType::PREPARSE },
     { "preprocess",         TestType::PREPROCESS },
     { "sweep",              TestType::PREPROCESS },
 
     { "typedef",            TestType::PREPARSE },
+    { "var_decl",           TestType::PREPARSE },
     { "fun_decl",           TestType::PREPARSE },
+    { "structured",         TestType::PREPARSE },
 
     { "typedef",            TestType::DECLARATIONS },
     { "var_decl",           TestType::DECLARATIONS },
     { "fun_decl",           TestType::DECLARATIONS },
+    { "structured",         TestType::DECLARATIONS },
     { "stmt",               TestType::DECLARATIONS },
+
     { "string_literal",     TestType::EXPRESSION },
     { "lex",                TestType::EXPRESSION },
     { "int_literal",        TestType::EXPRESSION },
