@@ -193,6 +193,7 @@ EXPECT_AST
 BEGIN Function definition may not share external declaration with declarators (2)
 int bar(int x) {
 }, foo;
+DECLARATIONS
 EXPECT_MESSAGE
 :2:2: error unexpected token
 :2:4: error 'foo' undeclared

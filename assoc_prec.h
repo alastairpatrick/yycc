@@ -11,7 +11,7 @@ typedef enum {
 } OperatorAssoc;
 
 typedef enum {
-    EOF_PREC = -1,
+    END_PREC = 1,
     SEQUENCE_PREC,
     ASSIGN_PREC,
     CONDITIONAL_PREC,

@@ -16,7 +16,7 @@ struct Parser {
     Parser(Preprocessor& preprocessor, bool preparse);
     void operator=(const Parser&) = delete;
 
-    Expr* parse_expr(int min_prec);
+    Expr* parse_expr(OperatorPrec min_prec);
     void parse_unit();
     bool check_eof();
 
@@ -27,9 +27,11 @@ private:
 
     void consume();
     bool consume(int t, Location* location = nullptr);
+    void balance_until(int t);
     bool require(int t, Location* location = nullptr);
-    void skip();
+    void skip_unexpected();
     void unexpected_token();
+    void skip_expr(OperatorPrec min_prec);
 
     size_t position() const;
     Fragment end_fragment(size_t begin_position) const;

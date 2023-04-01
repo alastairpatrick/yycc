@@ -2,7 +2,11 @@
 #include "lexer/Token.h"
 
 const AssocPrec g_assoc_prec[TOK_NUM] = {
-    [TOK_EOF]           = { ASSOC_RIGHT, EOF_PREC },
+    [TOK_EOF]           = { ASSOC_RIGHT, END_PREC },
+    [';']               = { ASSOC_RIGHT, END_PREC },
+    [')']               = { ASSOC_RIGHT, END_PREC },
+    ['}']               = { ASSOC_RIGHT, END_PREC },
+    [']']               = { ASSOC_RIGHT, END_PREC },
 
     // <expression> ::= <assignment-expression>
     //                | <expression> , <assignment-expression>

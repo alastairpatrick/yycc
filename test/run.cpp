@@ -65,7 +65,7 @@ Expr* parse_expr(const Input& input) {
     Preprocessor preprocessor(false);
     preprocessor.in(input);
     Parser parser(preprocessor, false);
-    auto result = parser.parse_expr(0);
+    auto result = parser.parse_expr(SEQUENCE_PREC);
     if (!parser.check_eof()) return nullptr;
     return result;
 }

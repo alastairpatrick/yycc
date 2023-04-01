@@ -25,9 +25,33 @@ bool Parser::consume(int t, Location* location) {
     return true;
 }
 
+void Parser::balance_until(int t) {
+    while (token && token != t) {
+        switch (token) {
+          default:
+            consume();
+          case '(':
+            consume();
+            balance_until(')');
+            consume();
+            break;
+          case '{':
+            consume();
+            balance_until('}');
+            consume();
+            break;
+          case '[':
+            consume();
+            balance_until(']');
+            consume();
+            break;
+        }
+    }
+}
+
 bool Parser::require(int t, Location* location) {
     while (token && token != t) {
-        skip();
+        skip_unexpected();
     }
     if (token == t) {
         if (location) {
@@ -39,7 +63,7 @@ bool Parser::require(int t, Location* location) {
     return false;
 }
 
-void Parser::skip() {
+void Parser::skip_unexpected() {
     unexpected_token();
     consume();
 }
@@ -72,14 +96,20 @@ bool Parser::check_eof() {
     return false;
 }
 
-Expr* Parser::parse_expr(int min_prec) {
-    Location loc;
+Expr* Parser::parse_expr(OperatorPrec min_prec) {
+    Location loc = preprocessor.location();
     auto begin = position();
+
+    // To make it easier to write tests that run in both preparse and not, decimal integers can always be parsed.
+    if (preparse && token != TOK_DEC_INT_LITERAL) {
+        skip_expr(min_prec);
+        return IntegerConstant::default_expr(loc);
+    }
 
     auto result = parse_cast_expr();
 
     while (prec() >= min_prec) {
-        auto next_min_prec = assoc() == ASSOC_LEFT ? prec() + 1 : prec();
+        auto next_min_prec = assoc() == ASSOC_LEFT ? OperatorPrec(prec() + 1) : prec();
 
         if (consume('?', &loc)) {
             auto then_expr = parse_expr(next_min_prec);
@@ -116,6 +146,40 @@ Expr* Parser::parse_expr(int min_prec) {
     return result;
 }
 
+void Parser::skip_expr(OperatorPrec min_prec) {
+    // The precedence returned by prec() is wrt the use of the token as closing parenthesis,
+    // as a binary operator or as the '?' in the conditional operator. The token might instead
+    // be, e.g., a unary operator. The highest precedence token for which there is ambiguity
+    // is '&'. Therefore we require that min_prec be such that a misinterpreted '&' would not
+    // cause skip_expr to return early.
+    assert(min_prec < AND_PREC);
+
+    while (token) {
+        if (prec() != 0 && prec() <= min_prec) return;
+
+        switch (token) {
+          default:
+            consume();
+            break;
+          case '(':
+            consume();
+            balance_until(')');
+            consume();
+            break;
+          case '{':
+            consume();
+            balance_until('}');
+            consume();
+            break;
+          case '[':
+            consume();
+            balance_until(']');
+            consume();
+            break;
+        }
+    }
+}
+
 Expr* Parser::parse_cast_expr() {
     Expr* result{};
     auto begin = position();
@@ -150,11 +214,11 @@ Expr* Parser::parse_cast_expr() {
             consume();
             break;
         } else if (consume('(')) {
-            result = parse_expr(0);
+            result = parse_expr(SEQUENCE_PREC);
             require(')');
         }
         else {
-            skip();
+            skip_unexpected();
             begin = position();
         }
     }
@@ -432,10 +496,10 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
         if (token == '{') {
             statement = parse_compound_statement();
         } else if (consume(TOK_RETURN)) {
-            statement = new ReturnStatement(parse_expr(0), location);
+            statement = new ReturnStatement(parse_expr(SEQUENCE_PREC), location);
             require(';');
         } else {
-            statement = parse_expr(0);
+            statement = parse_expr(SEQUENCE_PREC);
             require(';');
         }
 
@@ -449,16 +513,11 @@ CompoundStatement* Parser::parse_compound_statement() {
     auto begin = position();
     ASTNodeVector list;
     if (preparse) {
-        Location loc = preprocessor.location();
-        auto count = 0;
-        do {
-            if (token == '{') {
-                ++count;
-            } else if (token == '}') {
-                --count;
-            }
-            consume();
-        } while (count != 0);
+        Location loc;
+        require('{', &loc);
+        balance_until('}');
+        require('}');
+
 
         statement = new CompoundStatement(move(list), loc);
     } else {
@@ -705,7 +764,7 @@ EnumConstant* Parser::parse_enum_constant() {
 
     if (!consume(',')) {
         if (token != '}') {
-            unexpected();
+            unexpected_token();
         }
     }
 
