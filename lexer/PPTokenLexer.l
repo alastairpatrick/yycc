@@ -8,6 +8,7 @@
 
 %top {
 #include "InternedString.h"
+#include "lexer/Identifier.h"
 #include "lexer/Fragment.h"
 #include "lexer/Location.h"
 #include "lexer/Token.h"
@@ -23,6 +24,11 @@ public:
 
     Fragment fragment() const {
         return Fragment(matcher().first(), size());
+    }
+    
+    Identifier identifier() const
+    {
+        return Identifier(text());
     }
 
     Location location() const {

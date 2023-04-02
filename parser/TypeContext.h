@@ -1,7 +1,7 @@
 #ifndef AST_TYPE_CONTEXT_H
 #define AST_TYPE_CONTEXT_H
 
-#include "Identifier.h"
+#include "lexer/Identifier.h"
 #include "lexer/Token.h"
 
 struct Type;

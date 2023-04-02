@@ -1,9 +1,9 @@
 #include "Preprocessor.h"
 
 #include "FileCache.h"
+#include "lexer/Identifier.h"
 #include "lexer/Unescape.h"
 #include "Message.h"
-#include "Identifier.h"
 
 Preprocessor::Preprocessor(bool preparse): preparse(preparse), text_stream(string_stream) {
 }
@@ -119,11 +119,6 @@ TokenKind Preprocessor::commit_token(TokenKind token, string_view text) {
     }
 
     return token;
-}
-
-Identifier Preprocessor::identifier() const
-{
-    return Identifier(lexer.text());
 }
 
 bool Preprocessor::mark_root() const {

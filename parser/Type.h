@@ -1,7 +1,7 @@
 #ifndef AST_TYPE_H
 #define AST_TYPE_H
 
-#include "Identifier.h"
+#include "lexer/Identifier.h"
 #include "lexer/Location.h"
 #include "lexer/Token.h"
 #include "Printable.h"

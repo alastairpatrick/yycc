@@ -4,7 +4,7 @@
 #include "generated/IdentifierLexer.yy.h"
 #include "generated/PPNumberLexer.yy.h"
 #include "generated/PPTokenLexer.yy.h"
-#include "Identifier.h"
+#include "lexer/Identifier.h"
 #include "lexer/Location.h"
 #include "lexer/Token.h"
 #include "TextStream.h"
@@ -26,7 +26,9 @@ struct Preprocessor {
         return lexer.location();
     }
 
-    Identifier identifier() const;
+    Identifier identifier() const {
+        return lexer.identifier();
+    }
 
     bool mark_root() const;
 

@@ -1,8 +1,8 @@
 #ifndef AST_AST_NODE_H
 #define AST_AST_NODE_H
 
-#include "Identifier.h"
 #include "lexer/Fragment.h"
+#include "lexer/Identifier.h"
 #include "lexer/Location.h"
 #include "Printable.h"
 
