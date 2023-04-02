@@ -138,7 +138,7 @@ L?  ' (\\. | [^\\'\n])*  '  { return TOK_CHAR_LITERAL; }
 // Determine the kind of directive and transition.
 <DIRECTIVE> {
 
-d(efine)?       { start(PP_TOKENS); return TOK_PP_DEFINE; }
+define          { start(PP_TOKENS); return TOK_PP_DEFINE; }
 error           { start(PP_TOKENS); return TOK_PP_ERROR; }
 elif            { start(PP_TOKENS); return TOK_PP_ELIF; }
 else            { start(PP_TOKENS); return TOK_PP_ELSE; }
@@ -149,6 +149,7 @@ ifndef          { start(PP_TOKENS); return TOK_PP_IFNDEF; }
 include         { start(INCLUDE); return TOK_PP_INCLUDE; }
 line            { start(PP_TOKENS); return TOK_PP_LINE; }
 pragma          { start(PP_TOKENS); return TOK_PP_PRAGMA; }
+type            { start(PP_TOKENS); return TOK_PP_TYPE; }
 undef           { start(PP_TOKENS); return TOK_PP_UNDEF; }
 
 }

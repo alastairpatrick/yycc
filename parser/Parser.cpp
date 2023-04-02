@@ -9,11 +9,40 @@
 #include "Statement.h"
 
 Parser::Parser(Preprocessor& preprocessor, bool preparse): preprocessor(preprocessor), preparse(preparse), symbols(preparse) {
-    token = preprocessor.next_token();
+    consume();
 }
 
 void Parser::consume() {
-    token = preprocessor.next_token();
+    while (token) {
+        token = preprocessor.next_token();
+
+        switch (token) {
+          default:
+            return;
+          case TOK_PP_TYPE:
+            handle_type_directive();
+            break;
+        }
+    }
+}
+
+void Parser::handle_type_directive() {
+    auto pp_token = preprocessor.next_pp_token();
+
+    while (pp_token && pp_token != '\n') {
+        if (pp_token == TOK_IDENTIFIER) {
+            // This defines a type recursively as itself, which will be compatible with any existing or future
+            // definitiom, i.e. same as typedef T T;
+            auto id = preprocessor.identifier();
+            auto type = NamedType::of(TOK_IDENTIFIER, id);
+            auto declaration = new Declaration(IdentifierScope::FILE, StorageClass::TYPEDEF, type, preprocessor.location());
+            auto declarator = new TypeDef(declaration, type, id, preprocessor.location());
+            symbols.add_root_declarator(declarator);
+        } else {
+            unexpected_token();
+        }
+        pp_token = preprocessor.next_pp_token();
+    }
 }
 
 bool Parser::consume(int t, Location* location) {

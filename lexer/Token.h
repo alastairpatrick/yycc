@@ -89,6 +89,7 @@ enum TokenKind {
     TOK_PP_INCLUDE,
     TOK_PP_LINE,
     TOK_PP_PRAGMA,
+    TOK_PP_TYPE,
     TOK_PP_UNDEF,
 
     // Tokens below may be outside the range of char because they are never stored in hat files.

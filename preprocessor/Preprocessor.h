@@ -17,6 +17,7 @@ struct Preprocessor {
     void buffer(string_view fragment);
 
     TokenKind next_token();
+    TokenKind next_pp_token();
 
     string_view text() const {
         return lexer.text();
@@ -41,13 +42,13 @@ private:
     void skip_to_eol();
     void require_eol();
     void unexpected_directive_token();
-    TokenKind next_token_internal();
     TokenKind commit_token(TokenKind token, string_view text);
-    void handle_directive();
+    bool handle_directive();
     void handle_line_directive();
     void handle_error_directive();
     void handle_include_directive();
     void handle_pragma_directive();
+    void handle_type_directive();
 
     const bool preparse;
     PPTokenLexer lexer;

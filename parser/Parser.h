@@ -31,10 +31,13 @@ private:
     bool require(int t, Location* location = nullptr);
     void skip_unexpected();
     void unexpected_token();
-    void skip_expr(OperatorPrec min_prec);
-
     size_t position() const;
     Fragment end_fragment(size_t begin_position) const;
+
+    void handle_type_directive();
+
+    void skip_expr(OperatorPrec min_prec);
+
     OperatorAssoc assoc();
     OperatorPrec prec();
 

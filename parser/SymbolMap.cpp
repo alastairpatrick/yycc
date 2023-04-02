@@ -19,14 +19,22 @@ const Type* SymbolMap::lookup_type(const Identifier& identifier) const {
     return declarator->to_type();
 }
 
+void SymbolMap::add_root_declarator(Declarator* declarator) {
+    add_declarator_internal(scopes.back(), declarator);
+}
+
 void SymbolMap::add_declarator(Declarator* declarator) {
-    auto it = scopes.front().declarators.find(declarator->identifier.name);
-    if (it != scopes.front().declarators.end()) {
+    add_declarator_internal(scopes.front(), declarator);
+}
+
+void SymbolMap::add_declarator_internal(Scope& scope, Declarator* declarator) {
+    auto it = scope.declarators.find(declarator->identifier.name);
+    if (it != scope.declarators.end()) {
         declarator->earlier = it->second;
         if (!preparse) declarator->combine();
         it->second = declarator;
     } else {
-        scopes.front().declarators[declarator->identifier.name] = declarator;
+        scope.declarators[declarator->identifier.name] = declarator;
     }
 }
 

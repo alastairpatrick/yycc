@@ -18,7 +18,7 @@ void Preprocessor::buffer(string_view input) {
 
 TokenKind Preprocessor::next_token() {
     for (;;) {
-        next_token_internal();
+        next_pp_token();
         switch (token) {
             default: {
               return commit_token(token, text());
@@ -33,8 +33,8 @@ TokenKind Preprocessor::next_token() {
           } case '\n': {
               continue;
           } case '#': {
-              next_token_internal();
-              handle_directive();
+              next_pp_token();
+              if (!handle_directive()) return token;
               continue;
           } case TOK_PP_UNRECOGNIZED: {
               message(Severity::ERROR, location()) << "unexpected character '" << lexer.text() << "'\n";
@@ -47,11 +47,27 @@ TokenKind Preprocessor::next_token() {
     }
 }
 
-void Preprocessor::handle_directive() {
+TokenKind Preprocessor::next_pp_token() {
+    for (;;) {
+        token = lexer.next_token();
+        if (token != TOK_EOF || include_stack.empty()) break;
+
+        lexer.pop_matcher();
+
+        auto location = include_stack.back();
+        include_stack.pop_back();
+
+        lexer.lineno(location.line);
+        lexer.set_filename(location.filename);
+    }
+    return token;
+}
+
+bool Preprocessor::handle_directive() {
     switch (token) {
         case TOK_PP_INCLUDE: {
           handle_include_directive();
-          return;
+          return true;
       } case TOK_PP_LINE: {
           handle_line_directive();
           break;
@@ -66,16 +82,19 @@ void Preprocessor::handle_directive() {
         } case TOK_PP_PRAGMA: {
             handle_pragma_directive(); 
             break;
+        } case TOK_PP_TYPE: {
+            return false;
         }
       }
     }
 
     require_eol();
+    return true;
 }
 
 void Preprocessor::skip_to_eol() {
     while (token && token != '\n') {
-        next_token_internal();
+        next_pp_token();
     }
 }
 
@@ -89,22 +108,6 @@ void Preprocessor::require_eol() {
 
 void Preprocessor::unexpected_directive_token() {
     message(Severity::ERROR, location()) << "unexpected token in directive\n";
-}
-
-TokenKind Preprocessor::next_token_internal() {
-    for (;;) {
-        token = lexer.next_token();
-        if (token != TOK_EOF || include_stack.empty()) break;
-
-        lexer.pop_matcher();
-
-        auto location = include_stack.back();
-        include_stack.pop_back();
-
-        lexer.lineno(location.line);
-        lexer.set_filename(location.filename);
-    }
-    return token;
 }
 
 TokenKind Preprocessor::commit_token(TokenKind token, string_view text) {
@@ -130,7 +133,7 @@ string_view Preprocessor::output() {
 }
 
 void Preprocessor::handle_line_directive() {
-    next_token_internal();
+    next_pp_token();
 
     if (token != TOK_PP_NUMBER) return;
 
@@ -139,12 +142,12 @@ void Preprocessor::handle_line_directive() {
     auto result = from_chars(text.data(), text.data() + text.size(), line, 10);
     if (result.ec != errc{} || line <= 0 || result.ptr != text.data() + text.size()) return;
 
-    next_token_internal();
+    next_pp_token();
 
     InternedString filename{};
     if (token == TOK_STRING_LITERAL) {
         filename = intern_string(unescape_string(lexer.text(), lexer.location()));
-        next_token_internal();
+        next_pp_token();
     }
 
     if (token != '\n') return;
@@ -157,20 +160,20 @@ void Preprocessor::handle_line_directive() {
 
 void Preprocessor::handle_error_directive() {
     auto& stream = message(Severity::ERROR, location());
-    next_token_internal();
+    next_pp_token();
     auto begin = lexer.text().data();
     auto end = begin;
     while (token && token != '\n') {
         auto text = lexer.text();
         end = text.data() + text.length();
-        next_token_internal();
+        next_pp_token();
     }
 
     stream << string_view(begin, end - begin) << '\n';
 }
 
 void Preprocessor::handle_include_directive() {
-    next_token_internal();
+    next_pp_token();
 
     if (token != TOK_STRING_LITERAL) {
         unexpected_directive_token();
@@ -187,7 +190,7 @@ void Preprocessor::handle_include_directive() {
         return;
     }
 
-    next_token_internal();
+    next_pp_token();
     if (token != '\n') {
         unexpected_directive_token();
         skip_to_eol();

@@ -167,3 +167,17 @@ typedef T S;
 PREPARSE
 EXPECT_AST
 [["typedef", "NtT", "S"]]
+
+
+BEGIN Type directive
+#type T
+void f(void) {
+    T * v; // "T" is a type so this declares variable "v" with type "T*".
+}
+DECLARATIONS
+EXPECT_AST
+[
+    ["fun","E",["F", "V"],"f",[""], ["block", [
+        ["var", "", ["P", "NtT"], "v", ""]
+    ]]]
+]
