@@ -10,18 +10,16 @@ struct Declarator;
 struct Expr;
 
 struct Parser {
-    ASTNodeVector declarations;
-    SymbolMap symbols;
-
-    Parser(Preprocessor& preprocessor, bool preparse);
+    Parser(Preprocessor& preprocessor, SymbolMap& symbols);
     void operator=(const Parser&) = delete;
 
     Expr* parse_expr(OperatorPrec min_prec);
-    void parse_unit();
+    ASTNodeVector parse_unit();
     bool check_eof();
 
 private:
     Preprocessor& preprocessor;
+    SymbolMap& symbols;
     TokenKind token;
     const bool preparse;
 

@@ -8,7 +8,7 @@
 #include "Message.h"
 #include "Statement.h"
 
-Parser::Parser(Preprocessor& preprocessor, bool preparse): preprocessor(preprocessor), preparse(preparse), symbols(preparse) {
+Parser::Parser(Preprocessor& preprocessor, SymbolMap& symbols): preprocessor(preprocessor), symbols(symbols), preparse(preprocessor.preparse) {
     consume();
 }
 
@@ -479,10 +479,12 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
     return true;
 }
 
-void Parser::parse_unit() {
+ASTNodeVector Parser::parse_unit() {
+    ASTNodeVector declarations;
     while (token) {
         declarations.push_back(parse_declaration_or_statement(IdentifierScope::FILE));
     }
+    return declarations;
 }
 
 ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {

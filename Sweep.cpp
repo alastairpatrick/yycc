@@ -68,10 +68,11 @@ void sweep(ostream& stream, const File& file) {
     Preprocessor preprocessor1(true);
     preprocessor1.buffer(file.text);
 
-    Parser parser(preprocessor1, true);
-    parser.parse_unit();
+    SymbolMap symbols(true);
+    Parser parser(preprocessor1, symbols);
+    auto declarations = parser.parse_unit();
 
-    DeclarationMarker marker(preprocessor1.output(), parser.declarations, parser.symbols);
+    DeclarationMarker marker(preprocessor1.output(), declarations, symbols);
     marker.mark();
 
     Preprocessor preprocessor2(false);

@@ -67,18 +67,19 @@ static ostream& print_error(const string& name, const string& file, int line) {
 Expr* parse_expr(const Input& input) {
     Preprocessor preprocessor(false);
     preprocessor.in(input);
-    Parser parser(preprocessor, false);
+    SymbolMap symbols(false);
+    Parser parser(preprocessor, symbols);
     auto result = parser.parse_expr(SEQUENCE_PREC);
     if (!parser.check_eof()) return nullptr;
     return result;
 }
 
 ASTNodeVector parse_declarations(const Input& input, bool preparse) {
-    Preprocessor preprocessor(false);
+    Preprocessor preprocessor(preparse);
     preprocessor.in(input);
-    Parser parser(preprocessor, preparse);
-    parser.parse_unit();
-    return move(parser.declarations);
+    SymbolMap symbols(preparse);
+    Parser parser(preprocessor, symbols);
+    return parser.parse_unit();
 }
 
 void sweep(ostream& stream, const File& file);

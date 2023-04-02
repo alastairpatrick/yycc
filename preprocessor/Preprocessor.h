@@ -35,6 +35,7 @@ struct Preprocessor {
 
     string_view output();
 
+    const bool preparse;
     TokenKind token;
     Fragment fragment;
 
@@ -50,7 +51,6 @@ private:
     void handle_pragma_directive();
     void handle_type_directive();
 
-    const bool preparse;
     PPTokenLexer lexer;
     IdentifierLexer id_lexer;
     PPNumberLexer num_lexer;
