@@ -35,7 +35,7 @@ void Parser::handle_type_directive() {
             // definitiom, i.e. same as typedef T T;
             auto id = preprocessor.identifier();
             auto type = NamedType::of(TOK_IDENTIFIER, id);
-            auto declaration = new Declaration(IdentifierScope::FILE, StorageClass::TYPEDEF, type, preprocessor.location());
+            auto declaration = new Declaration(IdentifierScope::FILE, StorageClass::TYPEDEF, preprocessor.location());
             auto declarator = new TypeDef(declaration, type, id, preprocessor.location());
             symbols.add_declarator(declarator);
         } else {
@@ -262,7 +262,7 @@ Expr* Parser::parse_cast_expr() {
     return result;
 }
 
-Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, uint32_t& specifiers) {
+Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const Type*& type, uint32_t& specifiers) {
     const uint32_t storage_class_mask = (1 << TOK_TYPEDEF) | (1 << TOK_EXTERN) | (1 << TOK_STATIC) | (1 << TOK_AUTO) | (1 << TOK_REGISTER);
     const uint32_t type_qualifier_mask = (1 << TOK_CONST) | (1 << TOK_RESTRICT) | (1 << TOK_VOLATILE);
     const uint32_t function_specifier_mask = 1 << TOK_INLINE;
@@ -271,7 +271,6 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, uint32_
     Declaration* declaration{};
     Location declaration_location = preprocessor.location();
     StorageClass storage_class;
-    const Type* type{};
     Location storage_class_location;
     Location type_specifier_location = preprocessor.location();
     Location function_specifier_location;
@@ -479,7 +478,7 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, uint32_
         type = QualifiedType::of(type, specifier_set & type_qualifier_mask);
     }
 
-    declaration->initialize(storage_class, type);
+    declaration->initialize(storage_class);
 
     specifiers = specifier_set & function_specifier_mask;
     return declaration;
@@ -499,15 +498,16 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
     auto location = preprocessor.location();
     auto begin = position();
 
+    const Type* base_type{};
     uint32_t specifiers;
     auto mark_root = preprocessor.mark_root();
-    if (auto declaration = parse_declaration_specifiers(scope, specifiers)) {
+    if (auto declaration = parse_declaration_specifiers(scope, base_type, specifiers)) {
         declaration->mark_root = mark_root;
 
         int declarator_count = 0;
         bool last_declarator{};
         while (token && token != ';') {
-            auto declarator = parse_declarator(declaration, specifiers, declarator_count == 0, location, &last_declarator);
+            auto declarator = parse_declarator(declaration, base_type, specifiers, declarator_count == 0, location, &last_declarator);
 
             if (declarator->identifier.name->empty()) {
                 message(Severity::ERROR, preprocessor.location()) << "expected identifier\n";
@@ -581,8 +581,9 @@ CompoundStatement* Parser::parse_compound_statement() {
 Declarator* Parser::parse_parameter_declarator() {
     auto begin_declaration = position();
 
+    const Type* base_type;
     uint32_t specifiers;
-    auto declaration = parse_declaration_specifiers(IdentifierScope::PROTOTYPE, specifiers);
+    auto declaration = parse_declaration_specifiers(IdentifierScope::PROTOTYPE, base_type, specifiers);
     if (!declaration) {
         // TODO
     }
@@ -594,7 +595,7 @@ Declarator* Parser::parse_parameter_declarator() {
 
     bool last;
     auto begin_declarator = position();
-    auto declarator = parse_declarator(declaration, specifiers, false, declaration->location, &last);
+    auto declarator = parse_declarator(declaration, base_type, specifiers, false, declaration->location, &last);
     declarator->fragment = end_fragment(begin_declarator);
 
     declaration->declarators.push_back(declarator);
@@ -602,15 +603,14 @@ Declarator* Parser::parse_parameter_declarator() {
     return declarator;
 }
 
-Declarator* Parser::parse_declarator(Declaration* declaration, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last) {
+Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last) {
     auto begin = position();
     *last = false;
     if (consume('(')) {
-        auto result = parse_declarator(declaration, specifiers, allow_function_def, location, last);
+        auto result = parse_declarator(declaration, type, specifiers, allow_function_def, location, last);
         require(')');
         return result;
     } else {
-        const Type* type = declaration->base_type;
         while (consume('*')) {
             type = type->pointer_to();
 

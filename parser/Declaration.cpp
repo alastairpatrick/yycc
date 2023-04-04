@@ -29,18 +29,17 @@ ostream& operator<<(ostream& stream, StorageDuration duration) {
     return stream;
 }
 
-Declaration::Declaration(IdentifierScope scope, StorageClass storage_class, const Type* base_type, const Location& location)
+Declaration::Declaration(IdentifierScope scope, StorageClass storage_class, const Location& location)
     : Declaration(scope, location) {
-    initialize(storage_class, base_type);
+    initialize(storage_class);
 }
 
 Declaration::Declaration(IdentifierScope scope, const Location& location)
     : ASTNode(location), scope(scope) {
 }
 
-void Declaration::initialize(StorageClass storage_class, const Type* base_type) {
+void Declaration::initialize(StorageClass storage_class) {
     this->storage_class = storage_class;
-    this->base_type = base_type;
 
     if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
         linkage = Linkage::INTERNAL;
