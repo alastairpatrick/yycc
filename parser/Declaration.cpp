@@ -30,7 +30,18 @@ ostream& operator<<(ostream& stream, StorageDuration duration) {
 }
 
 Declaration::Declaration(IdentifierScope scope, StorageClass storage_class, const Type* base_type, const Location& location)
-    : ASTNode(location), scope(scope), storage_class(storage_class), base_type(base_type) {
+    : Declaration(scope, location) {
+    initialize(storage_class, base_type);
+}
+
+Declaration::Declaration(IdentifierScope scope, const Location& location)
+    : ASTNode(location), scope(scope) {
+}
+
+void Declaration::initialize(StorageClass storage_class, const Type* base_type) {
+    this->storage_class = storage_class;
+    this->base_type = base_type;
+
     if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
         linkage = Linkage::INTERNAL;
     } else if (storage_class == StorageClass::EXTERN || scope == IdentifierScope::FILE) {
@@ -187,8 +198,8 @@ void TypeDef::print(ostream& stream) const {
     stream << "[\"typedef\", " << type << ", \"" << identifier  << "\"]";
 }
 
-EnumConstant::EnumConstant(const Identifier& identifier, Expr* constant, const Location& location)
-    : Declarator(nullptr, IntegerType::default_type(), identifier, location), constant(constant) {
+EnumConstant::EnumConstant(Declaration* declaration, const Identifier& identifier, Expr* constant, const Location& location)
+    : Declarator(declaration, IntegerType::default_type(), identifier, location), constant(constant) {
 }
 
 void EnumConstant::print(ostream& stream) const {

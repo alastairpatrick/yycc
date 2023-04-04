@@ -40,13 +40,13 @@ private:
     OperatorPrec prec();
 
     Expr* parse_cast_expr();
-    bool parse_declaration_specifiers(IdentifierScope scope, StorageClass& storage_class, const Type*& type, uint32_t& specifiers);
+    Declaration* parse_declaration_specifiers(IdentifierScope scope, uint32_t& specifiers);
     ASTNode* parse_declaration_or_statement(IdentifierScope scope);
     CompoundStatement* parse_compound_statement();
     Declarator* parse_parameter_declarator();
     Declarator* parse_declarator(Declaration* declaration, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last);
-    const Type* parse_structured_type();
-    EnumConstant* parse_enum_constant();
+    const Type* parse_structured_type(Declaration* declaration);
+    EnumConstant* parse_enum_constant(Declaration* declaration);
 };
 
 #endif

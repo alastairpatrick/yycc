@@ -47,9 +47,6 @@ LLVMValueRef Type::convert_to_type(CodeGenContext* context, LLVMValueRef value, 
     return value;
 }
 
-void Type::fix_up_declaration(const Declaration* declaration) const {
-}
-
 const PointerType* Type::pointer_to() const {
     auto type = TranslationUnitContext::it->type.lookup_pointer_type(this);
     if (type) return type;
@@ -534,12 +531,6 @@ LLVMTypeRef EnumType::llvm_type() const {
     return nullptr;
 }
 
-void EnumType::fix_up_declaration(const Declaration* declaration) const {
-    for (auto constant : constants) {
-        constant->declaration = declaration;
-    }
-}
-
 void EnumType::print(std::ostream& stream) const {
     stream << "[\"ENUM\", ";
 
@@ -563,13 +554,6 @@ DeclarationType::DeclarationType(TypeDef* declarator)
 LLVMTypeRef DeclarationType::llvm_type() const {
     assert(false);
     return nullptr;
-}
-
-void DeclarationType::fix_up_declaration(const Declaration* declaration) const {
-    auto td = const_cast<TypeDef*>(declarator);
-    td->declaration = declaration;
-
-    td->type->fix_up_declaration(declaration);
 }
 
 void DeclarationType::print(std::ostream& stream) const {

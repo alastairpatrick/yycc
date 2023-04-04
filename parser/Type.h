@@ -31,8 +31,6 @@ struct Type: Printable {
 
     virtual LLVMValueRef convert_to_type(CodeGenContext* context, LLVMValueRef value, const Type* to_type) const;
 
-    virtual void fix_up_declaration(const Declaration* declaration) const;
-
     virtual LLVMTypeRef llvm_type() const = 0;
 };
 
@@ -124,7 +122,7 @@ struct ArrayType: Type {
     ArrayType(const Type* element_type, const Expr* size);
 
     const Type* const element_type;
-    const Expr* size;
+    const Expr* const size;
 
     virtual const Type* resolve(SymbolMap& scope) const;
 
@@ -161,7 +159,7 @@ private:
 struct FunctionType: Type {
     static const FunctionType* of(const Type* return_type, vector<const Type*> parameter_types, bool variadic);
 
-    const Type* return_type;
+    const Type* const return_type;
     const std::vector<const Type*> parameter_types;
     const bool variadic;
 
@@ -204,18 +202,15 @@ struct EnumType: Type {
     const vector<EnumConstant*> constants;
     
     virtual LLVMTypeRef llvm_type() const;
-    virtual void fix_up_declaration(const Declaration* declaration) const;
     virtual void print(std::ostream& stream) const;
 };
 
 struct DeclarationType: Type {
     explicit DeclarationType(TypeDef* declarator);
 
-    const TypeDef* declarator;
+    const TypeDef* const declarator;
 
     virtual LLVMTypeRef llvm_type() const;
-
-    virtual void fix_up_declaration(const Declaration* declaration) const;
 
     virtual void print(std::ostream& stream) const;
 };
@@ -224,8 +219,8 @@ struct DeclarationType: Type {
 struct NamedType: Type {
     static const NamedType* of(TokenKind kind, const Identifier& identifier);
 
-    TokenKind kind;
-    Identifier identifier;
+    const TokenKind kind;
+    const Identifier identifier;
 
     virtual LLVMTypeRef llvm_type() const;
     virtual void print(ostream& stream) const;

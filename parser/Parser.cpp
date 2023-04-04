@@ -262,12 +262,16 @@ Expr* Parser::parse_cast_expr() {
     return result;
 }
 
-bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& storage_class, const Type*& type, uint32_t& specifiers) {
+Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, uint32_t& specifiers) {
     const uint32_t storage_class_mask = (1 << TOK_TYPEDEF) | (1 << TOK_EXTERN) | (1 << TOK_STATIC) | (1 << TOK_AUTO) | (1 << TOK_REGISTER);
     const uint32_t type_qualifier_mask = (1 << TOK_CONST) | (1 << TOK_RESTRICT) | (1 << TOK_VOLATILE);
     const uint32_t function_specifier_mask = 1 << TOK_INLINE;
     const uint32_t type_specifier_mask = ~(storage_class_mask | type_qualifier_mask | function_specifier_mask);
 
+    Declaration* declaration{};
+    Location declaration_location = preprocessor.location();
+    StorageClass storage_class;
+    const Type* type{};
     Location storage_class_location;
     Location type_specifier_location = preprocessor.location();
     Location function_specifier_location;
@@ -275,7 +279,6 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
     uint32_t specifier_set = 0;
     uint32_t qualifier_set = 0;
     int num_longs = 0;
-    bool is_declaration = false;
     while (token) {
         if (token == TOK_LONG) {
             ++num_longs;
@@ -341,7 +344,8 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
             case TOK_UNION: {
               found_specifier = token;
               type_specifier_location = preprocessor.location();
-              type = parse_structured_type();
+              if (!declaration) declaration = new Declaration(scope, declaration_location);
+              type = parse_structured_type(declaration);
               break;
 
           } case TOK_INLINE: {
@@ -364,7 +368,7 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
 
         if (found_specifier) {
             assert(found_specifier < 32);
-            is_declaration = true;
+            if (!declaration) declaration = new Declaration(scope, declaration_location);
             if (specifier_set & (1 << found_specifier)) {
                 message(Severity::ERROR, specifier_location) << "invalid declaration specifier or type qualifier combination\n";
             }
@@ -374,7 +378,7 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
         }
     }
 
-    if (!is_declaration) return false;
+    if (!declaration) return declaration;
 
     // Have single storage class specifier iff storage class set contains only one element.
     uint32_t storage_class_set = specifier_set & storage_class_mask;
@@ -383,12 +387,12 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
     }
 
     storage_class = StorageClass::NONE;
-    if (storage_class_set & (1 << TOK_STATIC)) storage_class = StorageClass::STATIC;
-    else if (storage_class_set & (1 << TOK_EXTERN)) storage_class = StorageClass::EXTERN;
-    else if (storage_class_set & (1 << TOK_TYPEDEF)) storage_class = StorageClass::TYPEDEF;
-    else if (storage_class_set & (1 << TOK_AUTO)) storage_class = StorageClass::AUTO;
+    if (storage_class_set & (1 << TOK_STATIC))        storage_class = StorageClass::STATIC;
+    else if (storage_class_set & (1 << TOK_EXTERN))   storage_class = StorageClass::EXTERN;
+    else if (storage_class_set & (1 << TOK_TYPEDEF))  storage_class = StorageClass::TYPEDEF;
+    else if (storage_class_set & (1 << TOK_AUTO))     storage_class = StorageClass::AUTO;
     else if (storage_class_set & (1 << TOK_REGISTER)) storage_class = StorageClass::REGISTER;
-
+    
     // Check type specifiers are one of the valid combinations.
     switch (specifier_set & type_specifier_mask) {
         default: {
@@ -475,8 +479,10 @@ bool Parser::parse_declaration_specifiers(IdentifierScope scope, StorageClass& s
         type = QualifiedType::of(type, specifier_set & type_qualifier_mask);
     }
 
+    declaration->initialize(storage_class, type);
+
     specifiers = specifier_set & function_specifier_mask;
-    return true;
+    return declaration;
 }
 
 ASTNodeVector Parser::parse_unit() {
@@ -491,14 +497,10 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
     auto location = preprocessor.location();
     auto begin = position();
 
-    StorageClass storage_class = StorageClass::NONE;
-    const Type* type{};
     uint32_t specifiers;
     auto mark_root = preprocessor.mark_root();
-    if (parse_declaration_specifiers(scope, storage_class, type, specifiers)) {
-        auto declaration = new Declaration(scope, storage_class, type, location);
+    if (auto declaration = parse_declaration_specifiers(scope, specifiers)) {
         declaration->mark_root = mark_root;
-        type->fix_up_declaration(declaration);
 
         int declarator_count = 0;
         bool last_declarator{};
@@ -575,26 +577,22 @@ CompoundStatement* Parser::parse_compound_statement() {
 }
 
 Declarator* Parser::parse_parameter_declarator() {
-    auto location = preprocessor.location();
     auto begin_declaration = position();
 
-    StorageClass storage_class = StorageClass::NONE;
-    const Type* type{};
     uint32_t specifiers;
-    if (!parse_declaration_specifiers(IdentifierScope::PROTOTYPE, storage_class, type, specifiers)) {
+    auto declaration = parse_declaration_specifiers(IdentifierScope::PROTOTYPE, specifiers);
+    if (!declaration) {
         // TODO
     }
 
-    if (storage_class != StorageClass::NONE && storage_class != StorageClass::REGISTER) {
-        message(Severity::ERROR, location) << "invalid storage class\n";
-        storage_class = StorageClass::NONE;
+    if (declaration->storage_class != StorageClass::NONE && declaration->storage_class != StorageClass::REGISTER) {
+        message(Severity::ERROR, declaration->location) << "invalid storage class\n";
+        declaration->storage_class = StorageClass::NONE;
     }
 
     bool last;
-    auto declaration = new Declaration(IdentifierScope::PROTOTYPE, storage_class, type, location);
-
     auto begin_declarator = position();
-    auto declarator = parse_declarator(declaration, specifiers, false, location, &last);
+    auto declarator = parse_declarator(declaration, specifiers, false, declaration->location, &last);
     declarator->fragment = end_fragment(begin_declarator);
 
     declaration->declarators.push_back(declarator);
@@ -721,7 +719,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, uint32_t specifie
     }
 }
 
-const Type* Parser::parse_structured_type() {
+const Type* Parser::parse_structured_type(Declaration* declaration) {
     auto specifier = token;
     auto specifier_location = preprocessor.location();
     consume();
@@ -750,7 +748,7 @@ const Type* Parser::parse_structured_type() {
         } else {
             vector<EnumConstant*> constants;
             while (token && token != '}') {
-                auto constant = parse_enum_constant();
+                auto constant = parse_enum_constant(declaration);
                 constants.push_back(constant);
             }
 
@@ -767,8 +765,9 @@ const Type* Parser::parse_structured_type() {
         }
     } else {
         if (type) {
-            auto declarator = new TypeDef(nullptr, type, identifier, specifier_location);
+            auto declarator = new TypeDef(declaration, type, identifier, specifier_location);
             type = new DeclarationType(declarator);
+
             symbols.add_declarator(declarator);
         } else {
             if (preparse) {
@@ -782,7 +781,7 @@ const Type* Parser::parse_structured_type() {
     return type;
 }
 
-EnumConstant* Parser::parse_enum_constant() {
+EnumConstant* Parser::parse_enum_constant(Declaration* declaration) {
     auto location = preprocessor.location();
 
     auto identifier(token == TOK_IDENTIFIER ? preprocessor.identifier() : Identifier());
@@ -799,7 +798,7 @@ EnumConstant* Parser::parse_enum_constant() {
         }
     }
 
-    auto declarator = new EnumConstant(identifier, constant, location);
+    auto declarator = new EnumConstant(declaration, identifier, constant, location);
     symbols.add_declarator(declarator);
     return declarator;
 }

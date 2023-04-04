@@ -36,12 +36,14 @@ ostream& operator<<(ostream& stream, Linkage linkage);
 ostream& operator<<(ostream& stream, StorageDuration duration);
 
 struct Declaration: ASTNode {
-    explicit Declaration(IdentifierScope scope, StorageClass storage_class, const Type* base_type, const Location& location);
+    Declaration(IdentifierScope scope, StorageClass storage_class, const Type* base_type, const Location& location);
+    Declaration(IdentifierScope scope, const Location& location);
+    void initialize(StorageClass storage_class, const Type* base_type);
 
     IdentifierScope scope;
-    StorageClass storage_class;
-    Linkage linkage;
-    const Type* base_type;
+    StorageClass storage_class{};
+    Linkage linkage{};
+    const Type* base_type{};
     vector<Declarator*> declarators;
     bool mark_root{};
 
@@ -79,7 +81,7 @@ struct TypeDef: Declarator {
 };
 
 struct EnumConstant: Declarator {
-    EnumConstant(const Identifier& identifier, Expr* constant, const Location& location);
+    EnumConstant(Declaration* declaration, const Identifier& identifier, Expr* constant, const Location& location);
 
     Expr* constant{};
 
