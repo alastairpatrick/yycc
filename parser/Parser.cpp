@@ -486,6 +486,8 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, uint32_
 }
 
 ASTNodeVector Parser::parse_unit() {
+    symbols.clear_internal_linkage();
+
     ASTNodeVector declarations;
     while (token) {
         declarations.push_back(parse_declaration_or_statement(IdentifierScope::FILE));
