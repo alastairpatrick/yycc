@@ -37,7 +37,7 @@ void Parser::handle_type_directive() {
             auto type = NamedType::of(TOK_IDENTIFIER, id);
             auto declaration = new Declaration(IdentifierScope::FILE, StorageClass::TYPEDEF, type, preprocessor.location());
             auto declarator = new TypeDef(declaration, type, id, preprocessor.location());
-            symbols.add_root_declarator(declarator);
+            symbols.add_declarator(declarator);
         } else {
             unexpected_token();
         }

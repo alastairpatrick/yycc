@@ -19,15 +19,9 @@ const Type* SymbolMap::lookup_type(const Identifier& identifier) const {
     return declarator->to_type();
 }
 
-void SymbolMap::add_root_declarator(Declarator* declarator) {
-    add_declarator_internal(scopes.back(), declarator);
-}
-
 void SymbolMap::add_declarator(Declarator* declarator) {
-    add_declarator_internal(scopes.front(), declarator);
-}
+    auto& scope = declarator->declaration->scope == IdentifierScope::FILE ? scopes.back() : scopes.front();
 
-void SymbolMap::add_declarator_internal(Scope& scope, Declarator* declarator) {
     auto it = scope.declarators.find(declarator->identifier.name);
     if (it != scope.declarators.end()) {
         declarator->earlier = it->second;
