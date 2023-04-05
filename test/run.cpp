@@ -42,12 +42,16 @@ static const Test tests[] = {
 
     { "typedef",            TestType::PREPARSE },
     { "var_decl",           TestType::PREPARSE },
+    { "var_comp_decl",      TestType::PREPARSE },
     { "fun_decl",           TestType::PREPARSE },
+    { "fun_comp_decl",      TestType::PREPARSE },
     { "structured",         TestType::PREPARSE },
 
     { "typedef",            TestType::DECLARATIONS },
     { "var_decl",           TestType::DECLARATIONS },
+    { "var_comp_decl",      TestType::DECLARATIONS },
     { "fun_decl",           TestType::DECLARATIONS },
+    { "fun_comp_decl",      TestType::DECLARATIONS },
     { "structured",         TestType::DECLARATIONS },
     { "stmt",               TestType::DECLARATIONS },
 
