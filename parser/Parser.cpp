@@ -508,12 +508,13 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
         bool last_declarator{};
         while (token && token != ';') {
             auto declarator = parse_declarator(declaration, base_type, specifiers, declarator_count == 0, location, &last_declarator);
-
-            if (declarator->identifier.name->empty()) {
-                message(Severity::ERROR, preprocessor.location()) << "expected identifier\n";
-            } else {
-                declaration->declarators.push_back(declarator);
-                ++declarator_count;
+            if (declarator) {
+                if (declarator->identifier.name->empty()) {
+                    message(Severity::ERROR, preprocessor.location()) << "expected identifier\n";
+                } else {
+                    declaration->declarators.push_back(declarator);
+                    ++declarator_count;
+                }
             }
 
             // No ';' or ',' after function definition.
@@ -713,7 +714,9 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         }
 
         if (!identifier.name->empty()) {
-            symbols.add_declarator(declarator);
+            if (!symbols.add_declarator(declarator)) {
+                return nullptr;
+            }
         }
 
         declarator->fragment = end_fragment(begin);
@@ -738,8 +741,9 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
         if (specifier != TOK_ENUM) {
             vector<Declaration*> members;
             while (token && token != '}') {
-                auto node = parse_declaration_or_statement(IdentifierScope::STRUCTURED);
-                members.push_back(dynamic_cast<Declaration*>(node));
+                auto declaration = dynamic_cast<Declaration*>(parse_declaration_or_statement(IdentifierScope::STRUCTURED));
+                assert(declaration);
+                members.push_back(declaration);
             }
 
             if (specifier == TOK_STRUCT) {
@@ -751,7 +755,9 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
             vector<EnumConstant*> constants;
             while (token && token != '}') {
                 auto constant = parse_enum_constant(declaration);
-                constants.push_back(constant);
+                if (constant) {
+                    constants.push_back(constant);
+                }
             }
 
             type = new EnumType(move(constants), specifier_location);
@@ -801,6 +807,9 @@ EnumConstant* Parser::parse_enum_constant(Declaration* declaration) {
     }
 
     auto declarator = new EnumConstant(declaration, identifier, constant, location);
-    symbols.add_declarator(declarator);
+    if (!symbols.add_declarator(declarator)) {
+        return nullptr;
+    }
+
     return declarator;
 }

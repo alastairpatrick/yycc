@@ -72,20 +72,40 @@ EXPECT_AST
 [["fun", "E", ["F", "V", "Si"], "foo"]]
 
 
-BEGIN Multiple function declarations
+BEGIN Multiple function declarations (1)
 int foo(signed);
 signed foo(int);
+PREPARSE
 EXPECT_AST
 [["fun", "E", ["F", "Si", "Si"], "foo"]
 ,["fun", "E", ["F", "Si", "Si"], "foo"]]
 
 
-BEGIN Multiple function declarations with extern storage class
+BEGIN Multiple function declarations (2)
+int foo(signed);
+signed foo(int);
+DECLARATIONS
+EXPECT_AST
+[["fun", "E", ["F", "Si", "Si"], "foo"]
+,[]]
+
+
+BEGIN Multiple function declarations with extern storage class (1)
 extern void foo(int);
 extern void foo(int);
+PREPARSE
 EXPECT_AST
 [["fun", "E", ["F", "V", "Si"], "foo"]
 ,["fun", "E", ["F", "V", "Si"], "foo"]]
+
+
+BEGIN Multiple function declarations with extern storage class (2)
+extern void foo(int);
+extern void foo(int);
+DECLARATIONS
+EXPECT_AST
+[["fun", "E", ["F", "V", "Si"], "foo"]
+,[]]
 
 
 BEGIN Function declaration having internal linkage may not follow function declaration having external linkage
@@ -97,23 +117,43 @@ EXPECT_MESSAGE
 :1:1: see prior declaration
 EXPECT_AST
 [["fun", "E", ["F", "V", "Si"], "foo"]
-,["fun", "I", ["F", "V", "Si"], "foo"]]
+,[]]
 
 
-BEGIN Function declaration having internal linkage may preceed function declaration having external linkage
+BEGIN Function declaration having internal linkage may preceed function declaration having external linkage (1)
 static void foo(int);
 extern void foo(int);
+PREPARSE
 EXPECT_AST
 [["fun","I",["F", "V", "Si"],"foo"]
 ,["fun","E",["F", "V", "Si"],"foo"]]
 
 
-BEGIN Multiple function declarations with internal linkage
+BEGIN Function declaration having internal linkage may preceed function declaration having external linkage (2)
+static void foo(int);
+extern void foo(int);
+DECLARATIONS
+EXPECT_AST
+[["fun","I",["F", "V", "Si"],"foo"]
+,[]]
+
+
+BEGIN Multiple function declarations with internal linkage (1)
 static void foo(int);
 static void foo(int);
+PREPARSE
 EXPECT_AST
 [["fun","I",["F", "V", "Si"],"foo"]
 ,["fun","I",["F", "V", "Si"],"foo"]]
+
+
+BEGIN Multiple function declarations with internal linkage (1)
+static void foo(int);
+static void foo(int);
+DECLARATIONS
+EXPECT_AST
+[["fun","I",["F", "V", "Si"],"foo"]
+,[]]
 
 
 BEGIN Empty function definition
@@ -127,18 +167,20 @@ BEGIN Function definition with function declaration (1)
 static void foo(int);
 void foo(int x) {
 }
+DECLARATIONS
 EXPECT_AST
-[["fun","I",["F", "V", "Si"],"foo"]
-,["fun","E",["F", "V", "Si"],"foo",["x"],["block",[]]]]
+[["fun","I",["F", "V", "Si"],"foo",["x"],["block",[]]]
+,[]]
 
 
 BEGIN Function definition with function declaration (2)
 void foo(int x) {
 }
 extern void foo(int);
+DECLARATIONS
 EXPECT_AST
-[["fun", "E", ["F", "V", "Si"], "foo",[ "x"], ["block", []]]
-,["fun", "E", ["F", "V", "Si"], "foo"]]
+[["fun", "E", ["F", "V", "Si"], "foo", ["x"], ["block", []]]
+,[]]
 
 
 BEGIN Error on function redefinition
@@ -163,8 +205,33 @@ EXPECT_AST
 [
     ["fun", "E", ["F", "V", "Si"], "foo"],
     ["block", [
-        ["fun","E",["F", "V", "Si"],"foo"]
+        []
     ]]
+]
+
+
+BEGIN Redeclare variable with internal linkage at block scope.
+static int x;
+void foo(int);
+{
+    typedef int x;
+    {
+        extern int x, y;
+        x * y;  // Multiplies rather than declaring variable "y" of type "int*"
+    }
+}
+DECLARATIONS
+EXPECT_AST
+[
+    ["var","IS","Si","x",""],
+    ["fun","E",["F","V","Si"],"foo"],
+        ["block",[
+            ["typedef","Si","x"],
+            ["block",[
+                ["var","ES","Si","y"],
+                ["*","Nx","Ny"]
+            ]]
+        ]]
 ]
 
 
@@ -258,8 +325,8 @@ inline void foo() {
 }
 DECLARATIONS
 EXPECT_AST
-[["fun","E",["F", "V"],"foo"]
-,["fun","E",["F", "V"],"foo",[],["block",[]]]]
+[["fun","E",["F", "V"],"foo",[],["block",[]]]
+,[]]
 
 
 BEGIN Extern storage class prevents inline definition (3)
@@ -269,7 +336,7 @@ extern void foo();
 DECLARATIONS
 EXPECT_AST
 [["fun","E",["F", "V"],"foo",[],["block",[]]]
-,["fun","E",["F", "V"],"foo"]]
+,[]]
 
 
 BEGIN Inline specifier may be given multiple times

@@ -19,7 +19,8 @@ struct SymbolMap {
 
     Declarator* lookup_declarator(const Identifier& identifier) const;
     const Type* lookup_type(const Identifier& identifier) const;
-    void add_declarator(Declarator* declarator);
+    bool add_declarator(Declarator* declarator);
+    bool add_declarator_to_scope(Scope& scope, Declarator* declarator);
 
     void push_scope();
     void pop_scope();

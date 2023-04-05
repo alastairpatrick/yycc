@@ -71,15 +71,15 @@ const Type* Declarator::to_type() const {
     return nullptr;
 }
 
-void Declarator::combine() {
-    if (type != earlier->type || typeid(*this) != typeid(*earlier)) {
-        message(Severity::ERROR, location) << "redeclaration of '" << identifier << "' with different type\n";
-        message(Severity::INFO, earlier->location) << "see prior declaration\n";
+void Declarator::compose(Declarator* later) {
+    if (later->type != type || typeid(*later) != typeid(*this)) {
+        message(Severity::ERROR, later->location) << "redeclaration of '" << identifier << "' with different type\n";
+        message(Severity::INFO, location) << "see prior declaration\n";
     }
 
-    if (declaration->linkage == Linkage::INTERNAL && earlier->declaration->linkage != Linkage::INTERNAL) {
-        message(Severity::ERROR, location) << "static declaration of '" << identifier << "' follows non-static declaration\n";
-        message(Severity::INFO, earlier->location) << "see prior declaration\n";
+    if (later->declaration->linkage == Linkage::INTERNAL && declaration->linkage != Linkage::INTERNAL) {
+        message(Severity::ERROR, later->location) << "static declaration of '" << identifier << "' follows non-static declaration\n";
+        message(Severity::INFO, location) << "see prior declaration\n";
     }
 }
 
@@ -93,26 +93,24 @@ Variable::Variable(const Declaration* declaration, const Type* type, const Ident
     } else {
         storage_duration = StorageDuration::AUTO;
     }
-
-    definition = initializer ? this : nullptr;
 }
 
-void Variable::combine() {
-    Declarator::combine();
+void Variable::compose(Declarator* later) {
+    Declarator::compose(later);
 
-    auto earlier_var = dynamic_cast<Variable*>(earlier);
-    if (!earlier_var) return;
+    auto later_var = dynamic_cast<Variable*>(later);
+    if (!later_var) return;
 
-    if (initializer && earlier_var->definition) {
-        message(Severity::ERROR, location) << "redefinition of '" << identifier << "'\n";
-        message(Severity::INFO, earlier->definition->location) << "see prior definition\n";
+    if (later_var->initializer) {
+        if (initializer) {
+            message(Severity::ERROR, later->location) << "redefinition of '" << identifier << "'\n";
+            message(Severity::INFO, location) << "see prior definition\n";
+        } else {
+            initializer = later_var->initializer;
+        }
     }
 
-    if (!definition) {
-        definition = earlier_var->definition;
-    }
-
-    assert(storage_duration == earlier_var->storage_duration);
+    assert(later_var->storage_duration == storage_duration);
 }
 
 void Variable::print(ostream& stream) const {
@@ -135,34 +133,28 @@ Function::Function(const Declaration* declaration, const FunctionType* type, uin
         message(Severity::ERROR, location) << "invalid storage class\n";
     }
 
-    definition = body ? this : nullptr;
-
     // It's very valuable to determine which functions with external linkage are inline definitions, because they don't need to be
     // written to the AST file; another translation unit is guaranteed to have an external definition.
     inline_definition = (declaration->linkage == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
 }
 
-void Function::combine() {
-    Declarator::combine();
+void Function::compose(Declarator* later) {
+    Declarator::compose(later);
 
-    auto earlier_fn = dynamic_cast<Function*>(earlier);
-    if (!earlier_fn) return;
+    auto later_fn = dynamic_cast<Function*>(later);
+    if (!later_fn) return;
 
-    if (!definition) {
-        definition = earlier_fn->definition;
+    if (later_fn->body) {
+        if (body) {
+            message(Severity::ERROR, later_fn->location) << "redefinition of '" << identifier << "'\n";
+            message(Severity::INFO, location) << "see prior definition\n";
+        } else {
+            body = later_fn->body;
+            params = move(later_fn->params);
+        }
     }
-
-    if (body && earlier_fn->definition) {
-        message(Severity::ERROR, location) << "redefinition of '" << identifier << "'\n";
-        message(Severity::INFO, earlier_fn->definition->location) << "see prior definition\n";
-    }
-
-    inline_definition = inline_definition && earlier_fn->inline_definition;
-
-    if (!inline_definition && definition) {
-        auto definition_fn = dynamic_cast<Function*>(definition);
-        definition_fn->inline_definition = false;
-    }
+  
+    inline_definition = later_fn->inline_definition && inline_definition;
 }
 
 void Function::print(ostream& stream) const {

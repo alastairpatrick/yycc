@@ -23,12 +23,22 @@ EXPECT_AST
 [[]]
 
 
-BEGIN Redefinition of typedef
+BEGIN Redefinition of typedef (1)
 typedef int a;
 typedef signed a;
+PREPARSE
 EXPECT_AST
 [["typedef", "Si", "a"]
 ,["typedef", "Si", "a"]]
+
+
+BEGIN Redefinition of typedef (2)
+typedef int a;
+typedef signed a;
+DECLARATIONS
+EXPECT_AST
+[["typedef", "Si", "a"]
+,[]]
 
 
 BEGIN Redefinition of typedef with different type
@@ -40,7 +50,7 @@ EXPECT_MESSAGE
 :1:1: see prior declaration
 EXPECT_AST
 [["typedef", "Si", "a"]
-,["typedef", "Ui", "a"]]
+,[]]
 
 
 BEGIN Typedef in block scope
@@ -61,9 +71,10 @@ EXPECT_AST
 BEGIN Typedef as self
 typedef int a;
 typedef a a;
+DECLARATIONS
 EXPECT_AST
 [["typedef", "Si", "a"]
-,["typedef", "Si", "a"]]
+,[]]
 
 
 BEGIN Typedef as self (preparse)

@@ -56,7 +56,7 @@ struct Variable: Declarator {
     Expr* initializer{};
     Expr* bit_field_size{};
 
-    virtual void combine();
+    virtual void compose(Declarator* later);
     virtual void print(ostream& stream) const;
 };
 
@@ -68,7 +68,7 @@ struct Function: Declarator {
 
     bool inline_definition;
 
-    virtual void combine();
+    virtual void compose(Declarator* later);
     virtual void print(ostream& stream) const;
 };
 

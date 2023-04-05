@@ -1,14 +1,3 @@
-
-
-BEGIN Varaible of type declared in other translation unit
-T x;
-PREPARSE
-EXPECT_AST
-[["var", "ES", "NtT", "x", ""]]
-
-
-
-
 BEGIN Static storage class declaration
 static int x;
 EXPECT_AST
@@ -338,12 +327,22 @@ EXPECT_AST
  ,["var", "ES", ["P", "Si"], "y", ""]]]
 
 
-BEGIN Variable redeclarations having external linkage
+BEGIN Variable redeclarations having external linkage (1)
 extern int x;
 extern int x;
+PREPARSE
 EXPECT_AST
 [["var", "ES", "Si", "x"]
 ,["var", "ES", "Si", "x"]]
+
+
+BEGIN Variable redeclarations having external linkage (2)
+extern int x;
+extern int x;
+DECLARATIONS
+EXPECT_AST
+[["var", "ES", "Si", "x"]
+,[]]
 
 
 BEGIN Variable declaration with internal linkage may not follow variable declaration with external linkage
@@ -354,8 +353,8 @@ EXPECT_MESSAGE
 :2:1: error static declaration of 'x' follows non-static declaration
 :1:1: see prior declaration
 EXPECT_AST
-[["var","ES","Si","x"]
-,["var","IS","Si","x", ""]]
+[["var","ES","Si","x",""]
+,[]]
 
 
 BEGIN Variable declaration having internal linkage may preceed variable declaration having external linkage
@@ -364,7 +363,7 @@ extern int x;
 DECLARATIONS
 EXPECT_AST
 [["var","IS","Si","x", ""]
-,["var","ES","Si","x"]]
+,[]]
 
 
 BEGIN Multiple variable declarations having internal linkage not allowed
@@ -376,39 +375,79 @@ EXPECT_MESSAGE
 :1:1: see prior definition
 EXPECT_AST
 [["var", "IS", "Si", "x", ""]
-,["var", "IS", "Si", "x", ""]]
+,[]]
 
 
-BEGIN Variable definition following variable declaration
+BEGIN Variable definition following variable declaration (1)
 extern int x;
 int x;
+PREPARSE
 EXPECT_AST
 [["var","ES","Si","x"]
 ,["var","ES","Si","x", ""]]
 
 
-BEGIN Variable definition preceeding variable declaration
+BEGIN Variable definition following variable declaration (2)
+extern int x;
+int x;
+DECLARATIONS
+EXPECT_AST
+[["var","ES","Si","x", ""]
+,[]]
+
+
+BEGIN Variable definition preceeding variable declaration (1)
 int x;
 extern int x;
+PREPARSE
 EXPECT_AST
 [["var","ES","Si","x", ""],
 ["var","ES","Si","x"]]
 
 
-BEGIN Variable initialization following variable declaration
+BEGIN Variable definition preceeding variable declaration (2)
+int x;
+extern int x;
+DECLARATIONS
+EXPECT_AST
+[["var","ES","Si","x", ""],
+[]]
+
+
+BEGIN Variable initialization following variable declaration (1)
 extern int x;
 int x = 1;
+PREPARSE
 EXPECT_AST
 [["var","ES","Si","x"]
 ,["var","ES","Si","x",1]]
 
 
-BEGIN Variable initialization preceeding variable declaration
+BEGIN Variable initialization following variable declaration (2)
+extern int x;
+int x = 1;
+DECLARATIONS
+EXPECT_AST
+[["var","ES","Si","x",1]
+,[]]
+
+
+BEGIN Variable initialization preceeding variable declaration (1)
 int x = 1;
 extern int x;
+PREPARSE
 EXPECT_AST
 [["var", "ES", "Si", "x", 1]
 ,["var","ES","Si","x"]]
+
+
+BEGIN Variable initialization preceeding variable declaration (2)
+int x = 1;
+extern int x;
+DECLARATIONS
+EXPECT_AST
+[["var", "ES", "Si", "x", 1]
+,[]]
 
 
 BEGIN Variable declarations may not be inline

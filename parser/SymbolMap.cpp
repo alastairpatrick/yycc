@@ -19,17 +19,36 @@ const Type* SymbolMap::lookup_type(const Identifier& identifier) const {
     return declarator->to_type();
 }
 
-void SymbolMap::add_declarator(Declarator* declarator) {
-    auto& scope = declarator->declaration->scope == IdentifierScope::FILE ? scopes.back() : scopes.front();
+bool SymbolMap::add_declarator(Declarator* declarator) {
+    bool result = true;
+    auto declaration = declarator->declaration;
 
+    if (declaration->scope != IdentifierScope::FILE) {
+        result = add_declarator_to_scope(scopes.front(), declarator) && result;
+    }
+
+    if (declaration->scope == IdentifierScope::FILE || declaration->storage_class == StorageClass::EXTERN) {
+        result = add_declarator_to_scope(scopes.back(), declarator) && result;
+    }
+
+    return result;
+}
+
+bool SymbolMap::add_declarator_to_scope(Scope& scope, Declarator* declarator) {
     auto it = scope.declarators.find(declarator->identifier.name);
     if (it != scope.declarators.end()) {
-        declarator->earlier = it->second;
-        if (!preparse) declarator->combine();
-        it->second = declarator;
+        if (preparse) {
+            declarator->earlier = it->second;
+        } else {
+            it->second->compose(declarator);
+            declarator = it->second;
+            return false;
+        }
     } else {
         scope.declarators[declarator->identifier.name] = declarator;
     }
+
+    return true;
 }
 
 void SymbolMap::push_scope() {
