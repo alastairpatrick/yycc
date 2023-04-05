@@ -73,6 +73,21 @@ void VoidType::print(std::ostream& stream) const {
 
 #pragma endregion VoidType
 
+#pragma region CompatibleType
+
+const CompatibleType CompatibleType::it;
+
+LLVMTypeRef CompatibleType::llvm_type() const {
+    assert(false);
+    return LLVMVoidType();
+}
+
+void CompatibleType::print(std::ostream& stream) const {
+    stream << "\"?\"";
+}
+
+#pragma endregion CompatibleType
+
 #pragma region IntegerType
 
 const IntegerType* IntegerType::of_char(bool is_wide) {

@@ -32,7 +32,7 @@ private:
     size_t position() const;
     Fragment end_fragment(size_t begin_position) const;
 
-    void handle_type_directive();
+    void handle_declaration_directive();
 
     void skip_expr(OperatorPrec min_prec);
 

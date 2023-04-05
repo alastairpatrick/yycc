@@ -83,6 +83,10 @@ void Declarator::compose(Declarator* later) {
     }
 }
 
+Variable::Variable(const Declaration* declaration, const Identifier& identifier, const Location& location)
+    : Declarator(declaration, new CompatibleType(), identifier, location) {
+}
+
 Variable::Variable(const Declaration* declaration, const Type* type, const Identifier& identifier, Expr* initializer, Expr* bit_field_size, const Location& location)
     : Declarator(declaration, type, identifier, location), initializer(initializer), bit_field_size(bit_field_size) {
     auto scope = declaration->scope;
@@ -121,6 +125,10 @@ void Variable::print(ostream& stream) const {
         stream << ", " << initializer;
     }
     stream << ']';
+}
+
+Function::Function(const Declaration* declaration, const Identifier& identifier, const Location& location)
+    : Declarator(declaration, new CompatibleType(), identifier, location) {
 }
 
 Function::Function(const Declaration* declaration, const FunctionType* type, uint32_t specifiers, const Identifier& identifier, vector<Variable*>&& params, Statement* body, const Location& location)
@@ -177,6 +185,11 @@ void Function::print(ostream& stream) const {
     stream << ']';
 }
 
+TypeDef::TypeDef(const Declaration* declaration, const Identifier& identifier, const Location& location)
+    : Declarator(declaration, new CompatibleType(), identifier, location) {
+    
+}
+
 TypeDef::TypeDef(const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location)
     : Declarator(declaration, type, identifier, location) {
 }
@@ -187,6 +200,10 @@ const Type* TypeDef::to_type() const {
 
 void TypeDef::print(ostream& stream) const {
     stream << "[\"typedef\", " << type << ", \"" << identifier  << "\"]";
+}
+
+EnumConstant::EnumConstant(const Declaration* declaration, const Identifier& identifier, const Location& location)
+    : Declarator(declaration, new CompatibleType(), identifier, location) {
 }
 
 EnumConstant::EnumConstant(Declaration* declaration, const Identifier& identifier, Expr* constant, const Location& location)

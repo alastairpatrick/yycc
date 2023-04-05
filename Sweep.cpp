@@ -16,6 +16,9 @@ struct DeclarationMarker {
     unordered_set<const Declaration*> todo;
     unordered_set<const Declaration*> marked;
     set<string_view> type_names;
+    set<string_view> variable_names;
+    set<string_view> function_names;
+    set<string_view> enum_const_names;
 
     void mark() {
         for (auto node : declarations) {
@@ -52,6 +55,15 @@ struct DeclarationMarker {
             if (auto type_def = dynamic_cast<const TypeDef*>(declarator)) {
                 type_names.insert(*type_def->identifier.name);
             }
+            if (auto variable = dynamic_cast<const Variable*>(declarator)) {
+                variable_names.insert(*variable->identifier.name);
+            }
+            if (auto function = dynamic_cast<const Function*>(declarator)) {
+                function_names.insert(*function->identifier.name);
+            }
+            if (auto enum_const = dynamic_cast<const EnumConstant*>(declarator)) {
+                enum_const_names.insert(*enum_const->identifier.name);
+            }
             if (!is_marked(declarator->declaration)) {
                 todo.insert(declarator->declaration);
             }
@@ -63,6 +75,22 @@ struct DeclarationMarker {
         return marked.find(declaration) != marked.end();
     }
 };
+
+static void output_declarator_directives(ostream& stream, const char* directive, const set<string_view>& names) {
+    const int max_col = 120;
+    int col = max_col;
+    auto need_newline = false;
+    for (auto name : names) {
+        if (col + name.length() > max_col) {
+            if (need_newline) stream << '\n';
+            need_newline = true;
+            col = 0;
+            stream << directive;
+        }
+        stream << ' ' << name;
+    }
+    if (need_newline) stream << '\n';
+}
 
 void sweep(ostream& stream, const File& file) {
     Preprocessor preprocessor1(file.text, true);
@@ -79,19 +107,10 @@ void sweep(ostream& stream, const File& file) {
 
     TextStream text_stream(stream);
 
-    const int max_col = 120;
-    int col = max_col;
-    auto need_newline = false;
-    for (auto type_name : marker.type_names) {
-        if (col + type_name.length() > max_col) {
-            if (need_newline) stream << '\n';
-            need_newline = true;
-            col = 0;
-            stream << "#type";
-        }
-        stream << ' ' << type_name;
-    }
-    if (need_newline) stream << '\n';
+    output_declarator_directives(stream, "#type", marker.type_names);
+    output_declarator_directives(stream, "#enum", marker.enum_const_names);
+    output_declarator_directives(stream, "#variable", marker.variable_names);
+    output_declarator_directives(stream, "#function", marker.function_names);
 
     vector<const Declaration*> marked(marker.marked.begin(), marker.marked.end());
     sort(marked.begin(), marked.end(), [](const Declaration* a, const Declaration* b) {

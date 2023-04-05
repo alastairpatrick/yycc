@@ -19,14 +19,17 @@ void Parser::consume() {
         switch (token) {
           default:
             return;
+          case TOK_PP_ENUM:
+          case TOK_PP_FUNCTION:
           case TOK_PP_TYPE:
-            handle_type_directive();
+          case TOK_PP_VARIABLE:
+            handle_declaration_directive();
             break;
         }
     }
 }
 
-void Parser::handle_type_directive() {
+void Parser::handle_declaration_directive() {
     auto pp_token = preprocessor.next_pp_token();
 
     while (pp_token && pp_token != '\n') {
@@ -34,9 +37,25 @@ void Parser::handle_type_directive() {
             // This defines a type recursively as itself, which will be compatible with any existing or future
             // definitiom, i.e. same as typedef T T;
             auto id = preprocessor.identifier();
-            auto type = NamedType::of(TOK_IDENTIFIER, id);
-            auto declaration = new Declaration(IdentifierScope::FILE, StorageClass::TYPEDEF, preprocessor.location());
-            auto declarator = new TypeDef(declaration, type, id, preprocessor.location());
+
+            Declarator* declarator{};
+            auto declaration = new Declaration(IdentifierScope::FILE, preprocessor.location());
+            switch (token) {
+                case TOK_PP_ENUM: {
+                  declarator = new EnumConstant(declaration, id, preprocessor.location());
+                  break;
+              } case TOK_PP_FUNCTION: {
+                  declarator = new Function(declaration, id, preprocessor.location());
+                  break;
+              } case TOK_PP_TYPE: {
+                  declarator = new TypeDef(declaration, id, preprocessor.location());
+                  break;
+              } case TOK_PP_VARIABLE: {
+                  declarator = new Variable(declaration, nullptr, id, nullptr, nullptr, preprocessor.location());
+                  break;
+              }
+            }
+
             symbols.add_declarator(declarator);
         } else {
             unexpected_token();

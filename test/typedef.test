@@ -189,6 +189,6 @@ DECLARATIONS
 EXPECT_AST
 [
     ["fun","E",["F", "V"],"f",[""], ["block", [
-        ["var", "", ["P", "NtT"], "v", ""]
+        ["var", "", ["P", "?"], "v", ""]
     ]]]
 ]

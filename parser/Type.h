@@ -40,6 +40,13 @@ struct VoidType: Type {
     virtual void print(std::ostream& stream) const;
 };
 
+// CompatibleType is compatible with all types.
+struct CompatibleType: Type {
+    static const CompatibleType it;
+    virtual LLVMTypeRef llvm_type() const;
+    virtual void print(std::ostream& stream) const;
+};
+
 enum class IntegerSize {
     BOOL,
     CHAR,

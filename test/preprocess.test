@@ -2,6 +2,7 @@ BEGIN preprocess
 void foo() {}
 PREPROCESS
 EXPECT_TEXT
+#function foo
 void foo() {}
 END
 
@@ -11,6 +12,7 @@ BEGIN valid #line directive
 int x;
 PREPROCESS
 EXPECT_TEXT
+#variable x
 
 #line 7
 int x;
@@ -22,6 +24,7 @@ BEGIN valid #line directive with path
 int x;
 PREPROCESS
 EXPECT_TEXT
+#variable x
 
 #line 7 "foo.h"
 int x;
@@ -33,6 +36,7 @@ BEGIN valid #line directive with path with escape sequence
 int x;
 PREPROCESS
 EXPECT_TEXT
+#variable x
 
 #line 7 "\\foo.h"
 int x;
@@ -45,6 +49,7 @@ BEGIN combines #line directives
 int x;
 PREPROCESS
 EXPECT_TEXT
+#variable x
 
 #line 7
 int x;
@@ -58,6 +63,7 @@ PREPROCESS
 FILE "a.h"
   extern int x;
 EXPECT_TEXT
+#variable x
 
 #line 1 "a.h"
   extern int x;
@@ -73,6 +79,7 @@ PREPROCESS
 FILE <a.h>
   extern int x;
 EXPECT_TEXT
+#variable x
 
 #line 1 "a.h"
   extern int x;
@@ -88,6 +95,7 @@ PREPROCESS
 EXPECT_MESSAGE
 :1:9: error unexpected token in directive
 EXPECT_TEXT
+#variable x
 
 int x;
 END
@@ -100,6 +108,7 @@ PREPROCESS
 EXPECT_MESSAGE
 :1:10: error unexpected token in directive
 EXPECT_TEXT
+#variable x
 
 int x;
 END
@@ -114,6 +123,7 @@ extern int x;
 EXPECT_MESSAGE
 :1:15: error unexpected token in directive
 EXPECT_TEXT
+#variable x
 
 #line 1 "a.h"
 extern int x;
@@ -129,6 +139,7 @@ PREPROCESS
 EXPECT_MESSAGE
 :1:10: error cannot read file "a.h"
 EXPECT_TEXT
+#variable x
 
 int x;
 END
@@ -143,6 +154,7 @@ FILE "a.h"
 FILE "b.h"
 extern int x;
 EXPECT_TEXT
+#variable x
 
 #line 1 "b.h"
 extern int x;
@@ -158,6 +170,7 @@ PREPROCESS
 FILE "c:\a.h"
   extern int x;
 EXPECT_TEXT
+#variable x
 
 #line 1 "c:\\a.h"
   extern int x;
