@@ -484,7 +484,7 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
     return declaration;
 }
 
-ASTNodeVector Parser::parse_unit() {
+ASTNodeVector Parser::parse() {
     symbols.clear_internal_linkage();
 
     ASTNodeVector declarations;

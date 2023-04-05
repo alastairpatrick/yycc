@@ -14,7 +14,7 @@ struct Parser {
     void operator=(const Parser&) = delete;
 
     Expr* parse_expr(OperatorPrec min_prec);
-    ASTNodeVector parse_unit();
+    ASTNodeVector parse();
     bool check_eof();
 
 private:

@@ -3,7 +3,8 @@
 #include "TranslationUnitContext.h"
 
 ostream& message(Severity severity, const Location& location) {
-    auto &stream = TranslationUnitContext::it->message_stream;
+    auto &context = TranslationUnitContext::it;
+    auto& stream = context->message_stream;
     stream << *location.filename << ':' << location.line << ':' << location.column << ": ";
 
     switch (severity) {
@@ -14,6 +15,8 @@ ostream& message(Severity severity, const Location& location) {
         stream << "error ";
         break;
     }
+
+    context->highest_severity = max(context->highest_severity, severity);
 
     return stream;
 }

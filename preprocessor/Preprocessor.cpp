@@ -8,12 +8,12 @@
 Preprocessor::Preprocessor(bool preparse): preparse(preparse), text_stream(string_stream) {
 }
 
-void Preprocessor::in(const Input& input) {
-    lexer.in(input);
+Preprocessor::Preprocessor(string_view input, bool preparse): Preprocessor(preparse) {
+    lexer.buffer(input);
 }
 
-void Preprocessor::buffer(string_view input) {
-    lexer.buffer(input);
+void Preprocessor::in(const Input& input) {
+    lexer.in(input);
 }
 
 TokenKind Preprocessor::next_token() {

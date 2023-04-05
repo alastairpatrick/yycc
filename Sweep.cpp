@@ -65,18 +65,16 @@ struct DeclarationMarker {
 };
 
 void sweep(ostream& stream, const File& file) {
-    Preprocessor preprocessor1(true);
-    preprocessor1.buffer(file.text);
+    Preprocessor preprocessor1(file.text, true);
 
     SymbolMap symbols(true);
     Parser parser(preprocessor1, symbols);
-    auto declarations = parser.parse_unit();
+    auto declarations = parser.parse();
 
     DeclarationMarker marker(preprocessor1.output(), declarations, symbols);
     marker.mark();
 
-    Preprocessor preprocessor2(false);
-    preprocessor2.buffer(preprocessor1.output());
+    Preprocessor preprocessor2(preprocessor1.output(), false);
     auto token = preprocessor2.next_token();
 
     TextStream text_stream(stream);

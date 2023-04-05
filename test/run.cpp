@@ -37,13 +37,6 @@ enum Section {
 };
 
 static const Test tests[] = {
-    { "fun_decl",           TestType::DECLARATIONS },
-
-
-
-
-
-
     { "preprocess",         TestType::PREPROCESS },
     { "sweep",              TestType::PREPROCESS },
 
@@ -86,7 +79,7 @@ ASTNodeVector parse_declarations(const Input& input, bool preparse) {
     preprocessor.in(input);
     SymbolMap symbols(preparse);
     Parser parser(preprocessor, symbols);
-    return parser.parse_unit();
+    return parser.parse();
 }
 
 void sweep(ostream& stream, const File& file);

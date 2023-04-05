@@ -6,6 +6,8 @@
 
 struct ASTNode;
 
+enum class Severity;
+
 struct TranslationUnitContext {
     static thread_local TranslationUnitContext* it;
 
@@ -14,6 +16,7 @@ struct TranslationUnitContext {
     void operator=(const TranslationUnitContext&) = delete;
 
     ostream& message_stream;
+    Severity highest_severity{};
 
     TypeContext type;
 

@@ -11,11 +11,10 @@
 
 struct Preprocessor {
     explicit Preprocessor(bool preparse);
+    Preprocessor(string_view input, bool preparse);
     void operator=(const Preprocessor&) = delete;
 
     void in(const Input& input);
-    void buffer(string_view fragment);
-
     TokenKind next_token();
     TokenKind next_pp_token();
 
