@@ -200,3 +200,17 @@ EXPECT_AST
 [["fun", "E", ["F", "Si", "Si", ["P", ["Qc", "C"]]], "main", ["argc", "argv"], ["block", [
     ["return", "Nargc"]
 ]]]]
+
+
+BEGIN #extern function directive
+#extern function f
+DECLARATIONS
+EXPECT_GLOBALS
+[["fun","E","?","f"]]
+
+
+BEGIN #static function directive
+#static function f
+DECLARATIONS
+EXPECT_GLOBALS
+[["fun","I","?","f"]]

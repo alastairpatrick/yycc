@@ -41,7 +41,7 @@ struct Declaration: ASTNode {
 
     Linkage linkage() const;
 
-    IdentifierScope scope;
+    IdentifierScope scope{};
     StorageClass storage_class = StorageClass::NONE;
     vector<Declarator*> declarators;
     bool mark_root{};
@@ -53,7 +53,7 @@ struct Variable: Declarator {
     Variable(const Declaration* declaration, const Identifier& identifier, const Location& location);
     Variable(const Declaration* declaration, const Type* type, const Identifier& identifier, Expr* initializer, Expr* bit_field_size, const Location& location);
 
-    StorageDuration storage_duration;
+    StorageDuration storage_duration{};
     Expr* initializer{};
     Expr* bit_field_size{};
 
@@ -68,7 +68,7 @@ struct Function: Declarator {
     vector<Variable*> params;
     Statement* body{};
 
-    bool inline_definition;
+    bool inline_definition{};
 
     virtual void compose(Declarator* later);
     virtual void print(ostream& stream) const;
