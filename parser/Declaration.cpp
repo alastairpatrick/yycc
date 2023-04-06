@@ -218,7 +218,7 @@ EnumConstant::EnumConstant(Declaration* declaration, const Identifier& identifie
 }
 
 void EnumConstant::print(ostream& stream) const {
-    stream << "[\"" << identifier << '"';
+    stream << "[\"ec\", \"" << identifier << '"';
     if (constant) {
         stream << ", " << constant;
     }

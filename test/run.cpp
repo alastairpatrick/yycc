@@ -44,6 +44,7 @@ static const Test tests[] = {
     { "sweep",              TestType::PREPROCESS },
 
     { "typedef",            TestType::PREPARSE },
+    { "typedef_comp",       TestType::PREPARSE },
     { "var_decl",           TestType::PREPARSE },
     { "var_comp_decl",      TestType::PREPARSE },
     { "fun_decl",           TestType::PREPARSE },
@@ -51,6 +52,7 @@ static const Test tests[] = {
     { "structured",         TestType::PREPARSE },
 
     { "typedef",            TestType::DECLARATIONS },
+    { "typedef_comp",       TestType::DECLARATIONS },
     { "var_decl",           TestType::DECLARATIONS },
     { "var_comp_decl",      TestType::DECLARATIONS },
     { "fun_decl",           TestType::DECLARATIONS },
@@ -268,7 +270,7 @@ bool run_parser_tests() {
         }
 
         if (file_stream.fail() && !file_stream.eof()) {
-            cerr << "Error processing file " << test.name << ".parser_test\n";
+            cerr << "Error processing file " << test.name << ".test\n";
             ++num_failures;
         }
     }

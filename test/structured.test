@@ -71,13 +71,13 @@ EXPECT_AST
 BEGIN Unnamed enum definition
 enum { A=1, B } z;
 EXPECT_AST
-[["var", "ES", ["ENUM", ["A", 1], ["B"]], "z", ""]]
+[["var", "ES", ["ENUM", ["ec", "A", 1], ["ec", "B"]], "z", ""]]
 
 
 BEGIN Named enum definition
 enum E { A=1, B } z;
 EXPECT_AST
-[["var", "ES", ["DECLARE", "E", ["ENUM", ["A", 1], ["B"]]], "z", ""]]
+[["var", "ES", ["DECLARE", "E", ["ENUM", ["ec", "A", 1], ["ec", "B"]]], "z", ""]]
 
 
 BEGIN Named enum
@@ -85,3 +85,10 @@ enum E z;
 PREPARSE
 EXPECT_AST
 [["var", "ES", "NeE", "z", ""]]
+
+
+BEGIN #static enum directive
+#static enum A
+DECLARATIONS
+EXPECT_GLOBALS
+[["ec","A"]]

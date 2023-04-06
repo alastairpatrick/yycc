@@ -1,0 +1,67 @@
+
+BEGIN Redefinition of typedef (1)
+typedef int a;
+typedef signed a;
+PREPARSE
+EXPECT_AST
+[["typedef", "Si", "a"]
+,["typedef", "Si", "a"]]
+
+
+BEGIN Redefinition of typedef (2)
+typedef int a;
+typedef signed a;
+DECLARATIONS
+EXPECT_AST
+[["typedef", "Si", "a"]
+,[]]
+
+
+BEGIN Redefinition of typedef with different type
+typedef int a;
+typedef unsigned a;
+DECLARATIONS
+EXPECT_MESSAGE
+:2:1: error redeclaration of 'a' with different type
+:1:1: see prior declaration
+EXPECT_AST
+[["typedef", "Si", "a"]
+,[]]
+
+
+BEGIN Typedef as self
+typedef int a;
+typedef a a;
+DECLARATIONS
+EXPECT_AST
+[["typedef", "Si", "a"]
+,[]]
+
+
+BEGIN Typedef as self (preparse)
+typedef a a;
+typedef int a;
+PREPARSE
+EXPECT_AST
+[["typedef", "Nta", "a"]
+,["typedef", "Si", "a"]]
+
+
+BEGIN Typedef may not be redeclared as a variable of same type
+typedef int a;
+int a;
+DECLARATIONS
+EXPECT_MESSAGE
+:2:1: error redeclaration of 'a' with different type
+:1:1: see prior declaration
+END
+
+
+BEGIN #static type directives composed
+#static type T
+#static type T
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef","?","T"]]
+
+
