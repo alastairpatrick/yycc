@@ -16,9 +16,11 @@ struct DeclarationMarker {
     unordered_set<const Declaration*> todo;
     unordered_set<const Declaration*> marked;
     set<string_view> type_names;
-    set<string_view> variable_names;
-    set<string_view> function_names;
     set<string_view> enum_const_names;
+    set<string_view> static_variable_names;
+    set<string_view> extern_variable_names;
+    set<string_view> static_function_names;
+    set<string_view> extern_function_names;
 
     void mark() {
         for (auto node : declarations) {
@@ -55,14 +57,22 @@ struct DeclarationMarker {
             if (auto type_def = dynamic_cast<const TypeDef*>(declarator)) {
                 type_names.insert(*type_def->identifier.name);
             }
-            if (auto variable = dynamic_cast<const Variable*>(declarator)) {
-                variable_names.insert(*variable->identifier.name);
-            }
-            if (auto function = dynamic_cast<const Function*>(declarator)) {
-                function_names.insert(*function->identifier.name);
-            }
             if (auto enum_const = dynamic_cast<const EnumConstant*>(declarator)) {
                 enum_const_names.insert(*enum_const->identifier.name);
+            }
+            if (auto variable = dynamic_cast<const Variable*>(declarator)) {
+                if (variable->declaration->linkage() == Linkage::INTERNAL) {
+                    static_variable_names.insert(*variable->identifier.name);
+                } else {
+                    extern_variable_names.insert(*variable->identifier.name);
+                }
+            }
+            if (auto function = dynamic_cast<const Function*>(declarator)) {
+                if (function->declaration->linkage() == Linkage::INTERNAL) {
+                    static_function_names.insert(*function->identifier.name);
+                } else {
+                    extern_function_names.insert(*function->identifier.name);
+                }
             }
             if (!is_marked(declarator->declaration)) {
                 todo.insert(declarator->declaration);
@@ -76,7 +86,7 @@ struct DeclarationMarker {
     }
 };
 
-static void output_declarator_directives(ostream& stream, const char* directive, const set<string_view>& names) {
+static void output_declaration_directives(ostream& stream, const char* directive, const set<string_view>& names) {
     const int max_col = 120;
     int col = max_col;
     auto need_newline = false;
@@ -107,10 +117,12 @@ void sweep(ostream& stream, const File& file) {
 
     TextStream text_stream(stream);
 
-    output_declarator_directives(stream, "#type", marker.type_names);
-    output_declarator_directives(stream, "#enum", marker.enum_const_names);
-    output_declarator_directives(stream, "#variable", marker.variable_names);
-    output_declarator_directives(stream, "#function", marker.function_names);
+    output_declaration_directives(stream, "#static type", marker.type_names);
+    output_declaration_directives(stream, "#static enum", marker.enum_const_names);
+    output_declaration_directives(stream, "#static variable", marker.static_variable_names);
+    output_declaration_directives(stream, "#extern variable", marker.extern_variable_names);
+    output_declaration_directives(stream, "#static function", marker.static_function_names);
+    output_declaration_directives(stream, "#extern function", marker.extern_function_names);
 
     vector<const Declaration*> marked(marker.marked.begin(), marker.marked.end());
     sort(marked.begin(), marked.end(), [](const Declaration* a, const Declaration* b) {

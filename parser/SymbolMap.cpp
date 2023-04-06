@@ -62,15 +62,3 @@ void SymbolMap::pop_scope() {
 SymbolMap::SymbolMap(bool preparse): preparse(preparse) {
     push_scope();
 }
-
-void SymbolMap::clear_internal_linkage() {
-    auto& declarators = scopes.back().declarators;
-    
-    for (auto it = declarators.begin(); it != declarators.end();) {
-        if (it->second->declaration->linkage() == Linkage::INTERNAL) {
-            it = declarators.erase(it);
-        } else {
-            ++it;
-        }
-    }
-}

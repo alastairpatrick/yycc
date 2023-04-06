@@ -162,8 +162,17 @@ EXPECT_AST
 
 
 
-BEGIN #function directive preceeding function declaration (2)
-#function f
+BEGIN #extern function directive preceeding function declaration
+#extern function f
+void f(void) {
+}
+DECLARATIONS
+EXPECT_AST
+[[]]
+
+
+BEGIN #static function directive preceeding function declaration
+#static function f
 void f(void) {
 }
 DECLARATIONS

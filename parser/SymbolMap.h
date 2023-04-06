@@ -24,7 +24,6 @@ struct SymbolMap {
 
     void push_scope();
     void pop_scope();
-    void clear_internal_linkage();
 };
 
 #endif

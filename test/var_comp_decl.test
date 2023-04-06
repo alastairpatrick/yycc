@@ -121,8 +121,16 @@ EXPECT_AST
 ,[]]
 
 
-BEGIN #variable directive preceeding variable declaration (2)
-#variable x
+BEGIN #extern variable directive preceeding variable declaration
+#extern variable x
+int x;
+DECLARATIONS
+EXPECT_AST
+[[]]
+
+
+BEGIN #static variable directive preceeding variable declaration
+#static variable x
 int x;
 DECLARATIONS
 EXPECT_AST

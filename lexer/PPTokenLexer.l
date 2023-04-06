@@ -51,7 +51,7 @@ HW              [ \t\v\f\r]
 %xstate PP_TOKENS
 %xstate DIRECTIVE
 %xstate INCLUDE
-
+%xstate DECLARATION
 %%
 
 <*> {
@@ -131,29 +131,34 @@ L?  ' (\\. | [^\\'\n])*  '  { return TOK_CHAR_LITERAL; }
 
 }
 
-<PP_TOKENS,DIRECTIVE,INCLUDE> {
+<PP_TOKENS,DECLARATION,DIRECTIVE,INCLUDE> {
 .               { return TOK_PP_UNRECOGNIZED; }
+}
+
+<DECLARATION> {
+enum            { start(PP_TOKENS); return TOK_PP_ENUM; }
+variable        { start(PP_TOKENS); return TOK_PP_VARIABLE; }
+function        { start(PP_TOKENS); return TOK_PP_FUNCTION; }
+type            { start(PP_TOKENS); return TOK_PP_TYPE; }
 }
 
 // Determine the kind of directive and transition.
 <DIRECTIVE> {
 
-define          { start(PP_TOKENS); return TOK_PP_DEFINE; }
-error           { start(PP_TOKENS); return TOK_PP_ERROR; }
-elif            { start(PP_TOKENS); return TOK_PP_ELIF; }
-else            { start(PP_TOKENS); return TOK_PP_ELSE; }
-endif           { start(PP_TOKENS); return TOK_PP_ENDIF; }
-enum            { start(PP_TOKENS); return TOK_PP_ENUM; }
-function        { start(PP_TOKENS); return TOK_PP_FUNCTION; }
-if              { start(PP_TOKENS); return TOK_PP_IF; }
-ifdef           { start(PP_TOKENS); return TOK_PP_IFDEF; }
-ifndef          { start(PP_TOKENS); return TOK_PP_IFNDEF; }
-include         { start(INCLUDE);   return TOK_PP_INCLUDE; }
-line            { start(PP_TOKENS); return TOK_PP_LINE; }
-pragma          { start(PP_TOKENS); return TOK_PP_PRAGMA; }
-type            { start(PP_TOKENS); return TOK_PP_TYPE; }
-undef           { start(PP_TOKENS); return TOK_PP_UNDEF; }
-variable        { start(PP_TOKENS); return TOK_PP_VARIABLE; }
+define          { start(PP_TOKENS);   return TOK_PP_DEFINE; }
+error           { start(PP_TOKENS);   return TOK_PP_ERROR; }
+elif            { start(PP_TOKENS);   return TOK_PP_ELIF; }
+else            { start(PP_TOKENS);   return TOK_PP_ELSE; }
+endif           { start(PP_TOKENS);   return TOK_PP_ENDIF; }
+extern          { start(DECLARATION); return TOK_PP_EXTERN; }
+if              { start(PP_TOKENS);   return TOK_PP_IF; }
+ifdef           { start(PP_TOKENS);   return TOK_PP_IFDEF; }
+ifndef          { start(PP_TOKENS);   return TOK_PP_IFNDEF; }
+include         { start(INCLUDE);     return TOK_PP_INCLUDE; }
+line            { start(PP_TOKENS);   return TOK_PP_LINE; }
+pragma          { start(PP_TOKENS);   return TOK_PP_PRAGMA; }
+static          { start(DECLARATION); return TOK_PP_STATIC; }
+undef           { start(PP_TOKENS);   return TOK_PP_UNDEF; }
 
 }
 

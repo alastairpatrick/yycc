@@ -23,10 +23,8 @@ void Parser::consume() {
         switch (token) {
           default:
             return;
-          case TOK_PP_ENUM:
-          case TOK_PP_FUNCTION:
-          case TOK_PP_TYPE:
-          case TOK_PP_VARIABLE:
+          case TOK_PP_EXTERN:
+          case TOK_PP_STATIC:
             handle_declaration_directive();
             break;
         }
@@ -34,35 +32,51 @@ void Parser::consume() {
 }
 
 void Parser::handle_declaration_directive() {
+    auto storage_class = token == TOK_PP_STATIC ? StorageClass::STATIC : StorageClass::EXTERN;
     auto pp_token = preprocessor.next_pp_token();
+
+    auto declarator_type_token = pp_token;
+    pp_token = preprocessor.next_pp_token();
+
+    switch (declarator_type_token) {
+      default:
+        preprocessor.unexpected_directive_token();
+        preprocessor.skip_to_eol();
+        return;
+      case TOK_PP_ENUM:
+      case TOK_PP_TYPE:
+        storage_class = StorageClass::NONE;
+        break;
+      case TOK_PP_FUNCTION:
+      case TOK_PP_VARIABLE:
+        break;
+    }
+
+    auto declaration = new Declaration(IdentifierScope::FILE, storage_class, preprocessor.location());
 
     while (pp_token && pp_token != '\n') {
         if (pp_token == TOK_IDENTIFIER) {
-            // This defines a type recursively as itself, which will be compatible with any existing or future
-            // definitiom, i.e. same as typedef T T;
             auto id = preprocessor.identifier();
 
             Declarator* declarator{};
-            auto declaration = new Declaration(IdentifierScope::FILE, StorageClass::NONE, preprocessor.location());
-            switch (token) {
-                case TOK_PP_ENUM: {
-                  declarator = new EnumConstant(declaration, id, preprocessor.location());
-                  break;
-              } case TOK_PP_FUNCTION: {
-                  declarator = new Function(declaration, id, preprocessor.location());
-                  break;
-              } case TOK_PP_TYPE: {
-                  declarator = new TypeDef(declaration, id, preprocessor.location());
-                  break;
-              } case TOK_PP_VARIABLE: {
-                  declarator = new Variable(declaration, id, preprocessor.location());
-                  break;
-              }
+            switch (declarator_type_token) {
+              case TOK_PP_ENUM:
+                declarator = new EnumConstant(declaration, id, preprocessor.location());
+                break;
+              case TOK_PP_FUNCTION:
+                declarator = new Function(declaration, id, preprocessor.location());
+                break;
+              case TOK_PP_TYPE:
+                declarator = new TypeDef(declaration, id, preprocessor.location());
+                break;
+              case TOK_PP_VARIABLE:
+                declarator = new Variable(declaration, id, preprocessor.location());
+                break;
             }
 
-            symbols.add_declarator(declarator);
+            if (declarator) symbols.add_declarator(declarator);
         } else {
-            unexpected_token();
+            preprocessor.unexpected_directive_token();
         }
         pp_token = preprocessor.next_pp_token();
     }
@@ -508,8 +522,6 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
 }
 
 ASTNodeVector Parser::parse() {
-    symbols.clear_internal_linkage();
-
     ASTNodeVector declarations;
     while (token) {
         declarations.push_back(parse_declaration_or_statement(IdentifierScope::FILE));

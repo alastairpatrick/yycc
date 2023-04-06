@@ -5,8 +5,8 @@ PREPROCESS
 FILE "a.h"
 typedef int T;
 EXPECT_TEXT
-#type T
-#variable x
+#static type T
+#extern variable x
 
 #line 1 "a.h"
 typedef int T;
@@ -22,7 +22,7 @@ PREPROCESS
 FILE "a.h"
 extern int x;
 EXPECT_TEXT
-#variable x
+#extern variable x
 
 #line 1 "a.h"
 extern int x;
@@ -38,7 +38,7 @@ PREPROCESS
 FILE "a.h"
 const int y = 2;  // TODO: replace this with a avalid constant integer expression
 EXPECT_TEXT
-#variable x y
+#extern variable x y
 
 #line 1 "a.h"
 const int y = 2;
@@ -54,8 +54,8 @@ PREPROCESS
 FILE "a.h"
 typedef int T;
 EXPECT_TEXT
-#type T
-#function foo
+#static type T
+#extern function foo
 
 #line 1 "a.h"
 typedef int T;
@@ -73,8 +73,8 @@ PREPROCESS
 FILE "a.h"
 typedef int T;
 EXPECT_TEXT
-#type T
-#function foo
+#static type T
+#extern function foo
 
 #line 1 "a.h"
 typedef int T;
@@ -96,9 +96,9 @@ struct S {
     int x;
 };
 EXPECT_TEXT
-#type S
-#variable x
-#function foo
+#static type S
+#extern variable x
+#extern function foo
 
 #line 1 "a.h"
 struct S {
@@ -124,9 +124,9 @@ struct T {
     };
 };
 EXPECT_TEXT
-#type S
-#variable x
-#function foo
+#static type S
+#extern variable x
+#extern function foo
 
 #line 2 "a.h"
     struct S {
@@ -152,9 +152,9 @@ struct T {
     };
 };
 EXPECT_TEXT
-#type S T
-#variable x
-#function foo
+#static type S T
+#extern variable x
+#extern function foo
 
 #line 1 "a.h"
 struct T {
@@ -178,9 +178,9 @@ PREPROCESS
 FILE "a.h"
 enum Color { RED, GREEN, BLUE };
 EXPECT_TEXT
-#type Color
-#enum BLUE GREEN RED
-#function foo
+#static type Color
+#static enum BLUE GREEN RED
+#extern function foo
 
 #line 1 "a.h"
 enum Color { RED, GREEN, BLUE };

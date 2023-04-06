@@ -181,7 +181,7 @@ EXPECT_AST
 
 
 BEGIN Type directive
-#type T
+#static type T
 void f(void) {
     T * v; // "T" is a type so this declares variable "v" with type "T*".
 }

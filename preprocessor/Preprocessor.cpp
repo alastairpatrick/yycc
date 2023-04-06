@@ -82,10 +82,8 @@ bool Preprocessor::handle_directive() {
         } case TOK_PP_PRAGMA: {
             handle_pragma_directive(); 
             break;
-        } case TOK_PP_ENUM:
-          case TOK_PP_FUNCTION:
-          case TOK_PP_TYPE:
-          case TOK_PP_VARIABLE: {
+        } case TOK_PP_EXTERN:
+          case TOK_PP_STATIC: {
             return false;
         }
       }

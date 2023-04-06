@@ -30,6 +30,10 @@ struct Preprocessor {
         return lexer.identifier();
     }
 
+    void skip_to_eol();
+    void require_eol();
+    void unexpected_directive_token();
+
     bool mark_root() const;
 
     string_view output();
@@ -39,9 +43,6 @@ struct Preprocessor {
     Fragment fragment;
 
 private:
-    void skip_to_eol();
-    void require_eol();
-    void unexpected_directive_token();
     TokenKind commit_token(TokenKind token, string_view text);
     bool handle_directive();
     void handle_line_directive();
