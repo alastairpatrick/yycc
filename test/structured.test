@@ -40,6 +40,15 @@ EXPECT_AST
 [[]]
 
 
+BEGIN Struct members are not added to symbol map
+int x;
+struct Foo {
+    float x, y;
+};
+EXPECT_GLOBALS
+[["typedef",["STRUCT",["x","Ff"],["y","Ff"]],"Foo"],["var","ES","Si","x",""]]
+
+
 BEGIN Error on combination of struct specifier and type specifier
 typedef float T;
 T struct S v;

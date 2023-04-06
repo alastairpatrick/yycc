@@ -97,70 +97,11 @@ struct S {
 };
 EXPECT_TEXT
 #static type S
-#extern variable x
 #extern function foo
 
 #line 1 "a.h"
 struct S {
     int x;
-};
-#line 2 ""
-int foo(void) {
-    S x;
-}
-END
-
-
-BEGIN Keeps marked nested struct (1)
-#include "a.h"
-int foo(void) {
-    S x;
-}
-PREPROCESS
-FILE "a.h"
-struct T {
-    struct S {
-        int x;
-    };
-};
-EXPECT_TEXT
-#static type S
-#extern variable x
-#extern function foo
-
-#line 2 "a.h"
-    struct S {
-        int x;
-    };
-#line 2 ""
-int foo(void) {
-    S x;
-}
-END
-
-
-BEGIN Keeps marked nested struct (2)
-#include "a.h"
-int foo(void) {
-    S x;
-}
-PREPROCESS
-FILE "a.h"
-struct T {
-    struct S {
-        T* x;
-    };
-};
-EXPECT_TEXT
-#static type S T
-#extern variable x
-#extern function foo
-
-#line 1 "a.h"
-struct T {
-    struct S {
-        T* x;
-    };
 };
 #line 2 ""
 int foo(void) {

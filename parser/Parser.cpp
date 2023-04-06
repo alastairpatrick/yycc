@@ -774,12 +774,16 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
     if (consume('{')) {
         if (specifier != TOK_ENUM) {
+            symbols.push_scope();
+
             vector<Declaration*> members;
             while (token && token != '}') {
                 auto declaration = dynamic_cast<Declaration*>(parse_declaration_or_statement(IdentifierScope::STRUCTURED));
                 assert(declaration);
                 members.push_back(declaration);
             }
+
+            symbols.pop_scope();
 
             if (specifier == TOK_STRUCT) {
                 type = new StructType(move(members), specifier_location);

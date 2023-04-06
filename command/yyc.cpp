@@ -8,10 +8,11 @@
 void sweep(ostream& stream, const File& file);
 
 struct TranslationInput {
-    explicit TranslationInput(SymbolMap& symbols, const File& file): preprocessor(file.text, false), parser(preprocessor, symbols) {
+    explicit TranslationInput(SymbolMap& symbols, File&& f): file(f), preprocessor(file.text, false), parser(preprocessor, symbols) {
     }
     void operator=(const TranslationInput&) = delete;
 
+    File file;
     Preprocessor preprocessor;
     Parser parser;
 };
@@ -28,7 +29,7 @@ int main(int argc, const char* argv[]) {
         if (!in_file.exists) {
             message(Severity::ERROR, Location{1, 1, intern_string(argv[i])}) << "could not open input file\n";
         } else {
-            inputs.emplace_back(symbols, in_file);
+            inputs.emplace_back(symbols, move(in_file));
         }
     }
 
