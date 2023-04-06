@@ -125,6 +125,8 @@ BEGIN #extern variable directive preceeding variable declaration
 #extern variable x
 int x;
 DECLARATIONS
+EXPECT_GLOBALS
+[["var","ES","Si","x",""]]
 EXPECT_AST
 [[]]
 
@@ -133,6 +135,7 @@ BEGIN #static variable directive preceeding variable declaration
 #static variable x
 int x;
 DECLARATIONS
+EXPECT_GLOBALS
+[["var","IS","Si","x",""]]
 EXPECT_AST
 [[]]
-

@@ -167,6 +167,8 @@ BEGIN #extern function directive preceeding function declaration
 void f(void) {
 }
 DECLARATIONS
+EXPECT_GLOBALS
+[["fun","E",["F","V"],"f",[""],["block",[]]]]
 EXPECT_AST
 [[]]
 
@@ -176,6 +178,8 @@ BEGIN #static function directive preceeding function declaration
 void f(void) {
 }
 DECLARATIONS
+EXPECT_GLOBALS
+[["fun","I",["F","V"],"f",[""],["block",[]]]]
 EXPECT_AST
 [[]]
 

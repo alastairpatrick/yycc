@@ -26,13 +26,16 @@ struct Test {
 
 enum Section {
     INITIAL,
-    NONE,
-    INPUT,
+
     EXPECTED_AST,
-    EXPECTED_TYPE,
+    EXPECTED_GLOBALS,
     EXPECTED_MESSAGE,
     EXPECTED_TEXT,
+    EXPECTED_TYPE,
     FILE_SECTION,
+    INPUT,
+    NONE,
+
     NUM_SECTIONS,
 };
 
@@ -68,20 +71,18 @@ static ostream& print_error(const string& name, const string& file, int line) {
     return cerr;
 }
 
-Expr* parse_expr(const Input& input) {
+Expr* parse_expr(SymbolMap& symbols, const Input& input) {
     Preprocessor preprocessor(false);
     preprocessor.in(input);
-    SymbolMap symbols(false);
     Parser parser(preprocessor, symbols);
     auto result = parser.parse_standalone_expr();
     if (!parser.check_eof()) return nullptr;
     return result;
 }
 
-ASTNodeVector parse_declarations(const Input& input, bool preparse) {
-    Preprocessor preprocessor(preparse);
+ASTNodeVector parse_declarations(SymbolMap& symbols, const Input& input) {
+    Preprocessor preprocessor(symbols.preparse);
     preprocessor.in(input);
-    SymbolMap symbols(preparse);
     Parser parser(preprocessor, symbols);
     return parser.parse();
 }
@@ -92,11 +93,12 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
     //try {
         stringstream message_stream;
         TranslationUnitContext tu_context(message_stream);
+        SymbolMap symbols(test_type == TestType::PREPARSE);
 
         const Type* type{};
         stringstream output_stream;
         if (test_type == TestType::EXPRESSION) {
-            auto expr = parse_expr(sections[INPUT]);
+            auto expr = parse_expr(symbols, sections[INPUT]);
             if (!sections[EXPECTED_TYPE].empty()) {
                 type = expr->get_type();
             }
@@ -106,7 +108,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
             file.text = sections[INPUT];
             sweep(output_stream, file);
         } else {
-            auto statements = parse_declarations(sections[INPUT], test_type == TestType::PREPARSE);
+            auto statements = parse_declarations(symbols, sections[INPUT]);
             output_stream << statements;
         }
 
@@ -121,6 +123,35 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
 
             if (parsed_output != parsed_expected) {
                 print_error(name, file, line) << "Expected AST: " << parsed_expected << "\n  Actual AST: " << parsed_output << "\n";
+                return false;
+            }
+        }
+
+        if (!sections[EXPECTED_GLOBALS].empty()) {
+            vector<Declarator*> declarators;
+            for (auto& p : symbols.scopes.front().declarators) {
+                declarators.push_back(p.second);
+            }
+
+            sort(declarators.begin(), declarators.end(), [](Declarator* a, Declarator* b) {
+                return *a->identifier.name < *b->identifier.name;
+            });
+
+            stringstream global_stream;
+            global_stream << '[';
+            bool separator = false;
+            for (auto declarator : declarators) {
+                if (separator) global_stream << ',';
+                separator = true;
+                global_stream << declarator;
+            }
+            global_stream << ']';
+
+            auto parsed_globals = json::parse(global_stream);
+            auto parsed_expected = json::parse(sections[EXPECTED_GLOBALS]);
+
+            if (parsed_globals != parsed_expected) {
+                print_error(name, file, line) << "Expected globals: " << parsed_expected << "\n  Actual globals: " << parsed_globals << "\n";
                 return false;
             }
         }
@@ -171,11 +202,11 @@ bool run_parser_tests() {
         FileCache file_cache(false);
         File* file{};
 
-        for (auto line_num = 1; !file_stream.eof() && !file_stream.fail(); ++line_num) {
+        for (auto line_num = 1; !file_stream.fail(); ++line_num) {
             string line;
             getline(file_stream, line);
 
-            if (file_stream.eof() || line.substr(0, 5) == "BEGIN") {
+            if ((line.empty() && file_stream.eof()) || line.substr(0, 5) == "BEGIN") {
                 if (section != INITIAL) {
                     if (num_enabled_types == 0 || enabled_types[unsigned(test.type)]) {
                         if (!test_case(test.type, sections, test_name, test_file_name, test_line_num)) {
@@ -203,6 +234,8 @@ bool run_parser_tests() {
                 section = Section::NONE;
             } else if (line == "EXPECT_AST") {
                 section = Section::EXPECTED_AST;
+            } else if (line == "EXPECT_GLOBALS") {
+                section = Section::EXPECTED_GLOBALS;
             } else if (line == "EXPECT_MESSAGE") {
                 section = Section::EXPECTED_MESSAGE;
             } else if (line == "EXPECT_TEXT") {
@@ -230,6 +263,8 @@ bool run_parser_tests() {
                     sections[section] += line + "\n";
                 }
             }
+
+            if (line.empty() && file_stream.eof()) break;
         }
 
         if (file_stream.fail() && !file_stream.eof()) {
