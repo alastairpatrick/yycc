@@ -159,3 +159,14 @@ EXPECT_AST
             ]]
         ]]
 ]
+
+
+
+BEGIN #function directive preceeding function declaration (2)
+#function f
+void f(void) {
+}
+DECLARATIONS
+EXPECT_AST
+[[]]
+

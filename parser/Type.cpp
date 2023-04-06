@@ -47,6 +47,23 @@ LLVMValueRef Type::convert_to_type(CodeGenContext* context, LLVMValueRef value, 
     return value;
 }
 
+const Type* compose_types(const Type* a, const Type* b) {
+    if (a == b) return a;
+
+    if (dynamic_cast<const CompatibleType*>(a)) return b;
+    if (dynamic_cast<const CompatibleType*>(b)) return a;
+
+    if (typeid(a) == typeid(b)) {
+        return a->compose(b);
+    }
+
+    return nullptr;
+}
+
+const Type* Type::compose(const Type* other) const {
+    return nullptr;
+}
+
 const PointerType* Type::pointer_to() const {
     auto type = TranslationUnitContext::it->type.lookup_pointer_type(this);
     if (type) return type;

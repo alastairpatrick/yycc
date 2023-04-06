@@ -188,7 +188,9 @@ void f(void) {
 DECLARATIONS
 EXPECT_AST
 [
-    ["fun","E",["F", "V"],"f",[""], ["block", [
-        ["var", "", ["P", "?"], "v", ""]
-    ]]]
+    ["fun","E",["F","V"],"f",[""],
+        ["block",[
+            ["var","",["P","?"],"v",""]
+        ]]
+    ]
 ]

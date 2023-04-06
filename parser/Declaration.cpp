@@ -30,23 +30,20 @@ ostream& operator<<(ostream& stream, StorageDuration duration) {
 }
 
 Declaration::Declaration(IdentifierScope scope, StorageClass storage_class, const Location& location)
-    : Declaration(scope, location) {
-    initialize(storage_class);
+    : ASTNode(location), scope(scope), storage_class(storage_class) {
 }
 
 Declaration::Declaration(IdentifierScope scope, const Location& location)
     : ASTNode(location), scope(scope) {
 }
 
-void Declaration::initialize(StorageClass storage_class) {
-    this->storage_class = storage_class;
-
+Linkage Declaration::linkage() const {
     if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
-        linkage = Linkage::INTERNAL;
+        return Linkage::INTERNAL;
     } else if (storage_class == StorageClass::EXTERN || scope == IdentifierScope::FILE) {
-        linkage = Linkage::EXTERNAL;
+        return Linkage::EXTERNAL;
     } else {
-        linkage = Linkage::NONE;
+        return Linkage::NONE;
     }
 }
 
@@ -72,19 +69,29 @@ const Type* Declarator::to_type() const {
 }
 
 void Declarator::compose(Declarator* later) {
-    if (later->type != type || typeid(*later) != typeid(*this)) {
+    if (typeid(*later) != typeid(*this)) {
         message(Severity::ERROR, later->location) << "redeclaration of '" << identifier << "' with different type\n";
         message(Severity::INFO, location) << "see prior declaration\n";
     }
 
-    if (later->declaration->linkage == Linkage::INTERNAL && declaration->linkage != Linkage::INTERNAL) {
+    if (later->type != type) {
+        auto composite_type = compose_types(type, later->type);
+        if (composite_type) {
+            type = composite_type;
+        } else {
+            message(Severity::ERROR, later->location) << "redeclaration of '" << identifier << "' with different type\n";
+            message(Severity::INFO, location) << "see prior declaration\n";
+        }
+    }
+
+    if (later->declaration->linkage() == Linkage::INTERNAL && declaration->linkage() != Linkage::INTERNAL) {
         message(Severity::ERROR, later->location) << "static declaration of '" << identifier << "' follows non-static declaration\n";
         message(Severity::INFO, location) << "see prior declaration\n";
     }
 }
 
 Variable::Variable(const Declaration* declaration, const Identifier& identifier, const Location& location)
-    : Declarator(declaration, new CompatibleType(), identifier, location) {
+    : Declarator(declaration, new CompatibleType(), identifier, location), storage_duration(StorageDuration::STATIC) {
 }
 
 Variable::Variable(const Declaration* declaration, const Type* type, const Identifier& identifier, Expr* initializer, Expr* bit_field_size, const Location& location)
@@ -118,7 +125,7 @@ void Variable::compose(Declarator* later) {
 }
 
 void Variable::print(ostream& stream) const {
-    stream << "[\"var\", \"" << declaration->linkage << storage_duration;
+    stream << "[\"var\", \"" << declaration->linkage() << storage_duration;
 
     stream << "\", " << type << ", \"" << identifier  << "\"";
     if (initializer) {
@@ -143,7 +150,7 @@ Function::Function(const Declaration* declaration, const FunctionType* type, uin
 
     // It's very valuable to determine which functions with external linkage are inline definitions, because they don't need to be
     // written to the AST file; another translation unit is guaranteed to have an external definition.
-    inline_definition = (declaration->linkage == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
+    inline_definition = (declaration->linkage() == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
 }
 
 void Function::compose(Declarator* later) {
@@ -166,7 +173,7 @@ void Function::compose(Declarator* later) {
 }
 
 void Function::print(ostream& stream) const {
-    stream << "[\"fun\", \"" << declaration->linkage;
+    stream << "[\"fun\", \"" << declaration->linkage();
 
     if (inline_definition) {
         stream << 'i';

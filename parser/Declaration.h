@@ -38,11 +38,11 @@ ostream& operator<<(ostream& stream, StorageDuration duration);
 struct Declaration: ASTNode {
     Declaration(IdentifierScope scope, StorageClass storage_class, const Location& location);
     Declaration(IdentifierScope scope, const Location& location);
-    void initialize(StorageClass storage_class);
+
+    Linkage linkage() const;
 
     IdentifierScope scope;
-    StorageClass storage_class{};
-    Linkage linkage{};
+    StorageClass storage_class = StorageClass::NONE;
     vector<Declarator*> declarators;
     bool mark_root{};
 

@@ -120,3 +120,11 @@ EXPECT_AST
 [["var", "ES", "Si", "x", 1]
 ,[]]
 
+
+BEGIN #variable directive preceeding variable declaration (2)
+#variable x
+int x;
+DECLARATIONS
+EXPECT_AST
+[[]]
+

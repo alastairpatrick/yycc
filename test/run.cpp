@@ -73,7 +73,7 @@ Expr* parse_expr(const Input& input) {
     preprocessor.in(input);
     SymbolMap symbols(false);
     Parser parser(preprocessor, symbols);
-    auto result = parser.parse_expr(SEQUENCE_PREC);
+    auto result = parser.parse_standalone_expr();
     if (!parser.check_eof()) return nullptr;
     return result;
 }

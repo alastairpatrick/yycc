@@ -25,6 +25,8 @@ struct Type: Printable {
 
     const PointerType* pointer_to() const;
 
+    virtual const Type* compose(const Type* other) const;
+
     virtual const Type* promote() const;
 
     virtual const Type* resolve(SymbolMap& scope) const;
@@ -33,6 +35,8 @@ struct Type: Printable {
 
     virtual LLVMTypeRef llvm_type() const = 0;
 };
+
+const Type* compose_types(const Type* a, const Type* b);
 
 struct VoidType: Type {
     static const VoidType it;

@@ -13,14 +13,14 @@ struct Parser {
     Parser(Preprocessor& preprocessor, SymbolMap& symbols);
     void operator=(const Parser&) = delete;
 
-    Expr* parse_expr(OperatorPrec min_prec);
+    Expr* parse_standalone_expr();  // for testing
     ASTNodeVector parse();
     bool check_eof();
 
 private:
     Preprocessor& preprocessor;
     SymbolMap& symbols;
-    TokenKind token;
+    TokenKind token = TOK_NUM;
     const bool preparse;
 
     void consume();
@@ -39,6 +39,7 @@ private:
     OperatorAssoc assoc();
     OperatorPrec prec();
 
+    Expr* parse_expr(OperatorPrec min_prec);
     Expr* parse_cast_expr();
     Declaration* parse_declaration_specifiers(IdentifierScope scope, const Type*& type, uint32_t& specifiers);
     ASTNode* parse_declaration_or_statement(IdentifierScope scope);

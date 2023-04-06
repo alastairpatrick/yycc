@@ -12,6 +12,10 @@ Parser::Parser(Preprocessor& preprocessor, SymbolMap& symbols): preprocessor(pre
     consume();
 }
 
+Expr* Parser::parse_standalone_expr() {
+    return parse_expr(SEQUENCE_PREC);
+}
+
 void Parser::consume() {
     while (token) {
         token = preprocessor.next_token();
@@ -39,7 +43,7 @@ void Parser::handle_declaration_directive() {
             auto id = preprocessor.identifier();
 
             Declarator* declarator{};
-            auto declaration = new Declaration(IdentifierScope::FILE, preprocessor.location());
+            auto declaration = new Declaration(IdentifierScope::FILE, StorageClass::NONE, preprocessor.location());
             switch (token) {
                 case TOK_PP_ENUM: {
                   declarator = new EnumConstant(declaration, id, preprocessor.location());
@@ -51,7 +55,7 @@ void Parser::handle_declaration_directive() {
                   declarator = new TypeDef(declaration, id, preprocessor.location());
                   break;
               } case TOK_PP_VARIABLE: {
-                  declarator = new Variable(declaration, nullptr, id, nullptr, nullptr, preprocessor.location());
+                  declarator = new Variable(declaration, id, preprocessor.location());
                   break;
               }
             }
@@ -497,7 +501,7 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
         type = QualifiedType::of(type, specifier_set & type_qualifier_mask);
     }
 
-    declaration->initialize(storage_class);
+    declaration->storage_class = storage_class;
 
     specifiers = specifier_set & function_specifier_mask;
     return declaration;
