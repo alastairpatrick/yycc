@@ -199,16 +199,16 @@ bool run_parser_tests() {
                 string header_name = line.substr(5);
                 file = file_cache.add(header_name);
                 file->path = header_name.substr(1, header_name.length() - 2);
-            } else if (line == "EXPECT_AST") {
-                section = Section::EXPECTED_AST;
             } else if (line == "END") {
                 section = Section::NONE;
-            } else if (line == "EXPECT_TYPE") {
-                section = Section::EXPECTED_TYPE;
+            } else if (line == "EXPECT_AST") {
+                section = Section::EXPECTED_AST;
             } else if (line == "EXPECT_MESSAGE") {
                 section = Section::EXPECTED_MESSAGE;
             } else if (line == "EXPECT_TEXT") {
                 section = Section::EXPECTED_TEXT;
+            } else if (line == "EXPECT_TYPE") {
+                section = Section::EXPECTED_TYPE;
             } else if (line == "EXPRESSION") {
                 enabled_types[unsigned(TestType::EXPRESSION)] = true;
                 ++num_enabled_types;
