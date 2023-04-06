@@ -39,10 +39,10 @@ enum TokenKind {
     // It is also convenient to be able to use a 32-bit int as a token set for these, e.g.
     // for set of type specifiers.
 
-    // Punctuators are represented with their Unicode code point.
+    // The [32,127] range is reserved for single character punctuators.
 
     // Tokens below fall in the lower case letter range so they don't overlap with punctuators. 
-    TOK_PTR_OP = 'a',
+    TOK_PTR_OP = 128,
     TOK_INC_OP,
     TOK_DEC_OP,
     TOK_LEFT_OP,
@@ -66,18 +66,37 @@ enum TokenKind {
     TOK_OR_ASSIGN,
 
     TOK_ELLIPSIS,
+    
+    TOK_BREAK,
+    TOK_CASE,
+    TOK_CONTINUE,
+    TOK_DEFAULT,
+    TOK_DO,
+    TOK_ELSE,
+    TOK_FOR,
+    TOK_GOTO,
+    TOK_IF,
+    TOK_RETURN,
+    TOK_SIZEOF,
+    TOK_SWITCH,
+    TOK_WHILE,
 
-    // Tokens below use the digits range so they don't overlap punctuators.
-    TOK_CHAR_LITERAL = '0',
+    TOK_CHAR_LITERAL,
     TOK_STRING_LITERAL,
     TOK_HEADER_NAME,
+    TOK_BIN_INT_LITERAL,
+    TOK_OCT_INT_LITERAL,
+    TOK_DEC_INT_LITERAL,
+    TOK_HEX_INT_LITERAL,
+    TOK_DEC_FLOAT_LITERAL,
+    TOK_HEX_FLOAT_LITERAL,
+
     TOK_PP_NUMBER,
     TOK_PP_CONCAT,
     TOK_PP_UNRECOGNIZED,
     TOK_PP_UNTERMINATED_COMMENT,
 
-    // Tokens below use the upper case letter range so they don't overlap punctuators.
-    TOK_PP_DEFINE = 'A',
+    TOK_PP_DEFINE,
     TOK_PP_ELIF,
     TOK_PP_ELSE,
     TOK_PP_EMPTY,
@@ -96,29 +115,6 @@ enum TokenKind {
     TOK_PP_TYPE,
     TOK_PP_UNDEF,
     TOK_PP_VARIABLE,
-
-    // Tokens below may be outside the range of char because they are never stored in hat files.
-    TOK_BREAK = 0x80,
-    TOK_CASE,
-    TOK_CONTINUE,
-    TOK_DEFAULT,
-    TOK_DO,
-    TOK_ELSE,
-    TOK_FOR,
-    TOK_GOTO,
-    TOK_IF,
-    TOK_RETURN,
-    TOK_SIZEOF,
-    TOK_SWITCH,
-    TOK_WHILE,
-
-    TOK_BIN_INT_LITERAL,
-    TOK_OCT_INT_LITERAL,
-    TOK_DEC_INT_LITERAL,
-    TOK_HEX_INT_LITERAL,
-    TOK_DEC_FLOAT_LITERAL,
-    TOK_HEX_FLOAT_LITERAL,
-
 
     TOK_NUM
 };
