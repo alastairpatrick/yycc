@@ -364,6 +364,17 @@ PointerType::PointerType(const Type* base_type)
 
 #pragma region ArrayType
 
+const Type* ArrayType::compose(const Type* o) const {
+    auto other = static_cast<const ArrayType*>(o);
+
+    if (element_type == other->element_type) {
+        if (!size) return other;
+        if (!other->size) return this;
+    }
+
+    return nullptr;
+}
+
 const Type* ArrayType::resolve(SymbolMap& symbols) const {
     auto e = element_type->resolve(symbols);
 

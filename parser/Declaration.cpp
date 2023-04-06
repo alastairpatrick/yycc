@@ -79,7 +79,7 @@ void Declarator::compose(Declarator* later) {
         if (composite_type) {
             type = composite_type;
         } else {
-            message(Severity::ERROR, later->location) << "redeclaration of '" << identifier << "' with different type\n";
+            message(Severity::ERROR, later->location) << "redeclaration of '" << identifier << "' with incompatible type\n";
             message(Severity::INFO, location) << "see prior declaration\n";
         }
     }

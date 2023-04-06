@@ -135,6 +135,8 @@ struct ArrayType: Type {
     const Type* const element_type;
     const Expr* const size;
 
+    virtual const Type* compose(const Type* other) const;
+
     virtual const Type* resolve(SymbolMap& scope) const;
 
     virtual LLVMTypeRef llvm_type() const;
