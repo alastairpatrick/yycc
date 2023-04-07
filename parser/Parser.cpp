@@ -91,6 +91,17 @@ bool Parser::consume(int t, Location* location) {
     return true;
 }
 
+bool Parser::consume_identifier(Identifier& identifier) {
+    if (token != TOK_IDENTIFIER) {
+        identifier = Identifier();
+        return false;
+    }
+
+    identifier = preprocessor.identifier();
+    consume();
+    return true;
+}
+
 void Parser::balance_until(int t) {
     while (token && token != t) {
         switch (token) {
@@ -681,8 +692,7 @@ DeclaratorTransform Parser::parse_declarator_transform(bool allow_function_def) 
         declarator = parse_declarator_transform(false);
         require(')');
     } else {
-        declarator.identifier = preprocessor.identifier();
-        if (!consume(TOK_IDENTIFIER)) declarator.identifier.name = empty_interned_string;
+        consume_identifier(declarator.identifier);
     }
 
     function<const Type*(const Type*)> right_transform;
@@ -818,10 +828,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
     consume();
 
     Identifier identifier;
-    if (token == TOK_IDENTIFIER) {
-        identifier = preprocessor.identifier();
-        consume();
-    }
+    consume_identifier(identifier);
 
     Type* type{};
     TypeDef* declarator{};
@@ -892,8 +899,10 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 EnumConstant* Parser::parse_enum_constant(Declaration* declaration) {
     auto location = preprocessor.location();
 
-    auto identifier(token == TOK_IDENTIFIER ? preprocessor.identifier() : Identifier());
-    require(TOK_IDENTIFIER);
+    Identifier identifier;
+    if (!consume_identifier(identifier)) {
+        require(TOK_IDENTIFIER);
+    }
 
     Expr* constant{};
     if (consume('=')) {

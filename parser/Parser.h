@@ -33,6 +33,7 @@ private:
 
     void consume();
     bool consume(int t, Location* location = nullptr);
+    bool consume_identifier(Identifier& identifier);
     void balance_until(int t);
     bool require(int t, Location* location = nullptr);
     void skip_unexpected();
