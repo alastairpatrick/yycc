@@ -16,6 +16,8 @@ struct TranslationUnitContext {
     void operator=(const TranslationUnitContext&) = delete;
 
     ostream& message_stream;
+    stringstream null_message_stream;
+    bool messages_active = true;
     Severity highest_severity{};
     unordered_set<const Printable*> printing;
 

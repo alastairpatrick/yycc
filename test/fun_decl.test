@@ -88,7 +88,6 @@ int foo, bar(int x) {
 }
 EXPECT_MESSAGE
 :1:21: error unexpected token
-:2:1: error unexpected token
 EXPECT_AST
 [[["var", "ES", "Si", "foo", ""]
  ,["fun", "E", ["F", "Si", "Si"], "bar"]]]
@@ -100,7 +99,6 @@ int bar(int x) {
 DECLARATIONS
 EXPECT_MESSAGE
 :2:2: error unexpected token
-:2:4: error 'foo' undeclared
 EXPECT_AST
 [
     ["fun", "E", ["F", "Si", "Si"], "bar", ["x"], ["block", []]],

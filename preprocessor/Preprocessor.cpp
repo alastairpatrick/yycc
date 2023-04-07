@@ -38,6 +38,7 @@ TokenKind Preprocessor::next_token() {
               continue;
           } case TOK_PP_UNRECOGNIZED: {
               message(Severity::ERROR, location()) << "unexpected character '" << lexer.text() << "'\n";
+              pause_messages();
               continue;
           } case TOK_PP_UNTERMINATED_COMMENT: {
               message(Severity::ERROR, location()) << "unterminated comment\n";
@@ -160,7 +161,7 @@ void Preprocessor::handle_line_directive() {
 }
 
 void Preprocessor::handle_error_directive() {
-    auto& stream = message(Severity::ERROR, location());
+    auto& stream = message(Severity::ERROR, location(), false);
     next_pp_token();
     auto begin = lexer.text().data();
     auto end = begin;

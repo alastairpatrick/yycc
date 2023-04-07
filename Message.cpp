@@ -2,9 +2,10 @@
 
 #include "TranslationUnitContext.h"
 
-ostream& message(Severity severity, const Location& location) {
-    auto &context = TranslationUnitContext::it;
-    auto& stream = context->message_stream;
+ostream& message(Severity severity, const Location& location, bool filter) {
+    auto context = TranslationUnitContext::it;
+
+    auto& stream = (context->messages_active || !filter) ? context->message_stream : context->null_message_stream;
     stream << *location.filename << ':' << location.line << ':' << location.column << ": ";
 
     switch (severity) {
@@ -19,4 +20,14 @@ ostream& message(Severity severity, const Location& location) {
     context->highest_severity = max(context->highest_severity, severity);
 
     return stream;
+}
+
+void pause_messages() {
+    auto context = TranslationUnitContext::it;
+    context->messages_active = false;
+}
+
+void resume_messages() {
+    auto context = TranslationUnitContext::it;
+    context->messages_active = true;
 }

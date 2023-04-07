@@ -87,7 +87,6 @@ DECLARATIONS
 EXPECT_MESSAGE
 :3:6: error expected identifier
 :3:6: error unexpected token
-:3:7: error unexpected token
 EXPECT_AST
 [["typedef","Sl","p"],["fun","E",["F", "V"],"f",[""],["block",[["declare","Sl"]]]]]
 
@@ -110,7 +109,6 @@ BEGIN Error on typedef with bit-field
 typedef int T: 2;
 EXPECT_MESSAGE
 :1:14: error unexpected token
-:1:16: error unexpected token
 EXPECT_AST
 [["typedef", "Si", "T"]]
 

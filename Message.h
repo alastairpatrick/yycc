@@ -6,4 +6,6 @@ enum class Severity {
     ERROR,
 };
 
-ostream& message(Severity severity, const Location& location);
+ostream& message(Severity severity, const Location& location, bool filter = true);
+void pause_messages();
+void resume_messages();

@@ -36,6 +36,14 @@ EXPECT_AST
 1
 
 
+BEGIN Pauses messages after unexpected character
+@ @ 1
+EXPECT_MESSAGE
+:1:1: error unexpected character '@'
+EXPECT_AST
+1
+
+
 BEGIN Tab is 8 characters for message purposes
 	@ 1
 EXPECT_MESSAGE
@@ -139,6 +147,17 @@ BEGIN Error directive with embedded comment
 1
 EXPECT_MESSAGE
 :1:2: error Hello,/* hidden */World!
+EXPECT_AST
+1
+
+
+BEGIN Error text output even if previous error filters messages
+@
+#error Hello, World!
+1
+EXPECT_MESSAGE
+:1:1: error unexpected character '@'
+:2:2: error Hello, World!
 EXPECT_AST
 1
 

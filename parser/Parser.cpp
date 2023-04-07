@@ -136,6 +136,7 @@ void Parser::skip_unexpected() {
 
 void Parser::unexpected_token() {
     message(Severity::ERROR, preprocessor.location()) << "unexpected token\n";
+    pause_messages();
 }
 
 size_t Parser::position() const {
@@ -531,6 +532,8 @@ ASTNodeVector Parser::parse() {
 }
 
 ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
+    resume_messages();
+
     auto location = preprocessor.location();
     auto begin = position();
 

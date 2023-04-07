@@ -9,6 +9,8 @@ TranslationUnitContext::TranslationUnitContext(ostream& message_stream): message
     assert(!it);
     it = this;
 
+    null_message_stream.setstate(ios_base::badbit);
+
     interned_views.insert(*empty_interned_string);
 }
 
