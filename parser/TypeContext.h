@@ -7,7 +7,7 @@
 struct Type;
 struct PointerType;
 struct QualifiedType;
-struct NamedType;
+struct UnboundType;
 
 struct TypeContext {
     TypeContext() = default;
@@ -25,8 +25,8 @@ struct TypeContext {
     const QualifiedType* lookup_qualified_type(const Type* base_type, unsigned qualifiers);
     void add_qualified_type(const QualifiedType* type);
 
-    const NamedType* lookup_named_type(TokenKind kind, const Identifier& identifier);
-    void add_named_type(TokenKind kind, const Identifier& identifier, const NamedType* type);
+    const UnboundType* lookup_unbound_type(TokenKind kind, const Identifier& identifier);
+    void add_unbound_type(TokenKind kind, const Identifier& identifier, const UnboundType* type);
 
     // This map is only used for "complicated" types like functions.
     unordered_map<string, const Type*> indexed_types;
@@ -37,7 +37,7 @@ struct TypeContext {
     typedef map<pair<const Type*, unsigned>, const QualifiedType*> QualifierTypesMap; 
     QualifierTypesMap qualified_types;
 
-    map<pair<TokenKind, InternedString>, const NamedType*> named_types;
+    map<pair<TokenKind, InternedString>, const UnboundType*> unbound_types;
 };
 
 #endif

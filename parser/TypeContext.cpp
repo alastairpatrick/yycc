@@ -51,12 +51,12 @@ void TypeContext::add_pointer_type(const PointerType* type) {
     pointer_types[type->base_type] = type;
 }
 
-const NamedType* TypeContext::lookup_named_type(TokenKind kind, const Identifier& identifier) {
-    auto it = named_types.find(make_pair(kind, identifier.name));
-    if (it == named_types.end()) return nullptr;
+const UnboundType* TypeContext::lookup_unbound_type(TokenKind kind, const Identifier& identifier) {
+    auto it = unbound_types.find(make_pair(kind, identifier.name));
+    if (it == unbound_types.end()) return nullptr;
     return it->second;
 }
 
-void TypeContext::add_named_type(TokenKind kind, const Identifier& identifier, const NamedType* type) {
-    named_types[make_pair(kind, identifier.name)] = type;
+void TypeContext::add_unbound_type(TokenKind kind, const Identifier& identifier, const UnboundType* type) {
+    unbound_types[make_pair(kind, identifier.name)] = type;
 }

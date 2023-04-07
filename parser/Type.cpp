@@ -616,23 +616,23 @@ void EnumType::print(std::ostream& stream) const {
 
 #pragma endregion UnionType
 
-#pragma region NamedType
+#pragma region UnboundType
 
-const NamedType* NamedType::of(TokenKind kind, const Identifier& identifier) {
-    auto type = TranslationUnitContext::it->type.lookup_named_type(kind, identifier);
+const UnboundType* UnboundType::of(TokenKind kind, const Identifier& identifier) {
+    auto type = TranslationUnitContext::it->type.lookup_unbound_type(kind, identifier);
     if (type) return type;
 
-    type = new NamedType(kind, identifier);
-    TranslationUnitContext::it->type.add_named_type(kind, identifier, type);
+    type = new UnboundType(kind, identifier);
+    TranslationUnitContext::it->type.add_unbound_type(kind, identifier, type);
     return type;
 }
 
-LLVMTypeRef NamedType::llvm_type() const {
+LLVMTypeRef UnboundType::llvm_type() const {
     assert(false);
     return nullptr;
 }
 
-void NamedType::print(ostream& stream) const {
+void UnboundType::print(ostream& stream) const {
     stream << "\"N";
 
     switch (kind) {
@@ -653,9 +653,9 @@ void NamedType::print(ostream& stream) const {
     stream << *identifier.name << '"';
 }
 
-NamedType::NamedType(TokenKind kind, const Identifier& identifier)
+UnboundType::UnboundType(TokenKind kind, const Identifier& identifier)
     : kind(kind), identifier(identifier) {
 }
 
-#pragma endregion NamedType
+#pragma endregion UnboundType
 

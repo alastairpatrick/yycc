@@ -221,8 +221,8 @@ struct EnumType: Type {
 };
 
 // This type is only used during preparsing, when names cannot necessarily be bound to declarations.
-struct NamedType: Type {
-    static const NamedType* of(TokenKind kind, const Identifier& identifier);
+struct UnboundType: Type {
+    static const UnboundType* of(TokenKind kind, const Identifier& identifier);
 
     const TokenKind kind;
     const Identifier identifier;
@@ -231,7 +231,7 @@ struct NamedType: Type {
     virtual void print(ostream& stream) const;
 
 private:
-    NamedType(TokenKind kind, const Identifier& identifier);
+    UnboundType(TokenKind kind, const Identifier& identifier);
 };
 
 #endif
