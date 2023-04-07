@@ -773,10 +773,19 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
 
     bool is_function = dynamic_cast<const FunctionType*>(type);
 
-    if (is_function && declaration->scope == IdentifierScope::PROTOTYPE) {
-        type = type->pointer_to();
-        is_function = false;
+    if (declaration->scope == IdentifierScope::PROTOTYPE) {
+        // C99 6.7.5.3p7
+        if (auto array_type = dynamic_cast<const ArrayType*>(type)) {
+            type = array_type->element_type->pointer_to();
+        }
+
+        // C99 6.7.5.3p8
+        if (is_function) {
+            type = type->pointer_to();
+            is_function = false;
+        }
     }
+
 
     Expr* bit_field_size{};
     if (declaration->scope == IdentifierScope::STRUCTURED && consume(':')) {

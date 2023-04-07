@@ -38,6 +38,18 @@ EXPECT_AST
 [["fun", "E", ["F", "Si", ["P", ["F", "Si"]]], "foo"]]
 
 
+BEGIN Function parameters of array type are adjusted to pointer (1)
+int foo(int x[]);
+EXPECT_AST
+[["fun", "E", ["F", "Si", ["P", "Si"]], "foo"]]
+
+
+BEGIN Function parameters of array type are adjusted to pointer (2)
+int foo(int x[2]);
+EXPECT_AST
+[["fun", "E", ["F", "Si", ["P", "Si"]], "foo"]]
+
+
 BEGIN Prototype and external linkage
 extern int foo(float);
 EXPECT_AST
