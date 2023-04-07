@@ -654,7 +654,7 @@ Declarator* Parser::parse_parameter_declarator() {
     return declarator;
 }
 
-ParsedDeclarator Parser::parse_declarator(bool allow_function_def) {
+DeclaratorTransform Parser::parse_declarator_transform(bool allow_function_def) {
     function<const Type*(const Type*)> left_transform;
     while (consume('*')) {
         left_transform = [left_transform](const Type* type) {
@@ -676,9 +676,9 @@ ParsedDeclarator Parser::parse_declarator(bool allow_function_def) {
         }
     }
 
-    ParsedDeclarator declarator;
+    DeclaratorTransform declarator;
     if (consume('(')) {
-        declarator = parse_declarator(false);
+        declarator = parse_declarator_transform(false);
         require(')');
     } else {
         declarator.identifier = preprocessor.identifier();
@@ -756,10 +756,10 @@ ParsedDeclarator Parser::parse_declarator(bool allow_function_def) {
 Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last) {
     auto begin = position();
 
-    auto parsed_declarator = parse_declarator(allow_function_def);
-    *last = parsed_declarator.body;
+    auto declarator_transform = parse_declarator_transform(allow_function_def);
+    *last = declarator_transform.body;
 
-    if (parsed_declarator.type_transform) type = parsed_declarator.type_transform(type);
+    if (declarator_transform.type_transform) type = declarator_transform.type_transform(type);
 
     bool is_function = dynamic_cast<const FunctionType*>(type);
 
@@ -783,9 +783,9 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         declarator = new Function(declaration,
                                   static_cast<const FunctionType*>(type),
                                   specifiers,
-                                  parsed_declarator.identifier,
-                                  move(parsed_declarator.params),
-                                  parsed_declarator.body,
+                                  declarator_transform.identifier,
+                                  move(declarator_transform.params),
+                                  declarator_transform.body,
                                   location);
     } else {
         if (specifiers & (1 << TOK_INLINE)) {
@@ -793,12 +793,12 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         }
 
         if (declaration->storage_class == StorageClass::TYPEDEF) {
-            declarator = new TypeDef(declaration, type, parsed_declarator.identifier, location);
+            declarator = new TypeDef(declaration, type, declarator_transform.identifier, location);
         } else {
             if (!initializer && declaration->storage_class != StorageClass::EXTERN) {
                 initializer = new DefaultExpr(type, location);
             }
-            declarator = new Variable(declaration, type, parsed_declarator.identifier, initializer, bit_field_size, location);
+            declarator = new Variable(declaration, type, declarator_transform.identifier, initializer, bit_field_size, location);
         }
     }
 
