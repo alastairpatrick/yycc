@@ -294,6 +294,12 @@ EXPECT_AST
  ,["var", "ES", ["A", ["A", ["A", "Si"], 2], 1], "z", ""]]]
 
 
+BEGIN Array with nested declarators
+int (*apfi[3])(int *x, int *y);
+EXPECT_AST
+[["var","ES",["A",["P",["F","Si",["P","Si"],["P","Si"]]],3],"apfi",""]]
+
+
 BEGIN Const declarator
 int* const y;
 EXPECT_AST
