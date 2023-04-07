@@ -1,26 +1,37 @@
 BEGIN Unnamed struct definition
 struct { int x; int y; } z;
 EXPECT_AST
-[["var", "ES", ["STRUCT", ["x", "Si"], ["y", "Si"]], "z", ""]]
+[["var", "ES", ["STRUCT", [["x", "Si"], ["y", "Si"]]], "z", ""]]
 
 
 BEGIN Named struct definition
 struct S { int x; int y; } z;
 EXPECT_AST
-[["var", "ES", ["DECLARE", "S", ["STRUCT", ["x", "Si"], ["y", "Si"]]], "z", ""]]
+[["var", "ES", ["DECLARE", "S", ["STRUCT", [["x", "Si"], ["y", "Si"]]]], "z", ""]]
 
 
 BEGIN Named struct
 struct S z;
-PREPARSE
 EXPECT_AST
-[["var", "ES", "NsS", "z", ""]]
+[["var","ES",["DECLARE","S",["STRUCT",["?"]]],"z",""]]
+
+
+BEGIN Named struct definition with no declarators
+struct S { int x; int y; };
+EXPECT_AST
+[["declare",["DECLARE","S",["STRUCT",[["x","Si"],["y","Si"]]]]]]
+
+
+BEGIN Named struct with no declarators
+struct S;
+EXPECT_AST
+[["declare",["DECLARE","S",["STRUCT",["?"]]]]]
 
 
 BEGIN Bit-field
 struct { int x: 15; int y: 17; } z;
 EXPECT_AST
-[["var", "ES", ["STRUCT", ["x", "Si", 15], ["y", "Si", 17]], "z", ""]]
+[["var", "ES", ["STRUCT", [["x", "Si", 15], ["y", "Si", 17]]], "z", ""]]
 
 
 BEGIN Error on bit-field variable
@@ -34,10 +45,8 @@ EXPECT_AST
 
 BEGIN Error on standalone struct keyword
 struct;
-EXPECT_MESSAGE
-:1:7: error unexpected token
 EXPECT_AST
-[[]]
+[["declare",["STRUCT",["?"]]]]
 
 
 BEGIN Struct members are not added to symbol map
@@ -46,7 +55,7 @@ struct Foo {
     float x, y;
 };
 EXPECT_GLOBALS
-[["typedef",["STRUCT",["x","Ff"],["y","Ff"]],"Foo"],["var","ES","Si","x",""]]
+[["typedef",["STRUCT",[["x","Ff"],["y","Ff"]]],"Foo"],["var","ES","Si","x",""]]
 
 
 BEGIN Error on combination of struct specifier and type specifier
@@ -61,39 +70,37 @@ EXPECT_AST
 BEGIN Unnamed union definition
 union { int x; int y; } z;
 EXPECT_AST
-[["var", "ES", ["UNION", ["x", "Si"], ["y", "Si"]], "z", ""]]
+[["var", "ES", ["UNION", [["x", "Si"], ["y", "Si"]]], "z", ""]]
 
 
 BEGIN Named union definition
 union S { int x; int y; } z;
 EXPECT_AST
-[["var", "ES", ["DECLARE", "S", ["UNION", ["x", "Si"], ["y", "Si"]]], "z", ""]]
+[["var", "ES", ["DECLARE", "S", ["UNION", [["x", "Si"], ["y", "Si"]]]], "z", ""]]
 
 
 BEGIN Named union
 union S z;
-PREPARSE
 EXPECT_AST
-[["var", "ES", "NuS", "z", ""]]
+[["var","ES",["DECLARE","S",["UNION",["?"]]],"z",""]]
 
 
 BEGIN Unnamed enum definition
 enum { A=1, B } z;
 EXPECT_AST
-[["var", "ES", ["ENUM", ["ec", "A", 1], ["ec", "B"]], "z", ""]]
+[["var", "ES", ["ENUM", [["ec", "A", 1], ["ec", "B"]]], "z", ""]]
 
 
 BEGIN Named enum definition
 enum E { A=1, B } z;
 EXPECT_AST
-[["var", "ES", ["DECLARE", "E", ["ENUM", ["ec", "A", 1], ["ec", "B"]]], "z", ""]]
+[["var", "ES", ["DECLARE", "E", ["ENUM", [["ec", "A", 1], ["ec", "B"]]]], "z", ""]]
 
 
 BEGIN Named enum
 enum E z;
-PREPARSE
 EXPECT_AST
-[["var", "ES", "NeE", "z", ""]]
+[["var","ES",["DECLARE","E",["ENUM",["?"]]],"z",""]]
 
 
 BEGIN #static enum directive

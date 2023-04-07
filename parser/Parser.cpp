@@ -52,7 +52,7 @@ void Parser::handle_declaration_directive() {
         break;
     }
 
-    auto declaration = new Declaration(IdentifierScope::FILE, storage_class, preprocessor.location());
+    auto declaration = new Declaration(IdentifierScope::FILE, storage_class, &CompatibleType::it, preprocessor.location());
 
     while (pp_token && pp_token != '\n') {
         if (pp_token == TOK_IDENTIFIER) {
@@ -516,6 +516,7 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
     }
 
     declaration->storage_class = storage_class;
+    declaration->type = type;
 
     specifiers = specifier_set & function_specifier_mask;
     return declaration;
@@ -771,12 +772,13 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
     }
 
     const Type* type{};
-
-    if (consume('{')) {
-        if (specifier != TOK_ENUM) {
+    bool complete = false;
+    if (specifier != TOK_ENUM) {
+        vector<Declaration*> members;
+        if (consume('{')) {
+            complete = true;
             symbols.push_scope();
 
-            vector<Declaration*> members;
             while (token && token != '}') {
                 auto declaration = dynamic_cast<Declaration*>(parse_declaration_or_statement(IdentifierScope::STRUCTURED));
                 assert(declaration);
@@ -784,14 +786,18 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
             }
 
             symbols.pop_scope();
+            require('}');
+        }
 
-            if (specifier == TOK_STRUCT) {
-                type = new StructType(move(members), specifier_location);
-            } else {
-                type = new UnionType(move(members), specifier_location);
-            }
+        if (specifier == TOK_STRUCT) {
+            type = new StructType(move(members), complete, specifier_location);
         } else {
-            vector<EnumConstant*> constants;
+            type = new UnionType(move(members), complete, specifier_location);
+        }
+    } else {
+        vector<EnumConstant*> constants;
+        if (consume('{')) {
+            complete = true;
             while (token && token != '}') {
                 auto constant = parse_enum_constant(declaration);
                 if (constant) {
@@ -799,10 +805,10 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 }
             }
 
-            type = new EnumType(move(constants), specifier_location);
+            require('}');
         }
 
-        require('}');
+        type = new EnumType(move(constants), complete, specifier_location);
     }
 
     if (identifier.name->empty()) {

@@ -108,7 +108,7 @@ struct FloatingPointType: Type {
     virtual void print(std::ostream& stream) const;
 
 private:
-    FloatingPointType(FloatingPointSize size): size(size) {}
+    FloatingPointType(FloatingPointSize size);
 };
 
 const Type* convert_arithmetic(const Type* left, const Type* right);
@@ -188,10 +188,11 @@ private:
 };
 
 struct StructuredType: Type {
-    StructuredType(vector<Declaration*>&& members, const Location& location);
+    StructuredType(vector<Declaration*>&& members, bool complete, const Location& location);
 
     const Location location;
     const vector<Declaration*> members;
+    const bool complete;
 
     virtual LLVMTypeRef llvm_type() const;
 
@@ -199,20 +200,21 @@ struct StructuredType: Type {
 };
 
 struct StructType: StructuredType {
-    StructType(vector<Declaration*>&& members, const Location& location);
+    StructType(vector<Declaration*>&& members, bool complete, const Location& location);
     virtual void print(std::ostream& stream) const;
 };
 
 struct UnionType: StructuredType {
-    UnionType(vector<Declaration*>&& members, const Location& location);
+    UnionType(vector<Declaration*>&& members, bool complete, const Location& location);
     virtual void print(std::ostream& stream) const;
 };
 
 struct EnumType: Type {
-    EnumType(vector<EnumConstant*>&& constants, const Location& location);
+    EnumType(vector<EnumConstant*>&& constants, bool complete, const Location& location);
     
     const Location location;
     const vector<EnumConstant*> constants;
+    const bool complete;
     
     virtual LLVMTypeRef llvm_type() const;
     virtual void print(std::ostream& stream) const;

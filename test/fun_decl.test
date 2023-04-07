@@ -163,7 +163,7 @@ inline void foo() {
 DECLARATIONS
 EXPECT_AST
 [["fun","E",["F", "V"],"foo",[],["block",[]]]
-,[]]
+,["declare","V"]]
 
 
 BEGIN Extern storage class prevents inline definition (3)
@@ -173,7 +173,7 @@ extern void foo();
 DECLARATIONS
 EXPECT_AST
 [["fun","E",["F", "V"],"foo",[],["block",[]]]
-,[]]
+,["declare","V"]]
 
 
 BEGIN Inline specifier may be given multiple times

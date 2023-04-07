@@ -20,7 +20,7 @@ typedef;
 EXPECT_MESSAGE
 :1:1: error invalid type specifier combination
 EXPECT_AST
-[[]]
+[["declare","Si"]]
 
 
 BEGIN Typedef in block scope
@@ -89,7 +89,7 @@ EXPECT_MESSAGE
 :3:6: error unexpected token
 :3:7: error unexpected token
 EXPECT_AST
-[["typedef","Sl","p"],["fun","E",["F", "V"],"f",[""],["block",[[]]]]]
+[["typedef","Sl","p"],["fun","E",["F", "V"],"f",[""],["block",[["declare","Sl"]]]]]
 
 
 BEGIN Typedef may not be inline
@@ -103,7 +103,7 @@ EXPECT_AST
 BEGIN Struct typedef
 typedef struct { int x; int y; } z;
 EXPECT_AST
-[["typedef", ["STRUCT", ["x", "Si"], ["y", "Si"]], "z"]]
+[["typedef", ["STRUCT", [["x", "Si"], ["y", "Si"]]], "z"]]
 
 
 BEGIN Error on typedef with bit-field

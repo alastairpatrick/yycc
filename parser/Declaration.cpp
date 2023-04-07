@@ -29,8 +29,8 @@ ostream& operator<<(ostream& stream, StorageDuration duration) {
     return stream;
 }
 
-Declaration::Declaration(IdentifierScope scope, StorageClass storage_class, const Location& location)
-    : ASTNode(location), scope(scope), storage_class(storage_class) {
+Declaration::Declaration(IdentifierScope scope, StorageClass storage_class, const Type* type, const Location& location)
+    : ASTNode(location), scope(scope), storage_class(storage_class), type(type) {
 }
 
 Declaration::Declaration(IdentifierScope scope, const Location& location)
@@ -48,16 +48,20 @@ Linkage Declaration::linkage() const {
 }
 
 void Declaration::print(ostream& stream) const {
-    if (declarators.size() != 1) stream << '[';
+    if (declarators.size() == 0) {
+        stream << "[\"declare\", " << type << ']';
+    } else {
+        if (declarators.size() != 1) stream << '[';
 
-    auto separate = false;
-    for (auto& declarator : declarators) {
-        if (separate) stream << ", ";
-        separate = true;
-        stream << declarator;
+        auto separate = false;
+        for (auto& declarator : declarators) {
+            if (separate) stream << ", ";
+            separate = true;
+            stream << declarator;
+        }
+
+        if (declarators.size() != 1) stream << ']';
     }
-
-    if (declarators.size() != 1) stream << ']';
 }
 
 Declarator::Declarator(const Declaration* declaration, const Type* type, const Identifier &identifier, const Location& location)

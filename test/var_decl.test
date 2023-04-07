@@ -254,7 +254,7 @@ EXPECT_AST
 BEGIN Declaration with no declarators
 short;
 EXPECT_AST
-[[]]
+[["declare","Ss"]]
 
 
 BEGIN Declaration with missing declarator identifiers
@@ -262,7 +262,7 @@ short,;
 EXPECT_MESSAGE
 :1:6: error expected identifier
 EXPECT_AST
-[[]]
+[["declare","Ss"]]
 
 
 BEGIN Declarators must be separated by comma

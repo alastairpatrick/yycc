@@ -14,7 +14,7 @@ typedef signed a;
 DECLARATIONS
 EXPECT_AST
 [["typedef", "Si", "a"]
-,[]]
+,["declare","Si"]]
 
 
 BEGIN Redefinition of typedef with different type
@@ -26,7 +26,7 @@ EXPECT_MESSAGE
 :1:1: see prior declaration
 EXPECT_AST
 [["typedef", "Si", "a"]
-,[]]
+,["declare","Ui"]]
 
 
 BEGIN Typedef as self
@@ -35,7 +35,7 @@ typedef a a;
 DECLARATIONS
 EXPECT_AST
 [["typedef", "Si", "a"]
-,[]]
+,["declare","Si"]]
 EXPECT_GLOBALS
 [["typedef", "Si", "a"]]
 

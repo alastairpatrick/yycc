@@ -236,6 +236,10 @@ IntegerType::IntegerType(IntegerSignedness signedness, IntegerSize size)
 
 #pragma region FloatingPointType
 
+FloatingPointType::FloatingPointType(FloatingPointSize size)
+    : size(size) {
+}
+
 const FloatingPointType* FloatingPointType::of(FloatingPointSize size) {
     static const FloatingPointType types[int(FloatingPointSize::NUM)] = {
         FloatingPointType(FloatingPointSize::FLOAT),
@@ -506,8 +510,8 @@ FunctionType::FunctionType(const Type* return_type, std::vector<const Type*> par
 
 #pragma region StructuredType
 
-StructuredType::StructuredType(vector<Declaration*>&& members, const Location& location)
-    : members(move(members)), location(location) {
+StructuredType::StructuredType(vector<Declaration*>&& members, bool complete, const Location& location)
+    : members(move(members)), complete(complete), location(location) {
 }
 
 LLVMTypeRef StructuredType::llvm_type() const {
@@ -516,6 +520,8 @@ LLVMTypeRef StructuredType::llvm_type() const {
 }
 
 void StructuredType::print(std::ostream& stream) const {
+    stream << '[';
+
     auto separator = false;
     for (auto member : members) {
         for (auto declarator : member->declarators) {
@@ -530,14 +536,21 @@ void StructuredType::print(std::ostream& stream) const {
             stream << ']';
         }
     }
+
+    if (!complete) {
+        if (separator) stream << ", ";
+        stream << "\"?\"";
+    }
+
+    stream << ']';
 }
 
 #pragma endregion StructuredType
 
 #pragma region StructType
 
-StructType::StructType(vector<Declaration*>&& members, const Location& location)
-    : StructuredType(move(members), location) {
+StructType::StructType(vector<Declaration*>&& members, bool complete, const Location& location)
+    : StructuredType(move(members), complete, location) {
 }
 
 void StructType::print(std::ostream& stream) const {
@@ -550,8 +563,8 @@ void StructType::print(std::ostream& stream) const {
 
 #pragma region UnionType
 
-UnionType::UnionType(vector<Declaration*>&& members, const Location& location)
-    : StructuredType(move(members), location) {
+UnionType::UnionType(vector<Declaration*>&& members, bool complete, const Location& location)
+    : StructuredType(move(members), complete, location) {
 }
 
 void UnionType::print(std::ostream& stream) const {
@@ -565,8 +578,8 @@ void UnionType::print(std::ostream& stream) const {
 
 #pragma region EnumType
 
-EnumType::EnumType(vector<EnumConstant*>&& constants, const Location& location)
-    : constants(move(constants)), location(location) {
+EnumType::EnumType(vector<EnumConstant*>&& constants, bool complete, const Location& location)
+    : constants(move(constants)), complete(complete), location(location) {
 }
 
 LLVMTypeRef EnumType::llvm_type() const {
@@ -575,7 +588,7 @@ LLVMTypeRef EnumType::llvm_type() const {
 }
 
 void EnumType::print(std::ostream& stream) const {
-    stream << "[\"ENUM\", ";
+    stream << "[\"ENUM\", [";
 
     auto separator = false;
     for (auto constant : constants) {
@@ -583,8 +596,13 @@ void EnumType::print(std::ostream& stream) const {
         separator = true;
         stream << constant;
     }
+    
+    if (!complete) {
+        if (separator) stream << ", ";
+        stream << "\"?\"";
+    }
 
-    stream << ']';
+    stream << "]]";
 }
 
 #pragma endregion UnionType
