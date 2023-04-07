@@ -222,16 +222,15 @@ struct EnumType: Type {
 
 // This type is only used during preparsing, when names cannot necessarily be bound to declarations.
 struct UnboundType: Type {
-    static const UnboundType* of(TokenKind kind, const Identifier& identifier);
+    static const UnboundType* of(const Identifier& identifier);
 
-    const TokenKind kind;
     const Identifier identifier;
 
     virtual LLVMTypeRef llvm_type() const;
     virtual void print(ostream& stream) const;
 
 private:
-    UnboundType(TokenKind kind, const Identifier& identifier);
+    explicit UnboundType(const Identifier& identifier);
 };
 
 #endif

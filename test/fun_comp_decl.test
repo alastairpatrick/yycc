@@ -73,7 +73,7 @@ EXPECT_AST
 ,["fun","I",["F", "V", "Si"],"foo"]]
 
 
-BEGIN Multiple function declarations with internal linkage (1)
+BEGIN Multiple function declarations with internal linkage (2)
 static void foo(int);
 static void foo(int);
 DECLARATIONS

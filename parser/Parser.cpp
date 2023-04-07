@@ -361,7 +361,7 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
                       if (scope == IdentifierScope::BLOCK) break;
 
                       if (preparse) {
-                          typedef_type = UnboundType::of(TOK_IDENTIFIER, preprocessor.identifier());
+                          typedef_type = UnboundType::of(preprocessor.identifier());
                       } else {
                           message(Severity::ERROR, preprocessor.location()) << "type \'" << preprocessor.identifier() << "' undefined\n";
                           typedef_type = IntegerType::default_type();

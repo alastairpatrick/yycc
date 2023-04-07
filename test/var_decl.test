@@ -339,7 +339,7 @@ BEGIN Variable of type declared in other translation unit
 T x;
 PREPARSE
 EXPECT_AST
-[["var", "ES", "NtT", "x", ""]]
+[["var", "ES", "NT", "x", ""]]
 
 
 BEGIN #extern variable directive

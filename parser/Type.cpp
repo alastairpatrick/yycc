@@ -618,12 +618,12 @@ void EnumType::print(std::ostream& stream) const {
 
 #pragma region UnboundType
 
-const UnboundType* UnboundType::of(TokenKind kind, const Identifier& identifier) {
-    auto type = TranslationUnitContext::it->type.lookup_unbound_type(kind, identifier);
+const UnboundType* UnboundType::of(const Identifier& identifier) {
+    auto type = TranslationUnitContext::it->type.lookup_unbound_type(identifier);
     if (type) return type;
 
-    type = new UnboundType(kind, identifier);
-    TranslationUnitContext::it->type.add_unbound_type(kind, identifier, type);
+    type = new UnboundType(identifier);
+    TranslationUnitContext::it->type.add_unbound_type(identifier, type);
     return type;
 }
 
@@ -633,28 +633,11 @@ LLVMTypeRef UnboundType::llvm_type() const {
 }
 
 void UnboundType::print(ostream& stream) const {
-    stream << "\"N";
-
-    switch (kind) {
-      case TOK_ENUM:
-        stream << 'e';
-        break;
-      case TOK_IDENTIFIER:
-        stream << 't';
-        break;
-      case TOK_STRUCT:
-        stream << 's';
-        break;
-      case TOK_UNION:
-        stream << 'u';
-        break;
-    }
-
-    stream << *identifier.name << '"';
+    stream << "\"N" << *identifier.name << '"';
 }
 
-UnboundType::UnboundType(TokenKind kind, const Identifier& identifier)
-    : kind(kind), identifier(identifier) {
+UnboundType::UnboundType(const Identifier& identifier)
+    : identifier(identifier) {
 }
 
 #pragma endregion UnboundType

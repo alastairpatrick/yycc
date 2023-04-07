@@ -45,7 +45,7 @@ typedef a a;
 typedef int a;
 PREPARSE
 EXPECT_AST
-[["typedef", "Nta", "a"]
+[["typedef", "Na", "a"]
 ,["typedef", "Si", "a"]]
 
 

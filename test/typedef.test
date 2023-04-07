@@ -11,7 +11,7 @@ foo_t foo;
 typedef short foo_t;
 PREPARSE
 EXPECT_AST
-[["var", "ES", "Ntfoo_t", "foo", ""]
+[["var", "ES", "Nfoo_t", "foo", ""]
 ,["typedef", "Ss", "foo_t"]]
 
 
@@ -119,7 +119,7 @@ BEGIN Typedef of type declared in other translation unit
 typedef T S;
 PREPARSE
 EXPECT_AST
-[["typedef", "NtT", "S"]]
+[["typedef", "NT", "S"]]
 
 
 BEGIN #static type directive

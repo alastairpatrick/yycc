@@ -27,11 +27,11 @@ struct Test {
 enum Section {
     INITIAL,
 
-    EXPECTED_AST,
-    EXPECTED_GLOBALS,
-    EXPECTED_MESSAGE,
-    EXPECTED_TEXT,
-    EXPECTED_TYPE,
+    EXPECT_AST,
+    EXPECT_GLOBALS,
+    EXPECT_MESSAGE,
+    EXPECT_TEXT,
+    EXPECT_TYPE,
     FILE_SECTION,
     INPUT,
     NONE,
@@ -101,7 +101,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
         stringstream output_stream;
         if (test_type == TestType::EXPRESSION) {
             auto expr = parse_expr(symbols, sections[INPUT]);
-            if (!sections[EXPECTED_TYPE].empty()) {
+            if (!sections[EXPECT_TYPE].empty()) {
                 type = expr->get_type();
             }
             output_stream << expr;
@@ -115,13 +115,13 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
         }
 
         
-        if (message_stream.str() != sections[EXPECTED_MESSAGE]) {
-            print_error(name, file, line) << "Expected message:\n" << sections[EXPECTED_MESSAGE] << "\n  Actual message:\n" << message_stream.str();
+        if (message_stream.str() != sections[EXPECT_MESSAGE]) {
+            print_error(name, file, line) << "Expected message:\n" << sections[EXPECT_MESSAGE] << "\n  Actual message:\n" << message_stream.str();
         }
 
-        if (!sections[EXPECTED_AST].empty()) {
+        if (!sections[EXPECT_AST].empty()) {
             auto parsed_output = json::parse(output_stream);
-            auto parsed_expected = json::parse(sections[EXPECTED_AST]);
+            auto parsed_expected = json::parse(sections[EXPECT_AST]);
 
             if (parsed_output != parsed_expected) {
                 print_error(name, file, line) << "Expected AST: " << parsed_expected << "\n  Actual AST: " << parsed_output << "\n";
@@ -129,7 +129,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
             }
         }
 
-        if (!sections[EXPECTED_GLOBALS].empty()) {
+        if (!sections[EXPECT_GLOBALS].empty()) {
             vector<Declarator*> declarators;
             for (auto& p : symbols.scopes.front().declarators) {
                 declarators.push_back(p.second);
@@ -150,7 +150,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
             global_stream << ']';
 
             auto parsed_globals = json::parse(global_stream);
-            auto parsed_expected = json::parse(sections[EXPECTED_GLOBALS]);
+            auto parsed_expected = json::parse(sections[EXPECT_GLOBALS]);
 
             if (parsed_globals != parsed_expected) {
                 print_error(name, file, line) << "Expected globals: " << parsed_expected << "\n  Actual globals: " << parsed_globals << "\n";
@@ -158,19 +158,19 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
             }
         }
 
-        if (!sections[EXPECTED_TYPE].empty()) {
+        if (!sections[EXPECT_TYPE].empty()) {
             stringstream type_stream;
             type_stream << type;
 
-            if (type_stream.str() != sections[EXPECTED_TYPE]) {
-                print_error(name, file, line) << "Expected type: " << sections[EXPECTED_TYPE] << "\n  Actual type: " << type_stream.str() << "\n";
+            if (type_stream.str() != sections[EXPECT_TYPE]) {
+                print_error(name, file, line) << "Expected type: " << sections[EXPECT_TYPE] << "\n  Actual type: " << type_stream.str() << "\n";
                 return false;
             }
         }
 
-        if (!sections[EXPECTED_TEXT].empty()) {
-            if (output_stream.str() != sections[EXPECTED_TEXT]) {
-                print_error(name, file, line) << "Expected text:\n" << sections[EXPECTED_TEXT] << "\n  Actual text:\n" << output_stream.str() << "\n";
+        if (!sections[EXPECT_TEXT].empty()) {
+            if (output_stream.str() != sections[EXPECT_TEXT]) {
+                print_error(name, file, line) << "Expected text:\n" << sections[EXPECT_TEXT] << "\n  Actual text:\n" << output_stream.str() << "\n";
                 return false;
             }
         }
@@ -235,15 +235,15 @@ bool run_parser_tests() {
             } else if (line == "END") {
                 section = Section::NONE;
             } else if (line == "EXPECT_AST") {
-                section = Section::EXPECTED_AST;
+                section = Section::EXPECT_AST;
             } else if (line == "EXPECT_GLOBALS") {
-                section = Section::EXPECTED_GLOBALS;
+                section = Section::EXPECT_GLOBALS;
             } else if (line == "EXPECT_MESSAGE") {
-                section = Section::EXPECTED_MESSAGE;
+                section = Section::EXPECT_MESSAGE;
             } else if (line == "EXPECT_TEXT") {
-                section = Section::EXPECTED_TEXT;
+                section = Section::EXPECT_TEXT;
             } else if (line == "EXPECT_TYPE") {
-                section = Section::EXPECTED_TYPE;
+                section = Section::EXPECT_TYPE;
             } else if (line == "EXPRESSION") {
                 enabled_types[unsigned(TestType::EXPRESSION)] = true;
                 ++num_enabled_types;
@@ -257,7 +257,7 @@ bool run_parser_tests() {
                 enabled_types[unsigned(TestType::PREPROCESS)] = true;
                 ++num_enabled_types;
             } else {
-                if (section == EXPECTED_TYPE) {
+                if (section == EXPECT_TYPE) {
                     if (line.length()) sections[section] += line;
                 } else if (section == FILE_SECTION) {
                     file->text += line + "\n";
