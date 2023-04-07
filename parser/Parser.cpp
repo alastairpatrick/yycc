@@ -665,7 +665,7 @@ Declarator* Parser::parse_parameter_declarator() {
     return declarator;
 }
 
-DeclaratorTransform Parser::parse_declarator_transform(bool allow_function_def) {
+DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, bool allow_function_def) {
     function<const Type*(const Type*)> left_transform;
     while (consume('*')) {
         left_transform = [left_transform](const Type* type) {
@@ -689,7 +689,7 @@ DeclaratorTransform Parser::parse_declarator_transform(bool allow_function_def) 
 
     DeclaratorTransform declarator;
     if (consume('(')) {
-        declarator = parse_declarator_transform(false);
+        declarator = parse_declarator_transform(scope, false);
         require(')');
     } else {
         consume_identifier(declarator.identifier);
@@ -698,14 +698,24 @@ DeclaratorTransform Parser::parse_declarator_transform(bool allow_function_def) 
     function<const Type*(const Type*)> right_transform;
     while (token) {
         if (consume('[')) {
+            unsigned array_qualifier_set{};
+            if (scope == IdentifierScope::PROTOTYPE) {
+                while (token == TOK_CONST || token == TOK_RESTRICT || token == TOK_VOLATILE || token == TOK_STATIC) {
+                    if (token != TOK_STATIC) {
+                        array_qualifier_set |= 1 << token;
+                    }
+                    consume();
+                }
+            }
+
             Expr* array_size{};
             if (token != ']') {
                 array_size = parse_expr(ASSIGN_PREC);
             }
             require(']');
 
-            right_transform = [right_transform, array_size](const Type* type) {
-                type = new ArrayType(type, array_size);
+            right_transform = [right_transform, array_qualifier_set, array_size](const Type* type) {
+                type = QualifiedType::of(new ArrayType(type, array_size), array_qualifier_set);
                 if (right_transform) type = right_transform(type);
                 return type;
             };
@@ -766,7 +776,7 @@ DeclaratorTransform Parser::parse_declarator_transform(bool allow_function_def) 
 Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last) {
     auto begin = position();
 
-    auto declarator_transform = parse_declarator_transform(allow_function_def);
+    auto declarator_transform = parse_declarator_transform(declaration->scope, allow_function_def);
     *last = declarator_transform.body;
 
     if (declarator_transform.type_transform) type = declarator_transform.type_transform(type);
@@ -775,8 +785,8 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
 
     if (declaration->scope == IdentifierScope::PROTOTYPE) {
         // C99 6.7.5.3p7
-        if (auto array_type = dynamic_cast<const ArrayType*>(type)) {
-            type = array_type->element_type->pointer_to();
+        if (auto array_type = dynamic_cast<const ArrayType*>(type->unqualified())) {
+            type = QualifiedType::of(array_type->element_type->pointer_to(), type->qualifiers());
         }
 
         // C99 6.7.5.3p8

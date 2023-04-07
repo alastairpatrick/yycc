@@ -50,6 +50,18 @@ EXPECT_AST
 [["fun", "E", ["F", "Si", ["P", "Si"]], "foo"]]
 
 
+BEGIN Qualified array type parameter
+int foo(int x[const volatile restrict 1]);
+EXPECT_AST
+[["fun","E",["F","Si",["Qcrv",["P","Si"]]],"foo"]]
+
+
+BEGIN Static array type parameter
+int foo(int x[static 1]);
+EXPECT_AST
+[["fun","E",["F","Si",["P","Si"]],"foo"]]
+
+
 BEGIN Prototype and external linkage
 extern int foo(float);
 EXPECT_AST

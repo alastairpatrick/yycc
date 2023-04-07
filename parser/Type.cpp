@@ -409,7 +409,9 @@ ArrayType::ArrayType(const Type* element_type, const Expr* size)
 
 #pragma region QualifierType
 
-const QualifiedType* QualifiedType::of(const Type* base_type, unsigned qualifiers) {
+const Type* QualifiedType::of(const Type* base_type, unsigned qualifiers) {
+    if (qualifiers == 0) return base_type;
+
     qualifiers |= base_type->qualifiers();
     base_type = base_type->unqualified();
 

@@ -55,7 +55,7 @@ private:
     CompoundStatement* parse_compound_statement();
     Declarator* parse_parameter_declarator();
     Declarator* parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last);
-    DeclaratorTransform parse_declarator_transform(bool allow_function_def);
+    DeclaratorTransform parse_declarator_transform(IdentifierScope scope, bool allow_function_def);
     const Type* parse_structured_type(Declaration* declaration);
     EnumConstant* parse_enum_constant(Declaration* declaration);
 };

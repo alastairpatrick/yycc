@@ -151,7 +151,7 @@ enum TypeQualifiers {
 };
 
 struct QualifiedType: Type {
-    static const QualifiedType* of(const Type* base_type, unsigned qualifiers);
+    static const Type* of(const Type* base_type, unsigned qualifiers);
 
     const Type* const base_type;
 
