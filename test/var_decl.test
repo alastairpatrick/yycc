@@ -280,12 +280,18 @@ EXPECT_AST
  ,["var", "ES", ["P", "Si"], "y", ""]]]
 
 
+BEGIN Function pointer declarator
+void (*f)(int);
+EXPECT_AST
+[["var","ES",["P",["F","V","Si"]],"f",""]]
+
+
 BEGIN Array declarators
 int x[], y[1], z[1][2][];
 EXPECT_AST
 [[["var", "ES", ["A", "Si"], "x", ""]
  ,["var", "ES", ["A", "Si", 1], "y", ""]
- ,["var", "ES", ["A", ["A", ["A", "Si", 1], 2]], "z", ""]]]
+ ,["var", "ES", ["A", ["A", ["A", "Si"], 2], 1], "z", ""]]]
 
 
 BEGIN Const declarator

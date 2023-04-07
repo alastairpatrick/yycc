@@ -654,124 +654,162 @@ Declarator* Parser::parse_parameter_declarator() {
     return declarator;
 }
 
-Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last) {
-    auto begin = position();
-    *last = false;
-    if (consume('(')) {
-        auto result = parse_declarator(declaration, type, specifiers, allow_function_def, location, last);
-        require(')');
-        return result;
-    } else {
-        while (consume('*')) {
-            type = type->pointer_to();
+ParsedDeclarator Parser::parse_declarator(bool allow_function_def) {
+    function<const Type*(const Type*)> left_transform;
+    while (consume('*')) {
+        left_transform = [left_transform](const Type* type) {
+            if (left_transform) type = left_transform(type);
+            return type->pointer_to();
+        };
 
-            unsigned qualifier_set = 0;
-            while (token == TOK_CONST || token == TOK_RESTRICT || token == TOK_VOLATILE) {
-                qualifier_set |= 1 << token;
-                consume();
-            }
-
-            if (qualifier_set) {
-                type = QualifiedType::of(type, qualifier_set);
-            }
+        unsigned qualifier_set = 0;
+        while (token == TOK_CONST || token == TOK_RESTRICT || token == TOK_VOLATILE) {
+            qualifier_set |= 1 << token;
+            consume();
         }
 
-        auto identifier = preprocessor.identifier();
-        if (!consume(TOK_IDENTIFIER)) identifier.name = empty_interned_string;
+        if (qualifier_set) {
+            left_transform = [left_transform, qualifier_set](const Type* type) {
+                if (left_transform) type = left_transform(type);
+                return QualifiedType::of(type, qualifier_set);
+            };
+        }
+    }
 
-        Expr* initializer{};
-        Declarator* declarator{};
+    ParsedDeclarator declarator;
+    if (consume('(')) {
+        declarator = parse_declarator(false);
+        require(')');
+    } else {
+        declarator.identifier = preprocessor.identifier();
+        if (!consume(TOK_IDENTIFIER)) declarator.identifier.name = empty_interned_string;
+    }
 
-        while (consume('[')) {
+    function<const Type*(const Type*)> right_transform;
+    while (token) {
+        if (consume('[')) {
             Expr* array_size{};
             if (token != ']') {
                 array_size = parse_expr(ASSIGN_PREC);
             }
             require(']');
 
-            type = new ArrayType(type, array_size);
-        }
+            right_transform = [right_transform, array_size](const Type* type) {
+                type = new ArrayType(type, array_size);
+                if (right_transform) type = right_transform(type);
+                return type;
+            };
 
-        Expr* bit_field_size{};
-        if (declaration->scope == IdentifierScope::STRUCTURED && consume(':')) {
-            bit_field_size = parse_expr(CONDITIONAL_PREC);
-        }
-
-        if (consume('=')) {
-            initializer = parse_expr(ASSIGN_PREC);
         } else if (consume('(')) {
             symbols.push_scope();
 
-            vector<Variable*> params;
             vector<const Type*> param_types;
             bool seen_void = false;
             while (token && !consume(')')) {
-                auto declarator = parse_parameter_declarator();
+                auto param_declarator = parse_parameter_declarator();
 
                 // Functions are adjusted to variable of function pointer type.
-                auto variable = dynamic_cast<Variable*>(declarator);
+                auto variable = dynamic_cast<Variable*>(param_declarator);
                 assert(variable);
 
-                params.push_back(variable);
+                declarator.params.push_back(variable);
 
-                if (declarator->type == &VoidType::it) {
+                if (param_declarator->type == &VoidType::it) {
                     if (seen_void || !param_types.empty()) {
-                        message(Severity::ERROR, declarator->location) << "a parameter may not have void type\n";
+                        message(Severity::ERROR, param_declarator->location) << "a parameter may not have void type\n";
                     }
                     seen_void = true;
                 } else {
-                    param_types.push_back(declarator->type);
+                    param_types.push_back(param_declarator->type);
                 }
                 consume(',');
             }
 
-            type = FunctionType::of(type, move(param_types), false);
+            right_transform = [right_transform, param_types=move(param_types)](const Type* type) {
+                type = FunctionType::of(type, move(param_types), false);
+                if (right_transform) type = right_transform(type);
+                return type;
+            };
 
-            if (declaration->scope == IdentifierScope::PROTOTYPE) {
-                type = type->pointer_to();
-            } else if (declaration->storage_class != StorageClass::TYPEDEF) {
-                CompoundStatement* body{};
-                if (allow_function_def && token == '{') {
-                    body = parse_compound_statement();
-                    *last = true;
-                }
-                    
-                declarator = new Function(declaration,
-                                          static_cast<const FunctionType*>(type),
-                                          specifiers,
-                                          identifier,
-                                          move(params),
-                                          body,
-                                          location);
+            if (allow_function_def && token == '{') {
+                declarator.body = parse_compound_statement();
             }
 
             symbols.pop_scope();
+        } else {
+            break;
         }
+    }
 
-        if (!declarator && (specifiers & (1 << TOK_INLINE))) {
+    if (left_transform || right_transform) {
+        declarator.type_transform = [left_transform, right_transform, inner_transform = declarator.type_transform](const Type* type) {
+            if (left_transform) type = left_transform(type);
+            if (right_transform) type = right_transform(type);
+            if (inner_transform) type = inner_transform(type);
+            return type;
+        };
+    }
+
+    return declarator;
+}
+
+Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last) {
+    auto begin = position();
+
+    auto parsed_declarator = parse_declarator(allow_function_def);
+    *last = parsed_declarator.body;
+
+    if (parsed_declarator.type_transform) type = parsed_declarator.type_transform(type);
+
+    bool is_function = dynamic_cast<const FunctionType*>(type);
+
+    if (is_function && declaration->scope == IdentifierScope::PROTOTYPE) {
+        type = type->pointer_to();
+        is_function = false;
+    }
+
+    Expr* bit_field_size{};
+    if (declaration->scope == IdentifierScope::STRUCTURED && consume(':')) {
+        bit_field_size = parse_expr(CONDITIONAL_PREC);
+    }
+
+    Expr* initializer{};
+    if (consume('=')) {
+        initializer = parse_expr(ASSIGN_PREC);
+    }
+
+    Declarator* declarator{};
+    if (is_function && declaration->storage_class != StorageClass::TYPEDEF) {
+        declarator = new Function(declaration,
+                                  static_cast<const FunctionType*>(type),
+                                  specifiers,
+                                  parsed_declarator.identifier,
+                                  move(parsed_declarator.params),
+                                  parsed_declarator.body,
+                                  location);
+    } else {
+        if (specifiers & (1 << TOK_INLINE)) {
             message(Severity::ERROR, location) << "'inline' may only appear on function\n";
         }
 
         if (declaration->storage_class == StorageClass::TYPEDEF) {
-            declarator = new TypeDef(declaration, type, identifier, location);
-        }
-
-        if (!declarator) {
+            declarator = new TypeDef(declaration, type, parsed_declarator.identifier, location);
+        } else {
             if (!initializer && declaration->storage_class != StorageClass::EXTERN) {
                 initializer = new DefaultExpr(type, location);
             }
-            declarator = new Variable(declaration, type, identifier, initializer, bit_field_size, location);
+            declarator = new Variable(declaration, type, parsed_declarator.identifier, initializer, bit_field_size, location);
         }
-
-        if (!identifier.name->empty()) {
-            if (!symbols.add_declarator(declarator)) {
-                return nullptr;
-            }
-        }
-
-        declarator->fragment = end_fragment(begin);
-        return declarator;
     }
+
+    if (!declarator->identifier.name->empty()) {
+        if (!symbols.add_declarator(declarator)) {
+            return nullptr;
+        }
+    }
+
+    declarator->fragment = end_fragment(begin);
+    return declarator;
 }
 
 const Type* Parser::parse_structured_type(Declaration* declaration) {

@@ -8,6 +8,14 @@
 struct CompoundStatement;
 struct Declarator;
 struct Expr;
+struct Variable;
+
+struct ParsedDeclarator {
+    function<const Type*(const Type*)> type_transform;
+    Identifier identifier;
+    vector<Variable*> params;
+    CompoundStatement* body{};
+};
 
 struct Parser {
     Parser(Preprocessor& preprocessor, SymbolMap& symbols);
@@ -46,6 +54,7 @@ private:
     CompoundStatement* parse_compound_statement();
     Declarator* parse_parameter_declarator();
     Declarator* parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last);
+    ParsedDeclarator parse_declarator(bool allow_function_def);
     const Type* parse_structured_type(Declaration* declaration);
     EnumConstant* parse_enum_constant(Declaration* declaration);
 };

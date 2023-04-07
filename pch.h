@@ -13,6 +13,7 @@
 #include <charconv>
 #include <exception>
 #include <filesystem>
+#include <functional>
 #include <fstream>
 #include <iostream>
 #include <list>
@@ -37,6 +38,7 @@ using std::errc;
 using std::exception;
 using std::from_chars;
 using std::fstream;
+using std::function;
 using std::hash;
 using std::hex;
 using std::hexfloat;
