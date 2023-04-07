@@ -44,6 +44,34 @@ EXPECT_AST
 [["var", "ES", ["STRUCT", [["x", "Si", 15], ["y", "Si", 17]]], "z", ""]]
 
 
+BEGIN Anonymous struct
+struct {
+    struct {
+        int x;
+    };
+} z;
+EXPECT_AST
+[["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]]]],"z",""]]
+
+
+BEGIN Anonymous union
+struct {
+    union {
+        int x;
+    };
+} z;
+EXPECT_AST
+[["var","ES",["STRUCT",[["",["UNION",[["x","Si"]]]]]],"z",""]]
+
+
+BEGIN Only structs and unions may be anonymous
+struct {
+    int;
+} z;
+EXPECT_AST
+[["var","ES",["STRUCT",[]],"z",""]]
+
+
 BEGIN Error on bit-field variable
 int x: 2;
 EXPECT_MESSAGE

@@ -794,6 +794,14 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
             while (token && token != '}') {
                 auto declaration = dynamic_cast<Declaration*>(parse_declaration_or_statement(IdentifierScope::STRUCTURED));
                 assert(declaration);
+
+                // C11 6.7.2.1p13 anonymous structs and unions
+                if (dynamic_cast<const StructuredType*>(declaration->type) && declaration->declarators.empty()) {
+                    auto declarator = new Variable(declaration, declaration->type, Identifier(), nullptr, nullptr, declaration->location);
+                    declaration->declarators.push_back(declarator);
+                    // TODO: the declarators of the anonymous struct or union were added to a scope that has already been popped
+                }
+
                 structured_type->members.push_back(declaration);
             }
 
