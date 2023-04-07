@@ -193,7 +193,6 @@ struct StructuredType: Type {
     const Location location;
     vector<Declaration*> members;
     bool complete{};
-    mutable bool printing{};
 
     virtual LLVMTypeRef llvm_type() const;
 

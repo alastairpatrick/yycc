@@ -5,7 +5,7 @@
 #include "InternedString.h"
 
 struct ASTNode;
-
+struct Printable;
 enum class Severity;
 
 struct TranslationUnitContext {
@@ -17,6 +17,7 @@ struct TranslationUnitContext {
 
     ostream& message_stream;
     Severity highest_severity{};
+    unordered_set<const Printable*> printing;
 
     TypeContext type;
 

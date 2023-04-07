@@ -520,12 +520,14 @@ LLVMTypeRef StructuredType::llvm_type() const {
 }
 
 void StructuredType::print(std::ostream& stream) const {
-    if (printing) {
+    auto& printing = TranslationUnitContext::it->printing;
+
+    if (printing.find(this) != printing.end()) {
         stream << "\"recursive\"";
         return;
     }
 
-    printing = true;
+    printing.insert(this);
     stream << '[';
 
     auto separator = false;
@@ -548,7 +550,7 @@ void StructuredType::print(std::ostream& stream) const {
         stream << "\"?\"";
     }
 
-    printing = false;
+    printing.erase(this);
     stream << ']';
 }
 
