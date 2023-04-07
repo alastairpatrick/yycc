@@ -75,7 +75,7 @@ EXPECT_AST
 BEGIN Error on bit-field variable
 int x: 2;
 EXPECT_MESSAGE
-:1:6: error unexpected token
+:1:6: error expected ';' but got ':'
 EXPECT_AST
 [["var", "ES", "Si", "x", ""]]
 

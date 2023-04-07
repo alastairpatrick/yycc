@@ -260,7 +260,7 @@ EXPECT_AST
 BEGIN Declaration with missing declarator identifiers
 short,;
 EXPECT_MESSAGE
-:1:6: error expected identifier
+:1:6: error expected identifier but got ','
 EXPECT_AST
 [["declare","Ss"]]
 
@@ -268,7 +268,7 @@ EXPECT_AST
 BEGIN Declarators must be separated by comma
 short a b;
 EXPECT_MESSAGE
-:1:9: error unexpected token
+:1:9: error expected ';' but got 'b'
 EXPECT_AST
 [["var", "ES", "Ss", "a", ""]]
 

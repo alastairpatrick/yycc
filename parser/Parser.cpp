@@ -96,6 +96,7 @@ void Parser::balance_until(int t) {
         switch (token) {
           default:
             consume();
+            break;
           case '(':
             consume();
             balance_until(')');
@@ -116,8 +117,17 @@ void Parser::balance_until(int t) {
 }
 
 bool Parser::require(int t, Location* location) {
+    if (token != t) {
+        if (t >= 32 && t < 128) {
+            message(Severity::ERROR, preprocessor.location()) << "expected '" << (char) t << "' but got '" << preprocessor.text() << "'\n";
+            pause_messages();
+        } else {
+            skip_unexpected();
+        }
+    }
+
     while (token && token != t) {
-        skip_unexpected();
+        consume();
     }
     if (token == t) {
         if (location) {
@@ -135,7 +145,7 @@ void Parser::skip_unexpected() {
 }
 
 void Parser::unexpected_token() {
-    message(Severity::ERROR, preprocessor.location()) << "unexpected token\n";
+    message(Severity::ERROR, preprocessor.location()) << "unexpected token '" << preprocessor.text() << "'\n";
     pause_messages();
 }
 
@@ -549,7 +559,8 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
             auto declarator = parse_declarator(declaration, base_type, specifiers, declarator_count == 0, location, &last_declarator);
             if (declarator) {
                 if (declarator->identifier.name->empty()) {
-                    message(Severity::ERROR, preprocessor.location()) << "expected identifier\n";
+                    message(Severity::ERROR, preprocessor.location()) << "expected identifier but got '" << preprocessor.text() << "'\n";
+                    pause_messages();
                 } else {
                     declaration->declarators.push_back(declarator);
                     ++declarator_count;

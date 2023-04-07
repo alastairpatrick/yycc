@@ -87,7 +87,7 @@ BEGIN Function definition may not share external declaration with declarators (1
 int foo, bar(int x) {
 }
 EXPECT_MESSAGE
-:1:21: error unexpected token
+:1:21: error expected ';' but got '{'
 EXPECT_AST
 [[["var", "ES", "Si", "foo", ""]
  ,["fun", "E", ["F", "Si", "Si"], "bar"]]]
@@ -98,7 +98,7 @@ int bar(int x) {
 }, foo;
 DECLARATIONS
 EXPECT_MESSAGE
-:2:2: error unexpected token
+:2:2: error unexpected token ','
 EXPECT_AST
 [
     ["fun", "E", ["F", "Si", "Si"], "bar", ["x"], ["block", []]],
