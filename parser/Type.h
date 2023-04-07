@@ -188,11 +188,12 @@ private:
 };
 
 struct StructuredType: Type {
-    StructuredType(vector<Declaration*>&& members, bool complete, const Location& location);
+    StructuredType(const Location& location);
 
     const Location location;
-    const vector<Declaration*> members;
-    const bool complete;
+    vector<Declaration*> members;
+    bool complete{};
+    mutable bool printing{};
 
     virtual LLVMTypeRef llvm_type() const;
 
@@ -200,33 +201,23 @@ struct StructuredType: Type {
 };
 
 struct StructType: StructuredType {
-    StructType(vector<Declaration*>&& members, bool complete, const Location& location);
+    explicit StructType(const Location& location);
     virtual void print(std::ostream& stream) const;
 };
 
 struct UnionType: StructuredType {
-    UnionType(vector<Declaration*>&& members, bool complete, const Location& location);
+    explicit UnionType(const Location& location);
     virtual void print(std::ostream& stream) const;
 };
 
 struct EnumType: Type {
-    EnumType(vector<EnumConstant*>&& constants, bool complete, const Location& location);
+    explicit EnumType(const Location& location);
     
     const Location location;
-    const vector<EnumConstant*> constants;
-    const bool complete;
+    vector<EnumConstant*> constants;
+    bool complete{};
     
     virtual LLVMTypeRef llvm_type() const;
-    virtual void print(std::ostream& stream) const;
-};
-
-struct DeclarationType: Type {
-    explicit DeclarationType(TypeDef* declarator);
-
-    const TypeDef* const declarator;
-
-    virtual LLVMTypeRef llvm_type() const;
-
     virtual void print(std::ostream& stream) const;
 };
 

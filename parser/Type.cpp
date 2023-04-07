@@ -510,8 +510,8 @@ FunctionType::FunctionType(const Type* return_type, std::vector<const Type*> par
 
 #pragma region StructuredType
 
-StructuredType::StructuredType(vector<Declaration*>&& members, bool complete, const Location& location)
-    : members(move(members)), complete(complete), location(location) {
+StructuredType::StructuredType(const Location& location)
+    : location(location) {
 }
 
 LLVMTypeRef StructuredType::llvm_type() const {
@@ -520,6 +520,12 @@ LLVMTypeRef StructuredType::llvm_type() const {
 }
 
 void StructuredType::print(std::ostream& stream) const {
+    if (printing) {
+        stream << "\"recursive\"";
+        return;
+    }
+
+    printing = true;
     stream << '[';
 
     auto separator = false;
@@ -542,6 +548,7 @@ void StructuredType::print(std::ostream& stream) const {
         stream << "\"?\"";
     }
 
+    printing = false;
     stream << ']';
 }
 
@@ -549,8 +556,8 @@ void StructuredType::print(std::ostream& stream) const {
 
 #pragma region StructType
 
-StructType::StructType(vector<Declaration*>&& members, bool complete, const Location& location)
-    : StructuredType(move(members), complete, location) {
+StructType::StructType(const Location& location)
+    : StructuredType(location) {
 }
 
 void StructType::print(std::ostream& stream) const {
@@ -563,8 +570,8 @@ void StructType::print(std::ostream& stream) const {
 
 #pragma region UnionType
 
-UnionType::UnionType(vector<Declaration*>&& members, bool complete, const Location& location)
-    : StructuredType(move(members), complete, location) {
+UnionType::UnionType(const Location& location)
+    : StructuredType(location) {
 }
 
 void UnionType::print(std::ostream& stream) const {
@@ -578,8 +585,8 @@ void UnionType::print(std::ostream& stream) const {
 
 #pragma region EnumType
 
-EnumType::EnumType(vector<EnumConstant*>&& constants, bool complete, const Location& location)
-    : constants(move(constants)), complete(complete), location(location) {
+EnumType::EnumType(const Location& location)
+    : location(location) {
 }
 
 LLVMTypeRef EnumType::llvm_type() const {
@@ -606,22 +613,6 @@ void EnumType::print(std::ostream& stream) const {
 }
 
 #pragma endregion UnionType
-#pragma region DeclarationType
-
-DeclarationType::DeclarationType(TypeDef* declarator)
-    : declarator(declarator) {
-}
-
-LLVMTypeRef DeclarationType::llvm_type() const {
-    assert(false);
-    return nullptr;
-}
-
-void DeclarationType::print(std::ostream& stream) const {
-    stream << "[\"DECLARE\", \"" << declarator->identifier << "\", " << declarator->type << ']';
-}
-
-#pragma endregion DeclarationType
 
 #pragma region NamedType
 

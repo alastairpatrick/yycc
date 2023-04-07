@@ -7,25 +7,35 @@ EXPECT_AST
 BEGIN Named struct definition
 struct S { int x; int y; } z;
 EXPECT_AST
-[["var", "ES", ["DECLARE", "S", ["STRUCT", [["x", "Si"], ["y", "Si"]]]], "z", ""]]
+[["var", "ES", ["STRUCT", [["x", "Si"], ["y", "Si"]]], "z", ""]]
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]
+,["var","ES",["STRUCT",[["x","Si"],["y","Si"]]],"z",""]]
 
 
 BEGIN Named struct
 struct S z;
 EXPECT_AST
-[["var","ES",["DECLARE","S",["STRUCT",["?"]]],"z",""]]
+[["var","ES",["STRUCT",["?"]],"z",""]]
+EXPECT_GLOBALS
+[["typedef",["STRUCT",["?"]],"S"]
+,["var","ES",["STRUCT",["?"]],"z",""]]
 
 
 BEGIN Named struct definition with no declarators
 struct S { int x; int y; };
 EXPECT_AST
-[["declare",["DECLARE","S",["STRUCT",[["x","Si"],["y","Si"]]]]]]
+[["declare",["STRUCT",[["x","Si"],["y","Si"]]]]]
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
 
 
 BEGIN Named struct with no declarators
 struct S;
 EXPECT_AST
-[["declare",["DECLARE","S",["STRUCT",["?"]]]]]
+[["declare",["STRUCT",["?"]]]]
+EXPECT_GLOBALS
+[["typedef",["STRUCT",["?"]],"S"]]
 
 
 BEGIN Bit-field
@@ -58,6 +68,16 @@ EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Ff"],["y","Ff"]]],"Foo"],["var","ES","Si","x",""]]
 
 
+BEGIN Struct is in scope within body
+struct S {
+    S* p;
+};
+EXPECT_AST
+[["declare",["STRUCT",[["p",["P",["STRUCT","recursive"]]]]]]]
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["p",["P",["STRUCT","recursive"]]]]],"S"]]
+
+
 BEGIN Error on combination of struct specifier and type specifier
 typedef float T;
 T struct S v;
@@ -76,13 +96,19 @@ EXPECT_AST
 BEGIN Named union definition
 union S { int x; int y; } z;
 EXPECT_AST
-[["var", "ES", ["DECLARE", "S", ["UNION", [["x", "Si"], ["y", "Si"]]]], "z", ""]]
+[["var", "ES", ["UNION", [["x", "Si"], ["y", "Si"]]], "z", ""]]
+EXPECT_GLOBALS
+[["typedef",["UNION",[["x","Si"],["y","Si"]]],"S"]
+,["var","ES",["UNION",[["x","Si"],["y","Si"]]],"z",""]]
 
 
 BEGIN Named union
 union S z;
 EXPECT_AST
-[["var","ES",["DECLARE","S",["UNION",["?"]]],"z",""]]
+[["var","ES",["UNION",["?"]],"z",""]]
+EXPECT_GLOBALS
+[["typedef",["UNION",["?"]],"S"]
+,["var","ES",["UNION",["?"]],"z",""]]
 
 
 BEGIN Unnamed enum definition
@@ -94,13 +120,21 @@ EXPECT_AST
 BEGIN Named enum definition
 enum E { A=1, B } z;
 EXPECT_AST
-[["var", "ES", ["DECLARE", "E", ["ENUM", [["ec", "A", 1], ["ec", "B"]]]], "z", ""]]
+[["var", "ES", ["ENUM", [["ec", "A", 1], ["ec", "B"]]], "z", ""]]
+EXPECT_GLOBALS
+[["ec","A",1]
+,["ec","B"]
+,["typedef",["ENUM",[["ec","A",1],["ec","B"]]],"E"]
+,["var","ES",["ENUM",[["ec","A",1],["ec","B"]]],"z",""]]
 
 
 BEGIN Named enum
 enum E z;
 EXPECT_AST
-[["var","ES",["DECLARE","E",["ENUM",["?"]]],"z",""]]
+[["var","ES",["ENUM",["?"]],"z",""]]
+EXPECT_GLOBALS
+[["typedef",["ENUM",["?"]],"E"],
+["var","ES",["ENUM",["?"]],"z",""]]
 
 
 BEGIN #static enum directive

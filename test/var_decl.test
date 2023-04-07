@@ -186,7 +186,7 @@ BEGIN No implicit int declaration
 static x;
 DECLARATIONS
 EXPECT_MESSAGE
-:1:8: error typedef 'x' undefined
+:1:8: error type 'x' undefined
 END
 
 

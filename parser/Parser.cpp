@@ -363,7 +363,7 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
                       if (preparse) {
                           typedef_type = NamedType::of(TOK_IDENTIFIER, preprocessor.identifier());
                       } else {
-                          message(Severity::ERROR, preprocessor.location()) << "typedef \'" << preprocessor.identifier() << "' undefined\n";
+                          message(Severity::ERROR, preprocessor.location()) << "type \'" << preprocessor.identifier() << "' undefined\n";
                           typedef_type = IntegerType::default_type();
                       }
                   }
@@ -771,64 +771,59 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
         consume();
     }
 
-    const Type* type{};
-    bool complete = false;
+    Type* type{};
+    TypeDef* declarator{};
     if (specifier != TOK_ENUM) {
-        vector<Declaration*> members;
+        StructuredType* structured_type;
+        if (specifier == TOK_STRUCT) {
+            structured_type = new StructType(specifier_location);
+        } else {
+            structured_type = new UnionType(specifier_location);
+        }
+        type = structured_type;
+
+        if (!identifier.name->empty()) {
+            declarator = new TypeDef(declaration, structured_type, identifier, specifier_location);
+            symbols.add_declarator(declarator);
+        }
+
         if (consume('{')) {
-            complete = true;
+            structured_type->complete = true;
             symbols.push_scope();
 
             while (token && token != '}') {
                 auto declaration = dynamic_cast<Declaration*>(parse_declaration_or_statement(IdentifierScope::STRUCTURED));
                 assert(declaration);
-                members.push_back(declaration);
+                structured_type->members.push_back(declaration);
             }
 
             symbols.pop_scope();
             require('}');
         }
-
-        if (specifier == TOK_STRUCT) {
-            type = new StructType(move(members), complete, specifier_location);
-        } else {
-            type = new UnionType(move(members), complete, specifier_location);
-        }
     } else {
-        vector<EnumConstant*> constants;
+        auto enum_type = new EnumType(specifier_location);
+        type = enum_type;
+
+        if (!identifier.name->empty()) {
+            declarator = new TypeDef(declaration, enum_type, identifier, specifier_location);
+            symbols.add_declarator(declarator);
+        }
+
         if (consume('{')) {
-            complete = true;
+            enum_type->complete = true;
             while (token && token != '}') {
                 auto constant = parse_enum_constant(declaration);
                 if (constant) {
-                    constants.push_back(constant);
+                    enum_type->constants.push_back(constant);
                 }
             }
 
             require('}');
         }
-
-        type = new EnumType(move(constants), complete, specifier_location);
     }
 
-    if (identifier.name->empty()) {
-        if (!type) {
-            unexpected_token();
-            type = IntegerType::default_type();
-        }
-    } else {
-        if (type) {
-            auto declarator = new TypeDef(declaration, type, identifier, specifier_location);
-            type = new DeclarationType(declarator);
-
-            symbols.add_declarator(declarator);
-        } else {
-            if (preparse) {
-                type = NamedType::of(specifier, identifier);
-            } else {
-                // TODO
-            }
-        }
+    if (declarator) {
+        //type = new DeclarationType(declarator);
     }
 
     return type;
