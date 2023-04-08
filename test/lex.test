@@ -83,12 +83,30 @@ EXPECT_MESSAGE
 END
 
 
+BEGIN Line directive resets line and optionally column
+1
+#line 7 3
+@
+EXPECT_MESSAGE
+:7:3: error unexpected character '@'
+END
+
+
 BEGIN Line directive resets line and optionally filename
 1
 #line 7 "foo.c"
 @
 EXPECT_MESSAGE
 foo.c:7:1: error unexpected character '@'
+END
+
+
+BEGIN Line directive resets line and optionally column and filename
+1
+#line 7 3 "foo.c"
+@
+EXPECT_MESSAGE
+foo.c:7:3: error unexpected character '@'
 END
 
 
@@ -101,7 +119,7 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN Invalid line in line directive (1)
+BEGIN Invalid line token in line directive
 1
 #line "foo.c" 7
 EXPECT_MESSAGE
@@ -109,7 +127,7 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN Invalid line in line directive (1)
+BEGIN Zero line in line directive
 1
 #line 0 "foo.c"
 EXPECT_MESSAGE
@@ -117,9 +135,17 @@ EXPECT_MESSAGE
 END
 
 
+BEGIN Negative line in line directive
+1
+#line -1 "foo.c"
+EXPECT_MESSAGE
+:2:7: error unexpected token in directive
+END
+
+
 BEGIN Invalid file in line directive
 1
-#line 7 13
+#line 7 +
 EXPECT_MESSAGE
 :2:9: error unexpected token in directive
 END

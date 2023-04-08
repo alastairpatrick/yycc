@@ -9,6 +9,9 @@ struct Location {
 
     // Filename might contain backslash escape sequences.
     InternedString filename = empty_interned_string;
+
 };
+
+bool operator<(const Location& a, const Location& b);
 
 #endif

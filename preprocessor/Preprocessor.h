@@ -55,6 +55,9 @@ private:
     IdentifierLexer id_lexer;
     PPNumberLexer num_lexer;
 
+    size_t pending_line{};
+    size_t pending_column{};
+
     vector<Location> include_stack;
 
     TextStream text_stream;

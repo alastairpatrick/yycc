@@ -5,10 +5,11 @@ PREPROCESS
 FILE "a.h"
 typedef int T;
 EXPECT_TEXT
-#static type T
-#extern variable x
 
+#extern variable x
 #line 1 "a.h"
+#static type T
+#line 1
 typedef int T;
 #line 2 ""
 T x;
@@ -22,8 +23,8 @@ PREPROCESS
 FILE "a.h"
 extern int x;
 EXPECT_TEXT
-#extern variable x
 
+#extern variable x
 #line 1 "a.h"
 extern int x;
 #line 2 ""
@@ -38,9 +39,11 @@ PREPROCESS
 FILE "a.h"
 const int y = 2;  // TODO: replace this with a avalid constant integer expression
 EXPECT_TEXT
-#extern variable x y
 
+#extern variable x
 #line 1 "a.h"
+#extern variable y
+#line 1
 const int y = 2;
 #line 2 ""
 int x[y];
@@ -54,10 +57,11 @@ PREPROCESS
 FILE "a.h"
 typedef int T;
 EXPECT_TEXT
-#static type T
-#extern function foo
 
+#extern function foo
 #line 1 "a.h"
+#static type T
+#line 1
 typedef int T;
 #line 2 ""
 int foo(T x);
@@ -73,10 +77,11 @@ PREPROCESS
 FILE "a.h"
 typedef int T;
 EXPECT_TEXT
-#static type T
-#extern function foo
 
+#extern function foo
 #line 1 "a.h"
+#static type T
+#line 1
 typedef int T;
 #line 2 ""
 int foo(void) {
@@ -96,10 +101,11 @@ struct S {
     int x;
 };
 EXPECT_TEXT
-#static type S
-#extern function foo
 
+#extern function foo
 #line 1 "a.h"
+#static type S
+#line 1
 struct S {
     int x;
 };
@@ -119,11 +125,17 @@ PREPROCESS
 FILE "a.h"
 enum Color { RED, GREEN, BLUE };
 EXPECT_TEXT
-#static type Color
-#static enum BLUE GREEN RED
-#extern function foo
 
+#extern function foo
 #line 1 "a.h"
+#static type Color
+#line 1 14
+#static enum RED
+#line 1 19
+#static enum GREEN
+#line 1 26
+#static enum BLUE
+#line 1
 enum Color { RED, GREEN, BLUE };
 #line 2 ""
 int foo(void) {
@@ -138,7 +150,9 @@ void foo() {
 }
 PREPROCESS
 EXPECT_TEXT
+
 #extern function foo
+#line 1
 F foo;
 void foo() {
 }
@@ -152,6 +166,7 @@ F foo;  // typedef F in another translation unit
 PREPROCESS
 EXPECT_TEXT
 #extern function foo
+#line 1
 void foo() {
 }
 F foo;

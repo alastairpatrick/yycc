@@ -5,32 +5,47 @@ TextStream::TextStream(ostream& stream): stream(stream) {
     current_location.column = 1;
 }
 
+static void output_line_column(ostream& stream, const Location& location) {
+    stream << "#line " << location.line;
+    if (location.column != 1) {
+        stream << ' ' << location.column;
+    }
+}
+
 static void output_filename(ostream& stream, string_view filename) {
+    stream << " \"";
     for (char c : filename) {
         if (c == '\\') {
             stream << c;
         }
         stream << c;
     }
+    stream << '\"';
 }
 
 void TextStream::locate(const Location& location) {
     if (location.filename != current_location.filename) {
-        stream << "\n#line " << location.line << " \"";
+        if (need_newline) stream << '\n';
+        output_line_column(stream, location);
         output_filename(stream, *location.filename);
-        stream << "\"\n";
+        stream << '\n';
         current_location = location;
-        current_location.column = 1;
-    } else if (location.line - current_location.line >= 0 && location.line - current_location.line < 5) {
+        need_newline = false;
+    } else if (location.line >= current_location.line && location.line - current_location.line < 5) {
         while (location.line > current_location.line) {
             stream << '\n';
             ++current_location.line;
             current_location.column = 1;
+            need_newline = false;
         }
-    } else if (location.line != current_location.line) {
-        stream << "\n#line " << location.line << "\n";
+    } else if (location.line != current_location.line ||
+        location.column > current_location.column ||
+        current_location.column - location.column > 10) {
+        if (need_newline) stream << '\n';
+        output_line_column(stream, location);
+        stream << '\n';
         current_location = location;
-        current_location.column = 1;
+        need_newline = false;
     }
 
     while (current_location.column < location.column) {
@@ -41,5 +56,17 @@ void TextStream::locate(const Location& location) {
 
 void TextStream::write(string_view text) {
     stream << text;
-    current_location.column += text.length();
+
+    for (char c : text) {
+        if (c == '\n') {
+            ++current_location.line;
+            current_location.column = 1;
+        } else {
+            ++current_location.column;
+        }
+    }
+
+    if (text.length()) {
+        need_newline = text.back() != '\n';
+    }
 }

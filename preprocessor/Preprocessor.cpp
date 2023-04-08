@@ -19,6 +19,13 @@ void Preprocessor::in(const Input& input) {
 TokenKind Preprocessor::next_token() {
     for (;;) {
         next_pp_token();
+
+        if (pending_line) {
+            lexer.matcher().lineno(pending_line);
+            lexer.matcher().columno(pending_column);
+            pending_line = 0;
+        }
+
         switch (token) {
             default: {
               return commit_token(token, text());
@@ -134,17 +141,26 @@ string_view Preprocessor::output() {
     return string_view(string_stream.str(), string_stream.pcount());
 }
 
+static bool parse_line_column(size_t& value, string_view text) {
+    auto result = from_chars(text.data(), text.data() + text.size(), value, 10);
+    return result.ec == errc{} && value != 0 && result.ptr == text.data() + text.size();
+}
+
 void Preprocessor::handle_line_directive() {
     next_pp_token();
 
     if (token != TOK_PP_NUMBER) return;
 
     size_t line;
-    auto text = lexer.text();
-    auto result = from_chars(text.data(), text.data() + text.size(), line, 10);
-    if (result.ec != errc{} || line <= 0 || result.ptr != text.data() + text.size()) return;
+    size_t column = 1;
 
+    if (!parse_line_column(line, lexer.text())) return;
     next_pp_token();
+
+    if (token == TOK_PP_NUMBER) {
+        if (!parse_line_column(column, lexer.text())) return;
+        next_pp_token();
+    }
 
     InternedString filename{};
     if (token == TOK_STRING_LITERAL) {
@@ -154,7 +170,8 @@ void Preprocessor::handle_line_directive() {
 
     if (token != '\n') return;
 
-    lexer.lineno(line - 1);
+    pending_line = line;
+    pending_column = column - 1;
     if (filename) {
         lexer.set_filename(filename);
     }

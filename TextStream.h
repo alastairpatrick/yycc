@@ -10,6 +10,7 @@ struct TextStream {
 
     ostream& stream;
     Location current_location;
+    bool need_newline{};
 
     void locate(const Location& location);
     void write(string_view text);

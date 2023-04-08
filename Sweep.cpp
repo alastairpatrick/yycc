@@ -15,7 +15,7 @@ struct DeclarationMarker {
     const IdentifierMap& identifiers;
     unordered_set<const Declaration*> todo;
     unordered_set<const Declaration*> marked;
-    map<string_view, pair<DeclaratorKind, Linkage>> declarator_names;
+    unordered_map<string_view, Declarator*> declarator_names;
 
     void mark() {
         for (auto node : declarations) {
@@ -55,10 +55,10 @@ struct DeclarationMarker {
 
             auto it = declarator_names.find(name);
             if (it == declarator_names.end()) {
-                declarator_names[name] = make_pair(kind, linkage);
+                declarator_names[name] = declarator;
             } else {
-                if (kind > it->second.first) {
-                    it->second = make_pair(kind, linkage);
+                if (kind > it->second->delegate->kind()) {
+                    it->second = declarator;
                 }
             }
 
@@ -74,22 +74,44 @@ struct DeclarationMarker {
         return marked.find(declaration) != marked.end();
     }
 
-    void output_declaration_directives(ostream& stream, const char* directive, DeclaratorKind kind, Linkage linkage) {
-        const int max_col = 120;
-        int col = max_col;
-        auto need_newline = false;
-        for (auto name : declarator_names) {
-            if (name.second.first != kind || name.second.second != linkage) continue;
-
-            if (col + name.first.length() > max_col) {
-                if (need_newline) stream << '\n';
-                need_newline = true;
-                col = 0;
-                stream << directive;
-            }
-            stream << ' ' << name.first;
+    void output_declaration_directives(TextStream& stream) {
+        vector<Declarator*> ordered_declarators;
+        for (auto p: declarator_names) {
+            ordered_declarators.push_back(p.second);
         }
-        if (need_newline) stream << '\n';
+
+        sort(ordered_declarators.begin(), ordered_declarators.end(), [](Declarator* a, Declarator* b) {
+            return a->location < b->location;
+        });
+
+        for (auto declarator: ordered_declarators) {
+            auto location = declarator->location;
+            stream.locate(location);
+
+            if (declarator->delegate->linkage() == Linkage::EXTERNAL) {
+                stream.write("#extern ");
+            } else {
+                stream.write("#static ");
+            }
+
+            switch (declarator->delegate->kind()) {
+              case DeclaratorKind::ENUM_CONSTANT:
+                stream.write("enum ");
+                break;
+              case DeclaratorKind::FUNCTION:
+                stream.write("function ");
+                break;
+              case DeclaratorKind::TYPE_DEF:
+                stream.write("type ");
+                break;
+              case DeclaratorKind::VARIABLE:
+                stream.write("variable ");
+                break;
+            }
+
+            stream.write(*declarator->identifier.name);
+            stream.write("\n");
+        }
     }
 };
 
@@ -108,12 +130,7 @@ void sweep(ostream& stream, const File& file) {
 
     TextStream text_stream(stream);
 
-    marker.output_declaration_directives(stream, "#static type", DeclaratorKind::TYPE_DEF, Linkage::NONE);
-    marker.output_declaration_directives(stream, "#static enum", DeclaratorKind::ENUM_CONSTANT, Linkage::NONE);
-    marker.output_declaration_directives(stream, "#static variable", DeclaratorKind::VARIABLE, Linkage::INTERNAL);
-    marker.output_declaration_directives(stream, "#extern variable", DeclaratorKind::VARIABLE, Linkage::EXTERNAL);
-    marker.output_declaration_directives(stream, "#static function", DeclaratorKind::FUNCTION, Linkage::INTERNAL);
-    marker.output_declaration_directives(stream, "#extern function", DeclaratorKind::FUNCTION, Linkage::EXTERNAL);
+    marker.output_declaration_directives(text_stream);
 
     vector<const Declaration*> marked(marker.marked.begin(), marker.marked.end());
     sort(marked.begin(), marked.end(), [](const Declaration* a, const Declaration* b) {
@@ -129,8 +146,10 @@ void sweep(ostream& stream, const File& file) {
         }
 
         while (token && preprocessor2.fragment.position < (declaration->fragment.position + declaration->fragment.length)) {
-            text_stream.locate(preprocessor2.location());
-            text_stream.write(preprocessor2.text());
+            if (token != '\n') {
+                text_stream.locate(preprocessor2.location());
+                text_stream.write(preprocessor2.text());
+            }
 
             token = TokenKind(preprocessor2.next_token());
         }
