@@ -696,10 +696,11 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, bo
     }
 
     function<const Type*(const Type*)> right_transform;
-    while (token) {
+    for (int depth = 0; token; ++depth) {
         if (consume('[')) {
+            // C99 6.7.5.3p7
             unsigned array_qualifier_set{};
-            if (scope == IdentifierScope::PROTOTYPE) {
+            if (depth == 0 && scope == IdentifierScope::PROTOTYPE) {
                 while (token == TOK_CONST || token == TOK_RESTRICT || token == TOK_VOLATILE || token == TOK_STATIC) {
                     if (token != TOK_STATIC) {
                         array_qualifier_set |= 1 << token;

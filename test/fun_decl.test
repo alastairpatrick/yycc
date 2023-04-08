@@ -50,10 +50,25 @@ EXPECT_AST
 [["fun", "E", ["F", "Si", ["P", "Si"]], "foo"]]
 
 
+BEGIN Function parameters of array type are adjusted to pointer (3)
+int foo(int x[2][3]);
+EXPECT_AST
+[["fun","E",["F","Si",["P",["A","Si",3]]],"foo"]]
+
+
 BEGIN Qualified array type parameter
 int foo(int x[const volatile restrict 1]);
 EXPECT_AST
 [["fun","E",["F","Si",["Qcrv",["P","Si"]]],"foo"]]
+
+
+BEGIN Error on qualified array type parameter that is not outer-most
+int foo(int x[2][const volatile restrict 3]);
+DECLARATIONS
+EXPECT_MESSAGE
+:1:18: error unexpected token 'const'
+EXPECT_AST
+[["fun","E",["F","Si",["P",["A","Si",3]]],"foo"]]
 
 
 BEGIN Static array type parameter
