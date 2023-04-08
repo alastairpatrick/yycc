@@ -8,6 +8,7 @@
 
 struct CodeGenContext;
 struct Declaration;
+struct DeclaratorKind;
 enum class IdentifierScope;
 enum class StorageClass;
 enum class Linkage;
@@ -28,18 +29,20 @@ ostream& operator<<(ostream& stream, const ASTNodeVector& items);
 
 struct Declarator: ASTNode {
     Declarator(const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location);
+    Declarator(const Declaration* declaration, const Identifier& identifier, const Location& location);
 
     const Declaration* declaration{};
-    const Type* type;
+    const Type* type{};
     Identifier identifier;
+    DeclaratorKind* kind{};
 
     // During preparse, "earlier" forms a linked list of Declarators corresponding to the same entity.
     // After preparse, "earlier" is always null and there is a single Declarator instance for each entity.
     Declarator* earlier{};
 
-    virtual const Type* to_type() const;
-    virtual void compose(Declarator* later);
-    virtual void print(ostream& stream) const = 0;
+    const Type* to_type() const;
+    void compose(Declarator* later);
+    void print(ostream& stream) const;
 };
 
 struct Statement: ASTNode {

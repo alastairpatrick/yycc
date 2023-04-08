@@ -58,23 +58,26 @@ void Parser::handle_declaration_directive() {
         if (pp_token == TOK_IDENTIFIER) {
             auto id = preprocessor.identifier();
 
-            Declarator* declarator{};
+            Declarator* declarator = new Declarator(declaration, &CompatibleType::it, id, preprocessor.location());
             switch (declarator_type_token) {
               case TOK_PP_ENUM:
-                declarator = new EnumConstant(declaration, id, preprocessor.location());
+                declarator->kind = new EnumConstant(declarator);
                 break;
               case TOK_PP_FUNCTION:
-                declarator = new Function(declaration, id, preprocessor.location());
+                declarator->kind = new Function(declarator);
                 break;
               case TOK_PP_TYPE:
-                declarator = new TypeDef(declaration, id, preprocessor.location());
+                declarator->kind = new TypeDef(declarator);
                 break;
               case TOK_PP_VARIABLE:
-                declarator = new Variable(declaration, id, preprocessor.location());
+                declarator->kind = new Variable(declarator);
+                break;
+              default:
+                preprocessor.unexpected_directive_token();
                 break;
             }
 
-            if (declarator) identifiers.add_declarator(declarator);
+            if (declarator->kind) identifiers.add_declarator(declarator);
         } else {
             preprocessor.unexpected_directive_token();
         }
@@ -730,7 +733,7 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, bo
                 auto param_declarator = parse_parameter_declarator();
 
                 // Functions are adjusted to variable of function pointer type.
-                auto variable = dynamic_cast<Variable*>(param_declarator);
+                auto variable = dynamic_cast<Variable*>(param_declarator->kind);
                 assert(variable);
 
                 declarator.params.push_back(variable);
@@ -808,27 +811,25 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         initializer = parse_expr(ASSIGN_PREC);
     }
 
-    Declarator* declarator{};
+    auto declarator = new Declarator(declaration, type, declarator_transform.identifier, location);
+
     if (is_function && declaration->storage_class != StorageClass::TYPEDEF) {
-        declarator = new Function(declaration,
-                                  static_cast<const FunctionType*>(type),
-                                  specifiers,
-                                  declarator_transform.identifier,
-                                  move(declarator_transform.params),
-                                  declarator_transform.body,
-                                  location);
+        declarator->kind = new Function(declarator,
+                                        specifiers,
+                                        move(declarator_transform.params),
+                                        declarator_transform.body);
     } else {
         if (specifiers & (1 << TOK_INLINE)) {
             message(Severity::ERROR, location) << "'inline' may only appear on function\n";
         }
 
         if (declaration->storage_class == StorageClass::TYPEDEF) {
-            declarator = new TypeDef(declaration, type, declarator_transform.identifier, location);
+            declarator->kind = new TypeDef(declarator);
         } else {
             if (!initializer && declaration->storage_class != StorageClass::EXTERN) {
                 initializer = new DefaultExpr(type, location);
             }
-            declarator = new Variable(declaration, type, declarator_transform.identifier, initializer, bit_field_size, location);
+            declarator->kind = new Variable(declarator, initializer, bit_field_size);
         }
     }
 
@@ -851,7 +852,12 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
     consume_identifier(identifier);
 
     Type* type{};
-    TypeDef* declarator{};
+    Declarator* declarator{};
+
+    if (!identifier.name->empty()) {
+        declarator = new Declarator(declaration, identifier, specifier_location);
+    }
+
     if (specifier != TOK_ENUM) {
         StructuredType* structured_type;
         if (specifier == TOK_STRUCT) {
@@ -861,8 +867,9 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
         }
         type = structured_type;
 
-        if (!identifier.name->empty()) {
-            declarator = new TypeDef(declaration, structured_type, identifier, specifier_location);
+        if (declarator) {
+            declarator->type = type;
+            declarator->kind = new TypeDef(declarator);
             identifiers.add_declarator(declarator);
         }
 
@@ -876,7 +883,8 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
                 // C11 6.7.2.1p13 anonymous structs and unions
                 if (dynamic_cast<const StructuredType*>(declaration->type) && declaration->declarators.empty()) {
-                    auto declarator = new Variable(declaration, declaration->type, Identifier(), nullptr, nullptr, declaration->location);
+                    auto declarator = new Declarator(declaration, declaration->type, Identifier(), declaration->location);
+                    declarator->kind = new Variable(declarator);
                     declaration->declarators.push_back(declarator);
                     // TODO: the declarators of the anonymous struct or union were added to a scope that has already been popped
                 }
@@ -891,8 +899,9 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
         auto enum_type = new EnumType(specifier_location);
         type = enum_type;
 
-        if (!identifier.name->empty()) {
-            declarator = new TypeDef(declaration, enum_type, identifier, specifier_location);
+        if (declarator) {
+            declarator->type = type;
+            declarator->kind = new TypeDef(declarator);
             identifiers.add_declarator(declarator);
         }
 
@@ -907,10 +916,6 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
             require('}');
         }
-    }
-
-    if (declarator) {
-        //type = new DeclarationType(declarator);
     }
 
     return type;
@@ -935,10 +940,12 @@ EnumConstant* Parser::parse_enum_constant(Declaration* declaration) {
         }
     }
 
-    auto declarator = new EnumConstant(declaration, identifier, constant, location);
+    auto declarator = new Declarator(declaration, identifier, location);
+    auto enum_constant = new EnumConstant(declarator, constant);
+    declarator->kind = enum_constant;
     if (!identifiers.add_declarator(declarator)) {
         return nullptr;
     }
 
-    return declarator;
+    return enum_constant;
 }

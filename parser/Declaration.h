@@ -50,11 +50,23 @@ struct Declaration: ASTNode {
     virtual void print(ostream& stream) const;
 };
 
-struct Variable: Declarator {
-    Variable(const Declaration* declaration, const Identifier& identifier, const Location& location);
-    Variable(const Declaration* declaration, const Type* type, const Identifier& identifier, Expr* initializer, Expr* bit_field_size, const Location& location);
+struct DeclaratorKind: ASTNode {
+    explicit DeclaratorKind(Declarator* declarator);
+    void operator=(const DeclaratorKind&) = delete;
 
-    StorageDuration storage_duration{};
+    Declarator* const declarator;
+
+    virtual const Type* to_type() const;
+    virtual void compose(Declarator* later) = 0;
+    virtual void print(ostream& stream) const = 0;
+};
+
+struct Variable: DeclaratorKind {
+    explicit Variable(Declarator* declarator);
+    Variable(Declarator* declarator, Expr* initializer, Expr* bit_field_size);
+
+    StorageDuration storage_duration() const;
+
     Expr* initializer{};
     Expr* bit_field_size{};
 
@@ -62,9 +74,9 @@ struct Variable: Declarator {
     virtual void print(ostream& stream) const;
 };
 
-struct Function: Declarator {
-    Function(const Declaration* declaration, const Identifier& identifier, const Location& location);
-    Function(const Declaration* declaration, const FunctionType* type, uint32_t specifiers, const Identifier& identifier, vector<Variable*>&& params, Statement* body, const Location& location);
+struct Function: DeclaratorKind {
+    explicit Function(Declarator* declarator);
+    Function(Declarator* declarator, uint32_t specifiers, vector<Variable*>&& params, Statement* body);
 
     vector<Variable*> params;
     Statement* body{};
@@ -75,20 +87,21 @@ struct Function: Declarator {
     virtual void print(ostream& stream) const;
 };
 
-struct TypeDef: Declarator {
-    TypeDef(const Declaration* declaration, const Identifier& identifier, const Location& location);
-    TypeDef(const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location);
+struct TypeDef: DeclaratorKind {
+    explicit TypeDef(Declarator* declarator);
 
     virtual const Type* to_type() const;
+    virtual void compose(Declarator* later);
     virtual void print(ostream& stream) const;
 };
 
-struct EnumConstant: Declarator {
-    EnumConstant(const Declaration* declaration, const Identifier& identifier, const Location& location);
-    EnumConstant(Declaration* declaration, const Identifier& identifier, Expr* constant, const Location& location);
+struct EnumConstant: DeclaratorKind {
+    explicit EnumConstant(Declarator* declarator);
+    EnumConstant(Declarator* declarator, Expr* constant);
 
     Expr* constant{};
 
+    virtual void compose(Declarator* later);
     virtual void print(ostream& stream) const;
 };
 

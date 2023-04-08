@@ -54,24 +54,25 @@ struct DeclarationMarker {
     void lookup(const Identifier& id) {
         auto declarator = identifiers.lookup_declarator(id);
         while (declarator) {
-            if (auto type_def = dynamic_cast<const TypeDef*>(declarator)) {
-                type_names.insert(*type_def->identifier.name);
+            auto name = *declarator->identifier.name;
+            if (auto type_def = dynamic_cast<const TypeDef*>(declarator->kind)) {
+                type_names.insert(name);
             }
-            if (auto enum_const = dynamic_cast<const EnumConstant*>(declarator)) {
-                enum_const_names.insert(*enum_const->identifier.name);
+            if (auto enum_const = dynamic_cast<const EnumConstant*>(declarator->kind)) {
+                enum_const_names.insert(name);
             }
-            if (auto variable = dynamic_cast<const Variable*>(declarator)) {
-                if (variable->declaration->linkage() == Linkage::INTERNAL) {
-                    static_variable_names.insert(*variable->identifier.name);
+            if (auto variable = dynamic_cast<const Variable*>(declarator->kind)) {
+                if (declarator->declaration->linkage() == Linkage::INTERNAL) {
+                    static_variable_names.insert(name);
                 } else {
-                    extern_variable_names.insert(*variable->identifier.name);
+                    extern_variable_names.insert(name);
                 }
             }
-            if (auto function = dynamic_cast<const Function*>(declarator)) {
-                if (function->declaration->linkage() == Linkage::INTERNAL) {
-                    static_function_names.insert(*function->identifier.name);
+            if (auto function = dynamic_cast<const Function*>(declarator->kind)) {
+                if (declarator->declaration->linkage() == Linkage::INTERNAL) {
+                    static_function_names.insert(name);
                 } else {
-                    extern_function_names.insert(*function->identifier.name);
+                    extern_function_names.insert(name);
                 }
             }
             if (!is_marked(declarator->declaration)) {
