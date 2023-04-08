@@ -1,18 +1,18 @@
 #include "FileCache.h"
 #include "parser/Declaration.h"
+#include "parser/IdentifierMap.h"
 #include "parser/Parser.h"
-#include "parser/SymbolMap.h"
 #include "preprocessor/Preprocessor.h"
 #include "TextStream.h"
 
 struct DeclarationMarker {
-    DeclarationMarker(string_view input, const ASTNodeVector& declarations, const SymbolMap& symbols)
-        : input(input), declarations(declarations), symbols(symbols) {
+    DeclarationMarker(string_view input, const ASTNodeVector& declarations, const IdentifierMap& identifiers)
+        : input(input), declarations(declarations), identifiers(identifiers) {
     }
 
     string_view input;
     const ASTNodeVector& declarations;
-    const SymbolMap& symbols;
+    const IdentifierMap& identifiers;
     unordered_set<const Declaration*> todo;
     unordered_set<const Declaration*> marked;
     set<string_view> type_names;
@@ -52,7 +52,7 @@ struct DeclarationMarker {
     }
 
     void lookup(const Identifier& id) {
-        auto declarator = symbols.lookup_declarator(id);
+        auto declarator = identifiers.lookup_declarator(id);
         while (declarator) {
             if (auto type_def = dynamic_cast<const TypeDef*>(declarator)) {
                 type_names.insert(*type_def->identifier.name);
@@ -105,11 +105,11 @@ static void output_declaration_directives(ostream& stream, const char* directive
 void sweep(ostream& stream, const File& file) {
     Preprocessor preprocessor1(file.text, true);
 
-    SymbolMap symbols(true);
-    Parser parser(preprocessor1, symbols);
+    IdentifierMap identifiers(true);
+    Parser parser(preprocessor1, identifiers);
     auto declarations = parser.parse();
 
-    DeclarationMarker marker(preprocessor1.output(), declarations, symbols);
+    DeclarationMarker marker(preprocessor1.output(), declarations, identifiers);
     marker.mark();
 
     Preprocessor preprocessor2(preprocessor1.output(), false);

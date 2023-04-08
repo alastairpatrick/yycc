@@ -73,19 +73,19 @@ static ostream& print_error(const string& name, const string& file, int line) {
     return cerr;
 }
 
-Expr* parse_expr(SymbolMap& symbols, const Input& input) {
+Expr* parse_expr(IdentifierMap& identifiers, const Input& input) {
     Preprocessor preprocessor(false);
     preprocessor.in(input);
-    Parser parser(preprocessor, symbols);
+    Parser parser(preprocessor, identifiers);
     auto result = parser.parse_standalone_expr();
     if (!parser.check_eof()) return nullptr;
     return result;
 }
 
-ASTNodeVector parse_declarations(SymbolMap& symbols, const Input& input) {
-    Preprocessor preprocessor(symbols.preparse);
+ASTNodeVector parse_declarations(IdentifierMap& identifiers, const Input& input) {
+    Preprocessor preprocessor(identifiers.preparse);
     preprocessor.in(input);
-    Parser parser(preprocessor, symbols);
+    Parser parser(preprocessor, identifiers);
     return parser.parse();
 }
 
@@ -95,12 +95,12 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
     //try {
         stringstream message_stream;
         TranslationUnitContext tu_context(message_stream);
-        SymbolMap symbols(test_type == TestType::PREPARSE);
+        IdentifierMap identifiers(test_type == TestType::PREPARSE);
 
         const Type* type{};
         stringstream output_stream;
         if (test_type == TestType::EXPRESSION) {
-            auto expr = parse_expr(symbols, sections[INPUT]);
+            auto expr = parse_expr(identifiers, sections[INPUT]);
             if (!sections[EXPECT_TYPE].empty()) {
                 type = expr->get_type();
             }
@@ -110,7 +110,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
             file.text = sections[INPUT];
             sweep(output_stream, file);
         } else {
-            auto statements = parse_declarations(symbols, sections[INPUT]);
+            auto statements = parse_declarations(identifiers, sections[INPUT]);
             output_stream << statements;
         }
 
@@ -131,7 +131,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
 
         if (!sections[EXPECT_GLOBALS].empty()) {
             vector<Declarator*> declarators;
-            for (auto& p : symbols.scopes.front().declarators) {
+            for (auto& p : identifiers.scopes.front().declarators) {
                 declarators.push_back(p.second);
             }
 

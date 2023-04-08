@@ -3,10 +3,9 @@
 #include "CodeGenContext.h"
 #include "Constant.h"
 #include "Declaration.h"
-#include "TranslationUnitContext.h"
-#include "Declaration.h"
+#include "IdentifierMap.h"
 #include "InternedString.h"
-#include "SymbolMap.h"
+#include "TranslationUnitContext.h"
 
 // Type codes
 // A array
@@ -36,7 +35,7 @@ const Type* Type::promote() const {
     return this;
 }
 
-const Type* Type::resolve(SymbolMap& symbols) const {
+const Type* Type::resolve(IdentifierMap& identifiers) const {
     return this;
 }
 
@@ -347,8 +346,8 @@ const Type* convert_arithmetic(const Type* left, const Type* right) {
 
 #pragma region PointerType
 
-const Type* PointerType::resolve(SymbolMap& symbols) const {
-    return base_type->resolve(symbols)->pointer_to();
+const Type* PointerType::resolve(IdentifierMap& identifiers) const {
+    return base_type->resolve(identifiers)->pointer_to();
 }
 
 LLVMTypeRef PointerType::llvm_type() const {
@@ -379,8 +378,8 @@ const Type* ArrayType::compose(const Type* o) const {
     return nullptr;
 }
 
-const Type* ArrayType::resolve(SymbolMap& symbols) const {
-    auto e = element_type->resolve(symbols);
+const Type* ArrayType::resolve(IdentifierMap& identifiers) const {
+    auto e = element_type->resolve(identifiers);
 
     // TODO: evaluate constant size expression and return canonical representation of array type.
     assert(false);
@@ -431,8 +430,8 @@ const Type* QualifiedType::unqualified() const {
     return base_type;
 }
 
-const Type* QualifiedType::resolve(SymbolMap& symbols) const {
-    return QualifiedType::of(base_type->resolve(symbols), qualifier_flags);
+const Type* QualifiedType::resolve(IdentifierMap& identifiers) const {
+    return QualifiedType::of(base_type->resolve(identifiers), qualifier_flags);
 }
 
 LLVMTypeRef QualifiedType::llvm_type() const {
@@ -478,11 +477,11 @@ const FunctionType* FunctionType::of(const Type* return_type, std::vector<const 
     return type;
 }
 
-const Type* FunctionType::resolve(SymbolMap& symbols) const {
-    auto resolved_return_type = return_type->resolve(symbols);
+const Type* FunctionType::resolve(IdentifierMap& identifiers) const {
+    auto resolved_return_type = return_type->resolve(identifiers);
     auto resolved_param_types(parameter_types);
     for (auto& param_type : resolved_param_types) {
-        param_type = param_type->resolve(symbols);
+        param_type = param_type->resolve(identifiers);
     }
     return FunctionType::of(resolved_return_type, resolved_param_types, variadic);
 }

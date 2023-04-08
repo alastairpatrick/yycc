@@ -1,5 +1,5 @@
-#ifndef AST_SYMBOL_MAP_H
-#define AST_SYMBOL_MAP_H
+#ifndef PARSER_IDENTIFIER_MAP_H
+#define PARSER_IDENTIFIER_MAP_H
 
 #include "ASTNode.h"
 #include "Type.h"
@@ -7,9 +7,9 @@
 struct Declarator;
 struct Mystery;
 
-struct SymbolMap {
-    explicit SymbolMap(bool preparse);
-    void operator=(const SymbolMap&) = delete;
+struct IdentifierMap {
+    explicit IdentifierMap(bool preparse);
+    void operator=(const IdentifierMap&) = delete;
 
     struct Scope {
         unordered_map<InternedString, Declarator*> declarators;

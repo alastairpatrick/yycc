@@ -2,8 +2,8 @@
 #define AST_PARSER_H
 
 #include "AssocPrec.h"
+#include "IdentifierMap.h"
 #include "preprocessor/Preprocessor.h"
-#include "SymbolMap.h"
 
 struct CompoundStatement;
 struct Declarator;
@@ -18,7 +18,7 @@ struct DeclaratorTransform {
 };
 
 struct Parser {
-    Parser(Preprocessor& preprocessor, SymbolMap& symbols);
+    Parser(Preprocessor& preprocessor, IdentifierMap& identifiers);
     void operator=(const Parser&) = delete;
 
     Expr* parse_standalone_expr();  // for testing
@@ -27,7 +27,7 @@ struct Parser {
 
 private:
     Preprocessor& preprocessor;
-    SymbolMap& symbols;
+    IdentifierMap& identifiers;
     TokenKind token = TOK_NUM;
     const bool preparse;
 

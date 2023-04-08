@@ -8,7 +8,7 @@
 #include "Message.h"
 #include "Statement.h"
 
-Parser::Parser(Preprocessor& preprocessor, SymbolMap& symbols): preprocessor(preprocessor), symbols(symbols), preparse(preprocessor.preparse) {
+Parser::Parser(Preprocessor& preprocessor, IdentifierMap& identifiers): preprocessor(preprocessor), identifiers(identifiers), preparse(preprocessor.preparse) {
     consume();
 }
 
@@ -74,7 +74,7 @@ void Parser::handle_declaration_directive() {
                 break;
             }
 
-            if (declarator) symbols.add_declarator(declarator);
+            if (declarator) identifiers.add_declarator(declarator);
         } else {
             preprocessor.unexpected_directive_token();
         }
@@ -289,7 +289,7 @@ Expr* Parser::parse_cast_expr() {
             break;
         }
         else if (token == TOK_IDENTIFIER) {
-            Declarator* declarator = symbols.lookup_declarator(preprocessor.identifier());
+            Declarator* declarator = identifiers.lookup_declarator(preprocessor.identifier());
             if (declarator) {
                 // TokenKind would have to be TOK_TYPEDEF_IDENTIFIER for declarator to be a typedef.
                 assert(!dynamic_cast<TypeDef*>(declarator));
@@ -378,7 +378,7 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
           } case TOK_IDENTIFIER: {
               if ((specifier_set & type_specifier_mask) == 0) {
                   const Type* typedef_type;
-                  typedef_type = symbols.lookup_type(preprocessor.identifier());
+                  typedef_type = identifiers.lookup_type(preprocessor.identifier());
                   if (!typedef_type) {
                       if (scope == IdentifierScope::BLOCK) break;
 
@@ -618,7 +618,7 @@ CompoundStatement* Parser::parse_compound_statement() {
 
         statement = new CompoundStatement(move(list), loc);
     } else {
-        symbols.push_scope();
+        identifiers.push_scope();
 
         Location loc;
         require('{', &loc);
@@ -629,7 +629,7 @@ CompoundStatement* Parser::parse_compound_statement() {
 
         // Must pop scope before consuming '}' in case '}' is immediately followed by an identifier that the
         // preprocessor must correctly identify as TOK_IDENTIFIER or TOK_TYPEDEF_IDENTIFIER.
-        symbols.pop_scope();
+        identifiers.pop_scope();
 
         require('}');
 
@@ -722,7 +722,7 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, bo
             };
 
         } else if (consume('(')) {
-            symbols.push_scope();
+            identifiers.push_scope();
 
             vector<const Type*> param_types;
             bool seen_void = false;
@@ -756,7 +756,7 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, bo
                 declarator.body = parse_compound_statement();
             }
 
-            symbols.pop_scope();
+            identifiers.pop_scope();
         } else {
             break;
         }
@@ -833,7 +833,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     }
 
     if (!declarator->identifier.name->empty()) {
-        if (!symbols.add_declarator(declarator)) {
+        if (!identifiers.add_declarator(declarator)) {
             return nullptr;
         }
     }
@@ -863,12 +863,12 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
         if (!identifier.name->empty()) {
             declarator = new TypeDef(declaration, structured_type, identifier, specifier_location);
-            symbols.add_declarator(declarator);
+            identifiers.add_declarator(declarator);
         }
 
         if (consume('{')) {
             structured_type->complete = true;
-            symbols.push_scope();
+            identifiers.push_scope();
 
             while (token && token != '}') {
                 auto declaration = dynamic_cast<Declaration*>(parse_declaration_or_statement(IdentifierScope::STRUCTURED));
@@ -884,7 +884,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 structured_type->members.push_back(declaration);
             }
 
-            symbols.pop_scope();
+            identifiers.pop_scope();
             require('}');
         }
     } else {
@@ -893,7 +893,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
         if (!identifier.name->empty()) {
             declarator = new TypeDef(declaration, enum_type, identifier, specifier_location);
-            symbols.add_declarator(declarator);
+            identifiers.add_declarator(declarator);
         }
 
         if (consume('{')) {
@@ -936,7 +936,7 @@ EnumConstant* Parser::parse_enum_constant(Declaration* declaration) {
     }
 
     auto declarator = new EnumConstant(declaration, identifier, constant, location);
-    if (!symbols.add_declarator(declarator)) {
+    if (!identifiers.add_declarator(declarator)) {
         return nullptr;
     }
 

@@ -1,7 +1,7 @@
-#include "SymbolMap.h"
+#include "IdentifierMap.h"
 #include "Declaration.h"
 
-Declarator* SymbolMap::lookup_declarator(const Identifier& identifier) const {
+Declarator* IdentifierMap::lookup_declarator(const Identifier& identifier) const {
     for (auto& scope : scopes) {
         auto it = scope.declarators.find(identifier.name);
         if (it != scope.declarators.end()) {
@@ -12,14 +12,14 @@ Declarator* SymbolMap::lookup_declarator(const Identifier& identifier) const {
     return nullptr;
 }
 
-const Type* SymbolMap::lookup_type(const Identifier& identifier) const {
+const Type* IdentifierMap::lookup_type(const Identifier& identifier) const {
     auto declarator = lookup_declarator(identifier);
     if (!declarator) return nullptr;
 
     return declarator->to_type();
 }
 
-bool SymbolMap::add_declarator(Declarator* declarator) {
+bool IdentifierMap::add_declarator(Declarator* declarator) {
     bool result = true;
     auto declaration = declarator->declaration;
 
@@ -34,7 +34,7 @@ bool SymbolMap::add_declarator(Declarator* declarator) {
     return result;
 }
 
-bool SymbolMap::add_declarator_to_scope(Scope& scope, Declarator* declarator) {
+bool IdentifierMap::add_declarator_to_scope(Scope& scope, Declarator* declarator) {
     auto it = scope.declarators.find(declarator->identifier.name);
     if (it != scope.declarators.end()) {
         if (preparse) {
@@ -51,14 +51,14 @@ bool SymbolMap::add_declarator_to_scope(Scope& scope, Declarator* declarator) {
     return true;
 }
 
-void SymbolMap::push_scope() {
+void IdentifierMap::push_scope() {
     scopes.push_front(Scope());
 }
 
-void SymbolMap::pop_scope() {
+void IdentifierMap::pop_scope() {
     scopes.pop_front();
 }
 
-SymbolMap::SymbolMap(bool preparse): preparse(preparse) {
+IdentifierMap::IdentifierMap(bool preparse): preparse(preparse) {
     push_scope();
 }

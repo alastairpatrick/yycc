@@ -8,7 +8,7 @@
 void sweep(ostream& stream, const File& file);
 
 struct TranslationInput {
-    explicit TranslationInput(SymbolMap& symbols, File&& f): file(f), preprocessor(file.text, false), parser(preprocessor, symbols) {
+    explicit TranslationInput(IdentifierMap& identifiers, File&& f): file(f), preprocessor(file.text, false), parser(preprocessor, identifiers) {
     }
     void operator=(const TranslationInput&) = delete;
 
@@ -21,7 +21,7 @@ int main(int argc, const char* argv[]) {
     FileCache file_cache(true);
 
     TranslationUnitContext context(cerr);
-    SymbolMap symbols(false);
+    IdentifierMap identifiers(false);
     list<TranslationInput> inputs;
     for (auto i = 1; i < argc; ++i) {
         auto in_file = FileCache::it->read(argv[i]);
@@ -29,7 +29,7 @@ int main(int argc, const char* argv[]) {
         if (!in_file.exists) {
             message(Severity::ERROR, Location{1, 1, intern_string(argv[i])}) << "could not open input file\n";
         } else {
-            inputs.emplace_back(symbols, move(in_file));
+            inputs.emplace_back(identifiers, move(in_file));
         }
     }
 

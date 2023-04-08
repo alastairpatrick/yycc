@@ -26,9 +26,9 @@ add_library(lang_lib STATIC
     "parser/Constant.cpp"
     "parser/Declaration.cpp"
     "parser/Expr.cpp"
+    "parser/IdentifierMap.cpp"
     "parser/Parser.cpp"
     "parser/Statement.cpp"
-    "parser/SymbolMap.cpp"
     "parser/Type.cpp"
     "parser/TypeContext.cpp"
 

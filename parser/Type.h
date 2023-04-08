@@ -12,7 +12,7 @@ struct EnumConstant;
 struct Expr;
 enum class IdentifierScope;
 struct PointerType;
-struct SymbolMap;
+struct IdentifierMap;
 struct TypeDef;
 
 struct Type: Printable {
@@ -29,7 +29,7 @@ struct Type: Printable {
 
     virtual const Type* promote() const;
 
-    virtual const Type* resolve(SymbolMap& scope) const;
+    virtual const Type* resolve(IdentifierMap& scope) const;
 
     virtual LLVMValueRef convert_to_type(CodeGenContext* context, LLVMValueRef value, const Type* to_type) const;
 
@@ -116,7 +116,7 @@ const Type* convert_arithmetic(const Type* left, const Type* right);
 struct PointerType: Type {
     const Type* const base_type;
 
-    virtual const Type* resolve(SymbolMap& scope) const;
+    virtual const Type* resolve(IdentifierMap& scope) const;
 
     virtual LLVMTypeRef llvm_type() const;
 
@@ -137,7 +137,7 @@ struct ArrayType: Type {
 
     virtual const Type* compose(const Type* other) const;
 
-    virtual const Type* resolve(SymbolMap& scope) const;
+    virtual const Type* resolve(IdentifierMap& scope) const;
 
     virtual LLVMTypeRef llvm_type() const;
 
@@ -158,7 +158,7 @@ struct QualifiedType: Type {
     virtual unsigned qualifiers() const;
     virtual const Type* unqualified() const;
 
-    virtual const Type* resolve(SymbolMap& scope) const;
+    virtual const Type* resolve(IdentifierMap& scope) const;
 
     virtual LLVMTypeRef llvm_type() const;
 
@@ -176,7 +176,7 @@ struct FunctionType: Type {
     const std::vector<const Type*> parameter_types;
     const bool variadic;
 
-    virtual const Type* resolve(SymbolMap& scope) const;
+    virtual const Type* resolve(IdentifierMap& scope) const;
 
     virtual LLVMTypeRef llvm_type() const;
 
