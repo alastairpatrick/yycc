@@ -109,6 +109,38 @@ EXPECT_AST
 ,["declare","V"]]
 
 
+BEGIN Function initially declared with a function-typed typedef
+typedef void F(int x);
+F foo;
+void foo(int x) {
+}
+PREPARSE
+EXPECT_AST
+[["typedef",["F","V","Si"],"F"]
+,["fun","E",["F","V","Si"],"foo"]
+,["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]]
+
+
+BEGIN Function declared with a function-typed typedef in another translation unit (1)
+F foo;  // F typedef in another translation unit
+void foo(int x) {
+}
+PREPARSE
+EXPECT_AST
+[["var","ES","NF","foo",""]
+,["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]]
+
+
+BEGIN Function declared with a function-typed typedef in another translation unit (2)
+void foo(int x) {
+}
+F foo;  // F typedef in another translation unit
+PREPARSE
+EXPECT_AST
+[["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]
+,["var","ES","NF","foo",""]]
+
+
 BEGIN Error on function redefinition
 void foo(int x) {
 }

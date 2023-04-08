@@ -15,12 +15,7 @@ struct DeclarationMarker {
     const IdentifierMap& identifiers;
     unordered_set<const Declaration*> todo;
     unordered_set<const Declaration*> marked;
-    set<string_view> type_names;
-    set<string_view> enum_const_names;
-    set<string_view> static_variable_names;
-    set<string_view> extern_variable_names;
-    set<string_view> static_function_names;
-    set<string_view> extern_function_names;
+    map<string_view, pair<DeclaratorKind, Linkage>> declarator_names;
 
     void mark() {
         for (auto node : declarations) {
@@ -55,29 +50,22 @@ struct DeclarationMarker {
         auto declarator = identifiers.lookup_declarator(id);
         while (declarator) {
             auto name = *declarator->identifier.name;
-            if (auto type_def = declarator->type_def()) {
-                type_names.insert(name);
-            }
-            if (auto enum_const = declarator->enum_constant()) {
-                enum_const_names.insert(name);
-            }
-            if (auto variable = declarator->variable()) {
-                if (declarator->declaration->linkage() == Linkage::INTERNAL) {
-                    static_variable_names.insert(name);
-                } else {
-                    extern_variable_names.insert(name);
+            auto kind = declarator->delegate->kind();
+            auto linkage = declarator->delegate->linkage();
+
+            auto it = declarator_names.find(name);
+            if (it == declarator_names.end()) {
+                declarator_names[name] = make_pair(kind, linkage);
+            } else {
+                if (kind > it->second.first) {
+                    it->second = make_pair(kind, linkage);
                 }
             }
-            if (auto function = declarator->function()) {
-                if (declarator->declaration->linkage() == Linkage::INTERNAL) {
-                    static_function_names.insert(name);
-                } else {
-                    extern_function_names.insert(name);
-                }
-            }
+
             if (!is_marked(declarator->declaration)) {
                 todo.insert(declarator->declaration);
             }
+
             declarator = declarator->earlier;
         }
     }
@@ -85,23 +73,25 @@ struct DeclarationMarker {
     bool is_marked(const Declaration* declaration) const {
         return marked.find(declaration) != marked.end();
     }
-};
 
-static void output_declaration_directives(ostream& stream, const char* directive, const set<string_view>& names) {
-    const int max_col = 120;
-    int col = max_col;
-    auto need_newline = false;
-    for (auto name : names) {
-        if (col + name.length() > max_col) {
-            if (need_newline) stream << '\n';
-            need_newline = true;
-            col = 0;
-            stream << directive;
+    void output_declaration_directives(ostream& stream, const char* directive, DeclaratorKind kind, Linkage linkage) {
+        const int max_col = 120;
+        int col = max_col;
+        auto need_newline = false;
+        for (auto name : declarator_names) {
+            if (name.second.first != kind || name.second.second != linkage) continue;
+
+            if (col + name.first.length() > max_col) {
+                if (need_newline) stream << '\n';
+                need_newline = true;
+                col = 0;
+                stream << directive;
+            }
+            stream << ' ' << name.first;
         }
-        stream << ' ' << name;
+        if (need_newline) stream << '\n';
     }
-    if (need_newline) stream << '\n';
-}
+};
 
 void sweep(ostream& stream, const File& file) {
     Preprocessor preprocessor1(file.text, true);
@@ -118,12 +108,12 @@ void sweep(ostream& stream, const File& file) {
 
     TextStream text_stream(stream);
 
-    output_declaration_directives(stream, "#static type", marker.type_names);
-    output_declaration_directives(stream, "#static enum", marker.enum_const_names);
-    output_declaration_directives(stream, "#static variable", marker.static_variable_names);
-    output_declaration_directives(stream, "#extern variable", marker.extern_variable_names);
-    output_declaration_directives(stream, "#static function", marker.static_function_names);
-    output_declaration_directives(stream, "#extern function", marker.extern_function_names);
+    marker.output_declaration_directives(stream, "#static type", DeclaratorKind::TYPE_DEF, Linkage::NONE);
+    marker.output_declaration_directives(stream, "#static enum", DeclaratorKind::ENUM_CONSTANT, Linkage::NONE);
+    marker.output_declaration_directives(stream, "#static variable", DeclaratorKind::VARIABLE, Linkage::INTERNAL);
+    marker.output_declaration_directives(stream, "#extern variable", DeclaratorKind::VARIABLE, Linkage::EXTERNAL);
+    marker.output_declaration_directives(stream, "#static function", DeclaratorKind::FUNCTION, Linkage::INTERNAL);
+    marker.output_declaration_directives(stream, "#extern function", DeclaratorKind::FUNCTION, Linkage::EXTERNAL);
 
     vector<const Declaration*> marked(marker.marked.begin(), marker.marked.end());
     sort(marked.begin(), marked.end(), [](const Declaration* a, const Declaration* b) {

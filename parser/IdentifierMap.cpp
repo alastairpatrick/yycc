@@ -39,6 +39,7 @@ bool IdentifierMap::add_declarator_to_scope(Scope& scope, Declarator* declarator
     if (it != scope.declarators.end()) {
         if (preparse) {
             declarator->earlier = it->second;
+            it->second = declarator;
         } else {
             it->second->compose(declarator);
             declarator = it->second;

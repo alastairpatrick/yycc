@@ -39,8 +39,6 @@ struct Declaration: ASTNode {
     Declaration(IdentifierScope scope, StorageClass storage_class, const Type* type, const Location& location);
     Declaration(IdentifierScope scope, const Location& location);
 
-    Linkage linkage() const;
-
     Location location;
     Fragment fragment;
     IdentifierScope scope{};
@@ -52,18 +50,31 @@ struct Declaration: ASTNode {
     virtual void print(ostream& stream) const;
 };
 
-struct DeclaratorKind: ASTNode {
-    explicit DeclaratorKind(Declarator* declarator);
-    void operator=(const DeclaratorKind&) = delete;
+// Most important is functions must have priority over variables so, when generating or reconciling #static and #extern identifiers,
+// function is preferred in cases of ambiguity, e.g.:
+// F foo;           // "F" typedef of funtion type in another translation unit. "foo" looks like a variable.
+// void foo() {}    // Now "foo" is determined to be a function and type of F can be inferred.
+enum class DeclaratorKind {
+    VARIABLE,
+    FUNCTION,
+    ENUM_CONSTANT,
+    TYPE_DEF,
+};
+
+struct DeclaratorDelegate: ASTNode {
+    explicit DeclaratorDelegate(Declarator* declarator);
+    void operator=(const DeclaratorDelegate&) = delete;
 
     Declarator* const declarator;
 
+    virtual DeclaratorKind kind() const = 0;
+    virtual Linkage linkage() const;
     virtual const Type* to_type() const;
     virtual void compose(Declarator* later) = 0;
     virtual void print(ostream& stream) const = 0;
 };
 
-struct Variable: DeclaratorKind {
+struct Variable: DeclaratorDelegate {
     explicit Variable(Declarator* declarator);
     Variable(Declarator* declarator, Expr* initializer, Expr* bit_field_size);
 
@@ -72,11 +83,13 @@ struct Variable: DeclaratorKind {
     Expr* initializer{};
     Expr* bit_field_size{};
 
+    virtual DeclaratorKind kind() const;
+    virtual Linkage linkage() const;
     virtual void compose(Declarator* later);
     virtual void print(ostream& stream) const;
 };
 
-struct Function: DeclaratorKind {
+struct Function: DeclaratorDelegate {
     explicit Function(Declarator* declarator);
     Function(Declarator* declarator, uint32_t specifiers, vector<Variable*>&& params, Statement* body);
 
@@ -85,24 +98,28 @@ struct Function: DeclaratorKind {
 
     bool inline_definition{};
 
+    virtual DeclaratorKind kind() const;
+    virtual Linkage linkage() const;
     virtual void compose(Declarator* later);
     virtual void print(ostream& stream) const;
 };
 
-struct TypeDef: DeclaratorKind {
+struct TypeDef: DeclaratorDelegate {
     explicit TypeDef(Declarator* declarator);
 
+    virtual DeclaratorKind kind() const;
     virtual const Type* to_type() const;
     virtual void compose(Declarator* later);
     virtual void print(ostream& stream) const;
 };
 
-struct EnumConstant: DeclaratorKind {
+struct EnumConstant: DeclaratorDelegate {
     explicit EnumConstant(Declarator* declarator);
     EnumConstant(Declarator* declarator, Expr* constant);
 
     Expr* constant{};
 
+    virtual DeclaratorKind kind() const;
     virtual void compose(Declarator* later);
     virtual void print(ostream& stream) const;
 };

@@ -45,6 +45,7 @@ using std::hexfloat;
 using std::ios_base;
 using std::istream;
 using std::list;
+using std::make_pair;
 using std::map;
 using std::max;
 using std::min;

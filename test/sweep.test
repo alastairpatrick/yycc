@@ -130,3 +130,29 @@ int foo(void) {
     return GREEN;
 }
 END
+
+
+BEGIN On ambiguity between variable and function type, generate #extern function (1)
+F foo;  // typedef F in another translation unit
+void foo() {
+}
+PREPROCESS
+EXPECT_TEXT
+#extern function foo
+F foo;
+void foo() {
+}
+END
+
+
+BEGIN On ambiguity between variable and function type, generate #extern function (1)
+void foo() {
+}
+F foo;  // typedef F in another translation unit
+PREPROCESS
+EXPECT_TEXT
+#extern function foo
+void foo() {
+}
+F foo;
+END

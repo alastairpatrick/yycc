@@ -9,6 +9,7 @@
 #include "Statement.h"
 
 Parser::Parser(Preprocessor& preprocessor, IdentifierMap& identifiers): preprocessor(preprocessor), identifiers(identifiers), preparse(preprocessor.preparse) {
+    assert(identifiers.preparse == preprocessor.preparse);
     consume();
 }
 
@@ -61,23 +62,23 @@ void Parser::handle_declaration_directive() {
             Declarator* declarator = new Declarator(declaration, &CompatibleType::it, id, preprocessor.location());
             switch (declarator_type_token) {
               case TOK_PP_ENUM:
-                declarator->kind = new EnumConstant(declarator);
+                declarator->delegate = new EnumConstant(declarator);
                 break;
               case TOK_PP_FUNCTION:
-                declarator->kind = new Function(declarator);
+                declarator->delegate = new Function(declarator);
                 break;
               case TOK_PP_TYPE:
-                declarator->kind = new TypeDef(declarator);
+                declarator->delegate = new TypeDef(declarator);
                 break;
               case TOK_PP_VARIABLE:
-                declarator->kind = new Variable(declarator);
+                declarator->delegate = new Variable(declarator);
                 break;
               default:
                 preprocessor.unexpected_directive_token();
                 break;
             }
 
-            if (declarator->kind) identifiers.add_declarator(declarator);
+            if (declarator->delegate) identifiers.add_declarator(declarator);
         } else {
             preprocessor.unexpected_directive_token();
         }
@@ -805,7 +806,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     auto declarator = new Declarator(declaration, type, declarator_transform.identifier, location);
 
     if (is_function && declaration->storage_class != StorageClass::TYPEDEF) {
-        declarator->kind = new Function(declarator,
+        declarator->delegate = new Function(declarator,
                                         specifiers,
                                         move(declarator_transform.params),
                                         declarator_transform.body);
@@ -815,12 +816,12 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         }
 
         if (declaration->storage_class == StorageClass::TYPEDEF) {
-            declarator->kind = new TypeDef(declarator);
+            declarator->delegate = new TypeDef(declarator);
         } else {
             if (!initializer && declaration->storage_class != StorageClass::EXTERN) {
                 initializer = new DefaultExpr(type, location);
             }
-            declarator->kind = new Variable(declarator, initializer, bit_field_size);
+            declarator->delegate = new Variable(declarator, initializer, bit_field_size);
         }
     }
 
@@ -860,7 +861,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
         if (declarator) {
             declarator->type = type;
-            declarator->kind = new TypeDef(declarator);
+            declarator->delegate = new TypeDef(declarator);
             identifiers.add_declarator(declarator);
         }
 
@@ -875,7 +876,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 // C11 6.7.2.1p13 anonymous structs and unions
                 if (dynamic_cast<const StructuredType*>(declaration->type) && declaration->declarators.empty()) {
                     auto declarator = new Declarator(declaration, declaration->type, Identifier(), declaration->location);
-                    declarator->kind = new Variable(declarator);
+                    declarator->delegate = new Variable(declarator);
                     declaration->declarators.push_back(declarator);
                     // TODO: the declarators of the anonymous struct or union were added to a scope that has already been popped
                 }
@@ -892,7 +893,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
         if (declarator) {
             declarator->type = type;
-            declarator->kind = new TypeDef(declarator);
+            declarator->delegate = new TypeDef(declarator);
             identifiers.add_declarator(declarator);
         }
 
@@ -933,7 +934,7 @@ EnumConstant* Parser::parse_enum_constant(Declaration* declaration) {
 
     auto declarator = new Declarator(declaration, identifier, location);
     auto enum_constant = new EnumConstant(declarator, constant);
-    declarator->kind = enum_constant;
+    declarator->delegate = enum_constant;
     if (!identifiers.add_declarator(declarator)) {
         return nullptr;
     }

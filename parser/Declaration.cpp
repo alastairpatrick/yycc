@@ -37,15 +37,6 @@ Declaration::Declaration(IdentifierScope scope, const Location& location)
     : location(location), scope(scope) {
 }
 
-Linkage Declaration::linkage() const {
-    if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
-        return Linkage::INTERNAL;
-    } else if (storage_class == StorageClass::EXTERN || scope == IdentifierScope::FILE) {
-        return Linkage::EXTERNAL;
-    } else {
-        return Linkage::NONE;
-    }
-}
 
 void Declaration::print(ostream& stream) const {
     if (declarators.size() == 0) {
@@ -73,24 +64,24 @@ Declarator::Declarator(const Declaration* declaration, const Identifier &identif
 }
 
 EnumConstant* Declarator::enum_constant() {
-    return dynamic_cast<EnumConstant*>(kind);
+    return dynamic_cast<EnumConstant*>(delegate);
 }
 
 Function* Declarator::function() {
-    return dynamic_cast<Function*>(kind);
+    return dynamic_cast<Function*>(delegate);
 }
 
 Variable* Declarator::variable() {
-    return dynamic_cast<Variable*>(kind);
+    return dynamic_cast<Variable*>(delegate);
 }
 
 TypeDef* Declarator::type_def() {
-    return dynamic_cast<TypeDef*>(kind);
+    return dynamic_cast<TypeDef*>(delegate);
 }
-    
+
 const Type* Declarator::to_type() const {
-    if (!kind) return nullptr;
-    return kind->to_type();
+    if (!delegate) return nullptr;
+    return delegate->to_type();
 }
 
 void Declarator::compose(Declarator* later) {
@@ -104,40 +95,44 @@ void Declarator::compose(Declarator* later) {
         }
     }
 
-    if (later->kind && kind && typeid(*later->kind) != typeid(*kind)) {
+    if (later->delegate && delegate && typeid(*later->delegate) != typeid(*delegate)) {
         message(Severity::ERROR, later->location) << "redeclaration of '" << identifier << "' with different type\n";
         message(Severity::INFO, location) << "see prior declaration\n";
     }
 
-    if (later->declaration->linkage() == Linkage::INTERNAL && declaration->linkage() != Linkage::INTERNAL) {
+    if (later->delegate->linkage() == Linkage::INTERNAL && delegate->linkage() != Linkage::INTERNAL) {
         message(Severity::ERROR, later->location) << "static declaration of '" << identifier << "' follows non-static declaration\n";
         message(Severity::INFO, location) << "see prior declaration\n";
     }
 
-    if (kind) {
-        kind->compose(later);
+    if (delegate) {
+        delegate->compose(later);
     } else {
-        kind = later->kind;
+        delegate = later->delegate;
     }
 }
 
 void Declarator::print(ostream& stream) const {
-    kind->print(stream);
+    delegate->print(stream);
 }
 
-DeclaratorKind::DeclaratorKind(Declarator* declarator): declarator(declarator) {
+DeclaratorDelegate::DeclaratorDelegate(Declarator* declarator): declarator(declarator) {
 }
 
-const Type* DeclaratorKind::to_type() const {
+Linkage DeclaratorDelegate::linkage() const {
+    return Linkage::NONE;
+}
+
+const Type* DeclaratorDelegate::to_type() const {
     return nullptr;
 }
 
 Variable::Variable(Declarator* declarator)
-    : DeclaratorKind(declarator) {
+    : DeclaratorDelegate(declarator) {
 }
 
 Variable::Variable(Declarator* declarator, Expr* initializer, Expr* bit_field_size)
-    : DeclaratorKind(declarator), initializer(initializer), bit_field_size(bit_field_size) {
+    : DeclaratorDelegate(declarator), initializer(initializer), bit_field_size(bit_field_size) {
 }
 
 StorageDuration Variable::storage_duration() const {
@@ -149,6 +144,27 @@ StorageDuration Variable::storage_duration() const {
     } else {
         return StorageDuration::AUTO;
     }
+}
+
+DeclaratorKind Variable::kind() const {
+    return DeclaratorKind::VARIABLE;
+}
+
+static Linkage determine_linkage(Declarator* declarator) {
+    auto storage_class = declarator->declaration->storage_class;
+    auto scope = declarator->declaration->scope;
+
+    if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
+        return Linkage::INTERNAL;
+    } else if (storage_class == StorageClass::EXTERN || scope == IdentifierScope::FILE) {
+        return Linkage::EXTERNAL;
+    } else {
+        return Linkage::NONE;
+    }
+}
+
+Linkage Variable::linkage() const {
+    return determine_linkage(declarator);
 }
 
 void Variable::compose(Declarator* later) {
@@ -168,7 +184,7 @@ void Variable::compose(Declarator* later) {
 }
 
 void Variable::print(ostream& stream) const {
-    stream << "[\"var\", \"" << declarator->declaration->linkage() << storage_duration();
+    stream << "[\"var\", \"" << linkage() << storage_duration();
 
     stream << "\", " << declarator->type << ", \"" << declarator->identifier  << "\"";
     if (initializer) {
@@ -178,11 +194,11 @@ void Variable::print(ostream& stream) const {
 }
 
 Function::Function(Declarator* declarator)
-    : DeclaratorKind(declarator) {
+    : DeclaratorDelegate(declarator) {
 }
 
 Function::Function(Declarator* declarator, uint32_t specifiers, vector<Variable*>&& params, Statement* body)
-    : DeclaratorKind(declarator), params(move(params)), body(body) {
+    : DeclaratorDelegate(declarator), params(move(params)), body(body) {
     auto scope = declarator->declaration->scope;
     auto storage_class = declarator->declaration->storage_class;
 
@@ -193,7 +209,15 @@ Function::Function(Declarator* declarator, uint32_t specifiers, vector<Variable*
 
     // It's very valuable to determine which functions with external linkage are inline definitions, because they don't need to be
     // written to the AST file; another translation unit is guaranteed to have an external definition.
-    inline_definition = (declarator->declaration->linkage() == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
+    inline_definition = (linkage() == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
+}
+
+DeclaratorKind Function::kind() const {
+    return DeclaratorKind::FUNCTION;
+}
+
+Linkage Function::linkage() const {
+    return determine_linkage(declarator);
 }
 
 void Function::compose(Declarator* later) {
@@ -214,7 +238,7 @@ void Function::compose(Declarator* later) {
 }
 
 void Function::print(ostream& stream) const {
-    stream << "[\"fun\", \"" << declarator->declaration->linkage();
+    stream << "[\"fun\", \"" << linkage();
 
     if (inline_definition) {
         stream << 'i';
@@ -234,8 +258,12 @@ void Function::print(ostream& stream) const {
 }
 
 TypeDef::TypeDef(Declarator* declarator)
-    : DeclaratorKind(declarator) {
+    : DeclaratorDelegate(declarator) {
     
+}
+
+DeclaratorKind TypeDef::kind() const {
+    return DeclaratorKind::TYPE_DEF;
 }
 
 const Type* TypeDef::to_type() const {
@@ -251,11 +279,15 @@ void TypeDef::print(ostream& stream) const {
 }
 
 EnumConstant::EnumConstant(Declarator* declarator)
-    : DeclaratorKind(declarator) {
+    : DeclaratorDelegate(declarator) {
 }
 
 EnumConstant::EnumConstant(Declarator* declarator, Expr* constant)
-    : DeclaratorKind(declarator), constant(constant) {
+    : DeclaratorDelegate(declarator), constant(constant) {
+}
+
+DeclaratorKind EnumConstant::kind() const {
+    return DeclaratorKind::ENUM_CONSTANT;
 }
 
 void EnumConstant::compose(Declarator* later) {

@@ -8,7 +8,7 @@
 
 struct CodeGenContext;
 struct Declaration;
-struct DeclaratorKind;
+struct DeclaratorDelegate;
 struct EnumConstant;
 struct Function;
 enum class IdentifierScope;
@@ -38,7 +38,7 @@ struct Declarator: ASTNode {
     const Declaration* declaration{};
     const Type* type{};
     Identifier identifier;
-    DeclaratorKind* kind{};
+    DeclaratorDelegate* delegate{};
 
     // During preparse, "earlier" forms a linked list of Declarators corresponding to the same entity.
     // After preparse, "earlier" is always null and there is a single Declarator instance for each entity.
