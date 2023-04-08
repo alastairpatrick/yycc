@@ -59,26 +59,37 @@ void Parser::handle_declaration_directive() {
         if (pp_token == TOK_IDENTIFIER) {
             auto id = preprocessor.identifier();
 
-            Declarator* declarator = new Declarator(declaration, &CompatibleType::it, id, preprocessor.location());
+            auto new_declarator = new Declarator(declaration, &CompatibleType::it, id, preprocessor.location());
             switch (declarator_type_token) {
               case TOK_PP_ENUM:
-                declarator->delegate = new EnumConstant(declarator);
+                new_declarator->delegate = new EnumConstant(new_declarator);
                 break;
               case TOK_PP_FUNCTION:
-                declarator->delegate = new Function(declarator);
+                new_declarator->delegate = new Function(new_declarator);
                 break;
               case TOK_PP_TYPE:
-                declarator->delegate = new TypeDef(declarator);
+                new_declarator->delegate = new TypeDef(new_declarator);
                 break;
               case TOK_PP_VARIABLE:
-                declarator->delegate = new Variable(declarator);
+                new_declarator->delegate = new Variable(new_declarator);
                 break;
               default:
                 preprocessor.unexpected_directive_token();
                 break;
             }
 
-            if (declarator->delegate) identifiers.add_declarator(declarator);
+            if (new_declarator->delegate) {
+                auto old_declarator = identifiers.lookup_declarator(id);
+                if (old_declarator &&
+                    old_declarator->delegate->linkage() == new_declarator->delegate->linkage() &&
+                    old_declarator->type == &CompatibleType::it) {
+                    if (old_declarator->delegate->kind() < new_declarator->delegate->kind()) {
+                        old_declarator->delegate = new_declarator->delegate;
+                    }
+                } else {
+                    identifiers.add_declarator(new_declarator);
+                }
+            }
         } else {
             preprocessor.unexpected_directive_token();
         }

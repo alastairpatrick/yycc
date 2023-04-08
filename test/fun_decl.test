@@ -257,3 +257,19 @@ BEGIN #static function directive
 DECLARATIONS
 EXPECT_GLOBALS
 [["fun","I","?","f"]]
+
+
+BEGIN #extern function preferred over #extern variable (1)
+#extern variable f
+#extern function f
+DECLARATIONS
+EXPECT_GLOBALS
+[["fun","E","?","f"]]
+
+
+BEGIN #extern function preferred over #extern variable (2)
+#extern function f
+#extern variable f
+DECLARATIONS
+EXPECT_GLOBALS
+[["fun","E","?","f"]]

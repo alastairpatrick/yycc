@@ -53,7 +53,7 @@ struct Declaration: ASTNode {
 // Most important is functions must have priority over variables so, when generating or reconciling #static and #extern identifiers,
 // function is preferred in cases of ambiguity, e.g.:
 // F foo;           // "F" typedef of funtion type in another translation unit. "foo" looks like a variable.
-// void foo() {}    // Now "foo" is determined to be a function and type of F can be inferred.
+// void foo() {}    // Now "foo" is determined to be a function.
 enum class DeclaratorKind {
     VARIABLE,
     FUNCTION,
