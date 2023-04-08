@@ -2,7 +2,7 @@
 
 #include "TranslationUnitContext.h"
 
-ASTNode::ASTNode(const Location& location): location(location) {
+ASTNode::ASTNode() {
     auto context = TranslationUnitContext::it;
     next_delete = context->ast_nodes;
     context->ast_nodes = this;

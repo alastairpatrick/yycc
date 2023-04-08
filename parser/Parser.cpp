@@ -189,7 +189,6 @@ bool Parser::check_eof() {
 
 Expr* Parser::parse_expr(OperatorPrec min_prec) {
     Location loc = preprocessor.location();
-    auto begin = position();
 
     // To make it easier to write tests that run in both preparse and not, decimal integers can always be parsed.
     if (preparse && token != TOK_DEC_INT_LITERAL) {
@@ -230,8 +229,6 @@ Expr* Parser::parse_expr(OperatorPrec min_prec) {
             auto right = parse_expr(next_min_prec);
             result = new BinaryExpr(result, right, op, loc);
         }
-
-        result->fragment = end_fragment(begin);
     }
 
     return result;
@@ -273,7 +270,6 @@ void Parser::skip_expr(OperatorPrec min_prec) {
 
 Expr* Parser::parse_cast_expr() {
     Expr* result{};
-    auto begin = position();
 
     while (token) {
         if (token == TOK_BIN_INT_LITERAL || token == TOK_OCT_INT_LITERAL || token == TOK_DEC_INT_LITERAL || token == TOK_HEX_INT_LITERAL || token == TOK_CHAR_LITERAL) {
@@ -310,7 +306,6 @@ Expr* Parser::parse_cast_expr() {
         }
         else {
             skip_unexpected();
-            begin = position();
         }
     }
 
@@ -320,7 +315,6 @@ Expr* Parser::parse_cast_expr() {
         result = IntegerConstant::default_expr(preprocessor.location());
     }
 
-    result->fragment = end_fragment(begin);
     return result;
 }
 
@@ -603,14 +597,12 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
             require(';');
         }
 
-        statement->fragment = end_fragment(begin);
         return statement;
     }
 }
 
 CompoundStatement* Parser::parse_compound_statement() {
     CompoundStatement* statement{};
-    auto begin = position();
     ASTNodeVector list;
     if (preparse) {
         Location loc;
@@ -639,7 +631,6 @@ CompoundStatement* Parser::parse_compound_statement() {
         statement = new CompoundStatement(move(list), loc);
     }
 
-    statement->fragment = end_fragment(begin);
     return statement;
 }
 

@@ -1,6 +1,9 @@
 #include "Expr.h"
 #include "CodeGenContext.h"
 
+Expr::Expr(const Location& location): Statement(location) {
+}
+
 ConditionExpr::ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, const Location& location)
     : Expr(location), condition(condition), then_expr(then_expr), else_expr(else_expr) {
     assert(this->condition);

@@ -30,11 +30,11 @@ ostream& operator<<(ostream& stream, StorageDuration duration) {
 }
 
 Declaration::Declaration(IdentifierScope scope, StorageClass storage_class, const Type* type, const Location& location)
-    : ASTNode(location), scope(scope), storage_class(storage_class), type(type) {
+    : location(location), scope(scope), storage_class(storage_class), type(type) {
 }
 
 Declaration::Declaration(IdentifierScope scope, const Location& location)
-    : ASTNode(location), scope(scope) {
+    : location(location), scope(scope) {
 }
 
 Linkage Declaration::linkage() const {
@@ -65,11 +65,11 @@ void Declaration::print(ostream& stream) const {
 }
 
 Declarator::Declarator(const Declaration* declaration, const Type* type, const Identifier &identifier, const Location& location)
-    : ASTNode(location), declaration(declaration), type(type), identifier(identifier) {
+    : location(location), declaration(declaration), type(type), identifier(identifier) {
 }
 
 Declarator::Declarator(const Declaration* declaration, const Identifier &identifier, const Location& location)
-    : ASTNode(location), declaration(declaration), identifier(identifier) {
+    : location(location), declaration(declaration), identifier(identifier) {
 }
 
 EnumConstant* Declarator::enum_constant() {
@@ -125,8 +125,7 @@ void Declarator::print(ostream& stream) const {
     kind->print(stream);
 }
 
-DeclaratorKind::DeclaratorKind(Declarator* declarator)
-    : ASTNode(declarator->location), declarator(declarator) {
+DeclaratorKind::DeclaratorKind(Declarator* declarator): declarator(declarator) {
 }
 
 const Type* DeclaratorKind::to_type() const {
@@ -159,7 +158,7 @@ void Variable::compose(Declarator* later) {
     if (later_var->initializer) {
         if (initializer) {
             message(Severity::ERROR, later->location) << "redefinition of '" << declarator->identifier << "'\n";
-            message(Severity::INFO, location) << "see prior definition\n";
+            message(Severity::INFO, declarator->location) << "see prior definition\n";
         } else {
             initializer = later_var->initializer;
         }
@@ -189,7 +188,7 @@ Function::Function(Declarator* declarator, uint32_t specifiers, vector<Variable*
 
     if ((storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) ||
         (storage_class == StorageClass::STATIC && scope != IdentifierScope::FILE)) {
-        message(Severity::ERROR, location) << "invalid storage class\n";
+        message(Severity::ERROR, declarator->location) << "invalid storage class\n";
     }
 
     // It's very valuable to determine which functions with external linkage are inline definitions, because they don't need to be
@@ -203,8 +202,8 @@ void Function::compose(Declarator* later) {
 
     if (later_fn->body) {
         if (body) {
-            message(Severity::ERROR, later_fn->location) << "redefinition of '" << declarator->identifier << "'\n";
-            message(Severity::INFO, location) << "see prior definition\n";
+            message(Severity::ERROR, later->location) << "redefinition of '" << declarator->identifier << "'\n";
+            message(Severity::INFO, declarator->location) << "see prior definition\n";
         } else {
             body = later_fn->body;
             params = move(later_fn->params);

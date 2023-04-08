@@ -19,11 +19,9 @@ struct Variable;
 struct TypeDef;
 
 struct ASTNode: Printable {
-    explicit ASTNode(const Location& location);
+    ASTNode();
     void operator=(const ASTNode&) = delete;
 
-    Location location;
-    Fragment fragment;
     ASTNode* next_delete;
 };
 
@@ -35,6 +33,8 @@ struct Declarator: ASTNode {
     Declarator(const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location);
     Declarator(const Declaration* declaration, const Identifier& identifier, const Location& location);
 
+    Location location;
+    Fragment fragment;
     const Declaration* declaration{};
     const Type* type{};
     Identifier identifier;
@@ -55,11 +55,12 @@ struct Declarator: ASTNode {
 };
 
 struct Statement: ASTNode {
-    explicit Statement(const Location& location): ASTNode(location) {}
+    Location location;
+    explicit Statement(const Location& location);
 };
 
 struct Expr: Statement {
-    explicit Expr(const Location& location): Statement(location) {}
+    explicit Expr(const Location& location);
 
     virtual const Type* get_type() const = 0;
     virtual LLVMValueRef generate_value(CodeGenContext* context) const = 0;
