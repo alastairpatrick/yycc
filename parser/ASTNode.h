@@ -9,10 +9,14 @@
 struct CodeGenContext;
 struct Declaration;
 struct DeclaratorKind;
+struct EnumConstant;
+struct Function;
 enum class IdentifierScope;
 enum class StorageClass;
 enum class Linkage;
 struct Type;
+struct Variable;
+struct TypeDef;
 
 struct ASTNode: Printable {
     explicit ASTNode(const Location& location);
@@ -39,6 +43,11 @@ struct Declarator: ASTNode {
     // During preparse, "earlier" forms a linked list of Declarators corresponding to the same entity.
     // After preparse, "earlier" is always null and there is a single Declarator instance for each entity.
     Declarator* earlier{};
+
+    EnumConstant* enum_constant();
+    Function* function();
+    Variable* variable();
+    TypeDef* type_def();
 
     const Type* to_type() const;
     void compose(Declarator* later);

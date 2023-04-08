@@ -72,6 +72,22 @@ Declarator::Declarator(const Declaration* declaration, const Identifier &identif
     : ASTNode(location), declaration(declaration), identifier(identifier) {
 }
 
+EnumConstant* Declarator::enum_constant() {
+    return dynamic_cast<EnumConstant*>(kind);
+}
+
+Function* Declarator::function() {
+    return dynamic_cast<Function*>(kind);
+}
+
+Variable* Declarator::variable() {
+    return dynamic_cast<Variable*>(kind);
+}
+
+TypeDef* Declarator::type_def() {
+    return dynamic_cast<TypeDef*>(kind);
+}
+    
 const Type* Declarator::to_type() const {
     if (!kind) return nullptr;
     return kind->to_type();
@@ -137,7 +153,7 @@ StorageDuration Variable::storage_duration() const {
 }
 
 void Variable::compose(Declarator* later) {
-    auto later_var = dynamic_cast<Variable*>(later->kind);
+    auto later_var = later->variable();
     if (!later_var) return;
 
     if (later_var->initializer) {
@@ -182,7 +198,7 @@ Function::Function(Declarator* declarator, uint32_t specifiers, vector<Variable*
 }
 
 void Function::compose(Declarator* later) {
-    auto later_fn = dynamic_cast<Function*>(later->kind);
+    auto later_fn = later->function();
     if (!later_fn) return;
 
     if (later_fn->body) {

@@ -55,20 +55,20 @@ struct DeclarationMarker {
         auto declarator = identifiers.lookup_declarator(id);
         while (declarator) {
             auto name = *declarator->identifier.name;
-            if (auto type_def = dynamic_cast<const TypeDef*>(declarator->kind)) {
+            if (auto type_def = declarator->type_def()) {
                 type_names.insert(name);
             }
-            if (auto enum_const = dynamic_cast<const EnumConstant*>(declarator->kind)) {
+            if (auto enum_const = declarator->enum_constant()) {
                 enum_const_names.insert(name);
             }
-            if (auto variable = dynamic_cast<const Variable*>(declarator->kind)) {
+            if (auto variable = declarator->variable()) {
                 if (declarator->declaration->linkage() == Linkage::INTERNAL) {
                     static_variable_names.insert(name);
                 } else {
                     extern_variable_names.insert(name);
                 }
             }
-            if (auto function = dynamic_cast<const Function*>(declarator->kind)) {
+            if (auto function = declarator->function()) {
                 if (declarator->declaration->linkage() == Linkage::INTERNAL) {
                     static_function_names.insert(name);
                 } else {

@@ -295,7 +295,7 @@ Expr* Parser::parse_cast_expr() {
             Declarator* declarator = identifiers.lookup_declarator(preprocessor.identifier());
             if (declarator) {
                 // TokenKind would have to be TOK_TYPEDEF_IDENTIFIER for declarator to be a typedef.
-                assert(!dynamic_cast<TypeDef*>(declarator));
+                assert(!declarator->type_def());
 
                 result = new NameExpr(declarator, preprocessor.location());
             } else {
@@ -733,7 +733,7 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, bo
                 auto param_declarator = parse_parameter_declarator();
 
                 // Functions are adjusted to variable of function pointer type.
-                auto variable = dynamic_cast<Variable*>(param_declarator->kind);
+                auto variable = param_declarator->variable();
                 assert(variable);
 
                 declarator.params.push_back(variable);
