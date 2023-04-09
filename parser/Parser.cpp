@@ -386,14 +386,18 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
 
           } case TOK_IDENTIFIER: {
               if ((specifier_set & type_specifier_mask) == 0) {
-                  const Type* typedef_type;
-                  typedef_type = identifiers.lookup_type(preprocessor.identifier());
-                  if (!typedef_type) {
-                      if (scope == IdentifierScope::BLOCK) break;
+                  const Type* typedef_type{};
+                  if (preparse) {
+                      typedef_type = UnboundType::of(preprocessor.identifier());
+                  } else {
+                      auto declarator = identifiers.lookup_declarator(preprocessor.identifier());
+                      if (declarator) {
+                          typedef_type = declarator->to_type();
+                      }
 
-                      if (preparse) {
-                          typedef_type = UnboundType::of(preprocessor.identifier());
-                      } else {
+                      if (!typedef_type) {
+                          if (scope == IdentifierScope::BLOCK) break;
+
                           message(Severity::ERROR, preprocessor.location()) << "type \'" << preprocessor.identifier() << "' undefined\n";
                           typedef_type = IntegerType::default_type();
                       }

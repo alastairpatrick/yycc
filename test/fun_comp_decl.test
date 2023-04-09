@@ -109,7 +109,7 @@ EXPECT_AST
 ,["declare","V"]]
 
 
-BEGIN Function initially declared with a function-typed typedef
+BEGIN Function initially declared with a function-typed typedef (preparse)
 typedef void F(int x);
 F foo;
 void foo(int x) {
@@ -117,8 +117,20 @@ void foo(int x) {
 PREPARSE
 EXPECT_AST
 [["typedef",["F","V","Si"],"F"]
-,["fun","E",["F","V","Si"],"foo"]
+,["var","ES","NF","foo",""]
 ,["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]]
+
+
+BEGIN Function initially declared with a function-typed typedef
+typedef void F(int x);
+F foo;
+void foo(int x) {
+}
+DECLARATIONS
+EXPECT_AST
+[["typedef",["F","V","Si"],"F"]
+,["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]
+,["declare","V"]]
 
 
 BEGIN Function declared with a function-typed typedef in another translation unit (1)

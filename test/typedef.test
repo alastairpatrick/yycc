@@ -1,6 +1,7 @@
-BEGIN Variable declaration of typedef type.
+BEGIN Variable declaration of typedef type (declarations).
 typedef short foo_t;
 foo_t foo;
+DECLARATIONS
 EXPECT_AST
 [["typedef", "Ss", "foo_t"]
 ,["var", "ES", "Ss", "foo", ""]]

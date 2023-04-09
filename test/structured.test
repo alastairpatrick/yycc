@@ -99,6 +99,7 @@ BEGIN Struct is in scope within body
 struct S {
     S* p;
 };
+DECLARATIONS
 EXPECT_AST
 [["declare",["STRUCT",[["p",["P",["STRUCT","recursive"]]]]]]]
 EXPECT_GLOBALS
