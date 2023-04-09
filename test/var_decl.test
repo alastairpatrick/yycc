@@ -372,37 +372,26 @@ EXPECT_AST
 [["var", "ES", "NT", "x", ""]]
 
 
-BEGIN #extern variable directive
-#extern variable x
+BEGIN #extern entity directive
+#extern entity x
 DECLARATIONS
 EXPECT_GLOBALS
 [["var","ES","?","x"]]
 
 
-BEGIN #static variable directive
-#static variable x
+BEGIN #static entity directive
+#static entity x
 DECLARATIONS
 EXPECT_GLOBALS
 [["var","IS","?","x"]]
 
 
 BEGIN Error if identifier declared with both #extern and #static
-#extern variable f
-#static variable f
+#extern entity f
+#static entity f
 DECLARATIONS
 EXPECT_MESSAGE
-:2:18: error static declaration of 'f' follows non-static declaration
-:1:18: see prior declaration
+:2:16: error static declaration of 'f' follows non-static declaration
+:1:16: see prior declaration
 EXPECT_GLOBALS
 [["var","ES","?","f"]]
-
-
-BEGIN Error on variable definition followed by #extern function
-int x;
-#extern function x
-DECLARATIONS
-EXPECT_MESSAGE
-:2:18: error redeclaration of 'x' with different type
-:1:1: see prior declaration
-EXPECT_GLOBALS
-[["var","ES","Si","x",""]]

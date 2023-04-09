@@ -98,14 +98,11 @@ struct DeclarationMarker {
               case DeclaratorKind::ENUM_CONSTANT:
                 stream.write("enum ");
                 break;
-              case DeclaratorKind::FUNCTION:
-                stream.write("function ");
+              case DeclaratorKind::ENTITY:
+                stream.write("entity ");
                 break;
               case DeclaratorKind::TYPE_DEF:
                 stream.write("type ");
-                break;
-              case DeclaratorKind::VARIABLE:
-                stream.write("variable ");
                 break;
             }
 

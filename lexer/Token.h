@@ -101,10 +101,10 @@ enum TokenKind {
     TOK_PP_ELSE,
     TOK_PP_EMPTY,
     TOK_PP_ENDIF,
+    TOK_PP_ENTITY,
     TOK_PP_ENUM,
     TOK_PP_ERROR,
     TOK_PP_EXTERN,
-    TOK_PP_FUNCTION,
     TOK_PP_IF,
     TOK_PP_IFDEF,
     TOK_PP_IFNDEF,
@@ -114,7 +114,6 @@ enum TokenKind {
     TOK_PP_STATIC,
     TOK_PP_TYPE,
     TOK_PP_UNDEF,
-    TOK_PP_VARIABLE,
 
     TOK_NUM
 };

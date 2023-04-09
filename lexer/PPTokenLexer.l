@@ -136,9 +136,8 @@ L?  ' (\\. | [^\\'\n])*  '  { return TOK_CHAR_LITERAL; }
 }
 
 <DECLARATION> {
+entity          { start(PP_TOKENS); return TOK_PP_ENTITY; }
 enum            { start(PP_TOKENS); return TOK_PP_ENUM; }
-variable        { start(PP_TOKENS); return TOK_PP_VARIABLE; }
-function        { start(PP_TOKENS); return TOK_PP_FUNCTION; }
 type            { start(PP_TOKENS); return TOK_PP_TYPE; }
 }
 

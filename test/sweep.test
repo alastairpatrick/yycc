@@ -6,7 +6,7 @@ FILE "a.h"
 typedef int T;
 EXPECT_TEXT
 
-#extern variable x
+#extern entity x
 #line 1 "a.h"
 #static type T
 #line 1
@@ -24,7 +24,7 @@ FILE "a.h"
 extern int x;
 EXPECT_TEXT
 
-#extern variable x
+#extern entity x
 #line 1 "a.h"
 extern int x;
 #line 2 ""
@@ -40,9 +40,9 @@ FILE "a.h"
 const int y = 2;  // TODO: replace this with a avalid constant integer expression
 EXPECT_TEXT
 
-#extern variable x
+#extern entity x
 #line 1 "a.h"
-#extern variable y
+#extern entity y
 #line 1
 const int y = 2;
 #line 2 ""
@@ -58,7 +58,7 @@ FILE "a.h"
 typedef int T;
 EXPECT_TEXT
 
-#extern function foo
+#extern entity foo
 #line 1 "a.h"
 #static type T
 #line 1
@@ -78,7 +78,7 @@ FILE "a.h"
 typedef int T;
 EXPECT_TEXT
 
-#extern function foo
+#extern entity foo
 #line 1 "a.h"
 #static type T
 #line 1
@@ -102,7 +102,7 @@ struct S {
 };
 EXPECT_TEXT
 
-#extern function foo
+#extern entity foo
 #line 1 "a.h"
 #static type S
 #line 1
@@ -126,7 +126,7 @@ FILE "a.h"
 enum Color { RED, GREEN, BLUE };
 EXPECT_TEXT
 
-#extern function foo
+#extern entity foo
 #line 1 "a.h"
 #static type Color
 #line 1 14
@@ -141,33 +141,4 @@ enum Color { RED, GREEN, BLUE };
 int foo(void) {
     return GREEN;
 }
-END
-
-
-BEGIN On ambiguity between variable and function type, generate #extern function (1)
-F foo;  // typedef F in another translation unit
-void foo() {
-}
-PREPROCESS
-EXPECT_TEXT
-
-#extern function foo
-#line 1
-F foo;
-void foo() {
-}
-END
-
-
-BEGIN On ambiguity between variable and function type, generate #extern function (1)
-void foo() {
-}
-F foo;  // typedef F in another translation unit
-PREPROCESS
-EXPECT_TEXT
-#extern function foo
-#line 1
-void foo() {
-}
-F foo;
 END

@@ -147,7 +147,7 @@ StorageDuration Variable::storage_duration() const {
 }
 
 DeclaratorKind Variable::kind() const {
-    return DeclaratorKind::VARIABLE;
+    return DeclaratorKind::ENTITY;
 }
 
 static Linkage determine_linkage(Declarator* declarator) {
@@ -213,7 +213,7 @@ Function::Function(Declarator* declarator, uint32_t specifiers, vector<Variable*
 }
 
 DeclaratorKind Function::kind() const {
-    return DeclaratorKind::FUNCTION;
+    return DeclaratorKind::ENTITY;
 }
 
 Linkage Function::linkage() const {

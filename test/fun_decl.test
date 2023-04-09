@@ -243,33 +243,3 @@ BEGIN Function declaration with nested declarators
 int (*fpfi(int (*)(long), int))(int, float);
 EXPECT_AST
 [["fun","E",["F",["P",["F","Si","Si","Ff"]],["P",["F","Si","Sl"]],"Si"],"fpfi"]]
-
-
-BEGIN #extern function directive
-#extern function f
-DECLARATIONS
-EXPECT_GLOBALS
-[["fun","E","?","f"]]
-
-
-BEGIN #static function directive
-#static function f
-DECLARATIONS
-EXPECT_GLOBALS
-[["fun","I","?","f"]]
-
-
-BEGIN #extern function preferred over #extern variable (1)
-#extern variable f
-#extern function f
-DECLARATIONS
-EXPECT_GLOBALS
-[["fun","E","?","f"]]
-
-
-BEGIN #extern function preferred over #extern variable (2)
-#extern function f
-#extern variable f
-DECLARATIONS
-EXPECT_GLOBALS
-[["fun","E","?","f"]]

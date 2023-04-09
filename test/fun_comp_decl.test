@@ -203,34 +203,3 @@ EXPECT_AST
             ]]
         ]]
 ]
-
-
-BEGIN #extern function directives composed
-#extern function f
-#extern function f
-DECLARATIONS
-EXPECT_GLOBALS
-[["fun","E","?","f"]]
-
-
-BEGIN #extern function directive preceeding function declaration
-#extern function f
-void f(void) {
-}
-DECLARATIONS
-EXPECT_GLOBALS
-[["fun","E",["F","V"],"f",[""],["block",[]]]]
-EXPECT_AST
-[["declare","V"]]
-
-
-BEGIN #static function directive preceeding function declaration
-#static function f
-void f(void) {
-}
-DECLARATIONS
-EXPECT_GLOBALS
-[["fun","I",["F","V"],"f",[""],["block",[]]]]
-EXPECT_AST
-[["declare","V"]]
-

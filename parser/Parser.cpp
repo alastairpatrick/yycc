@@ -48,8 +48,7 @@ void Parser::handle_declaration_directive() {
       case TOK_PP_TYPE:
         storage_class = StorageClass::NONE;
         break;
-      case TOK_PP_FUNCTION:
-      case TOK_PP_VARIABLE:
+      case TOK_PP_ENTITY:
         break;
     }
 
@@ -64,14 +63,11 @@ void Parser::handle_declaration_directive() {
               case TOK_PP_ENUM:
                 new_declarator->delegate = new EnumConstant(new_declarator);
                 break;
-              case TOK_PP_FUNCTION:
-                new_declarator->delegate = new Function(new_declarator);
+              case TOK_PP_ENTITY:
+                new_declarator->delegate = new Variable(new_declarator);
                 break;
               case TOK_PP_TYPE:
                 new_declarator->delegate = new TypeDef(new_declarator);
-                break;
-              case TOK_PP_VARIABLE:
-                new_declarator->delegate = new Variable(new_declarator);
                 break;
               default:
                 preprocessor.unexpected_directive_token();
