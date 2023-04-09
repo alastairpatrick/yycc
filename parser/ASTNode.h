@@ -9,13 +9,12 @@
 struct CodeGenContext;
 struct Declaration;
 struct DeclaratorDelegate;
+struct Entity;
 struct EnumConstant;
-struct Function;
 enum class IdentifierScope;
 enum class StorageClass;
 enum class Linkage;
 struct Type;
-struct Variable;
 struct TypeDef;
 
 struct ASTNode: Printable {
@@ -45,8 +44,7 @@ struct Declarator: ASTNode {
     Declarator* earlier{};
 
     EnumConstant* enum_constant();
-    Function* function();
-    Variable* variable();
+    Entity* entity();
     TypeDef* type_def();
 
     const Type* to_type() const;

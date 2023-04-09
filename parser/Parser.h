@@ -8,12 +8,11 @@
 struct CompoundStatement;
 struct Declarator;
 struct Expr;
-struct Variable;
 
 struct DeclaratorTransform {
     function<const Type*(const Type*)> type_transform;
     Identifier identifier;
-    vector<Variable*> params;
+    vector<Entity*> params;
     CompoundStatement* body{};
 };
 

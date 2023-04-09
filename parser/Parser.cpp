@@ -64,7 +64,7 @@ void Parser::handle_declaration_directive() {
                 new_declarator->delegate = new EnumConstant(new_declarator);
                 break;
               case TOK_PP_ENTITY:
-                new_declarator->delegate = new Variable(new_declarator);
+                new_declarator->delegate = new Entity(new_declarator);
                 break;
               case TOK_PP_TYPE:
                 new_declarator->delegate = new TypeDef(new_declarator);
@@ -736,10 +736,10 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, bo
                 auto param_declarator = parse_parameter_declarator();
 
                 // Functions are adjusted to variable of function pointer type.
-                auto variable = param_declarator->variable();
-                assert(variable);
+                auto entity = param_declarator->entity();
+                assert(entity);
 
-                declarator.params.push_back(variable);
+                declarator.params.push_back(entity);
 
                 if (param_declarator->type == &VoidType::it) {
                     if (seen_void || !param_types.empty()) {
@@ -817,10 +817,10 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     auto declarator = new Declarator(declaration, type, declarator_transform.identifier, location);
 
     if (is_function && declaration->storage_class != StorageClass::TYPEDEF) {
-        declarator->delegate = new Function(declarator,
-                                        specifiers,
-                                        move(declarator_transform.params),
-                                        declarator_transform.body);
+        declarator->delegate = new Entity(declarator,
+                                          specifiers,
+                                          move(declarator_transform.params),
+                                          declarator_transform.body);
     } else {
         if (specifiers & (1 << TOK_INLINE)) {
             message(Severity::ERROR, location) << "'inline' may only appear on function\n";
@@ -832,7 +832,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
             if (!initializer && declaration->storage_class != StorageClass::EXTERN) {
                 initializer = new DefaultExpr(type, location);
             }
-            declarator->delegate = new Variable(declarator, initializer, bit_field_size);
+            declarator->delegate = new Entity(declarator, initializer, bit_field_size);
         }
     }
 
@@ -887,7 +887,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 // C11 6.7.2.1p13 anonymous structs and unions
                 if (dynamic_cast<const StructuredType*>(declaration->type) && declaration->declarators.empty()) {
                     auto declarator = new Declarator(declaration, declaration->type, Identifier(), declaration->location);
-                    declarator->delegate = new Variable(declarator);
+                    declarator->delegate = new Entity(declarator);
                     declaration->declarators.push_back(declarator);
                     // TODO: the declarators of the anonymous struct or union were added to a scope that has already been popped
                 }

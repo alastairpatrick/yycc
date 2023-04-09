@@ -69,29 +69,22 @@ struct DeclaratorDelegate: ASTNode {
     virtual void print(ostream& stream) const = 0;
 };
 
-struct Variable: DeclaratorDelegate {
-    explicit Variable(Declarator* declarator);
-    Variable(Declarator* declarator, Expr* initializer, Expr* bit_field_size);
+struct Entity: DeclaratorDelegate {
+    Entity(Declarator* declarator, Expr* initializer, Expr* bit_field_size);
+    Entity(Declarator* declarator, uint32_t specifiers, vector<Entity*>&& params, Statement* body);
+    explicit Entity(Declarator* declarator);
 
+    // Variable related
     StorageDuration storage_duration() const;
-
     Expr* initializer{};
     Expr* bit_field_size{};
 
-    virtual DeclaratorKind kind() const;
-    virtual Linkage linkage() const;
-    virtual void compose(Declarator* later);
-    virtual void print(ostream& stream) const;
-};
-
-struct Function: DeclaratorDelegate {
-    explicit Function(Declarator* declarator);
-    Function(Declarator* declarator, uint32_t specifiers, vector<Variable*>&& params, Statement* body);
-
-    vector<Variable*> params;
+    // Function related
+    vector<Entity*> params;
     Statement* body{};
-
     bool inline_definition{};
+
+    bool is_function() const;
 
     virtual DeclaratorKind kind() const;
     virtual Linkage linkage() const;

@@ -67,12 +67,8 @@ EnumConstant* Declarator::enum_constant() {
     return dynamic_cast<EnumConstant*>(delegate);
 }
 
-Function* Declarator::function() {
-    return dynamic_cast<Function*>(delegate);
-}
-
-Variable* Declarator::variable() {
-    return dynamic_cast<Variable*>(delegate);
+Entity* Declarator::entity() {
+    return dynamic_cast<Entity*>(delegate);
 }
 
 TypeDef* Declarator::type_def() {
@@ -127,77 +123,15 @@ const Type* DeclaratorDelegate::to_type() const {
     return nullptr;
 }
 
-Variable::Variable(Declarator* declarator)
+Entity::Entity(Declarator* declarator)
     : DeclaratorDelegate(declarator) {
 }
 
-Variable::Variable(Declarator* declarator, Expr* initializer, Expr* bit_field_size)
+Entity::Entity(Declarator* declarator, Expr* initializer, Expr* bit_field_size)
     : DeclaratorDelegate(declarator), initializer(initializer), bit_field_size(bit_field_size) {
 }
 
-StorageDuration Variable::storage_duration() const {
-    auto scope = declarator->declaration->scope;
-    auto storage_class = declarator->declaration->storage_class;
-
-    if (storage_class == StorageClass::EXTERN || storage_class == StorageClass::STATIC || scope == IdentifierScope::FILE) {
-        return StorageDuration::STATIC;
-    } else {
-        return StorageDuration::AUTO;
-    }
-}
-
-DeclaratorKind Variable::kind() const {
-    return DeclaratorKind::ENTITY;
-}
-
-static Linkage determine_linkage(Declarator* declarator) {
-    auto storage_class = declarator->declaration->storage_class;
-    auto scope = declarator->declaration->scope;
-
-    if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
-        return Linkage::INTERNAL;
-    } else if (storage_class == StorageClass::EXTERN || scope == IdentifierScope::FILE) {
-        return Linkage::EXTERNAL;
-    } else {
-        return Linkage::NONE;
-    }
-}
-
-Linkage Variable::linkage() const {
-    return determine_linkage(declarator);
-}
-
-void Variable::compose(Declarator* later) {
-    auto later_var = later->variable();
-    if (!later_var) return;
-
-    if (later_var->initializer) {
-        if (initializer) {
-            message(Severity::ERROR, later->location) << "redefinition of '" << declarator->identifier << "'\n";
-            message(Severity::INFO, declarator->location) << "see prior definition\n";
-        } else {
-            initializer = later_var->initializer;
-        }
-    }
-
-    assert(later_var->storage_duration() == storage_duration());
-}
-
-void Variable::print(ostream& stream) const {
-    stream << "[\"var\", \"" << linkage() << storage_duration();
-
-    stream << "\", " << declarator->type << ", \"" << declarator->identifier  << "\"";
-    if (initializer) {
-        stream << ", " << initializer;
-    }
-    stream << ']';
-}
-
-Function::Function(Declarator* declarator)
-    : DeclaratorDelegate(declarator) {
-}
-
-Function::Function(Declarator* declarator, uint32_t specifiers, vector<Variable*>&& params, Statement* body)
+Entity::Entity(Declarator* declarator, uint32_t specifiers, vector<Entity*>&& params, Statement* body)
     : DeclaratorDelegate(declarator), params(move(params)), body(body) {
     auto scope = declarator->declaration->scope;
     auto storage_class = declarator->declaration->storage_class;
@@ -212,49 +146,95 @@ Function::Function(Declarator* declarator, uint32_t specifiers, vector<Variable*
     inline_definition = (linkage() == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
 }
 
-DeclaratorKind Function::kind() const {
+StorageDuration Entity::storage_duration() const {
+    auto scope = declarator->declaration->scope;
+    auto storage_class = declarator->declaration->storage_class;
+
+    if (storage_class == StorageClass::EXTERN || storage_class == StorageClass::STATIC || scope == IdentifierScope::FILE) {
+        return StorageDuration::STATIC;
+    } else {
+        return StorageDuration::AUTO;
+    }
+}
+
+bool Entity::is_function() const {
+    auto type = declarator->type->unqualified();
+    return dynamic_cast<const FunctionType*>(type);
+}
+
+DeclaratorKind Entity::kind() const {
     return DeclaratorKind::ENTITY;
 }
 
-Linkage Function::linkage() const {
-    return determine_linkage(declarator);
+Linkage Entity::linkage() const {
+    auto storage_class = declarator->declaration->storage_class;
+    auto scope = declarator->declaration->scope;
+
+    if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
+        return Linkage::INTERNAL;
+    } else if (storage_class == StorageClass::EXTERN || scope == IdentifierScope::FILE) {
+        return Linkage::EXTERNAL;
+    } else {
+        return Linkage::NONE;
+    }
 }
 
-void Function::compose(Declarator* later) {
-    auto later_fn = later->function();
-    if (!later_fn) return;
+void Entity::compose(Declarator* later) {
+    auto later_entity = later->entity();
+    if (!later_entity) return;
 
-    if (later_fn->body) {
+    if (later_entity->initializer) {
+        if (initializer) {
+            message(Severity::ERROR, later->location) << "redefinition of '" << declarator->identifier << "'\n";
+            message(Severity::INFO, declarator->location) << "see prior definition\n";
+        } else {
+            initializer = later_entity->initializer;
+        }
+    }
+    
+    if (later_entity->body) {
         if (body) {
             message(Severity::ERROR, later->location) << "redefinition of '" << declarator->identifier << "'\n";
             message(Severity::INFO, declarator->location) << "see prior definition\n";
         } else {
-            body = later_fn->body;
-            params = move(later_fn->params);
+            body = later_entity->body;
+            params = move(later_entity->params);
         }
     }
   
-    inline_definition = later_fn->inline_definition && inline_definition;
+    inline_definition = later_entity->inline_definition && inline_definition;
+
+    assert(later_entity->storage_duration() == storage_duration());
 }
 
-void Function::print(ostream& stream) const {
-    stream << "[\"fun\", \"" << linkage();
+void Entity::print(ostream& stream) const {
+    if (is_function()) {
+        stream << "[\"fun\", \"" << linkage();
 
-    if (inline_definition) {
-        stream << 'i';
-    }
-
-    stream << "\", " << declarator->type << ", \"" << declarator->identifier << '"';
-    if (body) {
-        stream << ", [";
-        for (auto i = 0; i < params.size(); ++i) {
-            if (i != 0) stream << ", ";
-            auto identifier = params[i]->declarator->identifier;
-            stream << '"' << identifier << '"';
+        if (inline_definition) {
+            stream << 'i';
         }
-        stream << "], " << body;
+
+        stream << "\", " << declarator->type << ", \"" << declarator->identifier << '"';
+        if (body) {
+            stream << ", [";
+            for (auto i = 0; i < params.size(); ++i) {
+                if (i != 0) stream << ", ";
+                auto identifier = params[i]->declarator->identifier;
+                stream << '"' << identifier << '"';
+            }
+            stream << "], " << body;
+        }
+        stream << ']';
+    } else {
+        stream << "[\"var\", \"" << linkage() << storage_duration();
+
+        stream << "\", " << declarator->type << ", \"" << declarator->identifier  << "\"";
+        if (initializer) {
+            stream << ", " << initializer;
+        }
+        stream << ']';
     }
-    stream << ']';
 }
 
 TypeDef::TypeDef(Declarator* declarator)
