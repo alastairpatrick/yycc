@@ -68,6 +68,7 @@ void Parser::handle_declaration_directive() {
                 break;
               case TOK_PP_TYPE:
                 new_declarator->delegate = new TypeDef(new_declarator);
+                new_declarator->type = new_declarator->to_type();
                 break;
               default:
                 preprocessor.unexpected_directive_token();
@@ -77,10 +78,9 @@ void Parser::handle_declaration_directive() {
             if (new_declarator->delegate) {
                 auto old_declarator = identifiers.lookup_declarator(id);
                 if (old_declarator &&
-                    old_declarator->delegate->linkage() == new_declarator->delegate->linkage() &&
-                    old_declarator->type == &CompatibleType::it) {
+                    old_declarator->delegate->linkage() == new_declarator->delegate->linkage()) {
                     if (old_declarator->delegate->kind() < new_declarator->delegate->kind()) {
-                        old_declarator->delegate = new_declarator->delegate;
+                        *old_declarator = *new_declarator;
                     }
                 } else {
                     identifiers.add_declarator(new_declarator);

@@ -19,7 +19,10 @@ struct TypeDef;
 
 struct ASTNode: Printable {
     ASTNode();
-    void operator=(const ASTNode&) = delete;
+    ASTNode(const ASTNode&);
+    ASTNode(ASTNode&&);
+    ASTNode& operator=(const ASTNode&);
+    ASTNode& operator=(ASTNode&&);
 
     ASTNode* next_delete;
 };

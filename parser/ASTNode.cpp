@@ -8,6 +8,20 @@ ASTNode::ASTNode() {
     context->ast_nodes = this;
 }
 
+ASTNode::ASTNode(const ASTNode&): ASTNode() {
+}
+
+ASTNode::ASTNode(ASTNode&&): ASTNode() {
+}
+
+ASTNode& ASTNode::operator=(const ASTNode&) {
+    return *this;
+}
+
+ASTNode& ASTNode::operator=(ASTNode&&) {
+    return *this;
+}
+
 ostream& operator<<(ostream& stream, const ASTNodeVector& items) {
     stream << '[';
     auto separate = false;
