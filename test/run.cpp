@@ -40,12 +40,6 @@ enum Section {
 };
 
 static const Test tests[] = {
-    { "typedef",            TestType::DECLARATIONS },
-
-
-
-
-
     { "preprocess",         TestType::PREPROCESS },
     { "sweep",              TestType::PREPROCESS },
 

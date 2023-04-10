@@ -24,6 +24,42 @@ EXPECT_AST
 [["declare","Si"]]
 
 
+BEGIN Pointer typedef
+typedef float T;
+typedef T* P;
+P x;
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef",["P","Ff"],"P"],["typedef","Ff","T"],["var","ES",["P","Ff"],"x",""]]
+
+
+BEGIN Array typedef
+typedef float T;
+typedef T A[1];
+A x;
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef",["A","Ff",1],"A"],["typedef","Ff","T"],["var","ES",["A","Ff",1],"x",""]]
+
+
+BEGIN Qualified typedef
+typedef float T;
+typedef const T U;
+U x;
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef","Ff","T"],["typedef",["Qc","Ff"],"U"],["var","ES",["Qc","Ff"],"x",""]]
+
+
+BEGIN Function typedef
+typedef float T;
+typedef T F(T);
+F f;
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef",["F","Ff","Ff"],"F"],["typedef","Ff","T"],["fun","E",["F","Ff","Ff"],"f"]]
+
+
 BEGIN Typedef in block scope
 typedef int a;
 void f(void) {
