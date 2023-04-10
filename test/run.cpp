@@ -86,7 +86,8 @@ ASTNodeVector parse_declarations(IdentifierMap& identifiers, const Input& input)
     Preprocessor preprocessor(identifiers.preparse);
     preprocessor.in(input);
     Parser parser(preprocessor, identifiers);
-    return parser.parse();
+    parser.parse();
+    return move(parser.declarations);
 }
 
 void sweep(ostream& stream, const File& file);

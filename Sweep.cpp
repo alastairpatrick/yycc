@@ -117,9 +117,9 @@ void sweep(ostream& stream, const File& file) {
 
     IdentifierMap identifiers(true);
     Parser parser(preprocessor1, identifiers);
-    auto declarations = parser.parse();
+    parser.parse();
 
-    DeclarationMarker marker(preprocessor1.output(), declarations, identifiers);
+    DeclarationMarker marker(preprocessor1.output(), parser.declarations, identifiers);
     marker.mark();
 
     Preprocessor preprocessor2(preprocessor1.output(), false);

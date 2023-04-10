@@ -35,7 +35,7 @@ const Type* Type::promote() const {
     return this;
 }
 
-const Type* Type::resolve(IdentifierMap& identifiers) const {
+const Type* Type::resolve(ResolutionContext& ctx) const {
     return this;
 }
 
@@ -48,15 +48,6 @@ LLVMValueRef Type::convert_to_type(CodeGenContext* context, LLVMValueRef value, 
 
 const Type* compose_types(const Type* a, const Type* b) {
     if (a == b) return a;
-
-    // HACK: Remove when TypeDefType are eliminated before type composition
-    if (auto td = dynamic_cast<const TypeDefType*>(a)) {
-        if (td == a) return b; // not robust for cycles of two or more nodes
-        return compose_types(td, b);
-    } else if (auto td = dynamic_cast<const TypeDefType*>(b)) {
-        if (td == b) return a;
-        return compose_types(td, b);
-    }
 
     if (a == &CompatibleType::it) return b;
     if (b == &CompatibleType::it) return a;
@@ -355,8 +346,8 @@ const Type* convert_arithmetic(const Type* left, const Type* right) {
 
 #pragma region PointerType
 
-const Type* PointerType::resolve(IdentifierMap& identifiers) const {
-    return base_type->resolve(identifiers)->pointer_to();
+const Type* PointerType::resolve(ResolutionContext& ctx) const {
+    return base_type->resolve(ctx)->pointer_to();
 }
 
 LLVMTypeRef PointerType::llvm_type() const {
@@ -387,12 +378,12 @@ const Type* ArrayType::compose(const Type* o) const {
     return nullptr;
 }
 
-const Type* ArrayType::resolve(IdentifierMap& identifiers) const {
-    auto e = element_type->resolve(identifiers);
+const Type* ArrayType::resolve(ResolutionContext& ctx) const {
+    auto resolved_element_type = element_type->resolve(ctx);
 
     // TODO: evaluate constant size expression and return canonical representation of array type.
-    assert(false);
-    return nullptr;
+    if (resolved_element_type == element_type) return this;
+    return new ArrayType(resolved_element_type, size);
 }
 
 LLVMTypeRef ArrayType::llvm_type() const {
@@ -439,8 +430,8 @@ const Type* QualifiedType::unqualified() const {
     return base_type;
 }
 
-const Type* QualifiedType::resolve(IdentifierMap& identifiers) const {
-    return QualifiedType::of(base_type->resolve(identifiers), qualifier_flags);
+const Type* QualifiedType::resolve(ResolutionContext& ctx) const {
+    return QualifiedType::of(base_type->resolve(ctx), qualifier_flags);
 }
 
 LLVMTypeRef QualifiedType::llvm_type() const {
@@ -486,11 +477,11 @@ const FunctionType* FunctionType::of(const Type* return_type, std::vector<const 
     return type;
 }
 
-const Type* FunctionType::resolve(IdentifierMap& identifiers) const {
-    auto resolved_return_type = return_type->resolve(identifiers);
+const Type* FunctionType::resolve(ResolutionContext& ctx) const {
+    auto resolved_return_type = return_type->resolve(ctx);
     auto resolved_param_types(parameter_types);
     for (auto& param_type : resolved_param_types) {
-        param_type = param_type->resolve(identifiers);
+        param_type = param_type->resolve(ctx);
     }
     return FunctionType::of(resolved_return_type, resolved_param_types, variadic);
 }
@@ -650,6 +641,10 @@ TypeDefType::TypeDefType(Declarator* declarator): declarator(declarator) {
 
 const Type* TypeDefType::unqualified() const {
     return declarator->type->unqualified();
+}
+
+const Type* TypeDefType::resolve(ResolutionContext& ctx) const {
+    return declarator->resolve(ctx);
 }
 
 LLVMTypeRef TypeDefType::llvm_type() const {

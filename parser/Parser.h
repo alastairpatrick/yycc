@@ -20,9 +20,12 @@ struct Parser {
     Parser(Preprocessor& preprocessor, IdentifierMap& identifiers);
     void operator=(const Parser&) = delete;
 
+    Declaration* parse_initial_directives();
     Expr* parse_standalone_expr();  // for testing
-    ASTNodeVector parse();
+    void parse();
     bool check_eof();
+
+    ASTNodeVector declarations;
 
 private:
     Preprocessor& preprocessor;

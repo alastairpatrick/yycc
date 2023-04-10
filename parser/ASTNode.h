@@ -14,6 +14,7 @@ struct EnumConstant;
 enum class IdentifierScope;
 enum class StorageClass;
 enum class Linkage;
+struct ResolutionContext;
 struct Type;
 struct TypeDef;
 
@@ -31,6 +32,12 @@ typedef vector<ASTNode*> ASTNodeVector;
 
 ostream& operator<<(ostream& stream, const ASTNodeVector& items);
 
+enum class ResolutionStatus {
+    UNRESOLVED,
+    RESOLVING,
+    RESOLVED,
+};
+
 struct Declarator: ASTNode {
     Declarator(const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location);
     Declarator(const Declaration* declaration, const Identifier& identifier, const Location& location);
@@ -43,12 +50,14 @@ struct Declarator: ASTNode {
     DeclaratorDelegate* delegate{};
 
     Declarator* next{};
+    ResolutionStatus status = ResolutionStatus::UNRESOLVED;
 
     EnumConstant* enum_constant();
     Entity* entity();
     TypeDef* type_def();
 
     const Type* to_type() const;
+    const Type* resolve(ResolutionContext& ctx);
     void compose(Declarator* later);
     void print(ostream& stream) const;
 };

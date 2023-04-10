@@ -53,6 +53,7 @@ void Parser::handle_declaration_directive() {
     }
 
     auto declaration = new Declaration(IdentifierScope::FILE, storage_class, &CompatibleType::it, preprocessor.location());
+    declarations.push_back(declaration);
 
     while (pp_token && pp_token != '\n') {
         if (pp_token == TOK_IDENTIFIER) {
@@ -84,6 +85,7 @@ void Parser::handle_declaration_directive() {
                     }
                 } else {
                     identifiers.add_declarator(new_declarator);
+                    declaration->declarators.push_back(new_declarator);
                 }
             }
         } else {
@@ -553,12 +555,19 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
     return declaration;
 }
 
-ASTNodeVector Parser::parse() {
-    ASTNodeVector declarations;
+void Parser::parse() {
     while (token) {
         declarations.push_back(parse_declaration_or_statement(IdentifierScope::FILE));
     }
-    return declarations;
+
+    if (!preparse) {
+        ResolutionContext context(identifiers);
+        for (auto node: declarations) {
+            if (auto declaration = dynamic_cast<Declaration*>(node)) {
+                declaration->resolve(context);
+            }
+        }
+    }
 }
 
 ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {

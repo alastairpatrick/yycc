@@ -136,7 +136,7 @@ DECLARATIONS
 EXPECT_GLOBALS
 [["var","ES","Si","x",""]]
 EXPECT_AST
-[["declare","Si"]]
+[["var","ES","Si","x",""],["declare","Si"]]
 
 
 BEGIN #static entity directive preceeding variable declaration
@@ -146,4 +146,4 @@ DECLARATIONS
 EXPECT_GLOBALS
 [["var","IS","Si","x",""]]
 EXPECT_AST
-[["declare","Si"]]
+[["var","IS","Si","x",""],["declare","Si"]]

@@ -1,5 +1,6 @@
 #include "IdentifierMap.h"
 #include "Declaration.h"
+#include "Message.h"
 
 Declarator* IdentifierMap::lookup_declarator(const Identifier& identifier) const {
     for (auto& scope : scopes) {
@@ -37,12 +38,18 @@ bool IdentifierMap::add_declarator(Declarator* declarator) {
 bool IdentifierMap::add_declarator_to_scope(Scope& scope, Declarator* declarator) {
     auto it = scope.declarators.find(declarator->identifier.name);
     if (it != scope.declarators.end()) {
+
+        if (declarator->delegate->linkage() == Linkage::INTERNAL && it->second->delegate->linkage() != Linkage::INTERNAL) {
+            message(Severity::ERROR, declarator->location) << "static declaration of '" << declarator->identifier << "' follows non-static declaration\n";
+            message(Severity::INFO, it->second->location) << "see prior declaration\n";
+        }
+
         if (preparse) {
             declarator->next = it->second;
             it->second = declarator;
         } else {
-            it->second->compose(declarator);
-            declarator = it->second;
+            declarator->next = it->second->next;
+            it->second->next = declarator;
             return false;
         }
     } else {
@@ -62,4 +69,7 @@ void IdentifierMap::pop_scope() {
 
 IdentifierMap::IdentifierMap(bool preparse): preparse(preparse) {
     push_scope();
+}
+
+ResolutionContext::ResolutionContext(const IdentifierMap& identifiers): identifiers(identifiers) {
 }

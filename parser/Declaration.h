@@ -32,6 +32,7 @@ enum class StorageDuration {
 };
 
 struct FunctionType;
+struct ResolutionContext;
 
 ostream& operator<<(ostream& stream, Linkage linkage);
 ostream& operator<<(ostream& stream, StorageDuration duration);
@@ -47,6 +48,8 @@ struct Declaration: ASTNode {
     const Type* type{};
     vector<Declarator*> declarators;
     bool mark_root{};
+
+    void resolve(ResolutionContext& context);
 
     virtual void print(ostream& stream) const;
 };

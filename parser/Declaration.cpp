@@ -1,6 +1,7 @@
 #include "Declaration.h"
 
 #include "Constant.h"
+#include "IdentifierMap.h"
 #include "Message.h"
 #include "Type.h"
 
@@ -37,6 +38,11 @@ Declaration::Declaration(IdentifierScope scope, const Location& location)
     : location(location), scope(scope) {
 }
 
+void Declaration::resolve(ResolutionContext& context) {
+    for (auto declarator: declarators) {
+        declarator->resolve(context);
+    }
+}
 
 void Declaration::print(ostream& stream) const {
     if (declarators.size() == 0) {
@@ -80,6 +86,52 @@ const Type* Declarator::to_type() const {
     return delegate->to_type();
 }
 
+struct ResolutionCycle {};
+
+static bool is_trivially_cyclic(Declarator* declarator, const Type* type) {
+    auto tdt = dynamic_cast<const TypeDefType*>(type);
+    return tdt && tdt->declarator == declarator;
+}
+
+const Type* Declarator::resolve(ResolutionContext& ctx) {
+    if (status == ResolutionStatus::RESOLVED) return type;
+    if (status == ResolutionStatus::RESOLVING) throw ResolutionCycle();
+
+    status = ResolutionStatus::RESOLVING;
+
+    // The only valid cyclic typedef has form "typedef T T" and only when combined with a non-cyclic typedef for identifier "T".
+    for (;;) {
+        if (!is_trivially_cyclic(this, type) || !next) break;
+        *this = move(*next);
+    }
+
+    try {
+        type = type->resolve(ctx);
+    } catch (ResolutionCycle) {
+        message(Severity::ERROR, location) << "cyclic typedef '" << identifier << "'\n";
+        return type = IntegerType::default_type();
+    }
+
+    for (auto other = next; other; other = other->next) {
+        if (is_trivially_cyclic(this, other->type)) {
+            other->type = type;
+        } else {
+            try {
+                other->type = other->type->resolve(ctx);
+            } catch (ResolutionCycle) {
+                message(Severity::ERROR, other->location) << "cyclic typedef\n";
+                continue;
+            }
+        }
+
+        compose(other);
+    }
+    next = nullptr;
+
+    status = ResolutionStatus::RESOLVED;
+    return type;
+}
+
 void Declarator::compose(Declarator* later) {
     if (later->type != type) {
         auto composite_type = compose_types(type, later->type);
@@ -93,11 +145,6 @@ void Declarator::compose(Declarator* later) {
 
     if (later->delegate && delegate && typeid(*later->delegate) != typeid(*delegate)) {
         message(Severity::ERROR, later->location) << "redeclaration of '" << identifier << "' with different type\n";
-        message(Severity::INFO, location) << "see prior declaration\n";
-    }
-
-    if (later->delegate->linkage() == Linkage::INTERNAL && delegate->linkage() != Linkage::INTERNAL) {
-        message(Severity::ERROR, later->location) << "static declaration of '" << identifier << "' follows non-static declaration\n";
         message(Severity::INFO, location) << "see prior declaration\n";
     }
 

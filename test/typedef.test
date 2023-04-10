@@ -120,11 +120,13 @@ EXPECT_AST
 [["typedef", "NT", "S"]]
 
 
-BEGIN #static type directive
+BEGIN cyclic #static type directive
 #static type T
 DECLARATIONS
+EXPECT_MESSAGE
+:1:14: error cyclic typedef 'T'
 EXPECT_GLOBALS
-[["typedef","recursive","T"]]
+[["typedef","Si","T"]]
 
 
 BEGIN #static type resolves ambiguity as to whether identifier is type or not
@@ -132,12 +134,14 @@ BEGIN #static type resolves ambiguity as to whether identifier is type or not
 void f(void) {
     T * v; // "T" is a type so this declares variable "v" with type "T*".
 }
+typedef float T;
 DECLARATIONS
-EXPECT_AST
+EXPECT_GLOBALS
 [
+    ["typedef","Ff","T"],
     ["fun","E",["F","V"],"f",[""],
         ["block",[
-            ["var","",["P","recursive"],"v",""]
+            ["var","",["P","Ff"],"v",""]
         ]]
     ]
 ]
