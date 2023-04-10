@@ -124,7 +124,7 @@ BEGIN #static type directive
 #static type T
 DECLARATIONS
 EXPECT_GLOBALS
-[["typedef","?","T"]]
+[["typedef","recursive","T"]]
 
 
 BEGIN #static type resolves ambiguity as to whether identifier is type or not
@@ -137,7 +137,7 @@ EXPECT_AST
 [
     ["fun","E",["F","V"],"f",[""],
         ["block",[
-            ["var","",["P","?"],"v",""]
+            ["var","",["P","recursive"],"v",""]
         ]]
     ]
 ]

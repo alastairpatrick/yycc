@@ -8,6 +8,7 @@
 
 struct CodeGenContext;
 struct Declaration;
+struct Declarator;
 struct EnumConstant;
 struct Expr;
 enum class IdentifierScope;
@@ -231,6 +232,16 @@ struct UnboundType: Type {
 
 private:
     explicit UnboundType(const Identifier& identifier);
+};
+
+struct TypeDefType: Type {
+    TypeDefType(Declarator* declarator);
+
+    Declarator* const declarator;
+
+    virtual const Type* unqualified() const;
+    virtual LLVMTypeRef llvm_type() const;
+    virtual void print(ostream& stream) const;
 };
 
 #endif

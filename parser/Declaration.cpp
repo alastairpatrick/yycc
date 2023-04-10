@@ -238,7 +238,7 @@ void Entity::print(ostream& stream) const {
 }
 
 TypeDef::TypeDef(Declarator* declarator)
-    : DeclaratorDelegate(declarator) {
+    : DeclaratorDelegate(declarator), type_def_type(declarator) {
     
 }
 
@@ -247,7 +247,7 @@ DeclaratorKind TypeDef::kind() const {
 }
 
 const Type* TypeDef::to_type() const {
-    return declarator->type;
+    return &type_def_type;
 }
 
 void TypeDef::compose(Declarator* later) {

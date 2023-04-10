@@ -101,9 +101,9 @@ struct S {
 };
 DECLARATIONS
 EXPECT_AST
-[["declare",["STRUCT",[["p",["P",["STRUCT","recursive"]]]]]]]
+[["declare",["STRUCT",[["p",["P","recursive"]]]]]]
 EXPECT_GLOBALS
-[["typedef",["STRUCT",[["p",["P",["STRUCT","recursive"]]]]],"S"]]
+[["typedef",["STRUCT",[["p",["P","recursive"]]]],"S"]]
 
 
 BEGIN Error on combination of struct specifier and type specifier

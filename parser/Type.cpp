@@ -49,8 +49,17 @@ LLVMValueRef Type::convert_to_type(CodeGenContext* context, LLVMValueRef value, 
 const Type* compose_types(const Type* a, const Type* b) {
     if (a == b) return a;
 
-    if (dynamic_cast<const CompatibleType*>(a)) return b;
-    if (dynamic_cast<const CompatibleType*>(b)) return a;
+    // HACK: Remove when TypeDefType are eliminated before type composition
+    if (auto td = dynamic_cast<const TypeDefType*>(a)) {
+        if (td == a) return b; // not robust for cycles of two or more nodes
+        return compose_types(td, b);
+    } else if (auto td = dynamic_cast<const TypeDefType*>(b)) {
+        if (td == b) return a;
+        return compose_types(td, b);
+    }
+
+    if (a == &CompatibleType::it) return b;
+    if (b == &CompatibleType::it) return a;
 
     if (typeid(a) == typeid(b)) {
         return a->compose(b);
@@ -521,14 +530,6 @@ LLVMTypeRef StructuredType::llvm_type() const {
 }
 
 void StructuredType::print(std::ostream& stream) const {
-    auto& printing = TranslationUnitContext::it->printing;
-
-    if (printing.find(this) != printing.end()) {
-        stream << "\"recursive\"";
-        return;
-    }
-
-    printing.insert(this);
     stream << '[';
 
     auto separator = false;
@@ -551,7 +552,6 @@ void StructuredType::print(std::ostream& stream) const {
         stream << "\"?\"";
     }
 
-    printing.erase(this);
     stream << ']';
 }
 
@@ -643,3 +643,22 @@ UnboundType::UnboundType(const Identifier& identifier)
 
 #pragma endregion UnboundType
 
+#pragma region TypeDefType
+
+TypeDefType::TypeDefType(Declarator* declarator): declarator(declarator) {
+}
+
+const Type* TypeDefType::unqualified() const {
+    return declarator->type->unqualified();
+}
+
+LLVMTypeRef TypeDefType::llvm_type() const {
+    assert(false);
+    return nullptr;
+}
+
+void TypeDefType::print(ostream& stream) const {
+    stream << declarator->type;
+}
+
+#pragma endregion TypeDefType

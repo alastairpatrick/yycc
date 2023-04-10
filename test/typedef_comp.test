@@ -81,6 +81,6 @@ BEGIN #static type directives composed
 #static type T
 DECLARATIONS
 EXPECT_GLOBALS
-[["typedef","?","T"]]
+[["typedef","recursive","T"]]
 
 

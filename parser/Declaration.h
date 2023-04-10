@@ -2,6 +2,7 @@
 #define AST_DECLARATION_H
 
 #include "ASTNode.h"
+#include "Type.h"
 
 enum class IdentifierScope {
     FILE,
@@ -94,6 +95,8 @@ struct Entity: DeclaratorDelegate {
 
 struct TypeDef: DeclaratorDelegate {
     explicit TypeDef(Declarator* declarator);
+
+    TypeDefType type_def_type;
 
     virtual DeclaratorKind kind() const;
     virtual const Type* to_type() const;
