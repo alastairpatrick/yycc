@@ -66,7 +66,7 @@ struct DeclarationMarker {
                 todo.insert(declarator->declaration);
             }
 
-            declarator = declarator->earlier;
+            declarator = declarator->next;
         }
     }
 

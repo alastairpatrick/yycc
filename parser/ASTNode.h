@@ -42,9 +42,7 @@ struct Declarator: ASTNode {
     Identifier identifier;
     DeclaratorDelegate* delegate{};
 
-    // During preparse, "earlier" forms a linked list of Declarators corresponding to the same entity.
-    // After preparse, "earlier" is always null and there is a single Declarator instance for each entity.
-    Declarator* earlier{};
+    Declarator* next{};
 
     EnumConstant* enum_constant();
     Entity* entity();
