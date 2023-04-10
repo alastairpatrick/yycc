@@ -13,7 +13,7 @@ extern int x;
 DECLARATIONS
 EXPECT_AST
 [["var", "ES", "Si", "x"]
-,["declare","Si"]]
+,[]]
 
 
 BEGIN Variable declaration with internal linkage may not follow variable declaration with external linkage
@@ -25,7 +25,7 @@ EXPECT_MESSAGE
 :1:1: see prior declaration
 EXPECT_AST
 [["var","ES","Si","x",""]
-,["declare","Si"]]
+,[]]
 
 
 BEGIN Variable declaration having internal linkage may preceed variable declaration having external linkage
@@ -34,7 +34,7 @@ extern int x;
 DECLARATIONS
 EXPECT_AST
 [["var","IS","Si","x", ""]
-,["declare","Si"]]
+,[]]
 
 
 BEGIN Multiple variable declarations having internal linkage not allowed
@@ -46,7 +46,7 @@ EXPECT_MESSAGE
 :1:1: see prior definition
 EXPECT_AST
 [["var", "IS", "Si", "x", ""]
-,["declare","Si"]]
+,[]]
 
 
 BEGIN Variable definition following variable declaration (1)
@@ -64,7 +64,7 @@ int x;
 DECLARATIONS
 EXPECT_AST
 [["var","ES","Si","x", ""]
-,["declare","Si"]]
+,[]]
 
 
 BEGIN Variable definition preceeding variable declaration (1)
@@ -82,7 +82,7 @@ extern int x;
 DECLARATIONS
 EXPECT_AST
 [["var","ES","Si","x", ""],
-["declare","Si"]]
+[]]
 
 
 BEGIN Variable initialization following variable declaration (1)
@@ -100,7 +100,7 @@ int x = 1;
 DECLARATIONS
 EXPECT_AST
 [["var","ES","Si","x",1]
-,["declare","Si"]]
+,[]]
 
 
 BEGIN Variable initialization preceeding variable declaration (1)
@@ -118,7 +118,7 @@ extern int x;
 DECLARATIONS
 EXPECT_AST
 [["var", "ES", "Si", "x", 1]
-,["declare","Si"]]
+,[]]
 
 
 BEGIN #extern entity directives composed
@@ -136,7 +136,7 @@ DECLARATIONS
 EXPECT_GLOBALS
 [["var","ES","Si","x",""]]
 EXPECT_AST
-[["var","ES","Si","x",""],["declare","Si"]]
+[["var","ES","Si","x",""],[]]
 
 
 BEGIN #static entity directive preceeding variable declaration
@@ -146,4 +146,4 @@ DECLARATIONS
 EXPECT_GLOBALS
 [["var","IS","Si","x",""]]
 EXPECT_AST
-[["var","IS","Si","x",""],["declare","Si"]]
+[["var","IS","Si","x",""],[]]

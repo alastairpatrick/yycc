@@ -13,7 +13,7 @@ signed foo(int);
 DECLARATIONS
 EXPECT_AST
 [["fun", "E", ["F", "Si", "Si"], "foo"]
-,["declare","Si"]]
+,[]]
 
 
 BEGIN Multiple function declarations with extern storage class (1)
@@ -31,7 +31,7 @@ extern void foo(int);
 DECLARATIONS
 EXPECT_AST
 [["fun", "E", ["F", "V", "Si"], "foo"]
-,["declare","V"]]
+,[]]
 
 
 BEGIN Function declaration having internal linkage may not follow function declaration having external linkage
@@ -43,7 +43,7 @@ EXPECT_MESSAGE
 :1:1: see prior declaration
 EXPECT_AST
 [["fun", "E", ["F", "V", "Si"], "foo"]
-,["declare","V"]]
+,[]]
 
 
 BEGIN Function declaration having internal linkage may preceed function declaration having external linkage (1)
@@ -61,7 +61,7 @@ extern void foo(int);
 DECLARATIONS
 EXPECT_AST
 [["fun","I",["F", "V", "Si"],"foo"]
-,["declare","V"]]
+,[]]
 
 
 BEGIN Multiple function declarations with internal linkage (1)
@@ -79,7 +79,7 @@ static void foo(int);
 DECLARATIONS
 EXPECT_AST
 [["fun","I",["F", "V", "Si"],"foo"]
-,["declare","V"]]
+,[]]
 
 
 BEGIN Empty function definition
@@ -96,7 +96,7 @@ void foo(int x) {
 DECLARATIONS
 EXPECT_AST
 [["fun","I",["F", "V", "Si"],"foo",["x"],["block",[]]]
-,["declare","V"]]
+,[]]
 
 
 BEGIN Function definition with function declaration (2)
@@ -106,7 +106,7 @@ extern void foo(int);
 DECLARATIONS
 EXPECT_AST
 [["fun", "E", ["F", "V", "Si"], "foo", ["x"], ["block", []]]
-,["declare","V"]]
+,[]]
 
 
 BEGIN Function initially declared with a function-typed typedef (preparse)
@@ -130,7 +130,7 @@ DECLARATIONS
 EXPECT_AST
 [["typedef",["F","V","Si"],"F"]
 ,["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]
-,["declare","V"]]
+,[]]
 
 
 BEGIN Function declared with a function-typed typedef in another translation unit (1)
@@ -175,7 +175,7 @@ EXPECT_AST
 [
     ["fun", "E", ["F", "V", "Si"], "foo"],
     ["block", [
-        ["declare","V"]
+        []
     ]]
 ]
 

@@ -1,41 +1,35 @@
-BEGIN Unnamed struct definition
+BEGIN Untagged struct definition with declarator
 struct { int x; int y; } z;
-EXPECT_AST
-[["var", "ES", ["STRUCT", [["x", "Si"], ["y", "Si"]]], "z", ""]]
-
-
-BEGIN Named struct definition
-struct S { int x; int y; } z;
-EXPECT_AST
-[["var", "ES", ["STRUCT", [["x", "Si"], ["y", "Si"]]], "z", ""]]
 EXPECT_GLOBALS
-[["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]
-,["var","ES",["STRUCT",[["x","Si"],["y","Si"]]],"z",""]]
+[["var","ES",["STRUCT",[["x","Si"],["y","Si"]]],"z",""]]
 
 
-BEGIN Named struct
+BEGIN Tagged struct definition
+struct S { int x; int y; };
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
+
+
+BEGIN Tagged struct with multiple identical definitions
+struct S { int x; int y; };
+struct S { int x; int y; };
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
+
+
+BEGIN Tagged incomplete struct
+struct S;
+EXPECT_GLOBALS
+[["typedef",["STRUCT",["?"]],"S"]]
+
+
+BEGIN Tagged incomplete struct with declarator
 struct S z;
 EXPECT_AST
 [["var","ES",["STRUCT",["?"]],"z",""]]
 EXPECT_GLOBALS
 [["typedef",["STRUCT",["?"]],"S"]
 ,["var","ES",["STRUCT",["?"]],"z",""]]
-
-
-BEGIN Named struct definition with no declarators
-struct S { int x; int y; };
-EXPECT_AST
-[["declare",["STRUCT",[["x","Si"],["y","Si"]]]]]
-EXPECT_GLOBALS
-[["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
-
-
-BEGIN Named struct with no declarators
-struct S;
-EXPECT_AST
-[["declare",["STRUCT",["?"]]]]
-EXPECT_GLOBALS
-[["typedef",["STRUCT",["?"]],"S"]]
 
 
 BEGIN Bit-field
@@ -80,10 +74,12 @@ EXPECT_AST
 [["var", "ES", "Si", "x", ""]]
 
 
-BEGIN Error on standalone struct keyword
+BEGIN Standalone struct keyword
 struct;
 EXPECT_AST
-[["declare",["STRUCT",["?"]]]]
+[[]]
+EXPECT_GLOBALS
+[]
 
 
 BEGIN Struct members are not added to symbol map
@@ -100,8 +96,6 @@ struct S {
     S* p;
 };
 DECLARATIONS
-EXPECT_AST
-[["declare",["STRUCT",[["p",["P","recursive"]]]]]]
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["p",["P","recursive"]]]],"S"]]
 
@@ -115,13 +109,13 @@ EXPECT_AST
 [["typedef","Ff","T"],["var","ES","Si","v",""]]
 
 
-BEGIN Unnamed union definition
+BEGIN Untagged union definition
 union { int x; int y; } z;
 EXPECT_AST
 [["var", "ES", ["UNION", [["x", "Si"], ["y", "Si"]]], "z", ""]]
 
 
-BEGIN Named union definition
+BEGIN Tagged union definition
 union S { int x; int y; } z;
 EXPECT_AST
 [["var", "ES", ["UNION", [["x", "Si"], ["y", "Si"]]], "z", ""]]
@@ -130,7 +124,7 @@ EXPECT_GLOBALS
 ,["var","ES",["UNION",[["x","Si"],["y","Si"]]],"z",""]]
 
 
-BEGIN Named union
+BEGIN Tagged union
 union S z;
 EXPECT_AST
 [["var","ES",["UNION",["?"]],"z",""]]
@@ -139,13 +133,13 @@ EXPECT_GLOBALS
 ,["var","ES",["UNION",["?"]],"z",""]]
 
 
-BEGIN Unnamed enum definition
+BEGIN Untagged enum definition
 enum { A=1, B } z;
 EXPECT_AST
 [["var", "ES", ["ENUM", [["ec", "A", 1], ["ec", "B"]]], "z", ""]]
 
 
-BEGIN Named enum definition
+BEGIN Tagged enum definition
 enum E { A=1, B } z;
 EXPECT_AST
 [["var", "ES", ["ENUM", [["ec", "A", 1], ["ec", "B"]]], "z", ""]]
@@ -156,7 +150,7 @@ EXPECT_GLOBALS
 ,["var","ES",["ENUM",[["ec","A",1],["ec","B"]]],"z",""]]
 
 
-BEGIN Named enum
+BEGIN Tagged enum
 enum E z;
 EXPECT_AST
 [["var","ES",["ENUM",["?"]],"z",""]]

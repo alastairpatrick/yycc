@@ -21,7 +21,7 @@ typedef;
 EXPECT_MESSAGE
 :1:1: error invalid type specifier combination
 EXPECT_AST
-[["declare","Si"]]
+[[]]
 
 
 BEGIN Pointer typedef
@@ -124,7 +124,7 @@ DECLARATIONS
 EXPECT_MESSAGE
 :3:6: error expected identifier but got '+'
 EXPECT_AST
-[["typedef","Sl","p"],["fun","E",["F", "V"],"f",[""],["block",[["declare","Sl"]]]]]
+[["typedef","Sl","p"],["fun","E",["F", "V"],"f",[""],["block",[[]]]]]
 
 
 BEGIN Typedef may not be inline

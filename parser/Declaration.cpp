@@ -45,20 +45,16 @@ void Declaration::resolve(ResolutionContext& context) {
 }
 
 void Declaration::print(ostream& stream) const {
-    if (declarators.size() == 0) {
-        stream << "[\"declare\", " << type << ']';
-    } else {
-        if (declarators.size() != 1) stream << '[';
+    if (declarators.size() != 1) stream << '[';
 
-        auto separate = false;
-        for (auto& declarator : declarators) {
-            if (separate) stream << ", ";
-            separate = true;
-            stream << declarator;
-        }
-
-        if (declarators.size() != 1) stream << ']';
+    auto separate = false;
+    for (auto& declarator : declarators) {
+        if (separate) stream << ", ";
+        separate = true;
+        stream << declarator;
     }
+
+    if (declarators.size() != 1) stream << ']';
 }
 
 Declarator::Declarator(const Declaration* declaration, const Type* type, const Identifier &identifier, const Location& location)
