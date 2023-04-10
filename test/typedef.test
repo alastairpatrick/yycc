@@ -120,11 +120,53 @@ EXPECT_AST
 [["typedef", "NT", "S"]]
 
 
-BEGIN cyclic #static type directive
+BEGIN cyclic #static type directive with no accompanying type definition
 #static type T
 DECLARATIONS
 EXPECT_MESSAGE
-:1:14: error cyclic typedef 'T'
+:1:14: error 'T' undeclared
+EXPECT_GLOBALS
+[["typedef","Si","T"]]
+
+
+BEGIN Non-trivial recursive typedefs are an error (1)
+#static type T
+typedef T T[];
+DECLARATIONS
+EXPECT_MESSAGE
+:2:1: error recursive definition of 'T'
+EXPECT_GLOBALS
+[["typedef",["A","Si"],"T"]]
+
+
+BEGIN  Non-trivial recursive typedefs are an error (2)
+#static type T
+typedef T T[];
+typedef int T[];
+DECLARATIONS
+EXPECT_MESSAGE
+:2:1: error recursive definition of 'T'
+EXPECT_GLOBALS
+[["typedef",["A","Si"],"T"]]
+
+
+BEGIN  Non-trivial recursive typedefs are an error (3)
+#static type T
+typedef int T[];
+typedef T T[];
+DECLARATIONS
+EXPECT_MESSAGE
+:3:1: error recursive definition of 'T'
+EXPECT_GLOBALS
+[["typedef",["A","Si"],"T"]]
+
+
+BEGIN Trivial recursive typedefs are an error if not accompanied by non-recursive definition
+#static type T
+typedef T T;
+DECLARATIONS
+EXPECT_MESSAGE
+:2:1: error 'T' undeclared
 EXPECT_GLOBALS
 [["typedef","Si","T"]]
 

@@ -22,22 +22,11 @@ typedef int a;
 typedef unsigned a;
 DECLARATIONS
 EXPECT_MESSAGE
-:2:1: error redeclaration of 'a' with incompatible type
-:1:1: see prior declaration
+:2:1: error redefinition of 'a' with different type
+:1:1: see other definition
 EXPECT_AST
 [["typedef", "Si", "a"]
 ,["declare","Ui"]]
-
-
-BEGIN Typedef as self
-typedef int a;
-typedef a a;
-DECLARATIONS
-EXPECT_AST
-[["typedef", "Si", "a"]
-,["declare","Si"]]
-EXPECT_GLOBALS
-[["typedef", "Si", "a"]]
 
 
 BEGIN Typedef as self (preparse)
@@ -49,18 +38,43 @@ EXPECT_AST
 ,["typedef", "Si", "a"]]
 
 
-BEGIN Typedef as compatible type (1)
-typedef int T[];
-typedef int T[1];
+BEGIN Typedef as self (1)
+#static type a
+typedef int a;
+typedef a a;
 DECLARATIONS
 EXPECT_GLOBALS
-[["typedef",["A","Si", 1],"T"]]
+[["typedef", "Si", "a"]]
 
 
-BEGIN Typedef as compatible type (2)
+BEGIN Typedef as self (2)
+#static type a
+typedef a a;
+typedef int a;
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef", "Si", "a"]]
+
+
+
+BEGIN Redefining typedef with compatible type that is not same type is an error (1)
+typedef int T[];
+typedef int T[1];
+DECLARATIONS
+EXPECT_MESSAGE
+:2:1: error redefinition of 'T' with different type
+:1:1: see other definition
+EXPECT_GLOBALS
+[["typedef",["A","Si"],"T"]]
+
+
+BEGIN Redefining typedef with compatible type that is not same type is an error (2)
 typedef int T[1];
 typedef int T[];
 DECLARATIONS
+EXPECT_MESSAGE
+:2:1: error redefinition of 'T' with different type
+:1:1: see other definition
 EXPECT_GLOBALS
 [["typedef",["A","Si", 1],"T"]]
 
@@ -75,7 +89,6 @@ EXPECT_MESSAGE
 END
 
 
-
 BEGIN #static type directives composed
 #static type T
 #static type T
@@ -83,5 +96,3 @@ typedef float T;
 DECLARATIONS
 EXPECT_GLOBALS
 [["typedef","Ff","T"]]
-
-

@@ -97,18 +97,23 @@ const Type* Declarator::resolve(ResolutionContext& ctx) {
     if (status == ResolutionStatus::RESOLVED) return type;
     if (status == ResolutionStatus::RESOLVING) throw ResolutionCycle();
 
-    status = ResolutionStatus::RESOLVING;
-
     // The only valid cyclic typedef has form "typedef T T" and only when combined with a non-cyclic typedef for identifier "T".
     for (;;) {
         if (!is_trivially_cyclic(this, type) || !next) break;
         *this = move(*next);
     }
 
+    // Must be after assigning to *this
+    status = ResolutionStatus::RESOLVING;
+
     try {
         type = type->resolve(ctx);
     } catch (ResolutionCycle) {
-        message(Severity::ERROR, location) << "cyclic typedef '" << identifier << "'\n";
+        if (is_trivially_cyclic(this, type)) {
+            message(Severity::ERROR, location) << "'" << identifier << "' undeclared\n";
+        } else {
+            message(Severity::ERROR, location) << "recursive definition of '" << identifier << "'\n";
+        }
         return type = IntegerType::default_type();
     }
 
@@ -119,7 +124,7 @@ const Type* Declarator::resolve(ResolutionContext& ctx) {
             try {
                 other->type = other->type->resolve(ctx);
             } catch (ResolutionCycle) {
-                message(Severity::ERROR, other->location) << "cyclic typedef\n";
+                message(Severity::ERROR, other->location) << "recursive definition of '" << identifier << "'\n";
                 continue;
             }
         }
@@ -133,16 +138,6 @@ const Type* Declarator::resolve(ResolutionContext& ctx) {
 }
 
 void Declarator::compose(Declarator* later) {
-    if (later->type != type) {
-        auto composite_type = compose_types(type, later->type);
-        if (composite_type) {
-            type = composite_type;
-        } else {
-            message(Severity::ERROR, later->location) << "redeclaration of '" << identifier << "' with incompatible type\n";
-            message(Severity::INFO, location) << "see prior declaration\n";
-        }
-    }
-
     if (later->delegate && delegate && typeid(*later->delegate) != typeid(*delegate)) {
         message(Severity::ERROR, later->location) << "redeclaration of '" << identifier << "' with different type\n";
         message(Severity::INFO, location) << "see prior declaration\n";
@@ -227,6 +222,14 @@ Linkage Entity::linkage() const {
 }
 
 void Entity::compose(Declarator* later) {
+    auto composite_type = compose_types(declarator->type, later->type);
+    if (composite_type) {
+        declarator->type = composite_type;
+    } else {
+        message(Severity::ERROR, later->location) << "redeclaration of '" << declarator->identifier << "' with incompatible type\n";
+        message(Severity::INFO, declarator->location) << "see prior declaration\n";
+    }
+
     auto later_entity = later->entity();
     if (!later_entity) return;
 
@@ -298,7 +301,10 @@ const Type* TypeDef::to_type() const {
 }
 
 void TypeDef::compose(Declarator* later) {
-    // TODO
+    if (declarator->type != later->type) {
+        message(Severity::ERROR, later->location) << "redefinition of '" << declarator->identifier << "' with different type\n";
+        message(Severity::INFO, declarator->location) << "see other definition\n";
+    }
 }
 
 void TypeDef::print(ostream& stream) const {
