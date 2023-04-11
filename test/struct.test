@@ -10,6 +10,15 @@ EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
 
 
+BEGIN Struct member names must be distinct
+struct S { int x; int x; };
+DECLARATIONS
+EXPECT_MESSAGE
+:1:19: error duplicate member 'x'
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["x","Si"]]],"S"]]
+
+
 BEGIN Tagged struct with multiple compatible definitions
 struct S { int x; int y; };
 struct S { int x; int y; };
@@ -89,19 +98,36 @@ EXPECT_AST
 
 BEGIN Anonymous struct
 struct {
-    struct {
-        int x;
-    };
+    struct { int x; };
 } z;
 EXPECT_AST
 [["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]]]],"z",""]]
 
 
-BEGIN Anonymous union
+BEGIN Multiple anonymous struct
 struct {
-    union {
-        int x;
-    };
+    struct { int x; };
+    struct { int y; };
+} z;
+EXPECT_AST
+[["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]],["",["STRUCT",[["y","Si"]]]]]],"z",""]]
+
+
+BEGIN Multiple anonymous struct with duplicate members
+struct {
+    struct { int x; };
+    struct { int x; };
+} z;
+DECLARATIONS
+EXPECT_MESSAGE
+:3:14: error duplicate member 'x'
+EXPECT_AST
+[["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]],["",["STRUCT",[]]]]],"z",""]]
+
+
+BEGIN Anonymous union in struct
+struct {
+    union { int x; };
 } z;
 EXPECT_AST
 [["var","ES",["STRUCT",[["",["UNION",[["x","Si"]]]]]],"z",""]]
@@ -123,6 +149,13 @@ EXPECT_MESSAGE
 :1:1: see other definition
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["",["STRUCT",[["x","Si"]]]]]],"S"]]
+
+
+BEGIN Tagged structs with multiple definitions and anonymous union
+struct S { union { int y; int x; }; };
+struct S { union { int x; int y; }; };
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["",["UNION",[["x","Si"],["y","Si"]]]]]],"S"]]
 
 
 BEGIN Anonymous non-structured member with no declarators.

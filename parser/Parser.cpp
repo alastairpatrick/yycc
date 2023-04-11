@@ -851,6 +851,10 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
 
     if (!declarator->identifier.name->empty()) {
         if (!identifiers.add_declarator(declarator)) {
+            if (declaration->scope == IdentifierScope::STRUCTURED) {
+                message(Severity::ERROR, declarator->location) << "duplicate member '" << declarator->identifier << "'\n";
+            }
+
             return nullptr;
         }
     }
@@ -866,6 +870,8 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
     Identifier identifier;
     consume_identifier(identifier);
+
+    bool anonymous = declaration->scope == IdentifierScope::STRUCTURED && identifier.name->empty();
 
     Type* type{};
     Declarator* declarator{};
@@ -891,7 +897,8 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
         if (consume('{')) {
             structured_type->complete = true;
-            identifiers.push_scope();
+
+            if (!anonymous) identifiers.push_scope();
 
             while (token && token != '}') {
                 if (specifier == TOK_STRUCT && consume(TOK_ELLIPSIS)) {
@@ -907,7 +914,6 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                     auto declarator = new Declarator(declaration, declaration->type, Identifier(), declaration->location);
                     declarator->delegate = new Entity(declarator);
                     declaration->declarators.push_back(declarator);
-                    // TODO: the declarators of the anonymous struct or union were added to a scope that has already been popped
                 }
 
                 for (auto declarator: declaration->declarators) {
@@ -915,7 +921,8 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 }
             }
 
-            identifiers.pop_scope();
+            if (!anonymous) identifiers.pop_scope();
+
             require('}');
         }
     } else {

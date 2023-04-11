@@ -13,6 +13,15 @@ EXPECT_GLOBALS
 ,["var","ES",["UNION",[["x","Si"],["y","Si"]]],"z",""]]
 
 
+BEGIN Union member names must be distinct
+union U { int x; int x; };
+DECLARATIONS
+EXPECT_MESSAGE
+:1:18: error duplicate member 'x'
+EXPECT_GLOBALS
+[["typedef",["UNION",[["x","Si"]]],"U"]]
+
+
 BEGIN Tagged incomplete union
 union S z;
 EXPECT_AST
