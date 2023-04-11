@@ -34,6 +34,12 @@ EXPECT_GLOBALS
 [["typedef",["STRUCT",["?"]],"S"]]
 
 
+BEGIN Tagged partially incomplete struct
+struct S { int x; ... };
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["x","Si"], "?"]],"S"]]
+
+
 BEGIN Tagged incomplete struct with declarator
 struct S z;
 EXPECT_AST
@@ -54,6 +60,22 @@ EXPECT_GLOBALS
 BEGIN Tagged struct with incomplete and complete definitions (2)
 struct S { int x; int y; };
 struct S;
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
+
+
+BEGIN Tagged struct with multiple compatible definitions, one partially incomplete (1)
+struct S { int x; ... };
+struct S { int x; int y; };
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
+
+
+BEGIN Tagged struct with multiple compatible definitions, one partially incomplete (2)
+struct S { int x; int y; };
+struct S { int x; ... };
 DECLARATIONS
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]

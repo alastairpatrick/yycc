@@ -891,8 +891,13 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
             identifiers.push_scope();
 
             while (token && token != '}') {
+                if (consume(TOK_ELLIPSIS)) {
+                    structured_type->complete = false;
+                    break;
+                }
+
                 auto declaration = dynamic_cast<Declaration*>(parse_declaration_or_statement(IdentifierScope::STRUCTURED));
-                assert(declaration);
+                if (!declaration) continue;
 
                 // C11 6.7.2.1p13 anonymous structs and unions
                 if (dynamic_cast<const StructuredType*>(declaration->type) && declaration->declarators.empty()) {
