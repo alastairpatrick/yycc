@@ -9,8 +9,13 @@ struct PointerType;
 struct QualifiedType;
 struct UnboundType;
 
+struct DerivedTypes {
+    unique_ptr<const PointerType> pointer{};
+    unordered_map<unsigned, unique_ptr<const QualifiedType>> qualified;
+};
+
 struct TypeContext {
-    TypeContext() = default;
+    TypeContext();
     TypeContext(const TypeContext&) = delete;
     ~TypeContext();
 
@@ -19,25 +24,17 @@ struct TypeContext {
     const Type* lookup_indexed_type(const string& key);
     void add_indexed_type(const string& key, const Type* type);
 
-    const PointerType* lookup_pointer_type(const Type* base_type);
-    void add_pointer_type(const PointerType* type);
+    const PointerType* get_pointer_type(const Type* base_type);
+    const QualifiedType* get_qualified_type(const Type* base_type, unsigned qualifiers);
 
-    const QualifiedType* lookup_qualified_type(const Type* base_type, unsigned qualifiers);
-    void add_qualified_type(const QualifiedType* type);
-
-    const UnboundType* lookup_unbound_type(const Identifier& identifier);
-    void add_unbound_type(const Identifier& identifier, const UnboundType* type);
+    const UnboundType* get_unbound_type(const Identifier& identifier);
 
     // This map is only used for "complicated" types like functions.
-    unordered_map<string, const Type*> indexed_types;
+    unordered_map<string, unique_ptr<const Type>> indexed_types;
 
-    typedef unordered_map<const Type*, const PointerType*> PointerTypesMap; 
-    PointerTypesMap pointer_types;
+    unordered_map<const Type*, DerivedTypes> derived_types;
 
-    typedef map<pair<const Type*, unsigned>, const QualifiedType*> QualifierTypesMap; 
-    QualifierTypesMap qualified_types;
-
-    unordered_map<InternedString, const UnboundType*> unbound_types;
+    unordered_map<InternedString, unique_ptr<const UnboundType>> unbound_types;
 };
 
 #endif

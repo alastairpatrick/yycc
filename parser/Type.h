@@ -126,8 +126,7 @@ struct PointerType: Type {
     virtual void print(std::ostream& stream) const;
 
 private:
-    friend struct Type;
-
+    friend class TypeContext;
     mutable LLVMTypeRef llvm = nullptr;
     explicit PointerType(const Type* base_type);
 };
@@ -168,6 +167,7 @@ struct QualifiedType: Type {
     virtual void print(std::ostream& stream) const;
 
 private:
+    friend class TypeContext;
     const unsigned qualifier_flags;
     explicit QualifiedType(const Type* base_type, unsigned qualifiers);
 };
@@ -186,6 +186,7 @@ struct FunctionType: Type {
     virtual void print(std::ostream& stream) const;
     
 private:
+    friend class TypeContext;
     mutable LLVMTypeRef llvm = nullptr;
     FunctionType(const Type* return_type, std::vector<const Type*> parameter_types, bool variadic);
 };
@@ -243,6 +244,7 @@ struct UnboundType: Type {
     virtual void print(ostream& stream) const;
 
 private:
+    friend class TypeContext;
     explicit UnboundType(const Identifier& identifier);
 };
 

@@ -79,13 +79,7 @@ const Type* Type::compose(const Type* other) const {
 }
 
 const PointerType* Type::pointer_to() const {
-    auto type = TranslationUnitContext::it->type.lookup_pointer_type(this);
-    if (type) return type;
-
-    type = new PointerType(this);
-    TranslationUnitContext::it->type.add_pointer_type(type);
-
-    return type;
+    return TranslationUnitContext::it->type.get_pointer_type(this);
 }
 
 #pragma endregion Type
@@ -429,12 +423,7 @@ const Type* QualifiedType::of(const Type* base_type, unsigned qualifiers) {
     qualifiers |= base_type->qualifiers();
     base_type = base_type->unqualified();
 
-    auto type = TranslationUnitContext::it->type.lookup_qualified_type(base_type, qualifiers);
-    if (type) return type;
-
-    type = new QualifiedType(base_type, qualifiers);
-    TranslationUnitContext::it->type.add_qualified_type(type);
-    return type;
+    return TranslationUnitContext::it->type.get_qualified_type(base_type, qualifiers);
 }
 
 unsigned QualifiedType::qualifiers() const {
@@ -715,12 +704,7 @@ void EnumType::print(std::ostream& stream) const {
 #pragma region UnboundType
 
 const UnboundType* UnboundType::of(const Identifier& identifier) {
-    auto type = TranslationUnitContext::it->type.lookup_unbound_type(identifier);
-    if (type) return type;
-
-    type = new UnboundType(identifier);
-    TranslationUnitContext::it->type.add_unbound_type(identifier, type);
-    return type;
+    return TranslationUnitContext::it->type.get_unbound_type(identifier);
 }
 
 LLVMTypeRef UnboundType::llvm_type() const {

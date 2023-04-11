@@ -59,6 +59,7 @@ using std::stack;
 using std::string;
 using std::stringstream;
 using std::string_view;
+using std::unique_ptr;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
