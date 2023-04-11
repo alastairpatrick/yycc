@@ -23,7 +23,7 @@ struct IdentifierMap {
     bool add_declarator_to_scope(Scope& scope, Declarator* declarator);
 
     void push_scope();
-    void pop_scope();
+    Scope pop_scope();
 };
 
 struct ResolutionContext {

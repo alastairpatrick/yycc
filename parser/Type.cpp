@@ -530,6 +530,12 @@ StructuredType::StructuredType(const Location& location)
     : location(location) {
 }
 
+const Declarator* StructuredType::lookup_member(const Identifier& identifier) const {
+    auto it = member_index.find(identifier.name);
+    if (it == member_index.end()) return nullptr;
+    return it->second;
+}
+
 LLVMTypeRef StructuredType::llvm_type() const {
     assert(false);
     return nullptr;
@@ -608,6 +614,7 @@ UnionType::UnionType(const Location& location)
 }
 
 static bool union_has_member(const StructuredType* type, const Declarator* find) {
+    auto member = type->lookup_member(find->identifier);
     for (auto member: type->members) {
         if (member->identifier == find->identifier &&
             compose_type_def_types(member->type, find->type)) { // TODO: bit field size

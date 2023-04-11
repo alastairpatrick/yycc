@@ -63,8 +63,10 @@ void IdentifierMap::push_scope() {
     scopes.push_front(Scope());
 }
 
-void IdentifierMap::pop_scope() {
+IdentifierMap::Scope IdentifierMap::pop_scope() {
+    auto scope = move(scopes.front());
     scopes.pop_front();
+    return scope;
 }
 
 IdentifierMap::IdentifierMap(bool preparse): preparse(preparse) {

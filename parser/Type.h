@@ -195,7 +195,10 @@ struct StructuredType: Type {
 
     const Location location;
     vector<Declarator*> members;
+    unordered_map<InternedString, Declarator*> member_index;
     bool complete{};
+
+    const Declarator* lookup_member(const Identifier& identifier) const;
 
     virtual LLVMTypeRef llvm_type() const;
 

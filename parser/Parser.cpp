@@ -921,7 +921,9 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 }
             }
 
-            if (!anonymous) identifiers.pop_scope();
+            if (!anonymous) {
+                structured_type->member_index = identifiers.pop_scope().declarators;
+            }
 
             require('}');
         }
