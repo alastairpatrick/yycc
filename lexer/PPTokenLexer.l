@@ -139,14 +139,14 @@ elif            { start(PP_TOKENS);   return TOK_PP_ELIF; }
 else            { start(PP_TOKENS);   return TOK_PP_ELSE; }
 endif           { start(PP_TOKENS);   return TOK_PP_ENDIF; }
 enum            { start(PP_TOKENS);   return TOK_PP_ENUM; }
-extern          { start(PP_TOKENS); return TOK_PP_EXTERN; }
+extern          { start(PP_TOKENS);   return TOK_PP_EXTERN; }
 if              { start(PP_TOKENS);   return TOK_PP_IF; }
 ifdef           { start(PP_TOKENS);   return TOK_PP_IFDEF; }
 ifndef          { start(PP_TOKENS);   return TOK_PP_IFNDEF; }
 include         { start(INCLUDE);     return TOK_PP_INCLUDE; }
 line            { start(PP_TOKENS);   return TOK_PP_LINE; }
 pragma          { start(PP_TOKENS);   return TOK_PP_PRAGMA; }
-static          { start(PP_TOKENS); return TOK_PP_STATIC; }
+static          { start(PP_TOKENS);   return TOK_PP_STATIC; }
 type            { start(PP_TOKENS);   return TOK_PP_TYPE; }
 undef           { start(PP_TOKENS);   return TOK_PP_UNDEF; }
 

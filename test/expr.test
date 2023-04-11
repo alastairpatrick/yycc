@@ -20,7 +20,7 @@ EXPECT_AST
        , ["?:", 5, 6, 7]]
 
 
-BEGIN Condition with logical or
+BEGIN Condition with logical OR
 1 || 2 ? 3 || 4 : 5 ? 6 : 7
 EXPECT_AST
 ["?:", ["||", 1, 2]
@@ -28,31 +28,31 @@ EXPECT_AST
        , ["?:", 5, 6, 7]]
 
 
-BEGIN Logical or expression
+BEGIN Logical OR expression
 1 || 2
 EXPECT_AST
 ["||", 1, 2]
 
 
-BEGIN Logical or left associative
+BEGIN Logical OR left associative
 1 || 2 || 3
 EXPECT_AST
 ["||", ["||", 1, 2], 3]
 
 
-BEGIN Logical and expression
+BEGIN Logical AND expression
 1 && 2
 EXPECT_AST
 ["&&", 1, 2]
 
 
-BEGIN Logical and left associative
+BEGIN Logical AND left associative
 1 && 2 && 3
 EXPECT_AST
 ["&&", ["&&", 1, 2], 3]
 
 
-BEGIN Logical and higher precedence than logical or
+BEGIN Logical AND higher precedence than logical OR
 1 || 2 && 3
 EXPECT_AST
 ["||", 1, ["&&", 2, 3]]
@@ -71,73 +71,73 @@ EXPECT_AST
     , 3]
 
 
-BEGIN Usb expression
+BEGIN Subtract expression
 1 - 2
 EXPECT_AST
 ["-", 1, 2]
 
 
-BEGIN Usb left associative
+BEGIN Subtract left associative
 1 - 2 - 3
 EXPECT_AST
 ["-", ["-", 1, 2]
     , 3]
 
 
-BEGIN Uml expression
+BEGIN Multiply expression
 1 * 2
 EXPECT_AST
 ["*", 1, 2]
 
 
-BEGIN Uml left associative
+BEGIN Multiply left associative
 1 * 2 * 3
 EXPECT_AST
 ["*", ["*", 1, 2]
     , 3]
 
 
-BEGIN Uml > additive precedence
+BEGIN Multiply > additive precedence
 1 + 2 * 3
 EXPECT_AST
 ["+", 1
     , ["*", 2, 3]]
 
 
-BEGIN Div expression
+BEGIN Divide expression
 1 / 2
 EXPECT_AST
 ["/", 1, 2]
 
 
-BEGIN Div left associative
+BEGIN Divide left associative
 1 / 2 / 3
 EXPECT_AST
 ["/", ["/", 1, 2]
       , 3]
 
 
-BEGIN Div > additive precedence
+BEGIN Divide > additive precedence
 1 + 2 / 3
 EXPECT_AST
 ["+", 1
       , ["/", 2, 3]]
 
 
-BEGIN Mod expression
+BEGIN Modulo expression
 1 % 2
 EXPECT_AST
 ["%", 1, 2]
 
 
-BEGIN Mod left associative
+BEGIN Modulo left associative
 1 % 2 % 3
 EXPECT_AST
 ["%", ["%", 1, 2]
       , 3]
 
 
-BEGIN Mod > additive precedence
+BEGIN Modulo > additive precedence
 1 + 2 % 3
 EXPECT_AST
 ["+", 1
