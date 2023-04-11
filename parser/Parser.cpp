@@ -59,13 +59,15 @@ void Parser::handle_declaration_directive() {
         if (pp_token == TOK_IDENTIFIER) {
             auto id = preprocessor.identifier();
 
-            auto new_declarator = new Declarator(declaration, &CompatibleType::it, id, preprocessor.location());
+            auto new_declarator = new Declarator(declaration, id, preprocessor.location());
             switch (declarator_type_token) {
               case TOK_PP_ENUM:
                 new_declarator->delegate = new EnumConstant(new_declarator);
+                new_declarator->type = IntegerType::default_type();
                 break;
               case TOK_PP_ENTITY:
                 new_declarator->delegate = new Entity(new_declarator);
+                new_declarator->type = &CompatibleType::it;
                 break;
               case TOK_PP_TYPE:
                 new_declarator->delegate = new TypeDef(new_declarator);
@@ -562,10 +564,9 @@ void Parser::parse() {
 
     if (!preparse) {
         ResolutionContext context(identifiers);
-        for (auto node: declarations) {
-            if (auto declaration = dynamic_cast<Declaration*>(node)) {
-                declaration->resolve(context);
-            }
+        for (auto p: identifiers.scopes.front().declarators) {
+            auto declarator = p.second;
+            declarator->resolve(context);
         }
     }
 }
@@ -901,7 +902,9 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                     // TODO: the declarators of the anonymous struct or union were added to a scope that has already been popped
                 }
 
-                structured_type->members.push_back(declaration);
+                for (auto declarator: declaration->declarators) {
+                    structured_type->members.push_back(declarator);
+                }
             }
 
             identifiers.pop_scope();
@@ -952,7 +955,7 @@ EnumConstant* Parser::parse_enum_constant(Declaration* declaration) {
         }
     }
 
-    auto declarator = new Declarator(declaration, identifier, location);
+    auto declarator = new Declarator(declaration, IntegerType::default_type(), identifier, location);
     auto enum_constant = new EnumConstant(declarator, constant);
     declarator->delegate = enum_constant;
     if (!identifiers.add_declarator(declarator)) {

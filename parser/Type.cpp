@@ -39,6 +39,10 @@ const Type* Type::resolve(ResolutionContext& ctx) const {
     return this;
 }
 
+bool Type::type_def_compatible(const Type* other) const {
+    return this == other;
+}
+
 LLVMValueRef Type::convert_to_type(CodeGenContext* context, LLVMValueRef value, const Type* to_type) const {
     if (to_type == this) return value;
 
@@ -52,11 +56,21 @@ const Type* compose_types(const Type* a, const Type* b) {
     if (a == &CompatibleType::it) return b;
     if (b == &CompatibleType::it) return a;
 
-    if (typeid(a) == typeid(b)) {
+    if (typeid(*a) == typeid(*b)) {
         return a->compose(b);
     }
 
     return nullptr;
+}
+
+bool type_def_compatible(const Type* a, const Type* b) {
+    if (a == b) return true;
+
+    if (typeid(*a) == typeid(*b)) {
+        return a->type_def_compatible(b);
+    }
+
+    return false;
 }
 
 const Type* Type::compose(const Type* other) const {
@@ -520,22 +534,38 @@ LLVMTypeRef StructuredType::llvm_type() const {
     return nullptr;
 }
 
+bool StructuredType::type_def_compatible(const Type* o) const {
+    auto other = static_cast<const StructuredType*>(o);
+
+    if (members.size() != other->members.size()) return false;
+
+    for (size_t i = 0; i < members.size(); ++i) {
+        auto declarator1 = members[i];
+        auto declarator2 = other->members[i];
+
+        if (declarator1->identifier != declarator2->identifier) return false;
+        if (!::type_def_compatible(declarator1->type, declarator2->type)) return false;
+
+        // TODO bitfield size, etc
+    }
+
+    return true;
+}
+
 void StructuredType::print(std::ostream& stream) const {
     stream << '[';
 
     auto separator = false;
     for (auto member : members) {
-        for (auto declarator : member->declarators) {
-            if (separator) stream << ", ";
-            separator = true;
-            stream << "[\"" << declarator->identifier << "\", " << declarator->type;
-            if (auto entity = declarator->entity()) {
-                if (entity->bit_field_size) {
-                    stream << ", " << entity->bit_field_size;
-                }
+        if (separator) stream << ", ";
+        separator = true;
+        stream << "[\"" << member->identifier << "\", " << member->type;
+        if (auto entity = member->entity()) {
+            if (entity->bit_field_size) {
+                stream << ", " << entity->bit_field_size;
             }
-            stream << ']';
         }
+        stream << ']';
     }
 
     if (!complete) {

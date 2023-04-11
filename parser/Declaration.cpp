@@ -297,7 +297,7 @@ const Type* TypeDef::to_type() const {
 }
 
 void TypeDef::compose(Declarator* later) {
-    if (declarator->type != later->type) {
+    if (!type_def_compatible(declarator->type, later->type)) {
         message(Severity::ERROR, later->location) << "redefinition of '" << declarator->identifier << "' with different type\n";
         message(Severity::INFO, declarator->location) << "see other definition\n";
     }

@@ -10,11 +10,22 @@ EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
 
 
-BEGIN Tagged struct with multiple identical definitions
+BEGIN Tagged struct with multiple compatible definitions
 struct S { int x; int y; };
 struct S { int x; int y; };
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
+
+
+BEGIN Tagged structs with incompatible definitions
+struct S { int x; };
+struct S { int y; };
+DECLARATIONS
+EXPECT_MESSAGE
+:2:1: error redefinition of 'S' with different type
+:1:1: see other definition
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["x","Si"]]],"S"]]
 
 
 BEGIN Tagged incomplete struct
@@ -56,6 +67,24 @@ struct {
 } z;
 EXPECT_AST
 [["var","ES",["STRUCT",[["",["UNION",[["x","Si"]]]]]],"z",""]]
+
+
+BEGIN Tagged structs with multiple definitions and anonymous struct
+struct S { struct { int x; }; };
+struct S { struct { int x; }; };
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["",["STRUCT",[["x","Si"]]]]]],"S"]]
+
+
+BEGIN Tagged structs with multiple definitions and incompatible anonymous struct
+struct S { struct { int x; }; };
+struct S { struct { int y; }; };
+DECLARATIONS
+EXPECT_MESSAGE
+:2:1: error redefinition of 'S' with different type
+:1:1: see other definition
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["",["STRUCT",[["x","Si"]]]]]],"S"]]
 
 
 BEGIN Only structs and unions may be anonymous
@@ -124,13 +153,20 @@ EXPECT_GLOBALS
 ,["var","ES",["UNION",[["x","Si"],["y","Si"]]],"z",""]]
 
 
-BEGIN Tagged union
+BEGIN Tagged incomplete union
 union S z;
 EXPECT_AST
 [["var","ES",["UNION",["?"]],"z",""]]
 EXPECT_GLOBALS
 [["typedef",["UNION",["?"]],"S"]
 ,["var","ES",["UNION",["?"]],"z",""]]
+
+
+BEGIN Tagged union with multiple compatible definitions
+union S { int x; int y; };
+union S { int x; int y; };
+EXPECT_GLOBALS
+[["typedef",["UNION",[["x","Si"],["y","Si"]]],"S"]]
 
 
 BEGIN Untagged enum definition
@@ -150,7 +186,7 @@ EXPECT_GLOBALS
 ,["var","ES",["ENUM",[["ec","A",1],["ec","B"]]],"z",""]]
 
 
-BEGIN Tagged enum
+BEGIN Tagged incomplete enum
 enum E z;
 EXPECT_AST
 [["var","ES",["ENUM",["?"]],"z",""]]
