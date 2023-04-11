@@ -43,6 +43,22 @@ EXPECT_GLOBALS
 ,["var","ES",["STRUCT",["?"]],"z",""]]
 
 
+BEGIN Tagged struct with incomplete and complete definitions (1)
+struct S;
+struct S { int x; int y; };
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
+
+
+BEGIN Tagged struct with incomplete and complete definitions (2)
+struct S { int x; int y; };
+struct S;
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
+
+
 BEGIN Bit-field
 struct { int x: 15; int y: 17; } z;
 EXPECT_AST

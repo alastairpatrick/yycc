@@ -31,7 +31,7 @@ struct Type: Printable {
     virtual const Type* promote() const;
 
     virtual const Type* resolve(ResolutionContext& ctx) const;
-    virtual bool type_def_compatible(const Type* other) const;
+    virtual const Type* compose_type_def_types(const Type* other) const;
 
     virtual LLVMValueRef convert_to_type(CodeGenContext* context, LLVMValueRef value, const Type* to_type) const;
 
@@ -39,7 +39,7 @@ struct Type: Printable {
 };
 
 const Type* compose_types(const Type* a, const Type* b);
-bool type_def_compatible(const Type* a, const Type* b);
+const Type* compose_type_def_types(const Type* a, const Type* b);
 
 struct VoidType: Type {
     static const VoidType it;
@@ -199,7 +199,7 @@ struct StructuredType: Type {
 
     virtual LLVMTypeRef llvm_type() const;
 
-    virtual bool type_def_compatible(const Type* other) const;
+    virtual const Type* compose_type_def_types(const Type* other) const;
     virtual void print(std::ostream& stream) const;
 };
 

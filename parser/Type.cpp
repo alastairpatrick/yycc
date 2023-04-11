@@ -39,8 +39,9 @@ const Type* Type::resolve(ResolutionContext& ctx) const {
     return this;
 }
 
-bool Type::type_def_compatible(const Type* other) const {
-    return this == other;
+const Type* Type::compose_type_def_types(const Type* other) const {
+    if (this == other) return this;
+    return nullptr;
 }
 
 LLVMValueRef Type::convert_to_type(CodeGenContext* context, LLVMValueRef value, const Type* to_type) const {
@@ -63,14 +64,14 @@ const Type* compose_types(const Type* a, const Type* b) {
     return nullptr;
 }
 
-bool type_def_compatible(const Type* a, const Type* b) {
-    if (a == b) return true;
+const Type* compose_type_def_types(const Type* a, const Type* b) {
+    if (a == b) return a;
 
     if (typeid(*a) == typeid(*b)) {
-        return a->type_def_compatible(b);
+        return a->compose_type_def_types(b);
     }
 
-    return false;
+    return nullptr;
 }
 
 const Type* Type::compose(const Type* other) const {
@@ -534,22 +535,30 @@ LLVMTypeRef StructuredType::llvm_type() const {
     return nullptr;
 }
 
-bool StructuredType::type_def_compatible(const Type* o) const {
+const Type* StructuredType::compose_type_def_types(const Type* o) const {
     auto other = static_cast<const StructuredType*>(o);
 
-    if (members.size() != other->members.size()) return false;
+    size_t comparable_members{};
+    if (complete && other->complete) {
+        if (members.size() != other->members.size()) return nullptr;
+        comparable_members = members.size();
+    } else if (complete) {
+        comparable_members = other->members.size();        
+    } else if (other->complete) {
+        comparable_members = members.size();        
+    }
 
-    for (size_t i = 0; i < members.size(); ++i) {
+    for (size_t i = 0; i < comparable_members; ++i) {
         auto declarator1 = members[i];
         auto declarator2 = other->members[i];
 
-        if (declarator1->identifier != declarator2->identifier) return false;
-        if (!::type_def_compatible(declarator1->type, declarator2->type)) return false;
+        if (declarator1->identifier != declarator2->identifier) return nullptr;
+        if (!::compose_type_def_types(declarator1->type, declarator2->type)) return nullptr;
 
         // TODO bitfield size, etc
     }
 
-    return true;
+    return complete ? this : other;
 }
 
 void StructuredType::print(std::ostream& stream) const {

@@ -297,10 +297,14 @@ const Type* TypeDef::to_type() const {
 }
 
 void TypeDef::compose(Declarator* later) {
-    if (!type_def_compatible(declarator->type, later->type)) {
+    auto composed = compose_type_def_types(declarator->type, later->type);
+    if (!composed) {
         message(Severity::ERROR, later->location) << "redefinition of '" << declarator->identifier << "' with different type\n";
         message(Severity::INFO, declarator->location) << "see other definition\n";
+        return;
     }
+
+    declarator->type = composed;
 }
 
 void TypeDef::print(ostream& stream) const {
