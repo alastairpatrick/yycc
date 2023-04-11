@@ -29,3 +29,71 @@ BEGIN #enum directive
 DECLARATIONS
 EXPECT_GLOBALS
 [["ec","A"]]
+
+
+BEGIN Tagged union with multiple compatible definitions
+enum E { A, B };
+enum E { A, B };
+EXPECT_GLOBALS
+[["ec","A"]
+,["ec","B"]
+,["typedef",["ENUM",[["ec","A"],["ec","B"]]],"E"]]
+
+
+BEGIN Order of members does not matter for compatible enums
+enum E { B=2, A=1 };
+enum E { A=1, B=2 };
+EXPECT_GLOBALS
+[["ec","A",1]
+,["ec","B",2]
+,["typedef",["ENUM",[["ec","A",1],["ec","B",2]]],"E"]]
+
+
+BEGIN Complete enum must contain all members of compatible enum
+enum E { A };
+enum E { B };
+DECLARATIONS
+EXPECT_MESSAGE
+:2:1: error redefinition of 'E' with different type
+:1:1: see other definition
+EXPECT_GLOBALS
+[["ec","A"]
+,["ec","B"]
+,["typedef",["ENUM",[["ec","A"]]],"E"]]
+
+
+BEGIN Complete enum compatible with incomplete enum (1)
+enum E;
+enum E { A, B };
+EXPECT_GLOBALS
+[["ec","A"]
+,["ec","B"]
+,["typedef",["ENUM",[["ec","A"],["ec","B"]]],"E"]]
+
+
+BEGIN Complete enum compatible with incomplete enum (2)
+enum E { A, B };
+enum E;
+DECLARATIONS
+EXPECT_GLOBALS
+[["ec","A"]
+,["ec","B"]
+,["typedef",["ENUM",[["ec","A"],["ec","B"]]],"E"]]
+
+
+BEGIN Different enums may not contain the same constants (1)
+enum { A, B } a;
+enum { A, C } b;
+DECLARATIONS
+EXPECT_MESSAGE
+:2:8: error redefinition of enumeration constant 'A'
+END
+
+
+BEGIN Different enums may not contain the same constants (2)
+enum E1 { A, B };
+enum E2 { A, C };
+DECLARATIONS
+EXPECT_MESSAGE
+:2:11: error redefinition of enumeration constant 'A'
+END

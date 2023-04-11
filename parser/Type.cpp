@@ -607,7 +607,7 @@ UnionType::UnionType(const Location& location)
     : StructuredType(location) {
 }
 
-static bool has_member(const StructuredType* type, const Declarator* find) {
+static bool union_has_member(const StructuredType* type, const Declarator* find) {
     for (auto member: type->members) {
         if (member->identifier == find->identifier &&
             compose_type_def_types(member->type, find->type)) { // TODO: bit field size
@@ -622,13 +622,13 @@ const Type* UnionType::compose_type_def_types(const Type* o) const {
 
     if (complete) {
         for (auto member: other->members) {
-            if (!has_member(this, member)) return nullptr;
+            if (!union_has_member(this, member)) return nullptr;
         }
     }
 
     if (other->complete) {
         for (auto member: members) {
-            if (!has_member(other, member)) return nullptr;
+            if (!union_has_member(other, member)) return nullptr;
         }
     }
 
@@ -653,6 +653,33 @@ EnumType::EnumType(const Location& location)
 LLVMTypeRef EnumType::llvm_type() const {
     assert(false); // TODO
     return nullptr;
+}
+
+static bool enum_has_constant(const EnumType* type, const EnumConstant* find) {
+    for (auto constant: type->constants) {
+        if (constant == find) {
+            return true;
+        }
+    }
+    return false;
+}
+
+const Type* EnumType::compose_type_def_types(const Type* o) const {
+    auto other = static_cast<const EnumType*>(o);
+
+    if (complete) {
+        for (auto constant: other->constants) {
+            if (!enum_has_constant(this, constant)) return nullptr;
+        }
+    }
+
+    if (other->complete) {
+        for (auto constant: constants) {
+            if (!enum_has_constant(other, constant)) return nullptr;
+        }
+    }
+
+    return complete ? this : other;
 }
 
 void EnumType::print(std::ostream& stream) const {

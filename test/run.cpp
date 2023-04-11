@@ -121,7 +121,8 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
 
         
         if (message_stream.str() != sections[EXPECT_MESSAGE]) {
-            print_error(name, file, line) << "Expected message:\n" << sections[EXPECT_MESSAGE] << "\n  Actual message:\n" << message_stream.str();
+            print_error(name, file, line) << "Expected message:\n" << sections[EXPECT_MESSAGE] << "\n  Actual message:\n" << message_stream.str() << '\n';
+            return false;
         }
 
         if (!sections[EXPECT_AST].empty()) {

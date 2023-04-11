@@ -222,6 +222,7 @@ struct EnumType: Type {
     bool complete{};
     
     virtual LLVMTypeRef llvm_type() const;
+    virtual const Type* compose_type_def_types(const Type* other) const;
     virtual void print(std::ostream& stream) const;
 };
 

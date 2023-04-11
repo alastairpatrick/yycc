@@ -315,8 +315,8 @@ EnumConstant::EnumConstant(Declarator* declarator)
     : DeclaratorDelegate(declarator) {
 }
 
-EnumConstant::EnumConstant(Declarator* declarator, Expr* constant)
-    : DeclaratorDelegate(declarator), constant(constant) {
+EnumConstant::EnumConstant(Declarator* declarator, const Identifier& enum_tag, Expr* constant)
+    : DeclaratorDelegate(declarator), enum_tag(enum_tag), constant(constant) {
 }
 
 DeclaratorKind EnumConstant::kind() const {
