@@ -58,7 +58,7 @@ struct Declarator: ASTNode {
 
     const Type* to_type() const;
     const Type* resolve(ResolutionContext& ctx);
-    void compose(Declarator* later);
+    void compose(Declarator* other);
     void print(ostream& stream) const;
 };
 

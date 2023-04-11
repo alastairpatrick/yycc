@@ -69,7 +69,7 @@ struct DeclaratorDelegate: ASTNode {
     virtual DeclaratorKind kind() const = 0;
     virtual Linkage linkage() const;
     virtual const Type* to_type() const;
-    virtual void compose(Declarator* later) = 0;
+    virtual void compose(Declarator* other) = 0;
     virtual void print(ostream& stream) const = 0;
 };
 
@@ -92,7 +92,7 @@ struct Entity: DeclaratorDelegate {
 
     virtual DeclaratorKind kind() const;
     virtual Linkage linkage() const;
-    virtual void compose(Declarator* later);
+    virtual void compose(Declarator* other);
     virtual void print(ostream& stream) const;
 };
 
@@ -103,7 +103,7 @@ struct TypeDef: DeclaratorDelegate {
 
     virtual DeclaratorKind kind() const;
     virtual const Type* to_type() const;
-    virtual void compose(Declarator* later);
+    virtual void compose(Declarator* other);
     virtual void print(ostream& stream) const;
 };
 
@@ -114,7 +114,7 @@ struct EnumConstant: DeclaratorDelegate {
     Expr* constant{};
 
     virtual DeclaratorKind kind() const;
-    virtual void compose(Declarator* later);
+    virtual void compose(Declarator* other);
     virtual void print(ostream& stream) const;
 };
 

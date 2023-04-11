@@ -133,16 +133,16 @@ const Type* Declarator::resolve(ResolutionContext& ctx) {
     return type;
 }
 
-void Declarator::compose(Declarator* later) {
-    if (later->delegate && delegate && typeid(*later->delegate) != typeid(*delegate)) {
-        message(Severity::ERROR, later->location) << "redeclaration of '" << identifier << "' with different type\n";
+void Declarator::compose(Declarator* other) {
+    if (other->delegate && delegate && typeid(*other->delegate) != typeid(*delegate)) {
+        message(Severity::ERROR, other->location) << "redeclaration of '" << identifier << "' with different type\n";
         message(Severity::INFO, location) << "see prior declaration\n";
     }
 
     if (delegate) {
-        delegate->compose(later);
+        delegate->compose(other);
     } else {
-        delegate = later->delegate;
+        delegate = other->delegate;
     }
 }
 
@@ -217,40 +217,40 @@ Linkage Entity::linkage() const {
     }
 }
 
-void Entity::compose(Declarator* later) {
-    auto composite_type = compose_types(declarator->type, later->type);
+void Entity::compose(Declarator* other) {
+    auto composite_type = compose_types(declarator->type, other->type);
     if (composite_type) {
         declarator->type = composite_type;
     } else {
-        message(Severity::ERROR, later->location) << "redeclaration of '" << declarator->identifier << "' with incompatible type\n";
+        message(Severity::ERROR, other->location) << "redeclaration of '" << declarator->identifier << "' with incompatible type\n";
         message(Severity::INFO, declarator->location) << "see prior declaration\n";
     }
 
-    auto later_entity = later->entity();
-    if (!later_entity) return;
+    auto other_entity = other->entity();
+    if (!other_entity) return;
 
-    if (later_entity->initializer) {
+    if (other_entity->initializer) {
         if (initializer) {
-            message(Severity::ERROR, later->location) << "redefinition of '" << declarator->identifier << "'\n";
+            message(Severity::ERROR, other->location) << "redefinition of '" << declarator->identifier << "'\n";
             message(Severity::INFO, declarator->location) << "see prior definition\n";
         } else {
-            initializer = later_entity->initializer;
+            initializer = other_entity->initializer;
         }
     }
     
-    if (later_entity->body) {
+    if (other_entity->body) {
         if (body) {
-            message(Severity::ERROR, later->location) << "redefinition of '" << declarator->identifier << "'\n";
+            message(Severity::ERROR, other->location) << "redefinition of '" << declarator->identifier << "'\n";
             message(Severity::INFO, declarator->location) << "see prior definition\n";
         } else {
-            body = later_entity->body;
-            params = move(later_entity->params);
+            body = other_entity->body;
+            params = move(other_entity->params);
         }
     }
   
-    inline_definition = later_entity->inline_definition && inline_definition;
+    inline_definition = other_entity->inline_definition && inline_definition;
 
-    assert(later_entity->storage_duration() == storage_duration());
+    assert(other_entity->storage_duration() == storage_duration());
 }
 
 void Entity::print(ostream& stream) const {
@@ -296,10 +296,10 @@ const Type* TypeDef::to_type() const {
     return &type_def_type;
 }
 
-void TypeDef::compose(Declarator* later) {
-    auto composed = compose_type_def_types(declarator->type, later->type);
+void TypeDef::compose(Declarator* other) {
+    auto composed = compose_type_def_types(declarator->type, other->type);
     if (!composed) {
-        message(Severity::ERROR, later->location) << "redefinition of '" << declarator->identifier << "' with different type\n";
+        message(Severity::ERROR, other->location) << "redefinition of '" << declarator->identifier << "' with different type\n";
         message(Severity::INFO, declarator->location) << "see other definition\n";
         return;
     }
@@ -323,7 +323,7 @@ DeclaratorKind EnumConstant::kind() const {
     return DeclaratorKind::ENUM_CONSTANT;
 }
 
-void EnumConstant::compose(Declarator* later) {
+void EnumConstant::compose(Declarator* other) {
     // TODO
 }
 
