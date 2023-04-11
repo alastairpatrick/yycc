@@ -26,8 +26,7 @@ public:
         return Fragment(matcher().first(), size());
     }
     
-    Identifier identifier() const
-    {
+    Identifier identifier() const {
         return Identifier(text());
     }
 
@@ -131,10 +130,6 @@ L?  ' (\\. | [^\\'\n])*  '  { return TOK_CHAR_LITERAL; }
 
 }
 
-<PP_TOKENS,DIRECTIVE,INCLUDE> {
-.               { return TOK_PP_UNRECOGNIZED; }
-}
-
 // Determine the kind of directive and transition.
 <DIRECTIVE> {
 
@@ -159,6 +154,11 @@ undef           { start(PP_TOKENS);   return TOK_PP_UNDEF; }
 
 <INCLUDE> {
 "<" (\\. | [^>\n])* ">"     { start(PP_TOKENS); return TOK_STRING_LITERAL; }
+}
+
+<PP_TOKENS,DIRECTIVE,INCLUDE> {
+.                           { return TOK_PP_UNRECOGNIZED; }
+{L} ({L} | {D})*            { return TOK_PP_UNRECOGNIZED; }
 }
 
 %%

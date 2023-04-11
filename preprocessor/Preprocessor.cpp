@@ -118,7 +118,11 @@ void Preprocessor::require_eol() {
 }
 
 void Preprocessor::unexpected_directive_token() {
-    message(Severity::ERROR, location()) << "unexpected token in directive\n";
+    if (token == '\n') {
+        message(Severity::ERROR, location()) << "unexpected new-line token in directive\n";
+    } else {
+        message(Severity::ERROR, location()) << "unexpected '" << text() << "' token in directive\n";
+    }
 }
 
 TokenKind Preprocessor::commit_token(TokenKind token, string_view text) {

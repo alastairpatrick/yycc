@@ -123,7 +123,7 @@ BEGIN Invalid line token in line directive
 1
 #line "foo.c" 7
 EXPECT_MESSAGE
-:2:7: error unexpected token in directive
+:2:7: error unexpected '"foo.c"' token in directive
 END
 
 
@@ -131,7 +131,7 @@ BEGIN Zero line in line directive
 1
 #line 0 "foo.c"
 EXPECT_MESSAGE
-:2:7: error unexpected token in directive
+:2:7: error unexpected '0' token in directive
 END
 
 
@@ -139,7 +139,7 @@ BEGIN Negative line in line directive
 1
 #line -1 "foo.c"
 EXPECT_MESSAGE
-:2:7: error unexpected token in directive
+:2:7: error unexpected '-' token in directive
 END
 
 
@@ -147,7 +147,7 @@ BEGIN Invalid file in line directive
 1
 #line 7 +
 EXPECT_MESSAGE
-:2:9: error unexpected token in directive
+:2:9: error unexpected '+' token in directive
 END
 
 
@@ -155,7 +155,7 @@ BEGIN Extra tokens in line directive
 1
 #line 7 "foo.c" 123
 EXPECT_MESSAGE
-:2:17: error unexpected token in directive
+:2:17: error unexpected '123' token in directive
 END
 
 
@@ -193,6 +193,6 @@ BEGIN Error on unrecognized directive
 #hello
 1
 EXPECT_MESSAGE
-:2:2: error unexpected token in directive
+:2:2: error unexpected 'hello' token in directive
 EXPECT_AST
 1
