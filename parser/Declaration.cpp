@@ -297,7 +297,7 @@ const Type* TypeDef::to_type() const {
 }
 
 void TypeDef::compose(Declarator* other) {
-    auto composed = compose_type_def_types(declarator->type, other->type);
+    auto composed = compose_type_def_types(other->type, declarator->type);
     if (!composed) {
         message(Severity::ERROR, other->location) << "redefinition of '" << declarator->identifier << "' with different type\n";
         message(Severity::INFO, declarator->location) << "see other definition\n";

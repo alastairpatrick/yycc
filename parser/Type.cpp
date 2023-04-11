@@ -535,32 +535,6 @@ LLVMTypeRef StructuredType::llvm_type() const {
     return nullptr;
 }
 
-const Type* StructuredType::compose_type_def_types(const Type* o) const {
-    auto other = static_cast<const StructuredType*>(o);
-
-    size_t comparable_members{};
-    if (complete && other->complete) {
-        if (members.size() != other->members.size()) return nullptr;
-        comparable_members = members.size();
-    } else if (complete) {
-        comparable_members = other->members.size();        
-    } else if (other->complete) {
-        comparable_members = members.size();        
-    }
-
-    for (size_t i = 0; i < comparable_members; ++i) {
-        auto declarator1 = members[i];
-        auto declarator2 = other->members[i];
-
-        if (declarator1->identifier != declarator2->identifier) return nullptr;
-        if (!::compose_type_def_types(declarator1->type, declarator2->type)) return nullptr;
-
-        // TODO bitfield size, etc
-    }
-
-    return complete ? this : other;
-}
-
 void StructuredType::print(std::ostream& stream) const {
     stream << '[';
 
@@ -593,6 +567,32 @@ StructType::StructType(const Location& location)
     : StructuredType(location) {
 }
 
+const Type* StructType::compose_type_def_types(const Type* o) const {
+    auto other = static_cast<const StructuredType*>(o);
+
+    size_t comparable_members{};
+    if (complete && other->complete) {
+        if (members.size() != other->members.size()) return nullptr;
+        comparable_members = members.size();
+    } else if (complete) {
+        comparable_members = other->members.size();        
+    } else if (other->complete) {
+        comparable_members = members.size();        
+    }
+
+    for (size_t i = 0; i < comparable_members; ++i) {
+        auto declarator1 = members[i];
+        auto declarator2 = other->members[i];
+
+        if (declarator1->identifier != declarator2->identifier) return nullptr;
+        if (!::compose_type_def_types(declarator1->type, declarator2->type)) return nullptr;
+
+        // TODO bitfield size, etc
+    }
+
+    return complete ? this : other;
+}
+
 void StructType::print(std::ostream& stream) const {
     stream << "[\"STRUCT\", ";
     StructuredType::print(stream);
@@ -605,6 +605,34 @@ void StructType::print(std::ostream& stream) const {
 
 UnionType::UnionType(const Location& location)
     : StructuredType(location) {
+}
+
+static bool has_member(const StructuredType* type, const Declarator* find) {
+    for (auto member: type->members) {
+        if (member->identifier == find->identifier &&
+            compose_type_def_types(member->type, find->type)) { // TODO: bit field size
+            return true;
+        }
+    }
+    return false;
+}
+
+const Type* UnionType::compose_type_def_types(const Type* o) const {
+    auto other = static_cast<const StructuredType*>(o);
+
+    if (complete) {
+        for (auto member: other->members) {
+            if (!has_member(this, member)) return nullptr;
+        }
+    }
+
+    if (other->complete) {
+        for (auto member: members) {
+            if (!has_member(other, member)) return nullptr;
+        }
+    }
+
+    return complete ? this : other;
 }
 
 void UnionType::print(std::ostream& stream) const {

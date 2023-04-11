@@ -199,17 +199,18 @@ struct StructuredType: Type {
 
     virtual LLVMTypeRef llvm_type() const;
 
-    virtual const Type* compose_type_def_types(const Type* other) const;
     virtual void print(std::ostream& stream) const;
 };
 
 struct StructType: StructuredType {
     explicit StructType(const Location& location);
+    virtual const Type* compose_type_def_types(const Type* other) const;
     virtual void print(std::ostream& stream) const;
 };
 
 struct UnionType: StructuredType {
     explicit UnionType(const Location& location);
+    virtual const Type* compose_type_def_types(const Type* other) const;
     virtual void print(std::ostream& stream) const;
 };
 

@@ -894,7 +894,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
             identifiers.push_scope();
 
             while (token && token != '}') {
-                if (consume(TOK_ELLIPSIS)) {
+                if (specifier == TOK_STRUCT && consume(TOK_ELLIPSIS)) {
                     structured_type->complete = false;
                     break;
                 }

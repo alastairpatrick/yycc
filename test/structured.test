@@ -18,14 +18,14 @@ EXPECT_GLOBALS
 
 
 BEGIN Tagged structs with incompatible definitions
-struct S { int x; };
-struct S { int y; };
+struct S { int x; int y; };
+struct S { int y; int x; };
 DECLARATIONS
 EXPECT_MESSAGE
 :2:1: error redefinition of 'S' with different type
 :1:1: see other definition
 EXPECT_GLOBALS
-[["typedef",["STRUCT",[["x","Si"]]],"S"]]
+[["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
 
 
 BEGIN Tagged incomplete struct
@@ -125,7 +125,7 @@ EXPECT_GLOBALS
 [["typedef",["STRUCT",[["",["STRUCT",[["x","Si"]]]]]],"S"]]
 
 
-BEGIN Only structs and unions may be anonymous
+BEGIN Anonymous non-structured member with no declarators.
 struct {
     int;
 } z;
@@ -205,6 +205,48 @@ union S { int x; int y; };
 union S { int x; int y; };
 EXPECT_GLOBALS
 [["typedef",["UNION",[["x","Si"],["y","Si"]]],"S"]]
+
+
+BEGIN Order of members does not matter for compatible unions
+union S { int y; int x; };
+union S { int x; int y; };
+EXPECT_GLOBALS
+[["typedef",["UNION",[["x","Si"],["y","Si"]]],"S"]]
+
+
+BEGIN Complete union must contain all members of compatible union
+union S { int x; };
+union S { float x; };
+DECLARATIONS
+EXPECT_MESSAGE
+:2:1: error redefinition of 'S' with different type
+:1:1: see other definition
+EXPECT_GLOBALS
+[["typedef",["UNION",[["x","Si"]]],"S"]]
+
+
+BEGIN Complete union compatible with incomplete union (1)
+union S;
+union S { int x; int y; };
+EXPECT_GLOBALS
+[["typedef",["UNION",[["x","Si"],["y","Si"]]],"S"]]
+
+
+BEGIN Complete union compatible with incomplete union (2)
+union S { int x; int y; };
+union S;
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef",["UNION",[["x","Si"],["y","Si"]]],"S"]]
+
+
+BEGIN Partially complete unions not allowed
+union S { int x; ... };
+DECLARATIONS
+EXPECT_MESSAGE
+:1:18: error unexpected token '...'
+EXPECT_GLOBALS
+[["typedef",["UNION",[["x","Si"]]],"S"]]
 
 
 BEGIN Untagged enum definition
