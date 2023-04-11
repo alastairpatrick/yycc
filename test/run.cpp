@@ -49,7 +49,9 @@ static const Test tests[] = {
     { "var_comp_decl",      TestType::PREPARSE },
     { "fun_decl",           TestType::PREPARSE },
     { "fun_comp_decl",      TestType::PREPARSE },
-    { "structured",         TestType::PREPARSE },
+    { "struct",             TestType::PREPARSE },
+    { "union",              TestType::PREPARSE },
+    { "enum",               TestType::PREPARSE },
 
     { "typedef",            TestType::DECLARATIONS },
     { "typedef_comp",       TestType::DECLARATIONS },
@@ -57,7 +59,9 @@ static const Test tests[] = {
     { "var_comp_decl",      TestType::DECLARATIONS },
     { "fun_decl",           TestType::DECLARATIONS },
     { "fun_comp_decl",      TestType::DECLARATIONS },
-    { "structured",         TestType::DECLARATIONS },
+    { "struct",             TestType::DECLARATIONS },
+    { "union",              TestType::DECLARATIONS },
+    { "enum",               TestType::DECLARATIONS },
     { "stmt",               TestType::DECLARATIONS },
 
     { "string_literal",     TestType::EXPRESSION },

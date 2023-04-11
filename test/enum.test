@@ -1,0 +1,31 @@
+BEGIN Untagged enum definition
+enum { A=1, B } z;
+EXPECT_AST
+[["var", "ES", ["ENUM", [["ec", "A", 1], ["ec", "B"]]], "z", ""]]
+
+
+BEGIN Tagged enum definition
+enum E { A=1, B } z;
+EXPECT_AST
+[["var", "ES", ["ENUM", [["ec", "A", 1], ["ec", "B"]]], "z", ""]]
+EXPECT_GLOBALS
+[["ec","A",1]
+,["ec","B"]
+,["typedef",["ENUM",[["ec","A",1],["ec","B"]]],"E"]
+,["var","ES",["ENUM",[["ec","A",1],["ec","B"]]],"z",""]]
+
+
+BEGIN Tagged incomplete enum
+enum E z;
+EXPECT_AST
+[["var","ES",["ENUM",["?"]],"z",""]]
+EXPECT_GLOBALS
+[["typedef",["ENUM",["?"]],"E"],
+["var","ES",["ENUM",["?"]],"z",""]]
+
+
+BEGIN #enum directive
+#enum A
+DECLARATIONS
+EXPECT_GLOBALS
+[["ec","A"]]
