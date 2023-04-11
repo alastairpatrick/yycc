@@ -51,7 +51,7 @@ HW              [ \t\v\f\r]
 %xstate PP_TOKENS
 %xstate DIRECTIVE
 %xstate INCLUDE
-%xstate DECLARATION
+
 %%
 
 <*> {
@@ -131,14 +131,8 @@ L?  ' (\\. | [^\\'\n])*  '  { return TOK_CHAR_LITERAL; }
 
 }
 
-<PP_TOKENS,DECLARATION,DIRECTIVE,INCLUDE> {
+<PP_TOKENS,DIRECTIVE,INCLUDE> {
 .               { return TOK_PP_UNRECOGNIZED; }
-}
-
-<DECLARATION> {
-entity          { start(PP_TOKENS); return TOK_PP_ENTITY; }
-enum            { start(PP_TOKENS); return TOK_PP_ENUM; }
-type            { start(PP_TOKENS); return TOK_PP_TYPE; }
 }
 
 // Determine the kind of directive and transition.
@@ -149,14 +143,16 @@ error           { start(PP_TOKENS);   return TOK_PP_ERROR; }
 elif            { start(PP_TOKENS);   return TOK_PP_ELIF; }
 else            { start(PP_TOKENS);   return TOK_PP_ELSE; }
 endif           { start(PP_TOKENS);   return TOK_PP_ENDIF; }
-extern          { start(DECLARATION); return TOK_PP_EXTERN; }
+enum            { start(PP_TOKENS);   return TOK_PP_ENUM; }
+extern          { start(PP_TOKENS); return TOK_PP_EXTERN; }
 if              { start(PP_TOKENS);   return TOK_PP_IF; }
 ifdef           { start(PP_TOKENS);   return TOK_PP_IFDEF; }
 ifndef          { start(PP_TOKENS);   return TOK_PP_IFNDEF; }
 include         { start(INCLUDE);     return TOK_PP_INCLUDE; }
 line            { start(PP_TOKENS);   return TOK_PP_LINE; }
 pragma          { start(PP_TOKENS);   return TOK_PP_PRAGMA; }
-static          { start(DECLARATION); return TOK_PP_STATIC; }
+static          { start(PP_TOKENS); return TOK_PP_STATIC; }
+type            { start(PP_TOKENS);   return TOK_PP_TYPE; }
 undef           { start(PP_TOKENS);   return TOK_PP_UNDEF; }
 
 }

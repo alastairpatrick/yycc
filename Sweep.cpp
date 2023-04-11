@@ -88,23 +88,22 @@ struct DeclarationMarker {
             auto location = declarator->location;
             stream.locate(location);
 
-            if (declarator->delegate->linkage() == Linkage::EXTERNAL) {
-                stream.write("#extern ");
-            } else {
-                stream.write("#static ");
-            }
-
             switch (declarator->delegate->kind()) {
               case DeclaratorKind::ENUM_CONSTANT:
-                stream.write("enum ");
+                stream.write("#enum ");
                 break;
               case DeclaratorKind::ENTITY:
-                stream.write("entity ");
+                if (declarator->delegate->linkage() == Linkage::EXTERNAL) {
+                    stream.write("#extern ");
+                } else {
+                    stream.write("#static ");
+                }
                 break;
               case DeclaratorKind::TYPE_DEF:
-                stream.write("type ");
+                stream.write("#type ");
                 break;
             }
+
 
             stream.write(*declarator->identifier.name);
             stream.write("\n");

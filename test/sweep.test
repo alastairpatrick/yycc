@@ -6,9 +6,9 @@ FILE "a.h"
 typedef int T;
 EXPECT_TEXT
 
-#extern entity x
+#extern x
 #line 1 "a.h"
-#static type T
+#type T
 #line 1
 typedef int T;
 #line 2 ""
@@ -24,7 +24,7 @@ FILE "a.h"
 extern int x;
 EXPECT_TEXT
 
-#extern entity x
+#extern x
 #line 1 "a.h"
 extern int x;
 #line 2 ""
@@ -40,9 +40,9 @@ FILE "a.h"
 const int y = 2;  // TODO: replace this with a avalid constant integer expression
 EXPECT_TEXT
 
-#extern entity x
+#extern x
 #line 1 "a.h"
-#extern entity y
+#extern y
 #line 1
 const int y = 2;
 #line 2 ""
@@ -58,9 +58,9 @@ FILE "a.h"
 typedef int T;
 EXPECT_TEXT
 
-#extern entity foo
+#extern foo
 #line 1 "a.h"
-#static type T
+#type T
 #line 1
 typedef int T;
 #line 2 ""
@@ -78,9 +78,9 @@ FILE "a.h"
 typedef int T;
 EXPECT_TEXT
 
-#extern entity foo
+#extern foo
 #line 1 "a.h"
-#static type T
+#type T
 #line 1
 typedef int T;
 #line 2 ""
@@ -102,9 +102,9 @@ struct S {
 };
 EXPECT_TEXT
 
-#extern entity foo
+#extern foo
 #line 1 "a.h"
-#static type S
+#type S
 #line 1
 struct S {
     int x;
@@ -126,15 +126,15 @@ FILE "a.h"
 enum Color { RED, GREEN, BLUE };
 EXPECT_TEXT
 
-#extern entity foo
+#extern foo
 #line 1 "a.h"
-#static type Color
+#type Color
 #line 1 14
-#static enum RED
+#enum RED
 #line 1 19
-#static enum GREEN
+#enum GREEN
 #line 1 26
-#static enum BLUE
+#enum BLUE
 #line 1
 enum Color { RED, GREEN, BLUE };
 #line 2 ""

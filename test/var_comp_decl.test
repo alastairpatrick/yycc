@@ -121,16 +121,16 @@ EXPECT_AST
 ,[]]
 
 
-BEGIN #extern entity directives composed
-#extern entity x
-#extern entity x
+BEGIN #extern directives composed
+#extern x
+#extern x
 DECLARATIONS
 EXPECT_GLOBALS
 [["var","ES","?","x"]]
 
 
-BEGIN #extern entity directive preceeding variable declaration
-#extern entity x
+BEGIN #extern directive preceeding variable declaration
+#extern x
 int x;
 DECLARATIONS
 EXPECT_GLOBALS
@@ -139,8 +139,8 @@ EXPECT_AST
 [["var","ES","Si","x",""],[]]
 
 
-BEGIN #static entity directive preceeding variable declaration
-#static entity x
+BEGIN #static directive preceeding variable declaration
+#static x
 int x;
 DECLARATIONS
 EXPECT_GLOBALS

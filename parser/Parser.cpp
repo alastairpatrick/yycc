@@ -26,6 +26,8 @@ void Parser::consume() {
             return;
           case TOK_PP_EXTERN:
           case TOK_PP_STATIC:
+          case TOK_PP_TYPE:
+          case TOK_PP_ENUM:
             handle_declaration_directive();
             break;
         }
@@ -33,24 +35,24 @@ void Parser::consume() {
 }
 
 void Parser::handle_declaration_directive() {
-    auto storage_class = token == TOK_PP_STATIC ? StorageClass::STATIC : StorageClass::EXTERN;
-    auto pp_token = preprocessor.next_pp_token();
-
-    auto declarator_type_token = pp_token;
-    pp_token = preprocessor.next_pp_token();
-
-    switch (declarator_type_token) {
+    StorageClass storage_class;
+    switch (token) {
       default:
-        preprocessor.unexpected_directive_token();
-        preprocessor.skip_to_eol();
-        return;
+        assert(false);
+        break;
       case TOK_PP_ENUM:
       case TOK_PP_TYPE:
         storage_class = StorageClass::NONE;
         break;
-      case TOK_PP_ENTITY:
+      case TOK_PP_STATIC:
+        storage_class = StorageClass::STATIC;
+        break;
+      case TOK_PP_EXTERN:
+        storage_class = StorageClass::EXTERN;
         break;
     }
+
+    auto pp_token = preprocessor.next_pp_token();
 
     auto declaration = new Declaration(IdentifierScope::FILE, storage_class, &CompatibleType::it, preprocessor.location());
     declarations.push_back(declaration);
@@ -60,12 +62,13 @@ void Parser::handle_declaration_directive() {
             auto id = preprocessor.identifier();
 
             auto new_declarator = new Declarator(declaration, id, preprocessor.location());
-            switch (declarator_type_token) {
+            switch (token) {
               case TOK_PP_ENUM:
                 new_declarator->delegate = new EnumConstant(new_declarator);
                 new_declarator->type = IntegerType::default_type();
                 break;
-              case TOK_PP_ENTITY:
+              case TOK_PP_STATIC:
+              case TOK_PP_EXTERN:
                 new_declarator->delegate = new Entity(new_declarator);
                 new_declarator->type = &CompatibleType::it;
                 break;

@@ -233,8 +233,8 @@ EXPECT_GLOBALS
 ["var","ES",["ENUM",["?"]],"z",""]]
 
 
-BEGIN #static enum directive
-#static enum A
+BEGIN #enum directive
+#enum A
 DECLARATIONS
 EXPECT_GLOBALS
 [["ec","A"]]

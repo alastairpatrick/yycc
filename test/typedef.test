@@ -156,17 +156,17 @@ EXPECT_AST
 [["typedef", "NT", "S"]]
 
 
-BEGIN cyclic #static type directive with no accompanying type definition
-#static type T
+BEGIN cyclic #type directive with no accompanying type definition
+#type T
 DECLARATIONS
 EXPECT_MESSAGE
-:1:14: error 'T' undeclared
+:1:7: error 'T' undeclared
 EXPECT_GLOBALS
 [["typedef","Si","T"]]
 
 
 BEGIN Non-trivial recursive typedefs are an error (1)
-#static type T
+#type T
 typedef T T[];
 DECLARATIONS
 EXPECT_MESSAGE
@@ -176,7 +176,7 @@ EXPECT_GLOBALS
 
 
 BEGIN  Non-trivial recursive typedefs are an error (2)
-#static type T
+#type T
 typedef T T[];
 typedef int T[];
 DECLARATIONS
@@ -187,7 +187,7 @@ EXPECT_GLOBALS
 
 
 BEGIN  Non-trivial recursive typedefs are an error (3)
-#static type T
+#type T
 typedef int T[];
 typedef T T[];
 DECLARATIONS
@@ -198,7 +198,7 @@ EXPECT_GLOBALS
 
 
 BEGIN Trivial recursive typedefs are an error if not accompanied by non-recursive definition
-#static type T
+#type T
 typedef T T;
 DECLARATIONS
 EXPECT_MESSAGE
@@ -207,8 +207,8 @@ EXPECT_GLOBALS
 [["typedef","Si","T"]]
 
 
-BEGIN #static type resolves ambiguity as to whether identifier is type or not
-#static type T
+BEGIN #type resolves ambiguity as to whether identifier is type or not
+#type T
 void f(void) {
     T * v; // "T" is a type so this declares variable "v" with type "T*".
 }

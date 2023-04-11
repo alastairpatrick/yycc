@@ -91,7 +91,9 @@ bool Preprocessor::handle_directive() {
             handle_pragma_directive(); 
             break;
         } case TOK_PP_EXTERN:
-          case TOK_PP_STATIC: {
+          case TOK_PP_STATIC:
+          case TOK_PP_TYPE:
+          case TOK_PP_ENUM: {
             return false;
         }
       }

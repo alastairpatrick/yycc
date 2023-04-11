@@ -101,7 +101,6 @@ enum TokenKind {
     TOK_PP_ELSE,
     TOK_PP_EMPTY,
     TOK_PP_ENDIF,
-    TOK_PP_ENTITY,
     TOK_PP_ENUM,
     TOK_PP_ERROR,
     TOK_PP_EXTERN,

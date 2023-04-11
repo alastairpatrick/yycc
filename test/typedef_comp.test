@@ -39,7 +39,7 @@ EXPECT_AST
 
 
 BEGIN Typedef as self (1)
-#static type a
+#type a
 typedef int a;
 typedef a a;
 DECLARATIONS
@@ -48,7 +48,7 @@ EXPECT_GLOBALS
 
 
 BEGIN Typedef as self (2)
-#static type a
+#type a
 typedef a a;
 typedef int a;
 DECLARATIONS
@@ -89,9 +89,9 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN #static type directives composed
-#static type T
-#static type T
+BEGIN #type directives composed
+#type T
+#type T
 typedef float T;
 DECLARATIONS
 EXPECT_GLOBALS

@@ -372,26 +372,26 @@ EXPECT_AST
 [["var", "ES", "NT", "x", ""]]
 
 
-BEGIN #extern entity directive
-#extern entity x
+BEGIN #extern directive
+#extern x
 DECLARATIONS
 EXPECT_GLOBALS
 [["var","ES","?","x"]]
 
 
-BEGIN #static entity directive
-#static entity x
+BEGIN #static directive
+#static x
 DECLARATIONS
 EXPECT_GLOBALS
 [["var","IS","?","x"]]
 
 
 BEGIN Error if identifier declared with both #extern and #static
-#extern entity f
-#static entity f
+#extern f
+#static f
 DECLARATIONS
 EXPECT_MESSAGE
-:2:16: error static declaration of 'f' follows non-static declaration
-:1:16: see prior declaration
+:2:9: error static declaration of 'f' follows non-static declaration
+:1:9: see prior declaration
 EXPECT_GLOBALS
 [["var","ES","?","f"]]
