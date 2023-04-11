@@ -24,6 +24,16 @@ EXPECT_GLOBALS
 ["var","ES",["ENUM",["?"]],"z",""]]
 
 
+BEGIN Enum constant names must be distinct
+enum E { A, A };
+DECLARATIONS
+EXPECT_MESSAGE
+:1:13: error redefinition of enumeration constant 'A'
+EXPECT_GLOBALS
+[["ec","A"]
+,["typedef",["ENUM",[["ec","A"]]],"E"]]
+
+
 BEGIN #enum directive
 #enum A
 DECLARATIONS

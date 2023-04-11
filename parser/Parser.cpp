@@ -938,9 +938,9 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
         if (consume('{')) {
             enum_type->complete = true;
             while (token && token != '}') {
-                auto constant = parse_enum_constant(declaration, identifier);
+                auto constant = parse_enum_constant(declaration, enum_type, identifier);
                 if (constant) {
-                    enum_type->constants.push_back(constant);
+                    enum_type->add_constant(constant);
                 }
             }
 
@@ -951,7 +951,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
     return type;
 }
 
-EnumConstant* Parser::parse_enum_constant(Declaration* declaration, const Identifier& enum_tag) {
+EnumConstant* Parser::parse_enum_constant(Declaration* declaration, const EnumType* type, const Identifier& tag) {
     auto location = preprocessor.location();
 
     Identifier identifier;
@@ -971,13 +971,13 @@ EnumConstant* Parser::parse_enum_constant(Declaration* declaration, const Identi
     }
 
     auto declarator = new Declarator(declaration, IntegerType::default_type(), identifier, location);
-    auto enum_constant = new EnumConstant(declarator, enum_tag, constant);
+    auto enum_constant = new EnumConstant(declarator, tag, constant);
     declarator->delegate = enum_constant;
     if (!identifiers.add_declarator(declarator)) {
         declarator = identifiers.lookup_declarator(identifier);
         enum_constant = declarator->enum_constant();
         
-        if (enum_tag.name->empty() || enum_constant->enum_tag != enum_tag) {
+        if (tag.name->empty() || enum_constant->enum_tag != tag || type->lookup_constant(identifier)) {
             message(Severity::ERROR, location) << "redefinition of enumeration constant '" << identifier << "'\n";
             return nullptr;
         }

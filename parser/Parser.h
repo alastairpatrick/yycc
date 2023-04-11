@@ -59,7 +59,7 @@ private:
     Declarator* parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last);
     DeclaratorTransform parse_declarator_transform(IdentifierScope scope, bool allow_function_def);
     const Type* parse_structured_type(Declaration* declaration);
-    EnumConstant* parse_enum_constant(Declaration* declaration, const Identifier& enum_tag);
+    EnumConstant* parse_enum_constant(Declaration* declaration, const EnumType* type, const Identifier& tag);
 };
 
 #endif

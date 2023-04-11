@@ -655,13 +655,16 @@ LLVMTypeRef EnumType::llvm_type() const {
     return nullptr;
 }
 
-static bool enum_has_constant(const EnumType* type, const EnumConstant* find) {
-    for (auto constant: type->constants) {
-        if (constant == find) {
-            return true;
-        }
-    }
-    return false;
+void EnumType::add_constant(EnumConstant* constant) {
+    auto inserted = constant_index.insert(make_pair(constant->declarator->identifier.name, constant));
+    assert(inserted.second);
+    constants.push_back(constant);
+}
+
+const EnumConstant* EnumType::lookup_constant(const Identifier& identifier) const {
+    auto it = constant_index.find(identifier.name);
+    if (it == constant_index.end()) return nullptr;
+    return it->second;
 }
 
 const Type* EnumType::compose_type_def_types(const Type* o) const {
@@ -669,13 +672,13 @@ const Type* EnumType::compose_type_def_types(const Type* o) const {
 
     if (complete) {
         for (auto constant: other->constants) {
-            if (!enum_has_constant(this, constant)) return nullptr;
+            if (constant != lookup_constant(constant->declarator->identifier)) return nullptr;
         }
     }
 
     if (other->complete) {
         for (auto constant: constants) {
-            if (!enum_has_constant(other, constant)) return nullptr;
+            if (constant != other->lookup_constant(constant->declarator->identifier)) return nullptr;
         }
     }
 

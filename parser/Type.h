@@ -219,8 +219,12 @@ struct EnumType: Type {
     
     const Location location;
     vector<EnumConstant*> constants;
+    unordered_map<InternedString, EnumConstant*> constant_index;
     bool complete{};
     
+    void add_constant(EnumConstant* constant);
+    const EnumConstant* lookup_constant(const Identifier& identifier) const;
+
     virtual LLVMTypeRef llvm_type() const;
     virtual const Type* compose_type_def_types(const Type* other) const;
     virtual void print(std::ostream& stream) const;
