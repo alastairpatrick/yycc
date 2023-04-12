@@ -86,16 +86,12 @@ IntegerConstant::IntegerConstant(LLVMValueRef value, const IntegerType* type, co
     assert(value);
 }
 
-ConstantValue IntegerConstant::evaluate_constant() const {
-    return ConstantValue(value, type);
+Value IntegerConstant::evaluate_constant() const {
+    return Value(value, type);
 }
 
-const Type* IntegerConstant::get_type() const {
-    return type;
-}
-
-LLVMValueRef IntegerConstant::generate_value(CodeGenContext* context) const {
-    return value;
+Value IntegerConstant::generate_value(CodeGenContext* context) const {
+    return Value(value, type);
 }
 
 void IntegerConstant::print(ostream& stream) const {
@@ -128,12 +124,8 @@ FloatingPointConstant::FloatingPointConstant(LLVMValueRef value, const FloatingP
     assert(value);
 }
 
-const Type* FloatingPointConstant::get_type() const {
-    return type;
-}
-
-LLVMValueRef FloatingPointConstant::generate_value(CodeGenContext* context) const {
-    return value;
+Value FloatingPointConstant::generate_value(CodeGenContext* context) const {
+    return Value(value, type);
 }
 
 void FloatingPointConstant::print(ostream& stream) const {
@@ -167,6 +159,7 @@ void StringConstant::print(ostream& stream) const {
     stream << "[\"S\", " << char_type << ", " << json(t) << ']';
 }
 
-LLVMValueRef StringConstant::generate_value(CodeGenContext* context) const {
-    return nullptr;
+Value StringConstant::generate_value(CodeGenContext* context) const {
+    assert(false);
+    return Value();
 }

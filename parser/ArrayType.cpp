@@ -17,7 +17,7 @@ const Type* UnresolvedArrayType::resolve(ResolutionContext& ctx) const {
     if (size) {
         auto size_constant = size->evaluate_constant();
         unsigned long long size_int = 1;
-        if (!size_constant.is_integer()) {
+        if (!size_constant.is_const_integer()) {
             message(Severity::ERROR, size->location) << "size of array must have integer type\n";
         } else {
             size_int = LLVMConstIntGetZExtValue(size_constant.value);

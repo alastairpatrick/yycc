@@ -1,19 +1,28 @@
 #include "Expr.h"
 #include "CodeGenContext.h"
 
-ConstantValue::ConstantValue(LLVMValueRef value, const Type* type)
+Value::Value(LLVMValueRef value, const Type* type)
     : value(value), type(type) {
 }
 
-bool ConstantValue::is_integer() const {
+bool Value::is_const() const {
+    return value && LLVMIsConstant(value);
+}
+
+bool Value::is_const_integer() const {
     return value && LLVMIsAConstantInt(value);
 }
 
 Expr::Expr(const Location& location): Statement(location) {
 }
 
-ConstantValue Expr::evaluate_constant() const {
-    return {};
+Value Expr::evaluate_constant() const {
+    return Value();
+}
+
+Value Expr::generate_value(CodeGenContext* context) const {
+    assert(false);
+    return Value();
 }
 
 ConditionExpr::ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, const Location& location)
@@ -23,17 +32,19 @@ ConditionExpr::ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, 
     assert(this->else_expr);
 }
 
-const Type* ConditionExpr::get_type() const {
-    return convert_arithmetic(then_expr->get_type(), else_expr->get_type());
-}
+Value ConditionExpr::generate_value(CodeGenContext* context) const {
+    Value condition_value = condition->generate_value(context);
+    Value then_value = then_expr->generate_value(context);
+    Value else_value = else_expr->generate_value(context);
 
-LLVMValueRef ConditionExpr::generate_value(CodeGenContext* context) const {
+    auto cond_type = condition_value.type;
+    auto then_type = then_value.type;
+    auto else_type = else_value.type;
+    auto result_type = convert_arithmetic(then_value.type, else_value.type);
+    
+    return Value(nullptr, result_type);
+
     auto builder = context->builder;
-
-    auto cond_type = condition->get_type();
-    auto then_type = then_expr->get_type();
-    auto else_type = else_expr->get_type();
-    auto result_type = get_type();
 
     LLVMBasicBlockRef alt_blocks[2] = {
         LLVMAppendBasicBlock(context->function, "then"),
@@ -41,24 +52,24 @@ LLVMValueRef ConditionExpr::generate_value(CodeGenContext* context) const {
     };
     auto merge_block = LLVMAppendBasicBlock(context->function, "merge");
 
-    auto cond_value = cond_type->convert_to_type(context, condition->generate_value(context), IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::INT));
+    auto cond_value = cond_type->convert_to_type(context, condition_value.value, IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::INT));
     LLVMBuildCondBr(builder, cond_value, alt_blocks[0], alt_blocks[1]);
 
     LLVMValueRef 
         alt_values[2];
     LLVMPositionBuilderAtEnd(builder, alt_blocks[0]);
-    alt_values[0] = then_type->convert_to_type(context, then_expr->generate_value(context), result_type);
+    alt_values[0] = then_type->convert_to_type(context, then_value.value, result_type);
     LLVMBuildBr(builder, merge_block);
 
     LLVMPositionBuilderAtEnd(builder, alt_blocks[1]);
-    alt_values[1] = else_type->convert_to_type(context, else_expr->generate_value(context), result_type);
+    alt_values[1] = else_type->convert_to_type(context, else_value.value, result_type);
     LLVMBuildBr(builder, merge_block);
 
     LLVMPositionBuilderAtEnd(builder, merge_block);
     auto phi_value = LLVMBuildPhi(builder, result_type->llvm_type(), "cond");
     LLVMAddIncoming(phi_value, alt_values, alt_blocks, 2);
 
-    return phi_value;
+    return Value(phi_value, result_type);
 }
 
 void ConditionExpr::print(ostream& stream) const {
@@ -68,16 +79,6 @@ void ConditionExpr::print(ostream& stream) const {
 NameExpr::NameExpr(const Declarator* declarator, const Location& location)
     : Expr(location), declarator(declarator) {
     assert(declarator);
-}
-
-const Type* NameExpr::get_type() const {
-    assert(false);
-    return nullptr;
-}
-
-LLVMValueRef NameExpr::generate_value(CodeGenContext* context) const {
-    assert(false);
-    return nullptr;
 }
 
 void NameExpr::print(ostream& stream) const {
@@ -90,33 +91,33 @@ BinaryExpr::BinaryExpr(Expr* left, Expr* right, BinaryOp op, const Location& loc
     assert(this->right);
 }
 
-const Type* BinaryExpr::get_type() const {
-    return convert_arithmetic(left->get_type(), right->get_type());
-}
+Value BinaryExpr::generate_value(CodeGenContext* context) const {
+    auto left_value = left->generate_value(context);
+    auto right_value = right->generate_value(context);
+    auto result_type = convert_arithmetic(left_value.type, right_value.type);
 
-LLVMValueRef BinaryExpr::generate_value(CodeGenContext* context) const {
+    return Value(nullptr, result_type);
+
     auto builder = context->builder;
 
-    auto left_type = left->get_type();
-    auto right_type = right->get_type();
-    auto result_type = get_type();
+    auto left_temp = left_value.type->convert_to_type(context, left_value.value, result_type);
+    auto right_temp = right_value.type->convert_to_type(context, right_value.value, result_type);
 
-    auto left_temp = left_type->convert_to_type(context, left->generate_value(context), result_type);
-    auto right_temp = right_type->convert_to_type(context, right->generate_value(context), result_type);
+    LLVMValueRef result_value;
 
     if (auto result_as_int = dynamic_cast<const IntegerType*>(result_type)) {
         switch (op) {
           case BinaryOp::ADD:
-            return LLVMBuildAdd(builder, left_temp, right_temp, "add");
+            return Value(LLVMBuildAdd(builder, left_temp, right_temp, "add"), result_type);
           case BinaryOp::SUB:
-            return LLVMBuildSub(builder, left_temp, right_temp, "sub");
+            return Value(LLVMBuildSub(builder, left_temp, right_temp, "sub"), result_type);
           case BinaryOp::MUL:
-            return LLVMBuildMul(builder, left_temp, right_temp, "mul");
+            return Value(LLVMBuildMul(builder, left_temp, right_temp, "mul"), result_type);
           case BinaryOp::DIV:
             if (result_as_int->is_signed()) {
-                return LLVMBuildSDiv(builder, left_temp, right_temp, "div");
+                return Value(LLVMBuildSDiv(builder, left_temp, right_temp, "div"), result_type);
             } else {
-                return LLVMBuildUDiv(builder, left_temp, right_temp, "div");
+                return Value(LLVMBuildUDiv(builder, left_temp, right_temp, "div"), result_type);
             }
         }
     }
@@ -124,18 +125,18 @@ LLVMValueRef BinaryExpr::generate_value(CodeGenContext* context) const {
     if (auto result_as_float = dynamic_cast<const FloatingPointType*>(result_type)) {
         switch (op) {
           case BinaryOp::ADD:
-            return LLVMBuildFAdd(builder, left_temp, right_temp, "fadd");
+            return Value(LLVMBuildFAdd(builder, left_temp, right_temp, "fadd"), result_type);
           case BinaryOp::SUB:
-            return LLVMBuildFSub(builder, left_temp, right_temp, "fsub");
+            return Value(LLVMBuildFSub(builder, left_temp, right_temp, "fsub"), result_type);
           case BinaryOp::MUL:
-            return LLVMBuildFMul(builder, left_temp, right_temp, "fmul");
+            return Value(LLVMBuildFMul(builder, left_temp, right_temp, "fmul"), result_type);
           case BinaryOp::DIV:
-            return LLVMBuildFDiv(builder, left_temp, right_temp, "fdiv");
+            return Value(LLVMBuildFDiv(builder, left_temp, right_temp, "fdiv"), result_type);
         }
     }
 
     assert(false); // TODO
-    return nullptr;
+    return Value();
 }
 
 void BinaryExpr::print(ostream& stream) const {
@@ -173,13 +174,9 @@ DefaultExpr::DefaultExpr(const Type* type, const Location& location)
     : Expr(location), type(type) {
 }
 
-const Type* DefaultExpr::get_type() const {
-    return type;
-}
-
-LLVMValueRef DefaultExpr::generate_value(CodeGenContext* context) const {
-    assert(false); // TODO
-    return nullptr;
+Value DefaultExpr::generate_value(CodeGenContext* context) const {
+    // TODO
+    return Value(nullptr, type);
 }
 
 void DefaultExpr::print(ostream& stream) const {

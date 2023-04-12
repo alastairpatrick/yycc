@@ -7,7 +7,6 @@
 #include "Printable.h"
 
 struct CodeGenContext;
-struct ConstantValue;
 struct Declaration;
 struct DeclaratorDelegate;
 struct Entity;
@@ -18,6 +17,7 @@ enum class Linkage;
 struct ResolutionContext;
 struct Type;
 struct TypeDef;
+struct Value;
 
 struct ASTNode: virtual Printable {
     ASTNode();
@@ -71,9 +71,8 @@ struct Statement: ASTNode {
 struct Expr: Statement {
     explicit Expr(const Location& location);
 
-    virtual ConstantValue evaluate_constant() const;
-    virtual const Type* get_type() const = 0;
-    virtual LLVMValueRef generate_value(CodeGenContext* context) const = 0;
+    virtual Value evaluate_constant() const;
+    virtual Value generate_value(CodeGenContext* context) const;
 };
 
 

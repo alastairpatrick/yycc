@@ -7,10 +7,12 @@
 
 struct Decl;
 
-struct ConstantValue {
-    ConstantValue() = default;
-    ConstantValue(LLVMValueRef value, const Type* type);
-    bool is_integer() const;
+struct Value {
+    Value() = default;
+    Value(LLVMValueRef value, const Type* type);
+
+    bool is_const() const;
+    bool is_const_integer() const;
 
     LLVMValueRef value{};
     const Type* type{};
@@ -23,8 +25,7 @@ struct ConditionExpr: Expr {
     Expr* then_expr{};
     Expr* else_expr{};
 
-    virtual const Type* get_type() const;
-    virtual LLVMValueRef generate_value(CodeGenContext* context) const;
+    virtual Value generate_value(CodeGenContext* context) const;
     virtual void print(ostream& stream) const;
 };
 
@@ -33,8 +34,6 @@ struct NameExpr: Expr {
 
     NameExpr(const Declarator* declarator, const Location& location);
 
-    virtual const Type* get_type() const;
-    virtual LLVMValueRef generate_value(CodeGenContext* context) const;
     virtual void print(ostream& stream) const;
 };
 
@@ -55,8 +54,7 @@ struct BinaryExpr: Expr {
     Expr* right{};
     BinaryOp op;
     
-    virtual const Type* get_type() const;
-    virtual LLVMValueRef generate_value(CodeGenContext* context) const;
+    virtual Value generate_value(CodeGenContext* context) const;
     virtual void print(ostream& stream) const;
 };
 
@@ -66,8 +64,7 @@ struct DefaultExpr: Expr {
 
     const Type* type;
 
-    virtual const Type* get_type() const;
-    virtual LLVMValueRef generate_value(CodeGenContext* context) const;
+    virtual Value generate_value(CodeGenContext* context) const;
     virtual void print(ostream& stream) const;
 };
 
