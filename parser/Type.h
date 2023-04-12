@@ -193,12 +193,13 @@ struct StructuredType: Type {
     vector<Declarator*> members;
     unordered_map<InternedString, Declarator*> member_index;
     bool complete{};
+    mutable bool resolved{};
 
-    virtual bool is_complete() const override;
     const Declarator* lookup_member(const Identifier& identifier) const;
 
+    virtual bool is_complete() const override;
+    virtual const Type* resolve(ResolutionContext& ctx) const override;
     virtual LLVMTypeRef llvm_type() const override;
-
     virtual void print(std::ostream& stream) const override;
 };
 

@@ -369,6 +369,10 @@ const Type* convert_arithmetic(const Type* left, const Type* right) {
 #pragma region PointerType
 
 const Type* PointerType::resolve(ResolutionContext& ctx) const {
+    if (auto structured_type = dynamic_cast<const StructuredType*>(base_type->unqualified())) {
+        if (structured_type->resolved) return this;
+    }
+
     return base_type->resolve(ctx)->pointer_to();
 }
 
@@ -499,14 +503,25 @@ StructuredType::StructuredType(const Location& location)
     : location(location) {
 }
 
-bool StructuredType::is_complete() const {
-    return complete;
-}
-
 const Declarator* StructuredType::lookup_member(const Identifier& identifier) const {
     auto it = member_index.find(identifier.name);
     if (it == member_index.end()) return nullptr;
     return it->second;
+}
+
+bool StructuredType::is_complete() const {
+    return complete;
+}
+
+const Type* StructuredType::resolve(ResolutionContext& context) const {
+    if (resolved) return this;
+    resolved = true;
+
+    for (auto member: members) {
+        member->resolve(context);
+    }
+
+    return this;
 }
 
 LLVMTypeRef StructuredType::llvm_type() const {

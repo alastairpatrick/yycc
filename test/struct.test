@@ -209,3 +209,14 @@ EXPECT_MESSAGE
 EXPECT_AST
 [["typedef","Ff","T"]
 ,["var","ES","Si","v"]]
+
+
+BEGIN typeof member
+struct S {
+    double x;
+    typeof(x) y;
+};
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["x","Fd"],["y","Fd"]]],"S"]]
+

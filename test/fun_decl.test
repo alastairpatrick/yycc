@@ -243,3 +243,11 @@ BEGIN Function declaration with nested declarators
 int (*fpfi(int (*)(long), int))(int, float);
 EXPECT_AST
 [["fun","E",["F",["P",["F","Si","Si","Ff"]],["P",["F","Si","Sl"]],"Si"],"fpfi"]]
+
+
+BEGIN typeof parameter
+void foo(int x, typeof(x) y);
+DECLARATIONS
+EXPECT_AST
+[["fun","E",["F","V","Si","Si"],"foo"]]
+
