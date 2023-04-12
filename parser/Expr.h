@@ -25,7 +25,7 @@ struct ConditionExpr: Expr {
     Expr* then_expr{};
     Expr* else_expr{};
 
-    virtual Value generate_value(CodeGenContext* context) const;
+    virtual Value emit(EmitContext& context) const;
     virtual void print(ostream& stream) const;
 };
 
@@ -54,7 +54,7 @@ struct BinaryExpr: Expr {
     Expr* right{};
     BinaryOp op;
     
-    virtual Value generate_value(CodeGenContext* context) const;
+    virtual Value emit(EmitContext& context) const;
     virtual void print(ostream& stream) const;
 };
 
@@ -64,7 +64,7 @@ struct DefaultExpr: Expr {
 
     const Type* type;
 
-    virtual Value generate_value(CodeGenContext* context) const;
+    virtual Value emit(EmitContext& context) const;
     virtual void print(ostream& stream) const;
 };
 

@@ -1,6 +1,6 @@
 #include "Type.h"
 
-#include "CodeGenContext.h"
+#include "EmitContext.h"
 #include "Constant.h"
 #include "Declaration.h"
 #include "IdentifierMap.h"
@@ -44,7 +44,7 @@ const Type* Type::compose_type_def_types(const Type* other) const {
     return nullptr;
 }
 
-LLVMValueRef Type::convert_to_type(CodeGenContext* context, LLVMValueRef value, const Type* to_type) const {
+LLVMValueRef Type::convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const {
     if (to_type == this) return value;
 
     assert(false);  // TODO
@@ -178,8 +178,8 @@ const Type* IntegerType::promote() const {
     return this;
 }
 
-LLVMValueRef IntegerType::convert_to_type(CodeGenContext* context, LLVMValueRef value, const Type* to_type) const {
-    auto builder = context->builder;
+LLVMValueRef IntegerType::convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const {
+    auto builder = context.builder;
 
     if (to_type == this) return value;
 
@@ -265,8 +265,8 @@ const FloatingPointType* FloatingPointType::of(FloatingPointSize size) {
 }
 
 
-LLVMValueRef FloatingPointType::convert_to_type(CodeGenContext* context, LLVMValueRef value, const Type* to_type) const {
-    auto builder = context->builder;
+LLVMValueRef FloatingPointType::convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const {
+    auto builder = context.builder;
 
     if (to_type == this) return value;
 

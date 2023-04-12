@@ -6,7 +6,7 @@
 #include "lexer/Token.h"
 #include "Printable.h"
 
-struct CodeGenContext;
+struct EmitContext;
 struct Declaration;
 struct Declarator;
 struct EnumConstant;
@@ -33,7 +33,7 @@ struct Type: virtual Printable {
     virtual const Type* resolve(ResolutionContext& ctx) const;
     virtual const Type* compose_type_def_types(const Type* other) const;
 
-    virtual LLVMValueRef convert_to_type(CodeGenContext* context, LLVMValueRef value, const Type* to_type) const;
+    virtual LLVMValueRef convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const;
 
     virtual LLVMTypeRef llvm_type() const;
 };
@@ -80,7 +80,7 @@ struct IntegerType: Type {
     const IntegerSize size;
 
     virtual const Type* promote() const;
-    virtual LLVMValueRef convert_to_type(CodeGenContext* context, LLVMValueRef value, const Type* to_type) const;
+    virtual LLVMValueRef convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const;
 
     virtual LLVMTypeRef llvm_type() const;
 
@@ -104,7 +104,7 @@ struct FloatingPointType: Type {
 
     const FloatingPointSize size;
 
-    virtual LLVMValueRef convert_to_type(CodeGenContext* context, LLVMValueRef value, const Type* to_type) const;
+    virtual LLVMValueRef convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const;
 
     virtual LLVMTypeRef llvm_type() const;
 

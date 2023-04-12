@@ -1,5 +1,5 @@
 #include "Expr.h"
-#include "CodeGenContext.h"
+#include "EmitContext.h"
 
 Value::Value(LLVMValueRef value, const Type* type)
     : value(value), type(type) {
@@ -20,7 +20,7 @@ Value Expr::evaluate_constant() const {
     return Value();
 }
 
-Value Expr::generate_value(CodeGenContext* context) const {
+Value Expr::emit(EmitContext& context) const {
     assert(false);
     return Value();
 }
@@ -32,10 +32,10 @@ ConditionExpr::ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, 
     assert(this->else_expr);
 }
 
-Value ConditionExpr::generate_value(CodeGenContext* context) const {
-    Value condition_value = condition->generate_value(context);
-    Value then_value = then_expr->generate_value(context);
-    Value else_value = else_expr->generate_value(context);
+Value ConditionExpr::emit(EmitContext& context) const {
+    Value condition_value = condition->emit(context);
+    Value then_value = then_expr->emit(context);
+    Value else_value = else_expr->emit(context);
 
     auto cond_type = condition_value.type;
     auto then_type = then_value.type;
@@ -44,13 +44,13 @@ Value ConditionExpr::generate_value(CodeGenContext* context) const {
     
     return Value(nullptr, result_type);
 
-    auto builder = context->builder;
+    auto builder = context.builder;
 
     LLVMBasicBlockRef alt_blocks[2] = {
-        LLVMAppendBasicBlock(context->function, "then"),
-        LLVMAppendBasicBlock(context->function, "else"),
+        LLVMAppendBasicBlock(context.function, "then"),
+        LLVMAppendBasicBlock(context.function, "else"),
     };
-    auto merge_block = LLVMAppendBasicBlock(context->function, "merge");
+    auto merge_block = LLVMAppendBasicBlock(context.function, "merge");
 
     auto cond_value = cond_type->convert_to_type(context, condition_value.value, IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::INT));
     LLVMBuildCondBr(builder, cond_value, alt_blocks[0], alt_blocks[1]);
@@ -91,14 +91,14 @@ BinaryExpr::BinaryExpr(Expr* left, Expr* right, BinaryOp op, const Location& loc
     assert(this->right);
 }
 
-Value BinaryExpr::generate_value(CodeGenContext* context) const {
-    auto left_value = left->generate_value(context);
-    auto right_value = right->generate_value(context);
+Value BinaryExpr::emit(EmitContext& context) const {
+    auto left_value = left->emit(context);
+    auto right_value = right->emit(context);
     auto result_type = convert_arithmetic(left_value.type, right_value.type);
 
     return Value(nullptr, result_type);
 
-    auto builder = context->builder;
+    auto builder = context.builder;
 
     auto left_temp = left_value.type->convert_to_type(context, left_value.value, result_type);
     auto right_temp = right_value.type->convert_to_type(context, right_value.value, result_type);
@@ -174,7 +174,7 @@ DefaultExpr::DefaultExpr(const Type* type, const Location& location)
     : Expr(location), type(type) {
 }
 
-Value DefaultExpr::generate_value(CodeGenContext* context) const {
+Value DefaultExpr::emit(EmitContext& context) const {
     // TODO
     return Value(nullptr, type);
 }

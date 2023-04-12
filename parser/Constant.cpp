@@ -90,7 +90,7 @@ Value IntegerConstant::evaluate_constant() const {
     return Value(value, type);
 }
 
-Value IntegerConstant::generate_value(CodeGenContext* context) const {
+Value IntegerConstant::emit(EmitContext& context) const {
     return Value(value, type);
 }
 
@@ -124,7 +124,7 @@ FloatingPointConstant::FloatingPointConstant(LLVMValueRef value, const FloatingP
     assert(value);
 }
 
-Value FloatingPointConstant::generate_value(CodeGenContext* context) const {
+Value FloatingPointConstant::emit(EmitContext& context) const {
     return Value(value, type);
 }
 
@@ -159,7 +159,7 @@ void StringConstant::print(ostream& stream) const {
     stream << "[\"S\", " << char_type << ", " << json(t) << ']';
 }
 
-Value StringConstant::generate_value(CodeGenContext* context) const {
+Value StringConstant::emit(EmitContext& context) const {
     assert(false);
     return Value();
 }

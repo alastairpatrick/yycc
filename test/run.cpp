@@ -1,6 +1,6 @@
 #include "nlohmann/json.hpp"
 
-#include "CodeGenContext.h"
+#include "EmitContext.h"
 #include "FileCache.h"
 #include "parser/ASTNode.h"
 #include "parser/Expr.h"
@@ -108,7 +108,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
         if (test_type == TestType::EXPRESSION) {
             auto expr = parse_expr(identifiers, sections[INPUT]);
             if (!sections[EXPECT_TYPE].empty()) {
-                type = expr->generate_value(nullptr).type;
+                type = expr->emit(EmitContext()).type;
             }
             output_stream << expr;
         } else if (test_type == TestType::PREPROCESS) {

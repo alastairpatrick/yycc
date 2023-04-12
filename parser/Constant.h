@@ -22,7 +22,7 @@ struct IntegerConstant: Constant {
 
     virtual Value evaluate_constant() const override;
 
-    virtual Value generate_value(CodeGenContext* context) const;
+    virtual Value emit(EmitContext& context) const;
     virtual void print(ostream& stream) const;
 };
 
@@ -34,7 +34,7 @@ struct FloatingPointConstant: Constant {
 
     FloatingPointConstant(LLVMValueRef value, const FloatingPointType* type, const Location& location);
 
-    virtual Value generate_value(CodeGenContext* context) const;
+    virtual Value emit(EmitContext& context) const;
     virtual void print(ostream& stream) const;
 };
 
@@ -47,7 +47,7 @@ struct StringConstant: Constant {
     StringConstant(string&& utf8_literal, const IntegerType* char_type, const Location& location);
 
     virtual const Type* get_type() const;
-    virtual Value generate_value(CodeGenContext* context) const;
+    virtual Value emit(EmitContext& context) const;
     virtual void print(ostream& stream) const;
 };
 

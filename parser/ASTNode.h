@@ -6,7 +6,7 @@
 #include "lexer/Location.h"
 #include "Printable.h"
 
-struct CodeGenContext;
+struct EmitContext;
 struct Declaration;
 struct DeclaratorDelegate;
 struct Entity;
@@ -72,7 +72,7 @@ struct Expr: Statement {
     explicit Expr(const Location& location);
 
     virtual Value evaluate_constant() const;
-    virtual Value generate_value(CodeGenContext* context) const;
+    virtual Value emit(EmitContext& context) const;
 };
 
 
