@@ -18,7 +18,7 @@ struct ResolutionContext;
 struct Type;
 struct TypeDef;
 
-struct ASTNode: Printable {
+struct ASTNode: virtual Printable {
     ASTNode();
     ASTNode(const ASTNode&);
     ASTNode(ASTNode&&);

@@ -1,5 +1,6 @@
 #include "Parser.h"
 
+#include "ArrayType.h"
 #include "ASTNode.h"
 #include "Constant.h"
 #include "Declaration.h"
@@ -735,7 +736,7 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, bo
             require(']');
 
             right_transform = [right_transform, array_qualifier_set, array_size](const Type* type) {
-                type = QualifiedType::of(new ArrayType(type, array_size), array_qualifier_set);
+                type = QualifiedType::of(new UnresolvedArrayType(type, array_size), array_qualifier_set);
                 if (right_transform) type = right_transform(type);
                 return type;
             };

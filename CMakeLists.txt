@@ -30,6 +30,7 @@ add_library(lang_lib STATIC
     "parser/IdentifierMap.cpp"
     "parser/Parser.cpp"
     "parser/Statement.cpp"
+    "parser/ArrayType.cpp"
     "parser/Type.cpp"
     "parser/TypeContext.cpp"
 

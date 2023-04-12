@@ -51,6 +51,11 @@ LLVMValueRef Type::convert_to_type(CodeGenContext* context, LLVMValueRef value, 
     return value;
 }
 
+LLVMTypeRef Type::llvm_type() const {
+    assert(false);
+    return nullptr;
+}
+
 const Type* compose_types(const Type* a, const Type* b) {
     if (a == b) return a;
 
@@ -373,47 +378,6 @@ PointerType::PointerType(const Type* base_type)
 }
 
 #pragma endregion PointerType
-
-#pragma region ArrayType
-
-const Type* ArrayType::compose(const Type* o) const {
-    auto other = static_cast<const ArrayType*>(o);
-
-    if (element_type == other->element_type) {
-        if (!size) return other;
-        if (!other->size) return this;
-    }
-
-    return nullptr;
-}
-
-const Type* ArrayType::resolve(ResolutionContext& ctx) const {
-    auto resolved_element_type = element_type->resolve(ctx);
-
-    // TODO: evaluate constant size expression and return canonical representation of array type.
-    if (resolved_element_type == element_type) return this;
-    return new ArrayType(resolved_element_type, size);
-}
-
-LLVMTypeRef ArrayType::llvm_type() const {
-    // TODO
-    assert(false);
-    return nullptr;
-}
-
-void ArrayType::print(std::ostream& stream) const {
-    stream << "[\"A\", " << element_type;
-    if (size) {
-        stream << ", " << size;
-    }
-    stream << ']';
-}
-
-ArrayType::ArrayType(const Type* element_type, const Expr* size)
-    : element_type(element_type), size(size) {
-}
-
-#pragma endregion ArrayType
 
 #pragma region QualifierType
 

@@ -21,6 +21,7 @@ struct IntegerConstant: Constant {
     IntegerConstant(LLVMValueRef value, const IntegerType* type, const Location& location);
 
     long long int_value() const;
+    unsigned long long uint_value() const;
 
     virtual const Type* get_type() const;
     virtual LLVMValueRef generate_value(CodeGenContext* context) const;

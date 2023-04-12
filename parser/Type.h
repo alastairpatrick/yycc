@@ -16,7 +16,7 @@ struct PointerType;
 struct ResolutionContext;
 struct TypeDef;
 
-struct Type: Printable {
+struct Type: virtual Printable {
     Type() = default;
     Type(const Type&) = delete;
     void operator=(const Type&) = delete;
@@ -35,7 +35,7 @@ struct Type: Printable {
 
     virtual LLVMValueRef convert_to_type(CodeGenContext* context, LLVMValueRef value, const Type* to_type) const;
 
-    virtual LLVMTypeRef llvm_type() const = 0;
+    virtual LLVMTypeRef llvm_type() const;
 };
 
 const Type* compose_types(const Type* a, const Type* b);
@@ -129,21 +129,6 @@ private:
     friend class TypeContext;
     mutable LLVMTypeRef llvm = nullptr;
     explicit PointerType(const Type* base_type);
-};
-
-struct ArrayType: Type {
-    ArrayType(const Type* element_type, const Expr* size);
-
-    const Type* const element_type;
-    const Expr* const size;
-
-    virtual const Type* compose(const Type* other) const;
-
-    virtual const Type* resolve(ResolutionContext& ctx) const;
-
-    virtual LLVMTypeRef llvm_type() const;
-
-    virtual void print(std::ostream& stream) const;
 };
 
 enum TypeQualifiers {

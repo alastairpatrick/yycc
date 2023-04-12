@@ -89,6 +89,10 @@ long long IntegerConstant::int_value() const {
     return LLVMConstIntGetSExtValue(value);
 }
 
+unsigned long long IntegerConstant::uint_value() const {
+    return LLVMConstIntGetZExtValue(value);
+}
+
 const Type* IntegerConstant::get_type() const {
     return type;
 }
