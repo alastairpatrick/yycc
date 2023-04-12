@@ -63,8 +63,8 @@ LLVMTypeRef Type::llvm_type() const {
 const Type* compose_types(const Type* a, const Type* b) {
     if (a == b) return a;
 
-    if (a == &CompatibleType::it) return b;
-    if (b == &CompatibleType::it) return a;
+    if (a == &UniversalType::it) return b;
+    if (b == &UniversalType::it) return a;
 
     if (typeid(*a) == typeid(*b)) {
         return a->compose(b);
@@ -111,20 +111,20 @@ void VoidType::print(std::ostream& stream) const {
 
 #pragma endregion VoidType
 
-#pragma region CompatibleType
+#pragma region UniversalType
 
-const CompatibleType CompatibleType::it;
+const UniversalType UniversalType::it;
 
-LLVMTypeRef CompatibleType::llvm_type() const {
+LLVMTypeRef UniversalType::llvm_type() const {
     assert(false);
     return LLVMVoidType();
 }
 
-void CompatibleType::print(std::ostream& stream) const {
+void UniversalType::print(std::ostream& stream) const {
     stream << "\"?\"";
 }
 
-#pragma endregion CompatibleType
+#pragma endregion UniversalType
 
 #pragma region IntegerType
 

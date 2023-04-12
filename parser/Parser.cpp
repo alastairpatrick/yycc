@@ -55,7 +55,7 @@ void Parser::handle_declaration_directive() {
 
     auto pp_token = preprocessor.next_pp_token();
 
-    auto declaration = new Declaration(IdentifierScope::FILE, storage_class, &CompatibleType::it, preprocessor.location());
+    auto declaration = new Declaration(IdentifierScope::FILE, storage_class, &UniversalType::it, preprocessor.location());
     declarations.push_back(declaration);
 
     while (pp_token && pp_token != '\n') {
@@ -71,7 +71,7 @@ void Parser::handle_declaration_directive() {
               case TOK_PP_STATIC:
               case TOK_PP_EXTERN:
                 new_declarator->delegate = new Entity(new_declarator);
-                new_declarator->type = &CompatibleType::it;
+                new_declarator->type = &UniversalType::it;
                 break;
               case TOK_PP_TYPE:
                 new_declarator->delegate = new TypeDef(new_declarator);

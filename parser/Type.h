@@ -54,9 +54,9 @@ struct VoidType: Type {
     virtual void print(std::ostream& stream) const override;
 };
 
-// CompatibleType is compatible with all types.
-struct CompatibleType: Type {
-    static const CompatibleType it;
+// UniversalType is compatible with all types.
+struct UniversalType: Type {
+    static const UniversalType it;
     virtual LLVMTypeRef llvm_type() const override;
     virtual void print(std::ostream& stream) const override;
 };
