@@ -691,7 +691,8 @@ void EnumType::print(std::ostream& stream) const {
 
 #pragma region TypeOfType
 
-TypeOfType::TypeOfType(const Expr* expr): expr(expr) {
+TypeOfType::TypeOfType(const Expr* expr, bool keep_qualifiers, const Location& location)
+    : location(location), expr(expr), keep_qualifiers(keep_qualifiers) {
 }
 
 bool TypeOfType::is_complete() const {

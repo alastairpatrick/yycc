@@ -33,6 +33,9 @@ enum TokenKind {
     TOK_ENUM,
     TOK_IDENTIFIER,
 
+    TOK_TYPEOF,
+    TOK_TYPEOF_UNQUAL,
+
     TOK_INLINE,
 
     // Tokens above are <32 so that they don't overlap with single character punctuators.

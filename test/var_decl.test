@@ -354,6 +354,34 @@ EXPECT_AST
 [["var", "ES", "NT", "x"]]
 
 
+BEGIN Variable of unevaluated typeof expression (preparse)
+typeof(1L / 0L) x;
+PREPARSE
+EXPECT_AST
+[["var","ES",["typeof",["Sl",1]],"x"]]
+
+
+BEGIN Variable of unevaluated typeof expression
+typeof(1L / 0L) x;
+DECLARATIONS
+EXPECT_AST
+[["var", "ES", "Sl", "x"]]
+
+
+BEGIN Variable of typeof type namme
+typeof(const double) x;
+DECLARATIONS
+EXPECT_AST
+[["var","ES",["Qc","Fd"],"x"]]
+
+
+BEGIN Variable of typeof_unqual qualified type namme
+typeof_unqual(const double) x;
+DECLARATIONS
+EXPECT_AST
+[["var", "ES", "Fd", "x"]]
+
+
 BEGIN #extern directive
 #extern x
 DECLARATIONS

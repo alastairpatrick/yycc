@@ -1,6 +1,7 @@
 #ifndef PARSER_TYPE_H
 #define PARSER_TYPE_H
 
+#include "ASTNode.h"
 #include "lexer/Identifier.h"
 #include "lexer/Location.h"
 #include "lexer/Token.h"
@@ -230,10 +231,12 @@ struct EnumType: Type {
     virtual void print(std::ostream& stream) const override;
 };
 
-struct TypeOfType: Type {
+struct TypeOfType: ASTNode, Type {
+    const Location location;
     const Expr* const expr;
+    const bool keep_qualifiers;
 
-    explicit TypeOfType(const Expr* expr);
+    TypeOfType(const Expr* expr, bool keep_qualifiers, const Location& location);
     virtual bool is_complete() const override;
     virtual const Type* resolve(ResolutionContext& ctx) const override;
     virtual void print(std::ostream& stream) const override;

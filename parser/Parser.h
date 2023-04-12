@@ -64,6 +64,7 @@ private:
     DeclaratorTransform parse_declarator_transform(IdentifierScope scope, int flags);
     const Type* parse_structured_type(Declaration* declaration);
     EnumConstant* parse_enum_constant(Declaration* declaration, const EnumType* type, const Identifier& tag);
+    const Type* parse_typeof();
     const Type* parse_type_name();
 };
 

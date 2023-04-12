@@ -57,6 +57,8 @@ static        { return TOK_STATIC; }
 struct        { return TOK_STRUCT; }
 switch        { return TOK_SWITCH; }
 typedef       { return TOK_TYPEDEF; }
+typeof        { return TOK_TYPEOF; }
+typeof_unqual { return TOK_TYPEOF_UNQUAL; }
 union         { return TOK_UNION; }
 unsigned      { return TOK_UNSIGNED; }
 void          { return TOK_VOID; }

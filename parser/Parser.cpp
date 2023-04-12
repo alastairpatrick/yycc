@@ -216,14 +216,21 @@ bool Parser::check_eof() {
 
 Expr* Parser::parse_expr(OperatorPrec min_prec) {
     Location loc = preprocessor.location();
+    Expr* result{};
 
-    // To make it easier to write tests that run in both preparse and not, decimal integers can always be parsed.
-    if (preparse && token != TOK_DEC_INT_LITERAL) {
+    if (preparse) {
+        // To make it easier to write tests that run in both preparse and not, decimal integers can always be parsed.
+        if (token == TOK_DEC_INT_LITERAL) {
+            result = IntegerConstant::of(preprocessor.text(), token, preprocessor.location());
+        } else {
+            result = IntegerConstant::default_expr(loc);
+        }
+
         skip_expr(min_prec);
-        return IntegerConstant::default_expr(loc);
+        return result;
     }
 
-    auto result = parse_cast_expr();
+    result = parse_cast_expr();
 
     while (prec() >= min_prec) {
         auto next_min_prec = assoc() == ASSOC_LEFT ? OperatorPrec(prec() + 1) : prec();
@@ -314,7 +321,7 @@ Expr* Parser::parse_unary_expr() {
                 result = new SizeOfExpr(type, loc);
             } else {
                 auto expr = parse_unary_expr();
-                result = new SizeOfExpr(new TypeOfType(expr), loc);
+                result = new SizeOfExpr(new TypeOfType(expr, true, loc), loc);
             }
 
             if (consumed_paren) require(')');
@@ -471,6 +478,13 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
               type = parse_structured_type(declaration);
               break;
 
+          } case TOK_TYPEOF:
+            case TOK_TYPEOF_UNQUAL: {
+              found_specifier = token;
+              type_specifier_location = preprocessor.location();
+              type = parse_typeof();
+              break;
+          
           } case TOK_INLINE: {
               found_specifier = token;
               function_specifier_location = preprocessor.location();
@@ -485,7 +499,7 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
               qualifier_location = preprocessor.location();
               specifier_set &= ~(1 << token); // qualifiers may be repeated
               consume();
-              break;
+              break;       
           }
         }
 
@@ -593,7 +607,9 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
       } case (1 << TOK_ENUM):
         case (1 << TOK_IDENTIFIER):
         case (1 << TOK_STRUCT):
-        case (1 << TOK_UNION): {
+        case (1 << TOK_UNION):
+        case (1 << TOK_TYPEOF):
+        case (1 << TOK_TYPEOF_UNQUAL): {
           break;
       }
     }
@@ -1037,6 +1053,25 @@ EnumConstant* Parser::parse_enum_constant(Declaration* declaration, const EnumTy
     }
 
     return enum_constant;
+}
+
+const Type* Parser::parse_typeof() {
+    auto location = preprocessor.location();
+
+    bool keep_qualifiers = token == TOK_TYPEOF;
+    consume();
+    require('(');
+
+    auto type = parse_type_name();
+    if (type) {
+        if (!keep_qualifiers) type = type->unqualified();
+    } else {
+        auto expr = parse_expr(SEQUENCE_PREC);
+        type = new TypeOfType(expr, keep_qualifiers, location);
+    }
+
+    require(')');
+    return type;
 }
 
 const Type* Parser::parse_type_name() {
