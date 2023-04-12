@@ -82,12 +82,12 @@ void ConditionExpr::print(ostream& stream) const {
     stream << "[\"?:\", " << condition << ", " << then_expr << ", " << else_expr << "]";
 }
 
-NameExpr::NameExpr(const Declarator* declarator, const Location& location)
+EntityExpr::EntityExpr(const Declarator* declarator, const Location& location)
     : Expr(location), declarator(declarator) {
     assert(declarator);
 }
 
-Value NameExpr::emit(EmitContext& context) const {
+Value EntityExpr::emit(EmitContext& context) const {
     const Type* result_type = declarator->type;
 
     if (context.outcome == EmitOutcome::TYPE) return Value(nullptr, result_type);
@@ -97,7 +97,7 @@ Value NameExpr::emit(EmitContext& context) const {
     return Value();
 }
 
-void NameExpr::print(ostream& stream) const {
+void EntityExpr::print(ostream& stream) const {
     stream << "\"N" << declarator->identifier << '"';
 }
 

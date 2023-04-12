@@ -348,7 +348,7 @@ Expr* Parser::parse_unary_expr() {
                 // TokenKind would have to be TOK_TYPEDEF_IDENTIFIER for declarator to be a typedef.
                 assert(!declarator->type_def());
 
-                result = new NameExpr(declarator, preprocessor.location());
+                result = new EntityExpr(declarator, preprocessor.location());
             } else {
                 message(Severity::ERROR, preprocessor.location()) << '\'' << preprocessor.identifier() << "' undeclared\n";
                 result = IntegerConstant::default_expr(preprocessor.location());
