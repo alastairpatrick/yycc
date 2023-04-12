@@ -1,7 +1,7 @@
 BEGIN Untagged struct definition with declarator
 struct { int x; int y; } z;
 EXPECT_GLOBALS
-[["var","ES",["STRUCT",[["x","Si"],["y","Si"]]],"z",""]]
+[["var","ES",["STRUCT",[["x","Si"],["y","Si"]]],"z"]]
 
 
 BEGIN Tagged struct definition
@@ -52,10 +52,10 @@ EXPECT_GLOBALS
 BEGIN Tagged incomplete struct with declarator
 struct S z;
 EXPECT_AST
-[["var","ES",["STRUCT",["?"]],"z",""]]
+[["var","ES",["STRUCT",["?"]],"z"]]
 EXPECT_GLOBALS
 [["typedef",["STRUCT",["?"]],"S"]
-,["var","ES",["STRUCT",["?"]],"z",""]]
+,["var","ES",["STRUCT",["?"]],"z"]]
 
 
 BEGIN Tagged struct with incomplete and complete definitions (1)
@@ -93,7 +93,7 @@ EXPECT_GLOBALS
 BEGIN Bit-field
 struct { int x: 15; int y: 17; } z;
 EXPECT_AST
-[["var", "ES", ["STRUCT", [["x", "Si", 15], ["y", "Si", 17]]], "z", ""]]
+[["var", "ES", ["STRUCT", [["x", "Si", 15], ["y", "Si", 17]]], "z"]]
 
 
 BEGIN Anonymous struct
@@ -101,7 +101,7 @@ struct {
     struct { int x; };
 } z;
 EXPECT_AST
-[["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]]]],"z",""]]
+[["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]]]],"z"]]
 
 
 BEGIN Multiple anonymous struct
@@ -110,7 +110,7 @@ struct {
     struct { int y; };
 } z;
 EXPECT_AST
-[["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]],["",["STRUCT",[["y","Si"]]]]]],"z",""]]
+[["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]],["",["STRUCT",[["y","Si"]]]]]],"z"]]
 
 
 BEGIN Multiple anonymous struct with duplicate members
@@ -122,7 +122,7 @@ DECLARATIONS
 EXPECT_MESSAGE
 :3:14: error duplicate member 'x'
 EXPECT_AST
-[["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]],["",["STRUCT",[]]]]],"z",""]]
+[["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]],["",["STRUCT",[]]]]],"z"]]
 
 
 BEGIN Anonymous union in struct
@@ -130,7 +130,7 @@ struct {
     union { int x; };
 } z;
 EXPECT_AST
-[["var","ES",["STRUCT",[["",["UNION",[["x","Si"]]]]]],"z",""]]
+[["var","ES",["STRUCT",[["",["UNION",[["x","Si"]]]]]],"z"]]
 
 
 BEGIN Tagged structs with multiple definitions and anonymous struct
@@ -163,7 +163,7 @@ struct {
     int;
 } z;
 EXPECT_AST
-[["var","ES",["STRUCT",[]],"z",""]]
+[["var","ES",["STRUCT",[]],"z"]]
 
 
 BEGIN Error on bit-field variable
@@ -171,7 +171,7 @@ int x: 2;
 EXPECT_MESSAGE
 :1:6: error expected ';' but got ':'
 EXPECT_AST
-[["var", "ES", "Si", "x", ""]]
+[["var", "ES", "Si", "x"]]
 
 
 BEGIN Standalone struct keyword
@@ -188,7 +188,8 @@ struct Foo {
     float x, y;
 };
 EXPECT_GLOBALS
-[["typedef",["STRUCT",[["x","Ff"],["y","Ff"]]],"Foo"],["var","ES","Si","x",""]]
+[["typedef",["STRUCT",[["x","Ff"],["y","Ff"]]],"Foo"]
+,["var","ES","Si","x"]]
 
 
 BEGIN Struct is in scope within body
@@ -206,4 +207,5 @@ T struct S v;
 EXPECT_MESSAGE
 :2:3: error invalid type specifier combination
 EXPECT_AST
-[["typedef","Ff","T"],["var","ES","Si","v",""]]
+[["typedef","Ff","T"]
+,["var","ES","Si","v"]]

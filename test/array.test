@@ -1,0 +1,75 @@
+BEGIN Array type of non-parameter variable may not be qualified
+int x[const volatile restrict 1];
+DECLARATIONS
+EXPECT_MESSAGE
+:1:7: error unexpected token 'const'
+EXPECT_AST
+[["var", "ES", ["A", "Si", 1], "x"]]
+
+
+BEGIN Array type of non-parameter variable may not be static
+int x[static 1];
+DECLARATIONS
+EXPECT_MESSAGE
+:1:7: error unexpected token 'static'
+EXPECT_AST
+[["var", "ES", ["A", "Si", 1], "x"]]
+
+
+BEGIN Error if array size is not integer
+int x[1.5];
+DECLARATIONS
+EXPECT_MESSAGE
+:1:7: error size of array must have integer type
+EXPECT_AST
+[["var","ES",["A","Si",1],"x"]]
+
+
+BEGIN Constant folds array size
+int x[1 + 1];
+DECLARATIONS
+EXPECT_AST
+[["var","ES",["A","Si",2],"x"]]
+
+
+BEGIN Composite type of incomplete array and complete array (1)
+int x[];
+int x[1];
+DECLARATIONS
+EXPECT_GLOBALS
+[["var","ES",["A","Si",1],"x"]]
+
+
+BEGIN Composite type of incomplete array and complete array (2)
+int x[1];
+int x[];
+DECLARATIONS
+EXPECT_GLOBALS
+[["var","ES",["A","Si",1],"x"]]
+
+
+BEGIN Composite type of complete arrays with same size
+int x[1];
+int x[1];
+DECLARATIONS
+EXPECT_GLOBALS
+[["var","ES",["A","Si",1],"x"]]
+
+
+BEGIN Composite type of complete arrays with different constant integer size expressions evaluating to same size
+int x[2];
+int x[1+1];
+DECLARATIONS
+EXPECT_GLOBALS
+[["var","ES",["A","Si",2],"x"]]
+
+
+BEGIN Complete areays with different sizes are not compatible
+int x[2];
+int x[1];
+DECLARATIONS
+EXPECT_MESSAGE
+:2:1: error redeclaration of 'x' with incompatible type
+:1:1: see prior declaration
+EXPECT_GLOBALS
+[["var","ES",["A","Si",2],"x"]]

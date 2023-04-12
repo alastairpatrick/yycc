@@ -117,7 +117,7 @@ void foo(int x) {
 PREPARSE
 EXPECT_AST
 [["typedef",["F","V","Si"],"F"]
-,["var","ES","NF","foo",""]
+,["var","ES","NF","foo"]
 ,["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]]
 
 
@@ -139,7 +139,7 @@ void foo(int x) {
 }
 PREPARSE
 EXPECT_AST
-[["var","ES","NF","foo",""]
+[["var","ES","NF","foo"]
 ,["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]]
 
 
@@ -150,7 +150,7 @@ F foo;  // F typedef in another translation unit
 PREPARSE
 EXPECT_AST
 [["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]
-,["var","ES","NF","foo",""]]
+,["var","ES","NF","foo"]]
 
 
 BEGIN Error on function redefinition
@@ -193,7 +193,7 @@ void foo(int);
 DECLARATIONS
 EXPECT_AST
 [
-    ["var","IS","Si","x",""],
+    ["var","IS","Si","x"],
     ["fun","E",["F","V","Si"],"foo"],
         ["block",[
             ["typedef","Si","x"],

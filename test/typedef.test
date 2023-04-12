@@ -4,7 +4,7 @@ foo_t foo;
 DECLARATIONS
 EXPECT_AST
 [["typedef", "Ss", "foo_t"]
-,["var", "ES", "Ss", "foo", ""]]
+,["var", "ES", "Ss", "foo"]]
 
 
 BEGIN Variable declaration of typedef type (preparse).
@@ -12,7 +12,7 @@ foo_t foo;
 typedef short foo_t;
 PREPARSE
 EXPECT_AST
-[["var", "ES", "Nfoo_t", "foo", ""]
+[["var", "ES", "Nfoo_t", "foo"]
 ,["typedef", "Ss", "foo_t"]]
 
 
@@ -30,7 +30,7 @@ typedef T* P;
 P x;
 DECLARATIONS
 EXPECT_GLOBALS
-[["typedef",["P","Ff"],"P"],["typedef","Ff","T"],["var","ES",["P","Ff"],"x",""]]
+[["typedef",["P","Ff"],"P"],["typedef","Ff","T"],["var","ES",["P","Ff"],"x"]]
 
 
 BEGIN Array typedef
@@ -39,7 +39,7 @@ typedef T A[1];
 A x;
 DECLARATIONS
 EXPECT_GLOBALS
-[["typedef",["A","Ff",1],"A"],["typedef","Ff","T"],["var","ES",["A","Ff",1],"x",""]]
+[["typedef",["A","Ff",1],"A"],["typedef","Ff","T"],["var","ES",["A","Ff",1],"x"]]
 
 
 BEGIN Qualified typedef
@@ -48,7 +48,7 @@ typedef const T U;
 U x;
 DECLARATIONS
 EXPECT_GLOBALS
-[["typedef","Ff","T"],["typedef",["Qc","Ff"],"U"],["var","ES",["Qc","Ff"],"x",""]]
+[["typedef","Ff","T"],["typedef",["Qc","Ff"],"U"],["var","ES",["Qc","Ff"],"x"]]
 
 
 BEGIN Function typedef
@@ -85,12 +85,12 @@ void f(void) {
 DECLARATIONS
 EXPECT_AST
 [
-    [["var", "ES", "Si", "p", ""],
-     ["var", "ES", "Si", "q", ""]],
+    [["var", "ES", "Si", "p"],
+     ["var", "ES", "Si", "q"]],
     ["fun","E",["F", "V"],"f",[""], ["block", [
         ["*", "Nq", "Np"],
         ["typedef", "Ss", "q"],
-        ["var", "", ["P", "Ss"], "v", ""]
+        ["var", "", ["P", "Ss"], "v"]
     ]]]
 ]
 
@@ -106,8 +106,8 @@ void f(void) {
 DECLARATIONS
 EXPECT_AST
 [["fun","E",["F", "V"],"f",[""], ["block", [
-    [["var", "", "Si", "p", ""],
-     ["var", "", "Si", "q", ""]],
+    [["var", "", "Si", "p"],
+     ["var", "", "Si", "q"]],
     ["block", [
         ["typedef", "Sl", "q"]
     ]],
@@ -219,7 +219,7 @@ EXPECT_GLOBALS
     ["typedef","Ff","T"],
     ["fun","E",["F","V"],"f",[""],
         ["block",[
-            ["var","",["P","Ff"],"v",""]
+            ["var","",["P","Ff"],"v"]
         ]]
     ]
 ]

@@ -53,6 +53,7 @@ static const Test tests[] = {
     { "struct",             TestType::PREPARSE },
     { "union",              TestType::PREPARSE },
     { "enum",               TestType::PREPARSE },
+    { "array",              TestType::PREPARSE },
 
     { "typedef",            TestType::DECLARATIONS },
     { "typedef_comp",       TestType::DECLARATIONS },
@@ -64,6 +65,7 @@ static const Test tests[] = {
     { "union",              TestType::DECLARATIONS },
     { "enum",               TestType::DECLARATIONS },
     { "stmt",               TestType::DECLARATIONS },
+    { "array",              TestType::DECLARATIONS },
 
     { "string_literal",     TestType::EXPRESSION },
     { "lex",                TestType::EXPRESSION },

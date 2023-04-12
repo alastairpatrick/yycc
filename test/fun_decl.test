@@ -128,7 +128,7 @@ int foo, bar(int x) {
 EXPECT_MESSAGE
 :1:21: error expected ';' but got '{'
 EXPECT_AST
-[[["var", "ES", "Si", "foo", ""]
+[[["var", "ES", "Si", "foo"]
  ,["fun", "E", ["F", "Si", "Si"], "bar"]]]
 
 
@@ -158,7 +158,7 @@ int foo(int bar) {
 }
 DECLARATIONS
 EXPECT_AST
-[["fun", "E", ["F", "Si", "Si"], "foo", ["bar"], ["block", [["var", "", "Si", "bar", ""]]]]]
+[["fun", "E", ["F", "Si", "Si"], "foo", ["bar"], ["block", [["var", "", "Si", "bar"]]]]]
 
 
 BEGIN Cannot declare static function at block scope

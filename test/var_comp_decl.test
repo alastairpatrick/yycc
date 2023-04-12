@@ -24,7 +24,7 @@ EXPECT_MESSAGE
 :2:1: error static declaration of 'x' follows non-static declaration
 :1:1: see prior declaration
 EXPECT_AST
-[["var","ES","Si","x",""]
+[["var","ES","Si","x"]
 ,[]]
 
 
@@ -33,19 +33,16 @@ static int x;
 extern int x;
 DECLARATIONS
 EXPECT_AST
-[["var","IS","Si","x", ""]
+[["var","IS","Si","x"]
 ,[]]
 
 
-BEGIN Multiple variable declarations having internal linkage not allowed
+BEGIN Multiple variable declarations having internal linkage
 static int x;
 static int x;
 DECLARATIONS
-EXPECT_MESSAGE
-:2:1: error redefinition of 'x'
-:1:1: see prior definition
 EXPECT_AST
-[["var", "IS", "Si", "x", ""]
+[["var", "IS", "Si", "x"]
 ,[]]
 
 
@@ -55,7 +52,7 @@ int x;
 PREPARSE
 EXPECT_AST
 [["var","ES","Si","x"]
-,["var","ES","Si","x", ""]]
+,["var","ES","Si","x"]]
 
 
 BEGIN Variable definition following variable declaration (2)
@@ -63,7 +60,7 @@ extern int x;
 int x;
 DECLARATIONS
 EXPECT_AST
-[["var","ES","Si","x", ""]
+[["var","ES","Si","x"]
 ,[]]
 
 
@@ -72,7 +69,7 @@ int x;
 extern int x;
 PREPARSE
 EXPECT_AST
-[["var","ES","Si","x", ""],
+[["var","ES","Si","x"],
 ["var","ES","Si","x"]]
 
 
@@ -81,7 +78,7 @@ int x;
 extern int x;
 DECLARATIONS
 EXPECT_AST
-[["var","ES","Si","x", ""],
+[["var","ES","Si","x"],
 []]
 
 
@@ -134,9 +131,9 @@ BEGIN #extern directive preceeding variable declaration
 int x;
 DECLARATIONS
 EXPECT_GLOBALS
-[["var","ES","Si","x",""]]
+[["var","ES","Si","x"]]
 EXPECT_AST
-[["var","ES","Si","x",""],[]]
+[["var","ES","Si","x"],[]]
 
 
 BEGIN #static directive preceeding variable declaration
@@ -144,6 +141,6 @@ BEGIN #static directive preceeding variable declaration
 int x;
 DECLARATIONS
 EXPECT_GLOBALS
-[["var","IS","Si","x",""]]
+[["var","IS","Si","x"]]
 EXPECT_AST
-[["var","IS","Si","x",""],[]]
+[["var","IS","Si","x"],[]]

@@ -843,9 +843,6 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         if (declaration->storage_class == StorageClass::TYPEDEF) {
             declarator->delegate = new TypeDef(declarator);
         } else {
-            if (!initializer && declaration->storage_class != StorageClass::EXTERN) {
-                initializer = new DefaultExpr(type, location);
-            }
             declarator->delegate = new Entity(declarator, initializer, bit_field_size);
         }
     }
