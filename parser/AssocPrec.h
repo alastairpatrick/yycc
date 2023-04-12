@@ -1,5 +1,5 @@
-#ifndef ASSOC_PREC_H
-#define ASSOC_PREC_H
+#ifndef PARSER_ASSOC_PREC_H
+#define PARSER_ASSOC_PREC_H
 
 #ifdef __cplusplus
 extern "C" {

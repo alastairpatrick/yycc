@@ -1,5 +1,5 @@
-#ifndef AST_PARSER_H
-#define AST_PARSER_H
+#ifndef PARSER_PARSER_H
+#define PARSER_PARSER_H
 
 #include "AssocPrec.h"
 #include "IdentifierMap.h"

@@ -1,5 +1,5 @@
-#ifndef AST_DECLARATION_H
-#define AST_DECLARATION_H
+#ifndef PARSER_DECLARATION_H
+#define PARSER_DECLARATION_H
 
 #include "ASTNode.h"
 #include "Type.h"

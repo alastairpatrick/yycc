@@ -1,5 +1,5 @@
-#ifndef AST_AST_NODE_H
-#define AST_AST_NODE_H
+#ifndef PARSER_AST_NODE_H
+#define PARSER_AST_NODE_H
 
 #include "lexer/Fragment.h"
 #include "lexer/Identifier.h"

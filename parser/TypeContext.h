@@ -1,5 +1,5 @@
-#ifndef AST_TYPE_CONTEXT_H
-#define AST_TYPE_CONTEXT_H
+#ifndef PARSER_TYPE_CONTEXT_H
+#define PARSER_TYPE_CONTEXT_H
 
 #include "lexer/Identifier.h"
 #include "lexer/Token.h"

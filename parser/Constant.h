@@ -1,5 +1,5 @@
-#ifndef AST_CONSTANT_H
-#define AST_CONSTANT_H
+#ifndef PARSER_CONSTANT_H
+#define PARSER_CONSTANT_H
 
 #include "ASTNode.h"
 #include "lexer/Token.h"

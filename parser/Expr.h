@@ -1,5 +1,5 @@
-#ifndef AST_EXPR_H
-#define AST_EXPR_H
+#ifndef PARSER_EXPR_H
+#define PARSER_EXPR_H
 
 #include "ASTNode.h"
 #include "lexer/Token.h"

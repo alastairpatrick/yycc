@@ -1,5 +1,5 @@
-#ifndef AST_TYPE_H
-#define AST_TYPE_H
+#ifndef PARSER_TYPE_H
+#define PARSER_TYPE_H
 
 #include "lexer/Identifier.h"
 #include "lexer/Location.h"
