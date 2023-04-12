@@ -150,10 +150,6 @@ StringConstant::StringConstant(string&& utf8_literal, const IntegerType* char_ty
     : Constant(location), char_type(char_type), utf8_literal(move(utf8_literal)) {
 }
 
-const Type* StringConstant::get_type() const {
-    return char_type->pointer_to();
-}
-
 void StringConstant::print(ostream& stream) const {
     string t(utf8_literal);
     stream << "[\"S\", " << char_type << ", " << json(t) << ']';

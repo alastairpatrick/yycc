@@ -8,25 +8,25 @@
 struct Decl;
 
 struct Value {
-    Value() = default;
-    Value(LLVMValueRef value, const Type* type);
-
     bool is_const() const;
     bool is_const_integer() const;
+
+    Value() = default;
+    Value(LLVMValueRef value, const Type* type);
 
     LLVMValueRef value{};
     const Type* type{};
 };
 
 struct ConditionExpr: Expr {
-    ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, const Location& location);
-
     Expr* condition{};
     Expr* then_expr{};
     Expr* else_expr{};
 
-    virtual Value emit(EmitContext& context) const;
-    virtual void print(ostream& stream) const;
+    ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, const Location& location);
+
+    virtual Value emit(EmitContext& context) const override;
+    virtual void print(ostream& stream) const override;
 };
 
 struct NameExpr: Expr {
@@ -34,7 +34,7 @@ struct NameExpr: Expr {
 
     NameExpr(const Declarator* declarator, const Location& location);
 
-    virtual void print(ostream& stream) const;
+    virtual void print(ostream& stream) const override;
 };
 
 enum class BinaryOp {
@@ -48,24 +48,24 @@ enum class BinaryOp {
 };
 
 struct BinaryExpr: Expr {
-    BinaryExpr(Expr* left, Expr* right, BinaryOp op, const Location& location);
-
     Expr* left{};
     Expr* right{};
     BinaryOp op;
     
-    virtual Value emit(EmitContext& context) const;
-    virtual void print(ostream& stream) const;
+    BinaryExpr(Expr* left, Expr* right, BinaryOp op, const Location& location);
+
+    virtual Value emit(EmitContext& context) const override;
+    virtual void print(ostream& stream) const override;
 };
 
 // The default value of a variable, e.g. zero for static duration and uninitialized for automatic duration
 struct DefaultExpr: Expr {
-    DefaultExpr(const Type* type, const Location& location);
-
     const Type* type;
 
-    virtual Value emit(EmitContext& context) const;
-    virtual void print(ostream& stream) const;
+    DefaultExpr(const Type* type, const Location& location);
+
+    virtual Value emit(EmitContext& context) const override;
+    virtual void print(ostream& stream) const override;
 };
 
 #endif

@@ -14,8 +14,8 @@ struct UnresolvedArrayType: ASTNode, ArrayType {
     const Expr* const size;
 
     UnresolvedArrayType(const Type* element_type, const Expr* size);
-    virtual const Type* resolve(ResolutionContext& ctx) const;
-    virtual void print(std::ostream& stream) const;
+    virtual const Type* resolve(ResolutionContext& ctx) const override;
+    virtual void print(std::ostream& stream) const override;
 };
 
 enum class ArrayKind {
@@ -29,8 +29,8 @@ struct ResolvedArrayType: ArrayType {
     unsigned long long size;
 
     static const ResolvedArrayType* of(ArrayKind kind, const Type* element_type, unsigned long long size);
-    virtual const Type* compose(const Type* other) const;
-    virtual void print(std::ostream& stream) const;
+    virtual const Type* compose(const Type* other) const override;
+    virtual void print(std::ostream& stream) const override;
 
 private:
     friend class TypeContext;

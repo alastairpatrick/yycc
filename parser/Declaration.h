@@ -38,9 +38,6 @@ ostream& operator<<(ostream& stream, Linkage linkage);
 ostream& operator<<(ostream& stream, StorageDuration duration);
 
 struct Declaration: ASTNode {
-    Declaration(IdentifierScope scope, StorageClass storage_class, const Type* type, const Location& location);
-    Declaration(IdentifierScope scope, const Location& location);
-
     Location location;
     Fragment fragment;
     IdentifierScope scope{};
@@ -49,9 +46,12 @@ struct Declaration: ASTNode {
     vector<Declarator*> declarators;
     bool mark_root{};
 
+    Declaration(IdentifierScope scope, StorageClass storage_class, const Type* type, const Location& location);
+    Declaration(IdentifierScope scope, const Location& location);
+
     void resolve(ResolutionContext& context);
 
-    virtual void print(ostream& stream) const;
+    virtual void print(ostream& stream) const override;
 };
 
 enum class DeclaratorKind {
@@ -61,9 +61,6 @@ enum class DeclaratorKind {
 };
 
 struct DeclaratorDelegate: ASTNode {
-    explicit DeclaratorDelegate(Declarator* declarator);
-    void operator=(const DeclaratorDelegate&) = delete;
-
     Declarator* const declarator;
 
     virtual DeclaratorKind kind() const = 0;
@@ -71,13 +68,12 @@ struct DeclaratorDelegate: ASTNode {
     virtual const Type* to_type() const;
     virtual void compose(Declarator* later) = 0;
     virtual void print(ostream& stream) const = 0;
+
+    explicit DeclaratorDelegate(Declarator* declarator);
+    void operator=(const DeclaratorDelegate&) = delete;
 };
 
 struct Entity: DeclaratorDelegate {
-    Entity(Declarator* declarator, Expr* initializer, Expr* bit_field_size);
-    Entity(Declarator* declarator, uint32_t specifiers, vector<Entity*>&& params, Statement* body);
-    explicit Entity(Declarator* declarator);
-
     // Variable related
     StorageDuration storage_duration() const;
     Expr* initializer{};
@@ -88,35 +84,39 @@ struct Entity: DeclaratorDelegate {
     Statement* body{};
     bool inline_definition{};
 
+    Entity(Declarator* declarator, Expr* initializer, Expr* bit_field_size);
+    Entity(Declarator* declarator, uint32_t specifiers, vector<Entity*>&& params, Statement* body);
+    explicit Entity(Declarator* declarator);
+
     bool is_function() const;
 
-    virtual DeclaratorKind kind() const;
-    virtual Linkage linkage() const;
-    virtual void compose(Declarator* later);
-    virtual void print(ostream& stream) const;
+    virtual DeclaratorKind kind() const override;
+    virtual Linkage linkage() const override;
+    virtual void compose(Declarator* later) override;
+    virtual void print(ostream& stream) const override;
 };
 
 struct TypeDef: DeclaratorDelegate {
-    explicit TypeDef(Declarator* declarator);
-
     TypeDefType type_def_type;
 
-    virtual DeclaratorKind kind() const;
-    virtual const Type* to_type() const;
-    virtual void compose(Declarator* later);
-    virtual void print(ostream& stream) const;
+    explicit TypeDef(Declarator* declarator);
+
+    virtual DeclaratorKind kind() const override;
+    virtual const Type* to_type() const override;
+    virtual void compose(Declarator* later) override;
+    virtual void print(ostream& stream) const override;
 };
 
 struct EnumConstant: DeclaratorDelegate {
-    explicit EnumConstant(Declarator* declarator);
-    EnumConstant(Declarator* declarator, const Identifier& enum_tag, Expr* constant);
-
     Identifier enum_tag;
     Expr* constant{};
 
-    virtual DeclaratorKind kind() const;
-    virtual void compose(Declarator* later);
-    virtual void print(ostream& stream) const;
+    explicit EnumConstant(Declarator* declarator);
+    EnumConstant(Declarator* declarator, const Identifier& enum_tag, Expr* constant);
+
+    virtual DeclaratorKind kind() const override;
+    virtual void compose(Declarator* later) override;
+    virtual void print(ostream& stream) const override;
 };
 
 #endif
