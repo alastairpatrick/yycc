@@ -26,9 +26,4 @@ struct IdentifierMap {
     Scope pop_scope();
 };
 
-struct ResolutionContext {
-    ResolutionContext(const IdentifierMap& identifiers);
-    const IdentifierMap& identifiers;
-};
-
 #endif

@@ -287,11 +287,11 @@ EXPECT_AST
 
 
 BEGIN Array declarators
-int x[], y[1], z[1][2][];
+int x[], y[1], z[][1][2];
 EXPECT_AST
-[[["var", "ES", ["A", "Si"], "x"]
- ,["var", "ES", ["A", "Si", 1], "y"]
- ,["var", "ES", ["A", ["A", ["A", "Si"], 2], 1], "z"]]]
+[[["var","ES",["A","Si"],"x"]
+,["var","ES",["A","Si",1],"y"]
+,["var","ES",["A",["A",["A","Si",2],1]],"z"]]]
 
 
 BEGIN Array with nested declarators

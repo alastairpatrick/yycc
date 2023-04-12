@@ -21,6 +21,10 @@
 // V void
 // . variadic placeholder
 
+ResolutionContext::ResolutionContext(const IdentifierMap& identifiers)
+    : identifiers(identifiers) {
+}
+
 #pragma region Type
 
 unsigned Type::qualifiers() const {
@@ -85,6 +89,10 @@ const Type* Type::compose(const Type* other) const {
 
 const PointerType* Type::pointer_to() const {
     return TranslationUnitContext::it->type.get_pointer_type(this);
+}
+
+bool Type::is_complete() const {
+    return true;
 }
 
 #pragma endregion Type
@@ -398,6 +406,10 @@ const Type* QualifiedType::unqualified() const {
     return base_type;
 }
 
+bool QualifiedType::is_complete() const {
+    return base_type->is_complete();
+}
+
 const Type* QualifiedType::resolve(ResolutionContext& ctx) const {
     return QualifiedType::of(base_type->resolve(ctx), qualifier_flags);
 }
@@ -445,6 +457,10 @@ const FunctionType* FunctionType::of(const Type* return_type, std::vector<const 
     return type;
 }
 
+bool FunctionType::is_complete() const {
+    return false;
+}
+
 const Type* FunctionType::resolve(ResolutionContext& ctx) const {
     auto resolved_return_type = return_type->resolve(ctx);
     auto resolved_param_types(parameter_types);
@@ -481,6 +497,10 @@ FunctionType::FunctionType(const Type* return_type, std::vector<const Type*> par
 
 StructuredType::StructuredType(const Location& location)
     : location(location) {
+}
+
+bool StructuredType::is_complete() const {
+    return complete;
 }
 
 const Declarator* StructuredType::lookup_member(const Identifier& identifier) const {
@@ -608,6 +628,10 @@ void UnionType::print(std::ostream& stream) const {
 
 EnumType::EnumType(const Location& location)
     : location(location) {
+}
+
+bool EnumType::is_complete() const {
+    return complete;
 }
 
 LLVMTypeRef EnumType::llvm_type() const {

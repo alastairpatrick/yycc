@@ -7,12 +7,21 @@
 ArrayType::ArrayType(const Type* element_type): element_type(element_type) {
 }
 
-UnresolvedArrayType::UnresolvedArrayType(const Type* element_type, const Expr* size)
-    : ArrayType(element_type), size(size) {
+UnresolvedArrayType::UnresolvedArrayType(const Type* element_type, const Expr* size, const Location& location)
+    : ArrayType(element_type), size(size), location(location) {
+}
+
+bool UnresolvedArrayType::is_complete() const {
+    assert(false); // should be asked only of ResolvedArrayType
+    return false;
 }
 
 const Type* UnresolvedArrayType::resolve(ResolutionContext& ctx) const {
     auto resolved_element_type = element_type->resolve(ctx);
+    if (!resolved_element_type->is_complete()) {
+        message(Severity::ERROR, location) << "incomplete array element type\n";
+        resolved_element_type = IntegerType::default_type();
+    }
 
     if (size) {
         auto size_constant = size->fold_constant();
@@ -43,6 +52,10 @@ const ResolvedArrayType* ResolvedArrayType::of(ArrayKind kind, const Type* eleme
 
 ResolvedArrayType::ResolvedArrayType(ArrayKind kind, const Type* element_type, unsigned long long size)
     : ArrayType(element_type), kind(kind), size(size) {
+}
+
+bool ResolvedArrayType::is_complete() const {
+    return kind != ArrayKind::INCOMPLETE;
 }
 
 const Type* ResolvedArrayType::compose(const Type* o) const {

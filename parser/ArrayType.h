@@ -11,9 +11,11 @@ protected:
 };
 
 struct UnresolvedArrayType: ASTNode, ArrayType {
+    Location location;
     const Expr* const size;
 
-    UnresolvedArrayType(const Type* element_type, const Expr* size);
+    UnresolvedArrayType(const Type* element_type, const Expr* size, const Location& location);
+    virtual bool is_complete() const override;
     virtual const Type* resolve(ResolutionContext& ctx) const override;
     virtual void print(std::ostream& stream) const override;
 };
@@ -29,6 +31,7 @@ struct ResolvedArrayType: ArrayType {
     unsigned long long size;
 
     static const ResolvedArrayType* of(ArrayKind kind, const Type* element_type, unsigned long long size);
+    virtual bool is_complete() const override;
     virtual const Type* compose(const Type* other) const override;
     virtual void print(std::ostream& stream) const override;
 

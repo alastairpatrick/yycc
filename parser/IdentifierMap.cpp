@@ -72,6 +72,3 @@ IdentifierMap::Scope IdentifierMap::pop_scope() {
 IdentifierMap::IdentifierMap(bool preparse): preparse(preparse) {
     push_scope();
 }
-
-ResolutionContext::ResolutionContext(const IdentifierMap& identifiers): identifiers(identifiers) {
-}

@@ -715,6 +715,7 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, bo
         consume_identifier(declarator.identifier);
     }
 
+    auto location = preprocessor.location();
     function<const Type*(const Type*)> right_transform;
     for (int depth = 0; token; ++depth) {
         if (consume('[')) {
@@ -735,8 +736,8 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, bo
             }
             require(']');
 
-            right_transform = [right_transform, array_qualifier_set, array_size](const Type* type) {
-                type = QualifiedType::of(new UnresolvedArrayType(type, array_size), array_qualifier_set);
+            right_transform = [right_transform, array_qualifier_set, array_size, location](const Type* type) {
+                type = QualifiedType::of(new UnresolvedArrayType(type, array_size, location), array_qualifier_set);
                 if (right_transform) type = right_transform(type);
                 return type;
             };
@@ -780,6 +781,8 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, bo
         } else {
             break;
         }
+
+        location = preprocessor.location();
     }
 
     if (left_transform || right_transform) {

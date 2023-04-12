@@ -11,10 +11,15 @@ struct Declaration;
 struct Declarator;
 struct EnumConstant;
 struct Expr;
+struct IdentifierMap;
 enum class IdentifierScope;
 struct PointerType;
-struct ResolutionContext;
 struct TypeDef;
+
+struct ResolutionContext {
+    explicit ResolutionContext(const IdentifierMap& identifiers);
+    const IdentifierMap& identifiers;
+};
 
 struct Type: virtual Printable {
     Type() = default;
@@ -25,6 +30,8 @@ struct Type: virtual Printable {
     virtual const Type* unqualified() const;
 
     const PointerType* pointer_to() const;
+
+    virtual bool is_complete() const;
 
     virtual const Type* compose(const Type* other) const;
 
@@ -43,15 +50,15 @@ const Type* compose_type_def_types(const Type* a, const Type* b);
 
 struct VoidType: Type {
     static const VoidType it;
-    virtual LLVMTypeRef llvm_type() const;
-    virtual void print(std::ostream& stream) const;
+    virtual LLVMTypeRef llvm_type() const override;
+    virtual void print(std::ostream& stream) const override;
 };
 
 // CompatibleType is compatible with all types.
 struct CompatibleType: Type {
     static const CompatibleType it;
-    virtual LLVMTypeRef llvm_type() const;
-    virtual void print(std::ostream& stream) const;
+    virtual LLVMTypeRef llvm_type() const override;
+    virtual void print(std::ostream& stream) const override;
 };
 
 enum class IntegerSize {
@@ -79,12 +86,12 @@ struct IntegerType: Type {
     const IntegerSignedness signedness;
     const IntegerSize size;
 
-    virtual const Type* promote() const;
-    virtual LLVMValueRef convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const;
+    virtual const Type* promote() const override;
+    virtual LLVMValueRef convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const override;
 
-    virtual LLVMTypeRef llvm_type() const;
+    virtual LLVMTypeRef llvm_type() const override;
 
-    virtual void print(std::ostream& stream) const;
+    virtual void print(std::ostream& stream) const override;
     
     bool is_signed() const;
 
@@ -104,11 +111,11 @@ struct FloatingPointType: Type {
 
     const FloatingPointSize size;
 
-    virtual LLVMValueRef convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const;
+    virtual LLVMValueRef convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const override;
 
-    virtual LLVMTypeRef llvm_type() const;
+    virtual LLVMTypeRef llvm_type() const override;
 
-    virtual void print(std::ostream& stream) const;
+    virtual void print(std::ostream& stream) const override;
 
 private:
     FloatingPointType(FloatingPointSize size);
@@ -119,11 +126,11 @@ const Type* convert_arithmetic(const Type* left, const Type* right);
 struct PointerType: Type {
     const Type* const base_type;
 
-    virtual const Type* resolve(ResolutionContext& ctx) const;
+    virtual const Type* resolve(ResolutionContext& ctx) const override;
 
-    virtual LLVMTypeRef llvm_type() const;
+    virtual LLVMTypeRef llvm_type() const override;
 
-    virtual void print(std::ostream& stream) const;
+    virtual void print(std::ostream& stream) const override;
 
 private:
     friend class TypeContext;
@@ -142,14 +149,15 @@ struct QualifiedType: Type {
 
     const Type* const base_type;
 
-    virtual unsigned qualifiers() const;
-    virtual const Type* unqualified() const;
+    virtual unsigned qualifiers() const override;
+    virtual const Type* unqualified() const override;
+    virtual bool is_complete() const override;
 
-    virtual const Type* resolve(ResolutionContext& ctx) const;
+    virtual const Type* resolve(ResolutionContext& ctx) const override;
 
-    virtual LLVMTypeRef llvm_type() const;
+    virtual LLVMTypeRef llvm_type() const override;
 
-    virtual void print(std::ostream& stream) const;
+    virtual void print(std::ostream& stream) const override;
 
 private:
     friend class TypeContext;
@@ -164,11 +172,12 @@ struct FunctionType: Type {
     const std::vector<const Type*> parameter_types;
     const bool variadic;
 
-    virtual const Type* resolve(ResolutionContext& ctx) const;
+    virtual bool is_complete() const override;
+    virtual const Type* resolve(ResolutionContext& ctx) const override;
 
-    virtual LLVMTypeRef llvm_type() const;
+    virtual LLVMTypeRef llvm_type() const override;
 
-    virtual void print(std::ostream& stream) const;
+    virtual void print(std::ostream& stream) const override;
     
 private:
     friend class TypeContext;
@@ -184,23 +193,24 @@ struct StructuredType: Type {
     unordered_map<InternedString, Declarator*> member_index;
     bool complete{};
 
+    virtual bool is_complete() const override;
     const Declarator* lookup_member(const Identifier& identifier) const;
 
-    virtual LLVMTypeRef llvm_type() const;
+    virtual LLVMTypeRef llvm_type() const override;
 
-    virtual void print(std::ostream& stream) const;
+    virtual void print(std::ostream& stream) const override;
 };
 
 struct StructType: StructuredType {
     explicit StructType(const Location& location);
-    virtual const Type* compose_type_def_types(const Type* other) const;
-    virtual void print(std::ostream& stream) const;
+    virtual const Type* compose_type_def_types(const Type* other) const override;
+    virtual void print(std::ostream& stream) const override;
 };
 
 struct UnionType: StructuredType {
     explicit UnionType(const Location& location);
-    virtual const Type* compose_type_def_types(const Type* other) const;
-    virtual void print(std::ostream& stream) const;
+    virtual const Type* compose_type_def_types(const Type* other) const override;
+    virtual void print(std::ostream& stream) const override;
 };
 
 struct EnumType: Type {
@@ -214,9 +224,10 @@ struct EnumType: Type {
     void add_constant(EnumConstant* constant);
     const EnumConstant* lookup_constant(const Identifier& identifier) const;
 
-    virtual LLVMTypeRef llvm_type() const;
-    virtual const Type* compose_type_def_types(const Type* other) const;
-    virtual void print(std::ostream& stream) const;
+    virtual bool is_complete() const override;
+    virtual LLVMTypeRef llvm_type() const override;
+    virtual const Type* compose_type_def_types(const Type* other) const override;
+    virtual void print(std::ostream& stream) const override;
 };
 
 // This type is only used during preparsing, when names cannot necessarily be bound to declarations.
@@ -225,8 +236,8 @@ struct UnboundType: Type {
 
     const Identifier identifier;
 
-    virtual LLVMTypeRef llvm_type() const;
-    virtual void print(ostream& stream) const;
+    virtual LLVMTypeRef llvm_type() const override;
+    virtual void print(ostream& stream) const override;
 
 private:
     friend class TypeContext;
@@ -238,10 +249,10 @@ struct TypeDefType: Type {
 
     Declarator* const declarator;
 
-    virtual const Type* unqualified() const;
-    virtual const Type* resolve(ResolutionContext& ctx) const;
-    virtual LLVMTypeRef llvm_type() const;
-    virtual void print(ostream& stream) const;
+    virtual const Type* unqualified() const override;
+    virtual const Type* resolve(ResolutionContext& ctx) const override;
+    virtual LLVMTypeRef llvm_type() const override;
+    virtual void print(ostream& stream) const override;
 };
 
 #endif
