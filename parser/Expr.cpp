@@ -176,6 +176,14 @@ void BinaryExpr::print(ostream& stream) const {
     stream << left << ", " << right << "]";
 }
 
+SizeOfExpr::SizeOfExpr(const Type* type, const Location& location)
+    : Expr(location), type(type) {
+}
+
+void SizeOfExpr::print(ostream& stream) const {
+    stream << "[\"sizeof\", " << type << "]";
+}
+
 InitializerExpr::InitializerExpr(const Location& location): Expr(location) {
 }
 

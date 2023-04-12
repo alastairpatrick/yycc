@@ -230,6 +230,15 @@ struct EnumType: Type {
     virtual void print(std::ostream& stream) const override;
 };
 
+struct TypeOfType: Type {
+    const Expr* const expr;
+
+    explicit TypeOfType(const Expr* expr);
+    virtual bool is_complete() const override;
+    virtual const Type* resolve(ResolutionContext& ctx) const override;
+    virtual void print(std::ostream& stream) const override;
+};
+
 // This type is only used during preparsing, when names cannot necessarily be bound to declarations.
 struct UnboundType: Type {
     static const UnboundType* of(const Identifier& identifier);

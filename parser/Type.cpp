@@ -689,6 +689,26 @@ void EnumType::print(std::ostream& stream) const {
 
 #pragma endregion UnionType
 
+#pragma region TypeOfType
+
+TypeOfType::TypeOfType(const Expr* expr): expr(expr) {
+}
+
+bool TypeOfType::is_complete() const {
+    assert(false);  // should not be called on unresolved type
+    return false;
+}
+
+const Type* TypeOfType::resolve(ResolutionContext& ctx) const {
+    return expr->get_type();
+}
+
+void TypeOfType::print(std::ostream& stream) const {
+    stream << "[\"typeof\", " << expr << "]";
+}
+
+#pragma endregion TypeOfTyppe
+
 #pragma region UnboundType
 
 const UnboundType* UnboundType::of(const Identifier& identifier) {

@@ -14,6 +14,8 @@ struct DeclaratorTransform {
     Identifier identifier;
     vector<Entity*> params;
     CompoundStatement* body{};
+
+    const Type* apply(const Type* type);
 };
 
 struct Parser {
@@ -52,15 +54,17 @@ private:
 
     Expr* parse_expr(OperatorPrec min_prec);
     Expr* parse_cast_expr();
+    Expr* parse_unary_expr();
     Expr* parse_initializer();
     Declaration* parse_declaration_specifiers(IdentifierScope scope, const Type*& type, uint32_t& specifiers);
     ASTNode* parse_declaration_or_statement(IdentifierScope scope);
     CompoundStatement* parse_compound_statement();
     Declarator* parse_parameter_declarator();
-    Declarator* parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last);
-    DeclaratorTransform parse_declarator_transform(IdentifierScope scope, bool allow_function_def);
+    Declarator* parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, int flags, const Location& location, bool* last);
+    DeclaratorTransform parse_declarator_transform(IdentifierScope scope, int flags);
     const Type* parse_structured_type(Declaration* declaration);
     EnumConstant* parse_enum_constant(Declaration* declaration, const EnumType* type, const Identifier& tag);
+    const Type* parse_type_name();
 };
 
 #endif

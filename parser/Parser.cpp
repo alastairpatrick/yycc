@@ -9,6 +9,17 @@
 #include "Message.h"
 #include "Statement.h"
 
+enum {
+    PD_ALLOW_FUNCTION_DEFINITION  = 0x0001,
+    PD_ALLOW_IDENTIFIER           = 0x0002,
+    PD_ALLOW_INITIALIZER          = 0x0004,
+};
+
+const Type* DeclaratorTransform::apply(const Type* type) {
+    if (type_transform) type = type_transform(type);
+    return type;
+}
+
 Parser::Parser(Preprocessor& preprocessor, IdentifierMap& identifiers): preprocessor(preprocessor), identifiers(identifiers), preparse(preprocessor.preparse) {
     assert(identifiers.preparse == preprocessor.preparse);
     consume();
@@ -285,10 +296,31 @@ void Parser::skip_expr(OperatorPrec min_prec) {
 }
 
 Expr* Parser::parse_cast_expr() {
+    return parse_unary_expr();
+}
+
+Expr* Parser::parse_unary_expr() {
+    Location loc;
     Expr* result{};
 
     while (token) {
-        if (token == TOK_BIN_INT_LITERAL || token == TOK_OCT_INT_LITERAL || token == TOK_DEC_INT_LITERAL || token == TOK_HEX_INT_LITERAL || token == TOK_CHAR_LITERAL) {
+        if (consume(TOK_SIZEOF, &loc)) {
+            auto consumed_paren = consume('(');
+            
+            const Type* type{};
+            if (consumed_paren) type = parse_type_name();
+
+            if (type) {
+                result = new SizeOfExpr(type, loc);
+            } else {
+                auto expr = parse_unary_expr();
+                result = new SizeOfExpr(new TypeOfType(expr), loc);
+            }
+
+            if (consumed_paren) require(')');
+
+            break;
+        } else if (token == TOK_BIN_INT_LITERAL || token == TOK_OCT_INT_LITERAL || token == TOK_DEC_INT_LITERAL || token == TOK_HEX_INT_LITERAL || token == TOK_CHAR_LITERAL) {
             result = IntegerConstant::of(preprocessor.text(), token, preprocessor.location());
             consume();
             break;
@@ -606,7 +638,9 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
         int declarator_count = 0;
         bool last_declarator{};
         while (token && token != ';') {
-            auto declarator = parse_declarator(declaration, base_type, specifiers, declarator_count == 0, location, &last_declarator);
+            int flags = PD_ALLOW_IDENTIFIER | PD_ALLOW_INITIALIZER;
+            if (declarator_count == 0) flags |= PD_ALLOW_FUNCTION_DEFINITION;
+            auto declarator = parse_declarator(declaration, base_type, specifiers, flags, location, &last_declarator);
             if (declarator) {
                 if (declarator->identifier.name->empty()) {
                     message(Severity::ERROR, preprocessor.location()) << "expected identifier but got '" << preprocessor.text() << "'\n";
@@ -693,7 +727,7 @@ Declarator* Parser::parse_parameter_declarator() {
 
     bool last;
     auto begin_declarator = position();
-    auto declarator = parse_declarator(declaration, base_type, specifiers, false, declaration->location, &last);
+    auto declarator = parse_declarator(declaration, base_type, specifiers, PD_ALLOW_IDENTIFIER, declaration->location, &last);
     declarator->fragment = end_fragment(begin_declarator);
 
     declaration->declarators.push_back(declarator);
@@ -701,7 +735,7 @@ Declarator* Parser::parse_parameter_declarator() {
     return declarator;
 }
 
-DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, bool allow_function_def) {
+DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, int flags) {
     function<const Type*(const Type*)> left_transform;
     while (consume('*')) {
         left_transform = [left_transform](const Type* type) {
@@ -725,10 +759,10 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, bo
 
     DeclaratorTransform declarator;
     if (consume('(')) {
-        declarator = parse_declarator_transform(scope, false);
+        declarator = parse_declarator_transform(scope, flags);
         require(')');
     } else {
-        consume_identifier(declarator.identifier);
+        if (flags & PD_ALLOW_IDENTIFIER) consume_identifier(declarator.identifier);
     }
 
     auto location = preprocessor.location();
@@ -789,7 +823,7 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, bo
                 return type;
             };
 
-            if (allow_function_def && token == '{') {
+            if ((flags & PD_ALLOW_FUNCTION_DEFINITION) && token == '{') {
                 declarator.body = parse_compound_statement();
             }
 
@@ -813,13 +847,13 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, bo
     return declarator;
 }
 
-Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, bool allow_function_def, const Location& location, bool* last) {
+Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, int flags, const Location& location, bool* last) {
     auto begin = position();
 
-    auto declarator_transform = parse_declarator_transform(declaration->scope, allow_function_def);
+    auto declarator_transform = parse_declarator_transform(declaration->scope, flags);
     *last = declarator_transform.body;
 
-    if (declarator_transform.type_transform) type = declarator_transform.type_transform(type);
+    type = declarator_transform.apply(type);
 
     bool is_function = dynamic_cast<const FunctionType*>(type);
 
@@ -843,7 +877,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     }
 
     Expr* initializer{};
-    if (consume('=')) {
+    if ((flags & PD_ALLOW_INITIALIZER) && consume('=')) {
         initializer = parse_initializer();
     }
 
@@ -1003,4 +1037,18 @@ EnumConstant* Parser::parse_enum_constant(Declaration* declaration, const EnumTy
     }
 
     return enum_constant;
+}
+
+const Type* Parser::parse_type_name() {
+    const Type* type{};
+    uint32_t specifiers{};
+    auto declaration = parse_declaration_specifiers(IdentifierScope::EXPRESSION, type, specifiers);
+    if (!declaration) return nullptr;
+
+    if (token && token != ')') {
+        auto transform = parse_declarator_transform(IdentifierScope::EXPRESSION, 0);
+        type = transform.apply(type);
+    }
+
+    return type;
 }

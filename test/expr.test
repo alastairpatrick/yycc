@@ -157,3 +157,43 @@ EXPECT_MESSAGE
 :2:1: error unexpected end of file
 EXPECT_AST
 ["+", 1, 0]
+
+
+BEGIN Sizeof int type
+sizeof(int)
+EXPECT_AST
+["sizeof", "Si"]
+
+
+BEGIN Sizeof complex type
+sizeof(int * const)
+EXPECT_AST
+["sizeof",["Qc",["P","Si"]]]
+
+
+BEGIN Sizeof type name may not declare identifier
+sizeof(int x)
+EXPECT_MESSAGE
+:1:12: error expected ')' but got 'x'
+EXPECT_AST
+["sizeof","Si"]
+
+
+BEGIN Sizeof type name may not be initialized
+sizeof(int = 1)
+EXPECT_MESSAGE
+:1:12: error expected ')' but got '='
+EXPECT_AST
+["sizeof","Si"]
+
+
+BEGIN Sizeof double value in parentheses
+sizeof(1.0)
+EXPECT_AST
+["sizeof",["typeof",["Fd",1]]]
+
+
+BEGIN Sizeof double value
+sizeof 1.0
+EXPECT_AST
+["sizeof",["typeof",["Fd",1]]]

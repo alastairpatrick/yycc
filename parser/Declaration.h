@@ -9,6 +9,7 @@ enum class IdentifierScope {
     BLOCK,
     PROTOTYPE,
     STRUCTURED,
+    EXPRESSION,  // e.g. sizeof, typeof
 };
 
 enum class StorageClass {

@@ -58,6 +58,13 @@ struct BinaryExpr: Expr {
     virtual void print(ostream& stream) const override;
 };
 
+struct SizeOfExpr: Expr {
+    const Type* type;
+
+    SizeOfExpr(const Type* type, const Location& location);
+    virtual void print(ostream& stream) const override;
+};
+
 struct InitializerExpr: Expr {
     vector<Expr*> elements;
 
