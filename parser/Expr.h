@@ -58,6 +58,13 @@ struct BinaryExpr: Expr {
     virtual void print(ostream& stream) const override;
 };
 
+struct InitializerExpr: Expr {
+    vector<Expr*> elements;
+
+    explicit InitializerExpr(const Location& location);
+    virtual void print(ostream& stream) const override;
+};
+
 // The default value of a variable, e.g. zero for static duration and uninitialized for automatic duration
 struct DefaultExpr: Expr {
     const Type* type;

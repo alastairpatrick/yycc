@@ -334,6 +334,22 @@ Expr* Parser::parse_cast_expr() {
     return result;
 }
 
+Expr* Parser::parse_initializer() {
+    if (consume('{')) {
+        auto initializer = new InitializerExpr(preprocessor.location());
+
+        while (token && token != '}') {
+            initializer->elements.push_back(parse_initializer());
+            if (token != '}') require(',');
+        }
+
+        require('}');
+        return initializer;
+    } else {
+        return parse_expr(ASSIGN_PREC);
+    }
+}
+
 Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const Type*& type, uint32_t& specifiers) {
     const uint32_t storage_class_mask = (1 << TOK_TYPEDEF) | (1 << TOK_EXTERN) | (1 << TOK_STATIC) | (1 << TOK_AUTO) | (1 << TOK_REGISTER);
     const uint32_t type_qualifier_mask = (1 << TOK_CONST) | (1 << TOK_RESTRICT) | (1 << TOK_VOLATILE);
@@ -828,7 +844,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
 
     Expr* initializer{};
     if (consume('=')) {
-        initializer = parse_expr(ASSIGN_PREC);
+        initializer = parse_initializer();
     }
 
     auto declarator = new Declarator(declaration, type, declarator_transform.identifier, location);

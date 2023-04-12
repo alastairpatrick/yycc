@@ -176,6 +176,19 @@ void BinaryExpr::print(ostream& stream) const {
     stream << left << ", " << right << "]";
 }
 
+InitializerExpr::InitializerExpr(const Location& location): Expr(location) {
+}
+
+void InitializerExpr::print(ostream& stream) const {
+    stream << "[\"Init\"";
+
+    for (auto element: elements) {
+        stream << ", " << element;
+    }
+
+    stream << "]";
+}
+
 DefaultExpr::DefaultExpr(const Type* type, const Location& location)
     : Expr(location), type(type) {
 }

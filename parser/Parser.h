@@ -52,6 +52,7 @@ private:
 
     Expr* parse_expr(OperatorPrec min_prec);
     Expr* parse_cast_expr();
+    Expr* parse_initializer();
     Declaration* parse_declaration_specifiers(IdentifierScope scope, const Type*& type, uint32_t& specifiers);
     ASTNode* parse_declaration_or_statement(IdentifierScope scope);
     CompoundStatement* parse_compound_statement();

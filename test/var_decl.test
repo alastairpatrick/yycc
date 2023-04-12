@@ -369,11 +369,40 @@ EXPECT_GLOBALS
 
 
 BEGIN Error if identifier declared with both #extern and #static
-#extern f
-#static f
+#extern x
+#static x
 DECLARATIONS
 EXPECT_MESSAGE
-:2:9: error static declaration of 'f' follows non-static declaration
+:2:9: error static declaration of 'x' follows non-static declaration
 :1:9: see prior declaration
 EXPECT_GLOBALS
-[["var","ES","?","f"]]
+[["var","ES","?","x"]]
+
+
+BEGIN Empty initializer
+int x[] = {};
+EXPECT_AST
+[["var","ES",["A","Si"],"x",["Init"]]]
+
+
+BEGIN Non-empty initializer
+int x[] = {1, 2, 3};
+EXPECT_AST
+[["var","ES",["A","Si"],"x",["Init",1,2,3]]]
+
+
+BEGIN Nested initializer
+struct S {
+    int x;
+    struct { int y, z; };
+};
+S x = {1, {2, 3}};
+PREPARSE
+EXPECT_AST
+[[],["var","ES","NS","x",["Init",1,["Init",2,3]]]]
+
+
+BEGIN Initializer with trailing ','
+int x[] = {1,};
+EXPECT_AST
+[["var","ES",["A","Si"],"x",["Init",1]]]
