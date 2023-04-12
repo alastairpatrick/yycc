@@ -87,6 +87,16 @@ NameExpr::NameExpr(const Declarator* declarator, const Location& location)
     assert(declarator);
 }
 
+Value NameExpr::emit(EmitContext& context) const {
+    const Type* result_type = declarator->type;
+
+    if (context.outcome == EmitOutcome::TYPE) return Value(nullptr, result_type);
+
+    // TODO
+    assert(false);
+    return Value();
+}
+
 void NameExpr::print(ostream& stream) const {
     stream << "\"N" << declarator->identifier << '"';
 }

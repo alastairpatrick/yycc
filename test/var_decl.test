@@ -434,3 +434,23 @@ BEGIN Initializer with trailing ','
 int x[] = {1,};
 EXPECT_AST
 [["var","ES",["A","Si"],"x",["Init",1]]]
+
+
+BEGIN typeof variable
+const double x;
+typeof(x) y;
+DECLARATIONS
+EXPECT_AST
+[["var","ES",["Qc","Fd"],"x"]
+,["var","ES",["Qc","Fd"],"y"]]
+
+
+BEGIN typeof_unqual variable
+const double x;
+typeof_unqual(x) y;
+DECLARATIONS
+EXPECT_AST
+[["var","ES",["Qc","Fd"],"x"]
+,["var","ES","Fd","y"]]
+
+

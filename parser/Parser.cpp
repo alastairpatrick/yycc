@@ -455,7 +455,7 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
                       }
 
                       if (!typedef_type) {
-                          if (scope == IdentifierScope::BLOCK) break;
+                          if (scope != IdentifierScope::FILE) break;
 
                           message(Severity::ERROR, preprocessor.location()) << "type \'" << preprocessor.identifier() << "' undefined\n";
                           typedef_type = IntegerType::default_type();

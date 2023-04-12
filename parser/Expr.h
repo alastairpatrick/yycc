@@ -34,6 +34,7 @@ struct NameExpr: Expr {
 
     NameExpr(const Declarator* declarator, const Location& location);
 
+    virtual Value emit(EmitContext& context) const override;
     virtual void print(ostream& stream) const override;
 };
 

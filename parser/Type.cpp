@@ -701,7 +701,9 @@ bool TypeOfType::is_complete() const {
 }
 
 const Type* TypeOfType::resolve(ResolutionContext& ctx) const {
-    return expr->get_type();
+    auto type = expr->get_type();
+    if (!keep_qualifiers) type = type->unqualified();
+    return type;
 }
 
 void TypeOfType::print(std::ostream& stream) const {
