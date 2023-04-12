@@ -1,6 +1,7 @@
 #include "nlohmann/json.hpp"
 
 #include "Constant.h"
+#include "Expr.h"
 #include "lexer/Unescape.h"
 #include "Message.h"
 
@@ -85,12 +86,8 @@ IntegerConstant::IntegerConstant(LLVMValueRef value, const IntegerType* type, co
     assert(value);
 }
 
-long long IntegerConstant::int_value() const {
-    return LLVMConstIntGetSExtValue(value);
-}
-
-unsigned long long IntegerConstant::uint_value() const {
-    return LLVMConstIntGetZExtValue(value);
+ConstantValue IntegerConstant::evaluate_constant() const {
+    return ConstantValue(value, type);
 }
 
 const Type* IntegerConstant::get_type() const {

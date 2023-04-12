@@ -7,6 +7,7 @@
 #include "Printable.h"
 
 struct CodeGenContext;
+struct ConstantValue;
 struct Declaration;
 struct DeclaratorDelegate;
 struct Entity;
@@ -70,6 +71,7 @@ struct Statement: ASTNode {
 struct Expr: Statement {
     explicit Expr(const Location& location);
 
+    virtual ConstantValue evaluate_constant() const;
     virtual const Type* get_type() const = 0;
     virtual LLVMValueRef generate_value(CodeGenContext* context) const = 0;
 };

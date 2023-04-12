@@ -7,6 +7,15 @@
 
 struct Decl;
 
+struct ConstantValue {
+    ConstantValue() = default;
+    ConstantValue(LLVMValueRef value, const Type* type);
+    bool is_integer() const;
+
+    LLVMValueRef value{};
+    const Type* type{};
+};
+
 struct ConditionExpr: Expr {
     ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, const Location& location);
 

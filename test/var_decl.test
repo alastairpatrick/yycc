@@ -343,6 +343,15 @@ EXPECT_AST
 [["var", "ES", ["A", "Si", 1], "x", ""]]
 
 
+BEGIN Error if array size is not integer
+int x[1.5];
+DECLARATIONS
+EXPECT_MESSAGE
+:1:7: error size of array must have integer type
+EXPECT_AST
+[["var","ES",["A","Si",1],"x",""]]
+
+
 BEGIN Declarator initializers
 int x = 1, y = 2;
 EXPECT_AST

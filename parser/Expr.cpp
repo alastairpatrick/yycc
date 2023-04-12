@@ -1,7 +1,19 @@
 #include "Expr.h"
 #include "CodeGenContext.h"
 
+ConstantValue::ConstantValue(LLVMValueRef value, const Type* type)
+    : value(value), type(type) {
+}
+
+bool ConstantValue::is_integer() const {
+    return value && LLVMIsAConstantInt(value);
+}
+
 Expr::Expr(const Location& location): Statement(location) {
+}
+
+ConstantValue Expr::evaluate_constant() const {
+    return {};
 }
 
 ConditionExpr::ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, const Location& location)

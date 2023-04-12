@@ -1,6 +1,7 @@
 #include "ArrayType.h"
 #include "Constant.h"
 #include "Expr.h"
+#include "Message.h"
 #include "TranslationUnitContext.h"
 
 ArrayType::ArrayType(const Type* element_type): element_type(element_type) {
@@ -13,12 +14,19 @@ UnresolvedArrayType::UnresolvedArrayType(const Type* element_type, const Expr* s
 const Type* UnresolvedArrayType::resolve(ResolutionContext& ctx) const {
     auto resolved_element_type = element_type->resolve(ctx);
 
-    // TODO: properly evaluate constant size expression and return canonical representation of array type.
-    auto size_constant = dynamic_cast<const IntegerConstant*>(size);
+    if (size) {
+        auto size_constant = size->evaluate_constant();
+        unsigned long long size_int = 1;
+        if (!size_constant.is_integer()) {
+            message(Severity::ERROR, size->location) << "size of array must have integer type\n";
+        } else {
+            size_int = LLVMConstIntGetZExtValue(size_constant.value);
+        }
 
-    return ResolvedArrayType::of(size_constant ? ArrayKind::COMPLETE : ArrayKind::INCOMPLETE,
-                                 resolved_element_type,
-                                 size_constant ? size_constant->uint_value() : 0);
+        return ResolvedArrayType::of(ArrayKind::COMPLETE, resolved_element_type, size_int);
+    } else {
+        return ResolvedArrayType::of(ArrayKind::INCOMPLETE, resolved_element_type, 0);
+    }
 }
 
 void UnresolvedArrayType::print(std::ostream& stream) const {
