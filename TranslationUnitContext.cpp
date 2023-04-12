@@ -1,7 +1,7 @@
 #include "TranslationUnitContext.h"
 
-#include "parser/ASTNode.h"
 #include "Message.h"
+#include "parser/ASTNode.h"
 
 thread_local TranslationUnitContext* TranslationUnitContext::it;
 
@@ -12,6 +12,11 @@ TranslationUnitContext::TranslationUnitContext(ostream& message_stream): message
     null_message_stream.setstate(ios_base::badbit);
 
     interned_views.insert(*empty_interned_string);
+
+    type_emit_context.outcome = EmitOutcome::TYPE;
+
+    fold_emit_context.outcome = EmitOutcome::FOLD;
+    fold_emit_context.builder = LLVMCreateBuilder();
 }
 
 TranslationUnitContext::~TranslationUnitContext() {

@@ -15,7 +15,7 @@ const Type* UnresolvedArrayType::resolve(ResolutionContext& ctx) const {
     auto resolved_element_type = element_type->resolve(ctx);
 
     if (size) {
-        auto size_constant = size->evaluate_constant();
+        auto size_constant = size->fold_constant();
         unsigned long long size_int = 1;
         if (!size_constant.is_const_integer()) {
             message(Severity::ERROR, size->location) << "size of array must have integer type\n";

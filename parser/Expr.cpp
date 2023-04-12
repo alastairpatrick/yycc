@@ -1,5 +1,6 @@
 #include "Expr.h"
 #include "EmitContext.h"
+#include "TranslationUnitContext.h"
 
 Value::Value(LLVMValueRef value, const Type* type)
     : value(value), type(type) {
@@ -16,8 +17,13 @@ bool Value::is_const_integer() const {
 Expr::Expr(const Location& location): Statement(location) {
 }
 
-Value Expr::evaluate_constant() const {
-    return Value();
+const Type* Expr::get_type() const {
+    auto value = emit(TranslationUnitContext::it->type_emit_context);
+    return value.type;
+}
+
+Value Expr::fold_constant() const {
+    return emit(TranslationUnitContext::it->fold_emit_context);
 }
 
 Value Expr::emit(EmitContext& context) const {
@@ -42,7 +48,7 @@ Value ConditionExpr::emit(EmitContext& context) const {
     auto else_type = else_value.type;
     auto result_type = convert_arithmetic(then_value.type, else_value.type);
     
-    return Value(nullptr, result_type);
+    if (context.outcome == EmitOutcome::TYPE) return Value(nullptr, result_type);
 
     auto builder = context.builder;
 
@@ -96,7 +102,7 @@ Value BinaryExpr::emit(EmitContext& context) const {
     auto right_value = right->emit(context);
     auto result_type = convert_arithmetic(left_value.type, right_value.type);
 
-    return Value(nullptr, result_type);
+    if (context.outcome == EmitOutcome::TYPE) return Value(nullptr, result_type);
 
     auto builder = context.builder;
 

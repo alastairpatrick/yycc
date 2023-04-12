@@ -1,6 +1,7 @@
 #ifndef COMPILE_CONTEXT_H
 #define COMPILE_CONTEXT_H
 
+#include "EmitContext.h"
 #include "parser/TypeContext.h"
 #include "InternedString.h"
 
@@ -27,6 +28,9 @@ struct TranslationUnitContext {
     unordered_set<string_view> interned_views;
 
     ASTNode* ast_nodes{};
+
+    EmitContext type_emit_context;
+    EmitContext fold_emit_context;
 };
 
 #endif

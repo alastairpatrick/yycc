@@ -108,7 +108,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
         if (test_type == TestType::EXPRESSION) {
             auto expr = parse_expr(identifiers, sections[INPUT]);
             if (!sections[EXPECT_TYPE].empty()) {
-                type = expr->emit(EmitContext()).type;
+                type = expr->get_type();
             }
             output_stream << expr;
         } else if (test_type == TestType::PREPROCESS) {

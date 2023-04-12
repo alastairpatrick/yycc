@@ -20,8 +20,6 @@ struct IntegerConstant: Constant {
 
     IntegerConstant(LLVMValueRef value, const IntegerType* type, const Location& location);
 
-    virtual Value evaluate_constant() const override;
-
     virtual Value emit(EmitContext& context) const override;
     virtual void print(ostream& stream) const override;
 };

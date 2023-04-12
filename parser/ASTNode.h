@@ -71,7 +71,8 @@ struct Statement: ASTNode {
 struct Expr: Statement {
     explicit Expr(const Location& location);
 
-    virtual Value evaluate_constant() const;
+    const Type* get_type() const;
+    Value fold_constant() const;
     virtual Value emit(EmitContext& context) const;
 };
 

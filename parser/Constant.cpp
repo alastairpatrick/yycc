@@ -86,10 +86,6 @@ IntegerConstant::IntegerConstant(LLVMValueRef value, const IntegerType* type, co
     assert(value);
 }
 
-Value IntegerConstant::evaluate_constant() const {
-    return Value(value, type);
-}
-
 Value IntegerConstant::emit(EmitContext& context) const {
     return Value(value, type);
 }

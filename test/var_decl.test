@@ -352,6 +352,13 @@ EXPECT_AST
 [["var","ES",["A","Si",1],"x",""]]
 
 
+BEGIN Constant folds array size
+int x[1 + 1];
+DECLARATIONS
+EXPECT_AST
+[["var","ES",["A","Si",2],"x",""]]
+
+
 BEGIN Declarator initializers
 int x = 1, y = 2;
 EXPECT_AST
