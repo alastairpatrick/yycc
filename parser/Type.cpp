@@ -21,10 +21,6 @@
 // V void
 // . variadic placeholder
 
-ResolutionContext::ResolutionContext(const IdentifierMap& identifiers)
-    : identifiers(identifiers) {
-}
-
 #pragma region Type
 
 unsigned Type::qualifiers() const {
@@ -369,10 +365,6 @@ const Type* convert_arithmetic(const Type* left, const Type* right) {
 #pragma region PointerType
 
 const Type* PointerType::resolve(ResolutionContext& ctx) const {
-    if (auto structured_type = dynamic_cast<const StructuredType*>(base_type->unqualified())) {
-        if (structured_type->resolved) return this;
-    }
-
     return base_type->resolve(ctx)->pointer_to();
 }
 
@@ -514,11 +506,8 @@ bool StructuredType::is_complete() const {
 }
 
 const Type* StructuredType::resolve(ResolutionContext& context) const {
-    if (resolved) return this;
-    resolved = true;
-
     for (auto member: members) {
-        member->resolve(context);
+        if (member->status == ResolutionStatus::UNRESOLVED) context.todo.insert(member);
     }
 
     return this;
@@ -702,7 +691,7 @@ void EnumType::print(std::ostream& stream) const {
     stream << "]]";
 }
 
-#pragma endregion UnionType
+#pragma endregion EnumType
 
 #pragma region TypeOfType
 

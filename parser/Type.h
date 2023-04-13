@@ -17,11 +17,6 @@ enum class IdentifierScope;
 struct PointerType;
 struct TypeDef;
 
-struct ResolutionContext {
-    explicit ResolutionContext(const IdentifierMap& identifiers);
-    const IdentifierMap& identifiers;
-};
-
 struct Type: virtual Printable {
     Type() = default;
     Type(const Type&) = delete;
@@ -193,7 +188,6 @@ struct StructuredType: Type {
     vector<Declarator*> members;
     unordered_map<InternedString, Declarator*> member_index;
     bool complete{};
-    mutable bool resolved{};
 
     const Declarator* lookup_member(const Identifier& identifier) const;
 

@@ -192,13 +192,23 @@ EXPECT_GLOBALS
 ,["var","ES","Si","x"]]
 
 
-BEGIN Struct is in scope within body
+BEGIN Struct is in scope within body (1)
 struct S {
     S* p;
 };
 DECLARATIONS
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["p",["P","recursive"]]]],"S"]]
+
+
+BEGIN Struct is in scope within body (2)
+struct S {
+    typedef S T;
+    T* p;
+};
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["T","recursive"],["p",["P","recursive"]]]],"S"]]
 
 
 BEGIN Error on combination of struct specifier and type specifier

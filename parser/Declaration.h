@@ -38,6 +38,10 @@ struct ResolutionContext;
 ostream& operator<<(ostream& stream, Linkage linkage);
 ostream& operator<<(ostream& stream, StorageDuration duration);
 
+struct ResolutionContext {
+    unordered_set<Declarator*> todo;
+};
+
 struct Declaration: ASTNode {
     Location location;
     Fragment fragment;
@@ -49,8 +53,6 @@ struct Declaration: ASTNode {
 
     Declaration(IdentifierScope scope, StorageClass storage_class, const Type* type, const Location& location);
     Declaration(IdentifierScope scope, const Location& location);
-
-    void resolve(ResolutionContext& context);
 
     virtual void print(ostream& stream) const override;
 };

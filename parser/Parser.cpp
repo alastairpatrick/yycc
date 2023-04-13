@@ -455,7 +455,8 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
                       }
 
                       if (!typedef_type) {
-                          if (scope != IdentifierScope::FILE) break;
+                          // No error in scopes where something other than a type would be valid, i.e. a statement or expression.
+                          if (scope == IdentifierScope::BLOCK || scope == IdentifierScope::EXPRESSION) break;
 
                           message(Severity::ERROR, preprocessor.location()) << "type \'" << preprocessor.identifier() << "' undefined\n";
                           typedef_type = IntegerType::default_type();
@@ -631,10 +632,19 @@ void Parser::parse() {
     }
 
     if (!preparse) {
-        ResolutionContext context(identifiers);
+        ResolutionContext context;
         for (auto p: identifiers.scopes.front().declarators) {
-            auto declarator = p.second;
+            context.todo.insert(p.second);
+        }
+
+        while (context.todo.size()) {
+            auto it = context.todo.begin();
+            auto declarator = *it;
+            context.todo.erase(it);
+
+            resume_messages();
             declarator->resolve(context);
+            resume_messages();
         }
     }
 }

@@ -53,6 +53,7 @@ using std::move;
 using std::ostream;
 using std::set;
 using std::strstream;
+using std::swap;
 using std::pair;
 using std::remove_if;
 using std::stack;

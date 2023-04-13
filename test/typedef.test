@@ -172,7 +172,7 @@ DECLARATIONS
 EXPECT_MESSAGE
 :2:1: error recursive definition of 'T'
 EXPECT_GLOBALS
-[["typedef",["A","Si"],"T"]]
+[["typedef","Si","T"]]
 
 
 BEGIN  Non-trivial recursive typedefs are an error (2)

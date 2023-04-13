@@ -38,12 +38,6 @@ Declaration::Declaration(IdentifierScope scope, const Location& location)
     : location(location), scope(scope) {
 }
 
-void Declaration::resolve(ResolutionContext& context) {
-    for (auto declarator: declarators) {
-        declarator->resolve(context);
-    }
-}
-
 void Declaration::print(ostream& stream) const {
     if (declarators.size() != 1) stream << '[';
 
@@ -82,59 +76,57 @@ const Type* Declarator::to_type() const {
     return delegate->to_type();
 }
 
-struct ResolutionCycle {};
-
 static bool is_trivially_cyclic(Declarator* declarator, const Type* type) {
-    auto tdt = dynamic_cast<const TypeDefType*>(type);
-    return tdt && tdt->declarator == declarator;
+    for (;;) {
+        if (auto qt = dynamic_cast<const QualifiedType*>(type)) {
+            type = qt->base_type;
+        } else if (auto tdt = dynamic_cast<const TypeDefType*>(type)) {
+            return tdt->declarator == declarator;
+        } else {
+            return false;
+        }
+    }
 }
 
 const Type* Declarator::resolve(ResolutionContext& ctx) {
-    struct Resolver {
-        Declarator* declarator;
-        Resolver(Declarator* declarator): declarator(declarator) {}
-        ~Resolver() {
-            declarator->status = ResolutionStatus::RESOLVED;
-        }
-    } resolver(this);
+    struct ResolutionCycle {};
 
     if (status == ResolutionStatus::RESOLVED) return type;
     if (status == ResolutionStatus::RESOLVING) throw ResolutionCycle();
 
-    // The only valid cyclic typedef has form "typedef T T" and only when combined with a non-cyclic typedef for identifier "T".
-    for (;;) {
-        if (!is_trivially_cyclic(this, type) || !next) break;
-        *this = move(*next);
-    }
-
-    // Must be after assigning to *this
     status = ResolutionStatus::RESOLVING;
 
-    try {
-        type = type->resolve(ctx);
-    } catch (ResolutionCycle) {
-        if (is_trivially_cyclic(this, type)) {
-            message(Severity::ERROR, location) << "'" << identifier << "' undeclared\n";
-        } else {
-            message(Severity::ERROR, location) << "recursive definition of '" << identifier << "'\n";
-        }
-        return type = IntegerType::default_type();
-    }
-
-    for (auto other = next; other; other = other->next) {
-        if (is_trivially_cyclic(this, other->type)) {
-            other->type = type;
-        } else {
-            try {
-                other->type = other->type->resolve(ctx);
-            } catch (ResolutionCycle) {
-                message(Severity::ERROR, other->location) << "recursive definition of '" << identifier << "'\n";
-                continue;
+    Declarator* resolved_declarator{};
+    for (auto declarator = this; declarator; declarator = declarator->next) {
+        try {
+            declarator->type = declarator->type->resolve(ctx);
+            if (!resolved_declarator) resolved_declarator = declarator;
+        } catch (ResolutionCycle) {
+            if (!is_trivially_cyclic(this, declarator->type)) {
+                message(Severity::ERROR, declarator->location) << "recursive definition of '" << declarator->identifier << "'\n";
+                pause_messages();
             }
         }
-
-        compose(other);
     }
+
+    status = ResolutionStatus::RESOLVED;
+
+    if (resolved_declarator) {
+        swap(resolved_declarator->type, type);
+
+        for (auto declarator = next; declarator; declarator = declarator->next) {
+            declarator->type = declarator->type->resolve(ctx);
+            compose(declarator);
+        }
+    } else {
+        auto declarator = this;
+        while (declarator->next) {
+            declarator = declarator->next;
+        }
+        type = IntegerType::default_type();
+        message(Severity::ERROR, declarator->location) << "'" << declarator->identifier << "' undeclared\n";
+    }
+
     next = nullptr;
 
     return type;
