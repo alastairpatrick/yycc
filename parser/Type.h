@@ -158,7 +158,18 @@ struct QualifiedType: Type {
 private:
     friend class TypeContext;
     const unsigned qualifier_flags;
-    explicit QualifiedType(const Type* base_type, unsigned qualifiers);
+    QualifiedType(const Type* base_type, unsigned qualifiers);
+};
+
+// Removes qualifiers on resolution. Used to implement typeof_unqual.
+struct UnqualifiedType: ASTNode, Type {
+    const Type* const base_type;
+
+    explicit UnqualifiedType(const Type* base_type);
+    virtual unsigned qualifiers() const override;
+    virtual const Type* unqualified() const override;
+    virtual const Type* resolve(ResolutionContext& ctx) const override;
+    virtual void print(std::ostream& stream) const override;
 };
 
 struct FunctionType: Type {
@@ -229,9 +240,8 @@ struct EnumType: Type {
 struct TypeOfType: ASTNode, Type {
     const Location location;
     const Expr* const expr;
-    const bool keep_qualifiers;
 
-    TypeOfType(const Expr* expr, bool keep_qualifiers, const Location& location);
+    TypeOfType(const Expr* expr, const Location& location);
     virtual bool is_complete() const override;
     virtual const Type* resolve(ResolutionContext& ctx) const override;
     virtual void print(std::ostream& stream) const override;

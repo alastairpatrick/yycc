@@ -321,7 +321,7 @@ Expr* Parser::parse_unary_expr() {
                 result = new SizeOfExpr(type, loc);
             } else {
                 auto expr = parse_unary_expr();
-                result = new SizeOfExpr(new TypeOfType(expr, true, loc), loc);
+                result = new SizeOfExpr(new TypeOfType(expr, loc), loc);
             }
 
             if (consumed_paren) require(')');
@@ -881,21 +881,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
 
     type = declarator_transform.apply(type);
 
-    bool is_function = dynamic_cast<const FunctionType*>(type);
-
-    if (declaration->scope == IdentifierScope::PROTOTYPE) {
-        // C99 6.7.5.3p7
-        if (auto array_type = dynamic_cast<const ArrayType*>(type->unqualified())) {
-            type = QualifiedType::of(array_type->element_type->pointer_to(), type->qualifiers());
-        }
-
-        // C99 6.7.5.3p8
-        if (is_function) {
-            type = type->pointer_to();
-            is_function = false;
-        }
-    }
-
+    bool is_function = declaration->scope != IdentifierScope::PROTOTYPE && dynamic_cast<const FunctionType*>(type);
 
     Expr* bit_field_size{};
     if (declaration->scope == IdentifierScope::STRUCTURED && consume(':')) {
@@ -1073,12 +1059,12 @@ const Type* Parser::parse_typeof() {
     require('(');
 
     auto type = parse_type_name();
-    if (type) {
-        if (!keep_qualifiers) type = type->unqualified();
-    } else {
+    if (!type) {
         auto expr = parse_expr(SEQUENCE_PREC);
-        type = new TypeOfType(expr, keep_qualifiers, location);
+        type = new TypeOfType(expr, location);
     }
+
+    if (!keep_qualifiers) type = new UnqualifiedType(type);
 
     require(')');
     return type;

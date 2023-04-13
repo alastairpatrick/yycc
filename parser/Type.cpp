@@ -1,5 +1,6 @@
 #include "Type.h"
 
+#include "ArrayType.h"
 #include "EmitContext.h"
 #include "Constant.h"
 #include "Declaration.h"
@@ -388,8 +389,10 @@ PointerType::PointerType(const Type* base_type)
 const Type* QualifiedType::of(const Type* base_type, unsigned qualifiers) {
     if (qualifiers == 0) return base_type;
 
-    qualifiers |= base_type->qualifiers();
-    base_type = base_type->unqualified();
+    while (auto qualified_base_type = dynamic_cast<const QualifiedType*>(base_type)) {
+        base_type = qualified_base_type;
+        qualifiers |= qualified_base_type->qualifier_flags;
+    }
 
     return TranslationUnitContext::it->type.get_qualified_type(base_type, qualifiers);
 }
@@ -428,6 +431,30 @@ QualifiedType::QualifiedType(const Type* base_type, unsigned qualifiers)
 
 #pragma endregion QualifierType
 
+#pragma region UnqualifiedType
+
+UnqualifiedType::UnqualifiedType(const Type* base_type): base_type(base_type) {
+}
+
+unsigned UnqualifiedType::qualifiers() const {
+    return 0;
+}
+
+const Type* UnqualifiedType::unqualified() const {
+    // May only be called on resolved types.
+    assert(false);
+    return this;
+}
+
+const Type* UnqualifiedType::resolve(ResolutionContext& ctx) const {
+    return base_type->resolve(ctx)->unqualified();
+}
+
+void UnqualifiedType::print(std::ostream& stream) const {
+    stream << "[\"Qx\", " << base_type << ']';
+}
+
+#pragma endregion UnqualifiedType
 #pragma region FunctionType
 
 static void print_function_type(ostream& stream, const Type* return_type, const std::vector<const Type*>& parameter_types, bool variadic) {
@@ -462,6 +489,17 @@ const Type* FunctionType::resolve(ResolutionContext& ctx) const {
     auto resolved_param_types(parameter_types);
     for (auto& param_type : resolved_param_types) {
         param_type = param_type->resolve(ctx);
+
+        // C99 6.7.5.3p7
+        if (auto array_type = dynamic_cast<const ArrayType*>(param_type->unqualified())) {
+            param_type = QualifiedType::of(array_type->element_type->pointer_to(), param_type->qualifiers());
+        }
+
+        // C99 6.7.5.3p8
+        if (auto function_type = dynamic_cast<const FunctionType*>(param_type)) {
+            param_type = param_type->pointer_to();
+        }
+
     }
     return FunctionType::of(resolved_return_type, resolved_param_types, variadic);
 }
@@ -695,8 +733,8 @@ void EnumType::print(std::ostream& stream) const {
 
 #pragma region TypeOfType
 
-TypeOfType::TypeOfType(const Expr* expr, bool keep_qualifiers, const Location& location)
-    : location(location), expr(expr), keep_qualifiers(keep_qualifiers) {
+TypeOfType::TypeOfType(const Expr* expr, const Location& location)
+    : location(location), expr(expr) {
 }
 
 bool TypeOfType::is_complete() const {
@@ -705,9 +743,7 @@ bool TypeOfType::is_complete() const {
 }
 
 const Type* TypeOfType::resolve(ResolutionContext& ctx) const {
-    auto type = expr->get_type();
-    if (!keep_qualifiers) type = type->unqualified();
-    return type;
+    return expr->get_type();
 }
 
 void TypeOfType::print(std::ostream& stream) const {
@@ -743,7 +779,9 @@ TypeDefType::TypeDefType(Declarator* declarator): declarator(declarator) {
 }
 
 const Type* TypeDefType::unqualified() const {
-    return declarator->type->unqualified();
+    // May only be called on resolved types.
+    assert(false);
+    return this;
 }
 
 const Type* TypeDefType::resolve(ResolutionContext& ctx) const {

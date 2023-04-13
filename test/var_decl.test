@@ -368,18 +368,29 @@ EXPECT_AST
 [["var", "ES", "Sl", "x"]]
 
 
-BEGIN Variable of typeof type namme
+BEGIN Variable of typeof type name
 typeof(const double) x;
 DECLARATIONS
 EXPECT_AST
 [["var","ES",["Qc","Fd"],"x"]]
 
 
-BEGIN Variable of typeof_unqual qualified type namme
+BEGIN Variable of typeof_unqual qualified type name (1)
 typeof_unqual(const double) x;
 DECLARATIONS
 EXPECT_AST
 [["var", "ES", "Fd", "x"]]
+
+
+BEGIN Variable of typeof_unqual qualified type name (2)
+#type T
+typeof_unqual(T) x;
+typedef const double T;
+DECLARATIONS
+EXPECT_AST
+[["typedef",["Qc","Fd"],"T"]
+,["var","ES","Fd","x"]
+,[]]
 
 
 BEGIN #extern directive

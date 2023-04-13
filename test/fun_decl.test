@@ -34,30 +34,35 @@ EXPECT_AST
 
 BEGIN Function parameters of function type are adjusted to pointer
 int foo(int bar(void));
+DECLARATIONS
 EXPECT_AST
 [["fun", "E", ["F", "Si", ["P", ["F", "Si"]]], "foo"]]
 
 
 BEGIN Function parameters of array type are adjusted to pointer (1)
 int foo(int x[]);
+DECLARATIONS
 EXPECT_AST
 [["fun", "E", ["F", "Si", ["P", "Si"]], "foo"]]
 
 
 BEGIN Function parameters of array type are adjusted to pointer (2)
 int foo(int x[2]);
+DECLARATIONS
 EXPECT_AST
 [["fun", "E", ["F", "Si", ["P", "Si"]], "foo"]]
 
 
 BEGIN Function parameters of array type are adjusted to pointer (3)
 int foo(int x[2][3]);
+DECLARATIONS
 EXPECT_AST
 [["fun","E",["F","Si",["P",["A","Si",3]]],"foo"]]
 
 
 BEGIN Qualified array type parameter
 int foo(int x[const volatile restrict 1]);
+DECLARATIONS
 EXPECT_AST
 [["fun","E",["F","Si",["Qcrv",["P","Si"]]],"foo"]]
 
@@ -73,8 +78,20 @@ EXPECT_AST
 
 BEGIN Static array type parameter
 int foo(int x[static 1]);
+DECLARATIONS
 EXPECT_AST
 [["fun","E",["F","Si",["P","Si"]],"foo"]]
+
+
+BEGIN Function parameters of typedef array type are adjusted to pointer
+#type T
+int foo(T x);
+typedef int T[];
+DECLARATIONS
+EXPECT_AST
+[["typedef",["A","Si"],"T"]
+,["fun","E",["F","Si",["P","Si"]],"foo"]
+,[]]
 
 
 BEGIN Prototype and external linkage
