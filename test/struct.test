@@ -264,3 +264,15 @@ DECLARATIONS
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]
 ,["var","ES",["A","C",8],"a"]]
+
+
+BEGIN Typedef members do not contribute to size of struct
+struct S {
+    typedef int T;
+    int x;
+};
+char a[sizeof(S)];
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["T","Si"],["x","Si"]]],"S"]
+,["var","ES",["A","C",4],"a"]]
