@@ -96,11 +96,19 @@ const Type* Declarator::resolve(ResolveContext& context) {
 
     status = ResolutionStatus::RESOLVING;
 
-    Declarator* resolved_declarator{};
+    Declarator* acyclic_declarator{};
     for (auto declarator = this; declarator; declarator = declarator->next) {
         try {
+            if (declarator->type->has_tag(declarator)) {
+                swap(declarator->type, type);
+                acyclic_declarator = this;
+                status = ResolutionStatus::RESOLVED;
+                type = type->resolve(context);
+                break;
+            }
+
             declarator->type = declarator->type->resolve(context);
-            if (!resolved_declarator) resolved_declarator = declarator;
+            if (!acyclic_declarator) acyclic_declarator = declarator;
         } catch (ResolutionCycle) {
             if (!is_trivially_cyclic(this, declarator->type)) {
                 message(Severity::ERROR, declarator->location) << "recursive definition of '" << declarator->identifier << "'\n";
@@ -111,8 +119,10 @@ const Type* Declarator::resolve(ResolveContext& context) {
 
     status = ResolutionStatus::RESOLVED;
 
-    if (resolved_declarator) {
-        swap(resolved_declarator->type, type);
+    if (acyclic_declarator) {
+        swap(acyclic_declarator->type, type);
+        
+        assert(!dynamic_cast<const TypeDefType*>(type));
 
         for (auto declarator = next; declarator; declarator = declarator->next) {
             declarator->type = declarator->type->resolve(context);

@@ -955,8 +955,9 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
         if (declarator) {
             declarator->type = type;
-            declarator->delegate = structured_type->tag = new TypeDef(declarator);
+            declarator->delegate = new TypeDef(declarator);
             identifiers.add_declarator(declarator);
+            structured_type->tag = declarator;
         }
 
         if (consume('{')) {

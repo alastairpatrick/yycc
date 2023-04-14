@@ -211,6 +211,16 @@ EXPECT_GLOBALS
 [["typedef",["STRUCT",[["T","recursive"],["p",["P","recursive"]]]],"S"]]
 
 
+BEGIN Struct is in scope within body (3)
+#type S
+struct S {
+    S* p;
+};
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["p",["P","recursive"]]]],"S"]]
+
+
 BEGIN Error on combination of struct specifier and type specifier
 typedef float T;
 T struct S v;
@@ -240,5 +250,3 @@ DECLARATIONS
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]
 ,["var","ES",["A","C",8],"a"]]
-
-

@@ -99,6 +99,10 @@ bool Type::is_complete() const {
     return true;
 }
 
+bool Type::has_tag(const Declarator* declarator) const {
+    return false;
+}
+
 #pragma endregion Type
 
 #pragma region VoidType
@@ -553,12 +557,11 @@ bool StructuredType::is_complete() const {
     return complete;
 }
 
-const Type* StructuredType::resolve(ResolveContext& context) const {
-    if (tag) {
-        assert(tag->declarator->type == this);
-        tag->declarator->status = ResolutionStatus::RESOLVED;
-    }
+bool StructuredType::has_tag(const Declarator* declarator) const {
+    return tag == declarator;
+}
 
+const Type* StructuredType::resolve(ResolveContext& context) const {
     for (auto member: members) {
         member->resolve(context);
     }

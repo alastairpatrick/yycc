@@ -28,6 +28,7 @@ struct Type: virtual Printable {
     const PointerType* pointer_to() const;
 
     virtual bool is_complete() const;
+    virtual bool has_tag(const Declarator* declarator) const;
 
     virtual const Type* compose(const Type* other) const;
 
@@ -203,11 +204,12 @@ struct StructuredType: CachedType {
     vector<Declarator*> members;
     unordered_map<InternedString, Declarator*> member_index;
     bool complete{};
-    TypeDef* tag{};
+    Declarator* tag{};
 
     const Declarator* lookup_member(const Identifier& identifier) const;
 
     virtual bool is_complete() const override;
+    virtual bool has_tag(const Declarator* declarator) const override;
     virtual const Type* resolve(ResolveContext& context) const override;
     virtual void print(std::ostream& stream) const override;
 };
