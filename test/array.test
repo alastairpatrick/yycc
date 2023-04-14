@@ -149,3 +149,12 @@ EXPECT_MESSAGE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",["?"]],"S"]
 ,["var","ES",["A","Si",1],"x"]]
+
+
+BEGIN Array size given by sizeof expression
+int x;
+char a[sizeof(x)];
+DECLARATIONS
+EXPECT_GLOBALS
+[["var","ES",["A","C",4],"a"]
+,["var","ES","Si","x"]]

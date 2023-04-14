@@ -99,10 +99,24 @@ ASTNodeVector parse_declarations(IdentifierMap& identifiers, const Input& input)
 
 void sweep(ostream& stream, const File& file);
 
+static void init_emit_context(EmitContext& context) {
+    extern LLVMTargetRef g_target;
+    extern LLVMTargetMachineRef g_target_machine;
+    extern LLVMTargetDataRef g_target_data;
+
+    context.target = g_target;
+    context.target_machine = g_target_machine;
+    context.target_data = g_target_data;
+}
+
 static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], const string& name, const string& file, int line) {
     //try {
         stringstream message_stream;
+
         TranslationUnitContext tu_context(message_stream);
+        init_emit_context(tu_context.type_emit_context);
+        init_emit_context(tu_context.fold_emit_context);
+
         IdentifierMap identifiers(test_type == TestType::PREPARSE);
 
         const Type* type{};

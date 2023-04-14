@@ -190,6 +190,18 @@ SizeOfExpr::SizeOfExpr(const Type* type, const Location& location)
     : Expr(location), type(type) {
 }
 
+void SizeOfExpr::resolve(ResolutionContext& ctx) {
+    type = type->resolve(ctx);
+}
+
+Value SizeOfExpr::emit(EmitContext& context) const {
+    auto result_type = IntegerType::uintptr_type();
+    if (context.outcome == EmitOutcome::TYPE) return Value(nullptr, result_type);
+
+    auto size_int = LLVMStoreSizeOfType(context.target_data, type->llvm_type());
+    return Value(LLVMConstInt(result_type->llvm_type(), size_int, false), result_type);
+}
+
 void SizeOfExpr::print(ostream& stream) const {
     stream << "[\"sizeof\", " << type << "]";
 }

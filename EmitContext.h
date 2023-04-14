@@ -1,5 +1,7 @@
-#ifndef CODE_GEN_CONTEXT_H
-#define CODE_GEN_CONTEXT_H
+#ifndef EMIT_CONTEXT_H
+#define EMIT_CONTEXT_H
+
+struct ResolutionContext;
 
 enum class EmitOutcome {
     TYPE,
@@ -9,6 +11,11 @@ enum class EmitOutcome {
 
 struct EmitContext {
     EmitOutcome outcome = EmitOutcome::TYPE;
+
+    LLVMTargetRef target{};
+    LLVMTargetMachineRef target_machine{};
+    LLVMTargetDataRef target_data{};
+
     LLVMModuleRef mod{};
     LLVMValueRef function{};
     LLVMBuilderRef builder{};

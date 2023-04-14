@@ -65,7 +65,9 @@ struct Declarator: ASTNode {
 
 struct Statement: ASTNode {
     Location location;
+
     explicit Statement(const Location& location);
+    virtual void resolve(ResolutionContext& context);
 };
 
 struct Expr: Statement {

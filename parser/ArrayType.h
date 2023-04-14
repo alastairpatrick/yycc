@@ -12,9 +12,9 @@ protected:
 
 struct UnresolvedArrayType: ASTNode, ArrayType {
     Location location;
-    const Expr* const size;
+    Expr* size;
 
-    UnresolvedArrayType(const Type* element_type, const Expr* size, const Location& location);
+    UnresolvedArrayType(const Type* element_type, Expr* size, const Location& location);
     virtual bool is_complete() const override;
     virtual const Type* resolve(ResolutionContext& ctx) const override;
     virtual void print(std::ostream& stream) const override;

@@ -3,6 +3,9 @@
 Statement::Statement(const Location& location): location(location) {
 }
 
+void Statement::resolve(ResolutionContext& context) {
+}
+
 CompoundStatement::CompoundStatement(ASTNodeVector&& items, const Location& location)
     : Statement(location), items(move(items)) {
 }

@@ -7,7 +7,7 @@
 ArrayType::ArrayType(const Type* element_type): element_type(element_type) {
 }
 
-UnresolvedArrayType::UnresolvedArrayType(const Type* element_type, const Expr* size, const Location& location)
+UnresolvedArrayType::UnresolvedArrayType(const Type* element_type, Expr* size, const Location& location)
     : ArrayType(element_type), size(size), location(location) {
 }
 
@@ -24,6 +24,7 @@ const Type* UnresolvedArrayType::resolve(ResolutionContext& ctx) const {
     }
 
     if (size) {
+        size->resolve(ctx);
         auto size_constant = size->fold_constant();
         unsigned long long size_int = 1;
         if (!size_constant.is_const_integer()) {

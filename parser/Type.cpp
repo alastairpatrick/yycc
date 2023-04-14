@@ -171,6 +171,10 @@ const IntegerType* IntegerType::default_type() {
     return of(IntegerSignedness::SIGNED, IntegerSize::INT);
 }
 
+const IntegerType* IntegerType::uintptr_type() {
+    return of(IntegerSignedness::UNSIGNED, IntegerSize::LONG_LONG);
+}
+
 const Type* IntegerType::promote() const {
     auto int_type = IntegerType::default_type();
 

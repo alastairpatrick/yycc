@@ -78,6 +78,7 @@ struct IntegerType: Type {
     static const IntegerType* of_char(bool is_wide);
     static const IntegerType* of(IntegerSignedness signedness, IntegerSize size);
     static const IntegerType* default_type();
+    static const IntegerType* uintptr_type();
 
     const IntegerSignedness signedness;
     const IntegerSize size;
