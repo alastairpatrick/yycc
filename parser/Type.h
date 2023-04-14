@@ -206,19 +206,20 @@ struct StructuredType: Type {
 
     virtual bool is_complete() const override;
     virtual const Type* resolve(ResolveContext& context) const override;
-    virtual LLVMTypeRef llvm_type() const override;
     virtual void print(std::ostream& stream) const override;
 };
 
 struct StructType: StructuredType {
     explicit StructType(const Location& location);
     virtual const Type* compose_type_def_types(const Type* other) const override;
+    virtual LLVMTypeRef llvm_type() const override;
     virtual void print(std::ostream& stream) const override;
 };
 
 struct UnionType: StructuredType {
     explicit UnionType(const Location& location);
     virtual const Type* compose_type_def_types(const Type* other) const override;
+    virtual LLVMTypeRef llvm_type() const override;
     virtual void print(std::ostream& stream) const override;
 };
 

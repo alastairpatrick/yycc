@@ -230,3 +230,15 @@ DECLARATIONS
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Fd"],["y","Fd"]]],"S"]]
 
+
+BEGIN Size of struct
+struct S {
+    int x, y;
+};
+char a[sizeof(S)];
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]
+,["var","ES",["A","C",8],"a"]]
+
+

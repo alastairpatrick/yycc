@@ -560,10 +560,6 @@ const Type* StructuredType::resolve(ResolveContext& context) const {
     return this;
 }
 
-LLVMTypeRef StructuredType::llvm_type() const {
-    assert(false);
-    return nullptr;
-}
 
 void StructuredType::print(std::ostream& stream) const {
     stream << '[';
@@ -623,6 +619,15 @@ const Type* StructType::compose_type_def_types(const Type* o) const {
     return complete ? this : other;
 }
 
+LLVMTypeRef StructType::llvm_type() const {
+    vector<LLVMTypeRef> member_types;
+    member_types.reserve(members.size());
+    for (auto member: members) {
+        member_types.push_back(member->type->llvm_type());
+    }
+    return LLVMStructType(member_types.data(), member_types.size(), false);
+}
+
 void StructType::print(std::ostream& stream) const {
     stream << "[\"STRUCT\", ";
     StructuredType::print(stream);
@@ -664,6 +669,11 @@ const Type* UnionType::compose_type_def_types(const Type* o) const {
     }
 
     return complete ? this : other;
+}
+
+LLVMTypeRef UnionType::llvm_type() const {
+    assert(false);
+    return nullptr;
 }
 
 void UnionType::print(std::ostream& stream) const {
