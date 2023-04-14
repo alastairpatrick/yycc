@@ -22,7 +22,7 @@ const Type* Expr::get_type() const {
     return value.type;
 }
 
-Value Expr::fold_constant() const {
+Value Expr::fold() const {
     return emit(TranslationUnitContext::it->fold_emit_context);
 }
 

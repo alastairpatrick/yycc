@@ -74,7 +74,7 @@ struct Expr: Statement {
     explicit Expr(const Location& location);
 
     const Type* get_type() const;
-    Value fold_constant() const;
+    Value fold() const;
     virtual Value emit(EmitContext& context) const;
 };
 
