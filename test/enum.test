@@ -53,10 +53,11 @@ EXPECT_GLOBALS
 BEGIN Order of members does not matter for compatible enums
 enum E { B=2, A=1 };
 enum E { A=1, B=2 };
+DECLARATIONS
 EXPECT_GLOBALS
 [["ec","A",1]
 ,["ec","B",2]
-,["typedef",["ENUM",[["ec","A",1],["ec","B",2]]],"E"]]
+,["typedef",["ENUM",[["ec","B",2], ["ec","A",1]]],"E"]]
 
 
 BEGIN Complete enum must contain all members of compatible enum

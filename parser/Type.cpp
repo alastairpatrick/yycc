@@ -729,7 +729,7 @@ const Type* EnumType::compose_type_def_types(const Type* o) const {
         }
     }
 
-    return complete ? this : other;
+    return (complete || !other->complete) ? this : other;
 }
 
 void EnumType::print(std::ostream& stream) const {

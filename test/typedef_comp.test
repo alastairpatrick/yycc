@@ -65,7 +65,7 @@ EXPECT_MESSAGE
 :2:1: error redefinition of 'T' with different type
 :1:1: see other definition
 EXPECT_GLOBALS
-[["typedef",["A","Si"],"T"]]
+[["typedef",["A","Si",1],"T"]]
 
 
 BEGIN Redefining typedef with compatible type that is not same type is an error (2)

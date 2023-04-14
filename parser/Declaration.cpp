@@ -99,7 +99,7 @@ const Type* Declarator::resolve(ResolveContext& context) {
     Declarator* acyclic_declarator{};
     for (auto declarator = this; declarator; declarator = declarator->next) {
         try {
-            if (declarator->type->has_tag(declarator)) {
+            if (declarator->type->has_tag(declarator) && declarator->type->is_complete()) {
                 swap(declarator->type, type);
                 acyclic_declarator = this;
                 status = ResolutionStatus::RESOLVED;
@@ -108,7 +108,9 @@ const Type* Declarator::resolve(ResolveContext& context) {
             }
 
             declarator->type = declarator->type->resolve(context);
-            if (!acyclic_declarator) acyclic_declarator = declarator;
+            if (!acyclic_declarator || (declarator->type->is_complete() && !acyclic_declarator->type->is_complete())) {
+                acyclic_declarator = declarator;
+            }
         } catch (ResolutionCycle) {
             if (!is_trivially_cyclic(this, declarator->type)) {
                 message(Severity::ERROR, declarator->location) << "recursive definition of '" << declarator->identifier << "'\n";
@@ -117,15 +119,19 @@ const Type* Declarator::resolve(ResolveContext& context) {
         }
     }
 
-    status = ResolutionStatus::RESOLVED;
+    if (type_def()) status = ResolutionStatus::RESOLVED;
 
     if (acyclic_declarator) {
         swap(acyclic_declarator->type, type);
-        
         assert(!dynamic_cast<const TypeDefType*>(type));
 
         for (auto declarator = next; declarator; declarator = declarator->next) {
-            declarator->type = declarator->type->resolve(context);
+            try {
+                declarator->type = declarator->type->resolve(context);
+            } catch (ResolutionCycle) {
+                message(Severity::ERROR, declarator->location) << "recursive definition of '" << declarator->identifier << "'\n";
+                pause_messages();
+            }
             compose(declarator);
         }
     } else {
@@ -138,6 +144,7 @@ const Type* Declarator::resolve(ResolveContext& context) {
     }
 
     next = nullptr;
+    status = ResolutionStatus::RESOLVED;
 
     return type;
 }
@@ -306,14 +313,14 @@ const Type* TypeDef::to_type() const {
 }
 
 void TypeDef::compose(Declarator* other) {
-    auto composed = compose_type_def_types(other->type, declarator->type);
+    auto composed = compose_type_def_types(declarator->type, other->type);
     if (!composed) {
         message(Severity::ERROR, other->location) << "redefinition of '" << declarator->identifier << "' with different type\n";
         message(Severity::INFO, declarator->location) << "see other definition\n";
         return;
     }
 
-    declarator->type = composed;
+    assert(declarator->type == composed);
 }
 
 void TypeDef::print(ostream& stream) const {

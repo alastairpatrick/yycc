@@ -41,8 +41,9 @@ EXPECT_GLOBALS
 BEGIN Order of members does not matter for compatible unions
 union S { int y; int x; };
 union S { int x; int y; };
+DECLARATIONS
 EXPECT_GLOBALS
-[["typedef",["UNION",[["x","Si"],["y","Si"]]],"S"]]
+[["typedef",["UNION",[["y","Si"],["x","Si"]]],"S"]]
 
 
 BEGIN Complete union must contain all members of compatible union

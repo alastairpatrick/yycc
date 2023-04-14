@@ -132,8 +132,9 @@ EXPECT_GLOBALS
 BEGIN Tagged structs with multiple definitions and anonymous union
 struct S { union { int y; int x; }; };
 struct S { union { int x; int y; }; };
+DECLARATIONS
 EXPECT_GLOBALS
-[["typedef",["STRUCT",[["",["UNION",[["x","Si"],["y","Si"]]]]]],"S"]]
+[["typedef",["STRUCT",[["",["UNION",[["y","Si"],["x","Si"]]]]]],"S"]]
 
 
 BEGIN Anonymous non-structured member with no declarators.
