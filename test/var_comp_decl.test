@@ -21,8 +21,8 @@ extern int x;
 static int x;
 DECLARATIONS
 EXPECT_MESSAGE
-:2:1: error static declaration of 'x' follows non-static declaration
-:1:1: see prior declaration
+:2:12: error static declaration of 'x' follows non-static declaration
+:1:12: see prior declaration
 EXPECT_AST
 [["var","ES","Si","x"]
 ,[]]

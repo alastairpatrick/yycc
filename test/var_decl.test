@@ -342,7 +342,7 @@ EXPECT_AST
 BEGIN Variable declarations may not be inline
 inline int i;
 EXPECT_MESSAGE
-:1:1: error 'inline' may only appear on function
+:1:12: error 'inline' may only appear on function
 EXPECT_AST
 [["var", "ES", "Si", "i"]]
 

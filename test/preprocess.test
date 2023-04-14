@@ -2,7 +2,7 @@ BEGIN preprocess
 void foo() {}
 PREPROCESS
 EXPECT_TEXT
-#extern foo
+     #extern foo
 #line 1
 void foo() {}
 END
@@ -13,7 +13,7 @@ BEGIN valid #line directive
 int x;
 PREPROCESS
 EXPECT_TEXT
-#line 7
+#line 7 5
 #extern x
 #line 7
 int x;
@@ -25,7 +25,7 @@ BEGIN valid #line directive with path
 int x;
 PREPROCESS
 EXPECT_TEXT
-#line 7 "foo.h"
+#line 7 5 "foo.h"
 #extern x
 #line 7
 int x;
@@ -37,7 +37,7 @@ BEGIN valid #line directive with path with escape sequence
 int x;
 PREPROCESS
 EXPECT_TEXT
-#line 7 "\\foo.h"
+#line 7 5 "\\foo.h"
 #extern x
 #line 7
 int x;
@@ -50,7 +50,7 @@ BEGIN combines #line directives
 int x;
 PREPROCESS
 EXPECT_TEXT
-#line 7
+#line 7 5
 #extern x
 #line 7
 int x;
@@ -65,7 +65,7 @@ FILE "a.h"
   extern int x;
 EXPECT_TEXT
 
- #extern x
+     #extern x
 #line 1 3 "a.h"
 extern int x;
 #line 2 2 ""
@@ -81,7 +81,7 @@ FILE <a.h>
   extern int x;
 EXPECT_TEXT
 
- #extern x
+     #extern x
 #line 1 3 "a.h"
 extern int x;
 #line 2 2 ""
@@ -97,7 +97,7 @@ EXPECT_MESSAGE
 :1:9: error unexpected new-line token in directive
 EXPECT_TEXT
 
-#extern x
+    #extern x
 #line 2
 int x;
 END
@@ -111,7 +111,7 @@ EXPECT_MESSAGE
 :1:10: error unexpected '7' token in directive
 EXPECT_TEXT
 
-#extern x
+    #extern x
 #line 2
 int x;
 END
@@ -127,7 +127,7 @@ EXPECT_MESSAGE
 :1:15: error unexpected '"' token in directive
 EXPECT_TEXT
 
-#extern x
+    #extern x
 #line 1 "a.h"
 extern int x;
 #line 2 ""
@@ -143,7 +143,7 @@ EXPECT_MESSAGE
 :1:10: error cannot read file "a.h"
 EXPECT_TEXT
 
-#extern x
+    #extern x
 #line 2
 int x;
 END
@@ -159,7 +159,7 @@ FILE "b.h"
 extern int x;
 EXPECT_TEXT
 
-#extern x
+    #extern x
 #line 1 "b.h"
 extern int x;
 #line 2 ""
@@ -175,7 +175,7 @@ FILE "c:\a.h"
   extern int x;
 EXPECT_TEXT
 
- #extern x
+     #extern x
 #line 1 3 "c:\\a.h"
 extern int x;
 #line 2 2 ""

@@ -669,7 +669,7 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
         while (token && token != ';') {
             int flags = PD_ALLOW_IDENTIFIER | PD_ALLOW_INITIALIZER;
             if (declarator_count == 0) flags |= PD_ALLOW_FUNCTION_DEFINITION;
-            auto declarator = parse_declarator(declaration, base_type, specifiers, flags, location, &last_declarator);
+            auto declarator = parse_declarator(declaration, base_type, specifiers, flags, &last_declarator);
             if (declarator) {
                 if (declarator->identifier.name->empty()) {
                     message(Severity::ERROR, preprocessor.location()) << "expected identifier but got '" << preprocessor.text() << "'\n";
@@ -756,7 +756,7 @@ Declarator* Parser::parse_parameter_declarator() {
 
     bool last;
     auto begin_declarator = position();
-    auto declarator = parse_declarator(declaration, base_type, specifiers, PD_ALLOW_IDENTIFIER, declaration->location, &last);
+    auto declarator = parse_declarator(declaration, base_type, specifiers, PD_ALLOW_IDENTIFIER, &last);
     declarator->fragment = end_fragment(begin_declarator);
 
     declaration->declarators.push_back(declarator);
@@ -876,11 +876,13 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, in
     return declarator;
 }
 
-Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, int flags, const Location& location, bool* last) {
+Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, int flags, bool* last) {
+    auto location = preprocessor.location();
     auto begin = position();
 
     auto declarator_transform = parse_declarator_transform(declaration->scope, flags);
     *last = declarator_transform.body;
+    if (declarator_transform.identifier.name->empty()) location = declaration->location;
 
     type = declarator_transform.apply(type);
 

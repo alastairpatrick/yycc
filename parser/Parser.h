@@ -60,7 +60,7 @@ private:
     ASTNode* parse_declaration_or_statement(IdentifierScope scope);
     CompoundStatement* parse_compound_statement();
     Declarator* parse_parameter_declarator();
-    Declarator* parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, int flags, const Location& location, bool* last);
+    Declarator* parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, int flags, bool* last);
     DeclaratorTransform parse_declarator_transform(IdentifierScope scope, int flags);
     const Type* parse_structured_type(Declaration* declaration);
     EnumConstant* parse_enum_constant(Declaration* declaration, const EnumType* type, const Identifier& tag);

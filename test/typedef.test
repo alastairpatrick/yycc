@@ -130,7 +130,7 @@ EXPECT_AST
 BEGIN Typedef may not be inline
 inline typedef int A;
 EXPECT_MESSAGE
-:1:1: error 'inline' may only appear on function
+:1:20: error 'inline' may only appear on function
 EXPECT_AST
 [["typedef", "Si", "A"]]
 
@@ -170,7 +170,7 @@ BEGIN Non-trivial recursive typedefs are an error (1)
 typedef T T[];
 DECLARATIONS
 EXPECT_MESSAGE
-:2:1: error recursive definition of 'T'
+:2:11: error recursive definition of 'T'
 EXPECT_GLOBALS
 [["typedef","Si","T"]]
 
@@ -181,7 +181,7 @@ typedef T T[];
 typedef int T[];
 DECLARATIONS
 EXPECT_MESSAGE
-:2:1: error recursive definition of 'T'
+:2:11: error recursive definition of 'T'
 EXPECT_GLOBALS
 [["typedef",["A","Si"],"T"]]
 
@@ -192,7 +192,7 @@ typedef int T[];
 typedef T T[];
 DECLARATIONS
 EXPECT_MESSAGE
-:3:1: error recursive definition of 'T'
+:3:11: error recursive definition of 'T'
 EXPECT_GLOBALS
 [["typedef",["A","Si"],"T"]]
 
@@ -202,7 +202,7 @@ BEGIN Trivial recursive typedefs are an error if not accompanied by non-recursiv
 typedef T T;
 DECLARATIONS
 EXPECT_MESSAGE
-:2:1: error 'T' undeclared
+:2:11: error 'T' undeclared
 EXPECT_GLOBALS
 [["typedef","Si","T"]]
 

@@ -109,7 +109,7 @@ EXPECT_AST
 BEGIN Error if prototype has register storage class
 register int foo(float);
 EXPECT_MESSAGE
-:1:1: error invalid storage class
+:1:14: error invalid storage class
 EXPECT_AST
 [["fun", "E", ["F", "Si", "Ff"], "foo"]]
 
@@ -184,7 +184,7 @@ void f(void) {
 }
 DECLARATIONS
 EXPECT_MESSAGE
-:2:5: error invalid storage class
+:2:17: error invalid storage class
 EXPECT_AST
 [["fun", "E", ["F", "V"], "f", [""], ["block", [["fun", "", ["F", "V"], "foo"]]]]]
 
@@ -240,7 +240,7 @@ EXPECT_AST
 BEGIN Parameters may not be inline
 void foo(inline int x);
 EXPECT_MESSAGE
-:1:10: error 'inline' may only appear on function
+:1:21: error 'inline' may only appear on function
 EXPECT_AST
 [["fun", "E", ["F", "V", "Si"], "foo"]]
 

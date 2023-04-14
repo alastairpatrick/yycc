@@ -17,7 +17,7 @@ BEGIN Union member names must be distinct
 union U { int x; int x; };
 DECLARATIONS
 EXPECT_MESSAGE
-:1:18: error duplicate member 'x'
+:1:22: error duplicate member 'x'
 EXPECT_GLOBALS
 [["typedef",["UNION",[["x","Si"]]],"U"]]
 

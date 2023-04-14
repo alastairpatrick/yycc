@@ -69,8 +69,8 @@ int x[2];
 int x[1];
 DECLARATIONS
 EXPECT_MESSAGE
-:2:1: error redeclaration of 'x' with incompatible type
-:1:1: see prior declaration
+:2:5: error redeclaration of 'x' with incompatible type
+:1:5: see prior declaration
 EXPECT_GLOBALS
 [["var","ES",["A","Si",2],"x"]]
 
@@ -180,7 +180,7 @@ char a[];
 char a[sizeof(a)];
 DECLARATIONS
 EXPECT_MESSAGE
-:2:1: error recursive definition of 'a'
+:2:6: error recursive definition of 'a'
 EXPECT_GLOBALS
 [["var","ES",["A","C"],"a"]]
 
