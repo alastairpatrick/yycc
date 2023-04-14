@@ -249,9 +249,9 @@ struct EnumType: Type {
 
 struct TypeOfType: ASTNode, Type {
     const Location location;
-    const Expr* const expr;
+    Expr* const expr;
 
-    TypeOfType(const Expr* expr, const Location& location);
+    TypeOfType(Expr* expr, const Location& location);
     virtual bool is_complete() const override;
     virtual const Type* resolve(ResolveContext& context) const override;
     virtual void print(std::ostream& stream) const override;

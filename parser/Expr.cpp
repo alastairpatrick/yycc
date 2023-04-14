@@ -1,5 +1,6 @@
 #include "Expr.h"
 #include "EmitContext.h"
+#include "Message.h"
 #include "TranslationUnitContext.h"
 
 Value::Value(const Type* type, LLVMValueRef value)
@@ -82,9 +83,13 @@ void ConditionExpr::print(ostream& stream) const {
     stream << "[\"?:\", " << condition << ", " << then_expr << ", " << else_expr << "]";
 }
 
-EntityExpr::EntityExpr(const Declarator* declarator, const Location& location)
+EntityExpr::EntityExpr(Declarator* declarator, const Location& location)
     : Expr(location), declarator(declarator) {
     assert(declarator);
+}
+
+void EntityExpr::resolve(ResolveContext& context) {
+    declarator->resolve(context);
 }
 
 Value EntityExpr::emit(EmitContext& context) const {
@@ -196,6 +201,12 @@ void SizeOfExpr::resolve(ResolveContext& context) {
 
 Value SizeOfExpr::emit(EmitContext& context) const {
     auto result_type = IntegerType::uintptr_type();
+
+    if (!type->is_complete()) {
+        message(Severity::ERROR, location) << "sizeof applied to incomplete type\n";
+        return Value(result_type, LLVMConstInt(result_type->llvm_type(), 0, false));;
+    }
+
     if (context.outcome == EmitOutcome::TYPE) return Value(result_type);
 
     auto size_int = LLVMStoreSizeOfType(context.target_data, type->llvm_type());

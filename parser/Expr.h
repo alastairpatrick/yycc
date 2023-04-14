@@ -30,10 +30,11 @@ struct ConditionExpr: Expr {
 };
 
 struct EntityExpr: Expr {
-    const Declarator* declarator{};
+    Declarator* declarator{};
 
-    EntityExpr(const Declarator* declarator, const Location& location);
+    EntityExpr(Declarator* declarator, const Location& location);
 
+    virtual void resolve(ResolveContext& context) override;
     virtual Value emit(EmitContext& context) const override;
     virtual void print(ostream& stream) const override;
 };

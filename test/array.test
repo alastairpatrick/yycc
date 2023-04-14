@@ -158,3 +158,41 @@ DECLARATIONS
 EXPECT_GLOBALS
 [["var","ES",["A","C",4],"a"]
 ,["var","ES","Si","x"]]
+
+
+BEGIN Size of array
+char c[3];
+char a[sizeof(c)];
+DECLARATIONS
+EXPECT_GLOBALS
+[["var","ES",["A","C",3],"a"]
+,["var","ES",["A","C",3],"c"]]
+
+
+BEGIN Error on sizeof incomplete array type
+char a[sizeof(float[])];
+DECLARATIONS
+EXPECT_MESSAGE
+:1:8: error sizeof applied to incomplete type
+EXPECT_GLOBALS
+[["var","ES",["A","C"],"a"]]
+
+
+BEGIN Impossible recursive array size (1)
+char a[sizeof(a)];
+DECLARATIONS
+EXPECT_MESSAGE
+:1:15: error 'a' undeclared
+EXPECT_GLOBALS
+[["var","ES",["A","C",4],"a"]]
+
+
+BEGIN Impossible recursive array size (2)
+char a[];
+char a[sizeof(a)];
+DECLARATIONS
+EXPECT_MESSAGE
+:2:1: error recursive definition of 'a'
+EXPECT_GLOBALS
+[["var","ES",["A","C"],"a"]]
+

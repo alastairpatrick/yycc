@@ -4,7 +4,7 @@
 #include "ASTNode.h"
 #include "Type.h"
 
-struct ArrayType: Type {
+struct ArrayType: CachedType {
     const Type* const element_type;
 protected:
     explicit ArrayType(const Type* element_type);
@@ -17,6 +17,7 @@ struct UnresolvedArrayType: ASTNode, ArrayType {
     UnresolvedArrayType(const Type* element_type, Expr* size, const Location& location);
     virtual bool is_complete() const override;
     virtual const Type* resolve(ResolveContext& context) const override;
+    virtual LLVMTypeRef cache_llvm_type() const override;
     virtual void print(std::ostream& stream) const override;
 };
 
@@ -33,6 +34,7 @@ struct ResolvedArrayType: ArrayType {
     static const ResolvedArrayType* of(ArrayKind kind, const Type* element_type, unsigned long long size);
     virtual bool is_complete() const override;
     virtual const Type* compose(const Type* other) const override;
+    virtual LLVMTypeRef cache_llvm_type() const override;
     virtual void print(std::ostream& stream) const override;
 
 private:

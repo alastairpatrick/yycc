@@ -86,6 +86,8 @@ const Type* Type::compose(const Type* other) const {
 
 LLVMTypeRef CachedType::llvm_type() const {
     if (cached_llvm_type) return cached_llvm_type;
+
+    assert(is_complete());
     return cached_llvm_type = cache_llvm_type();
 }
 
@@ -756,7 +758,7 @@ void EnumType::print(std::ostream& stream) const {
 
 #pragma region TypeOfType
 
-TypeOfType::TypeOfType(const Expr* expr, const Location& location)
+TypeOfType::TypeOfType(Expr* expr, const Location& location)
     : location(location), expr(expr) {
 }
 
@@ -766,6 +768,7 @@ bool TypeOfType::is_complete() const {
 }
 
 const Type* TypeOfType::resolve(ResolveContext& context) const {
+    expr->resolve(context);
     return expr->get_type();
 }
 

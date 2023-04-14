@@ -39,6 +39,11 @@ const Type* UnresolvedArrayType::resolve(ResolveContext& context) const {
     }
 }
 
+LLVMTypeRef UnresolvedArrayType::cache_llvm_type() const {
+    assert(false);
+    return nullptr;
+}
+
 void UnresolvedArrayType::print(std::ostream& stream) const {
     stream << "[\"A\", " << element_type;
     if (size) {
@@ -73,6 +78,11 @@ const Type* ResolvedArrayType::compose(const Type* o) const {
     }
 
     return nullptr;
+}
+
+LLVMTypeRef ResolvedArrayType::cache_llvm_type() const {
+    // TODO: use LLVMArrayType2 instead after upgrading LLVM
+    return LLVMArrayType(element_type->llvm_type(), size);
 }
 
 void ResolvedArrayType::print(std::ostream& stream) const {
