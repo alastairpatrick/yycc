@@ -203,7 +203,7 @@ struct StructuredType: CachedType {
     const Location location;
     vector<Declarator*> members;
     unordered_map<InternedString, Declarator*> member_index;
-    bool complete{};
+    mutable bool complete{};
     Declarator* tag{};
 
     const Declarator* lookup_member(const Identifier& identifier) const;

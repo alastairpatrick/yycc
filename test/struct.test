@@ -200,6 +200,41 @@ EXPECT_GLOBALS
 [["typedef",["STRUCT",[["p",["P","recursive"]]]],"S"]]
 
 
+BEGIN Struct members must have complete type (1)
+struct T;
+struct S {
+    T x;
+};
+DECLARATIONS
+EXPECT_MESSAGE
+:3:5: error member 'x' has incomplete type
+END
+
+
+BEGIN Struct members must have complete type (2)
+struct S {
+    S x;
+};
+DECLARATIONS
+EXPECT_MESSAGE
+:2:5: error member 'x' has incomplete type
+END
+
+
+BEGIN Struct members must have complete type (3)
+#type T
+struct S {
+    T x;
+};
+struct T {
+    S x;
+};
+DECLARATIONS
+EXPECT_MESSAGE
+:3:5: error member 'x' has incomplete type
+END
+
+
 BEGIN Error on combination of struct specifier and type specifier
 typedef float T;
 T struct S v;

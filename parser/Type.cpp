@@ -7,6 +7,7 @@
 #include "Expr.h"
 #include "IdentifierMap.h"
 #include "InternedString.h"
+#include "Message.h"
 #include "TranslationUnitContext.h"
 
 // Type codes
@@ -563,10 +564,20 @@ bool StructuredType::has_tag(const Declarator* declarator) const {
 }
 
 const Type* StructuredType::resolve(ResolveContext& context) const {
+    auto want_complete = complete;
+    complete = false;
+
     for (auto member: members) {
         member->resolve(context);
+
+        if (auto member_entity = member->entity()) {
+            if (!member->type->is_complete()) {
+                message(Severity::ERROR, member->location) << "member '" << member->identifier << "' has incomplete type\n";
+            }
+        }
     }
 
+    complete = want_complete;
     return this;
 }
 
