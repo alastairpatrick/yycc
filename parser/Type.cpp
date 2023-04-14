@@ -548,8 +548,13 @@ bool StructuredType::is_complete() const {
 }
 
 const Type* StructuredType::resolve(ResolveContext& context) const {
+    if (tag) {
+        assert(tag->declarator->type == this);
+        tag->declarator->status = ResolutionStatus::RESOLVED;
+    }
+
     for (auto member: members) {
-        if (member->status == ResolutionStatus::UNRESOLVED) context.todo.insert(member);
+        member->resolve(context);
     }
 
     return this;

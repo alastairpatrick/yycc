@@ -64,7 +64,7 @@ enum class DeclaratorKind {
 };
 
 struct DeclaratorDelegate: ASTNode {
-    Declarator* const declarator;
+    Declarator* declarator;
 
     virtual DeclaratorKind kind() const = 0;
     virtual Linkage linkage() const;

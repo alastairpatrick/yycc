@@ -98,7 +98,8 @@ void Parser::handle_declaration_directive() {
                 if (old_declarator &&
                     old_declarator->delegate->linkage() == new_declarator->delegate->linkage()) {
                     if (old_declarator->delegate->kind() < new_declarator->delegate->kind()) {
-                        *old_declarator = *new_declarator;
+                        *old_declarator = move(*new_declarator);
+                        old_declarator->delegate->declarator = old_declarator;
                     }
                 } else {
                     identifiers.add_declarator(new_declarator);
@@ -954,7 +955,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
         if (declarator) {
             declarator->type = type;
-            declarator->delegate = new TypeDef(declarator);
+            declarator->delegate = structured_type->tag = new TypeDef(declarator);
             identifiers.add_declarator(declarator);
         }
 

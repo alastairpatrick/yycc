@@ -200,6 +200,7 @@ struct StructuredType: Type {
     vector<Declarator*> members;
     unordered_map<InternedString, Declarator*> member_index;
     bool complete{};
+    TypeDef* tag{};
 
     const Declarator* lookup_member(const Identifier& identifier) const;
 
