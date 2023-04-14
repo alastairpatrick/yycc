@@ -605,27 +605,20 @@ StructType::StructType(const Location& location)
 const Type* StructType::compose_type_def_types(const Type* o) const {
     auto other = static_cast<const StructuredType*>(o);
 
-    size_t comparable_members{};
     if (complete && other->complete) {
-        if (members.size() != other->members.size()) return nullptr;
-        comparable_members = members.size();
-    } else if (complete) {
-        comparable_members = other->members.size();        
-    } else if (other->complete) {
-        comparable_members = members.size();        
+        for (size_t i = 0; i < members.size(); ++i) {
+            auto declarator1 = members[i];
+            auto declarator2 = other->members[i];
+
+            if (declarator1->identifier != declarator2->identifier) return nullptr;
+            if (!::compose_type_def_types(declarator1->type, declarator2->type)) return nullptr;
+
+            // TODO bitfield size, etc
+        }
+        return this;
     }
 
-    for (size_t i = 0; i < comparable_members; ++i) {
-        auto declarator1 = members[i];
-        auto declarator2 = other->members[i];
-
-        if (declarator1->identifier != declarator2->identifier) return nullptr;
-        if (!::compose_type_def_types(declarator1->type, declarator2->type)) return nullptr;
-
-        // TODO bitfield size, etc
-    }
-
-    return complete ? this : other;
+    return (complete || !other->complete) ? this : other;
 }
 
 LLVMTypeRef StructType::cache_llvm_type() const {

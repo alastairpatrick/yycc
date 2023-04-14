@@ -95,18 +95,6 @@ EXPECT_GLOBALS
 ,["var","ES",["A","Si",1],"x"]]
 
 
-BEGIN Error on array of partially complete struct type
-struct S {
-    int x;
-    ...
-};
-S x[1];
-DECLARATIONS
-EXPECT_MESSAGE
-:5:4: error incomplete array element type
-END
-
-
 BEGIN Error on array of incomplete union type
 union U;
 U x[1];

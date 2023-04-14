@@ -187,7 +187,11 @@ void Parser::skip_unexpected() {
 }
 
 void Parser::unexpected_token() {
-    message(Severity::ERROR, preprocessor.location()) << "unexpected token '" << preprocessor.text() << "'\n";
+    if (token == TOK_EOF) {
+        message(Severity::ERROR, preprocessor.location()) << "unexpected end of file\n";
+    } else {
+        message(Severity::ERROR, preprocessor.location()) << "unexpected token '" << preprocessor.text() << "'\n";
+    }
     pause_messages();
 }
 
@@ -311,7 +315,7 @@ Expr* Parser::parse_unary_expr() {
     Location loc;
     Expr* result{};
 
-    while (token) {
+    while (token && token != '}' && token != ')' && token != ']' && token != ';') {
         if (consume(TOK_SIZEOF, &loc)) {
             auto consumed_paren = consume('(');
             
@@ -359,15 +363,13 @@ Expr* Parser::parse_unary_expr() {
         } else if (consume('(')) {
             result = parse_expr(SEQUENCE_PREC);
             require(')');
-        }
-        else {
+        } else {
             skip_unexpected();
         }
     }
 
     if (!result) {
-        assert(token == TOK_EOF);
-        message(Severity::ERROR, preprocessor.location()) << "unexpected end of file\n";
+        unexpected_token();
         result = IntegerConstant::default_expr(preprocessor.location());
     }
 
@@ -966,11 +968,6 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
             if (!anonymous) identifiers.push_scope();
 
             while (token && token != '}') {
-                if (specifier == TOK_STRUCT && consume(TOK_ELLIPSIS)) {
-                    structured_type->complete = false;
-                    break;
-                }
-
                 auto declaration = dynamic_cast<Declaration*>(parse_declaration_or_statement(IdentifierScope::STRUCTURED));
                 if (!declaration) continue;
 
