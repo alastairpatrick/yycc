@@ -332,7 +332,7 @@ EnumConstant::EnumConstant(Declarator* declarator)
 }
 
 EnumConstant::EnumConstant(Declarator* declarator, const Identifier& enum_tag, Expr* constant)
-    : DeclaratorDelegate(declarator), enum_tag(enum_tag), constant(constant) {
+    : DeclaratorDelegate(declarator), enum_tag(enum_tag), constant_expr(constant) {
 }
 
 DeclaratorKind EnumConstant::kind() const {
@@ -345,8 +345,12 @@ void EnumConstant::compose(Declarator* other) {
 
 void EnumConstant::print(ostream& stream) const {
     stream << "[\"ec\", \"" << declarator->identifier << '"';
-    if (constant) {
-        stream << ", " << constant;
+    if (declarator->status == ResolutionStatus::RESOLVED) {
+        stream << ", " << constant_int;
+    } else {
+        if (constant_expr) {
+            stream << ", " << constant_expr;
+        }
     }
     stream << ']';
 }

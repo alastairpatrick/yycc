@@ -112,7 +112,8 @@ struct TypeDef: DeclaratorDelegate {
 
 struct EnumConstant: DeclaratorDelegate {
     Identifier enum_tag;
-    Expr* constant{};
+    Expr* constant_expr{};
+    long long constant_int{};
 
     explicit EnumConstant(Declarator* declarator);
     EnumConstant(Declarator* declarator, const Identifier& enum_tag, Expr* constant);

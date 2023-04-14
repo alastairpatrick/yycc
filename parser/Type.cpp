@@ -1,9 +1,10 @@
 #include "Type.h"
 
 #include "ArrayType.h"
-#include "EmitContext.h"
 #include "Constant.h"
 #include "Declaration.h"
+#include "EmitContext.h"
+#include "Expr.h"
 #include "IdentifierMap.h"
 #include "InternedString.h"
 #include "TranslationUnitContext.h"
@@ -697,9 +698,35 @@ bool EnumType::is_complete() const {
     return complete;
 }
 
+bool EnumType::has_tag(const Declarator* declarator) const {
+    return tag;
+}
+
+const Type* EnumType::resolve(ResolveContext& context) const {
+    auto want_complete = complete;
+    complete = false;
+
+    base_type = IntegerType::default_type();
+    long long next_int = 0;
+
+    for (auto constant: constants) {
+        constant->declarator->resolve(context);
+        if (constant->constant_expr) {
+            constant->constant_expr->resolve(context);
+            auto value = constant->constant_expr->fold();
+            next_int = LLVMConstIntGetSExtValue(value.value);
+        }
+
+        constant->constant_int = next_int;
+        ++next_int;
+    }
+
+    complete = want_complete;
+    return this;
+}
+
 LLVMTypeRef EnumType::llvm_type() const {
-    assert(false); // TODO
-    return nullptr;
+    return base_type->llvm_type();
 }
 
 void EnumType::add_constant(EnumConstant* constant) {

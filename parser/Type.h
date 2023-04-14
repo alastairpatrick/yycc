@@ -236,14 +236,18 @@ struct EnumType: Type {
     explicit EnumType(const Location& location);
     
     const Location location;
+    mutable const Type* base_type{};
     vector<EnumConstant*> constants;
     unordered_map<InternedString, EnumConstant*> constant_index;
-    bool complete{};
-    
+    mutable bool complete{};
+    Declarator* tag{};
+
     void add_constant(EnumConstant* constant);
     const EnumConstant* lookup_constant(const Identifier& identifier) const;
 
     virtual bool is_complete() const override;
+    virtual bool has_tag(const Declarator* declarator) const override;
+    virtual const Type* resolve(ResolveContext& context) const override;
     virtual LLVMTypeRef llvm_type() const override;
     virtual const Type* compose_type_def_types(const Type* other) const override;
     virtual void print(std::ostream& stream) const override;

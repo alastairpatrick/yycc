@@ -1,5 +1,6 @@
 #include "Expr.h"
 #include "EmitContext.h"
+#include "Declaration.h"
 #include "Message.h"
 #include "TranslationUnitContext.h"
 
@@ -96,6 +97,10 @@ Value EntityExpr::emit(EmitContext& context) const {
     const Type* result_type = declarator->type;
 
     if (context.outcome == EmitOutcome::TYPE) return Value(result_type);
+
+    if (auto enum_constant = dynamic_cast<EnumConstant*>(declarator->delegate)) {
+        return Value(result_type, LLVMConstInt(result_type->llvm_type(), enum_constant->constant_int, true));
+    }
 
     // TODO
     assert(false);

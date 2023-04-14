@@ -997,6 +997,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
             declarator->type = type;
             declarator->delegate = new TypeDef(declarator);
             identifiers.add_declarator(declarator);
+            enum_type->tag = declarator;
         }
 
         if (consume('{')) {

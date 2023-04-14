@@ -1,11 +1,20 @@
-BEGIN Untagged enum definition
+BEGIN Untagged enum definition (preparse)
 enum { A=1, B } z;
+PREPARSE
 EXPECT_AST
 [["var", "ES", ["ENUM", [["ec", "A", 1], ["ec", "B"]]], "z"]]
 
 
-BEGIN Tagged enum definition
+BEGIN Untagged enum definition
+enum { A=1, B } z;
+DECLARATIONS
+EXPECT_AST
+[["var", "ES", ["ENUM", [["ec", "A", 1], ["ec", "B", 2]]], "z"]]
+
+
+BEGIN Tagged enum definition (preparse)
 enum E { A=1, B } z;
+PREPARSE
 EXPECT_AST
 [["var", "ES", ["ENUM", [["ec", "A", 1], ["ec", "B"]]], "z"]]
 EXPECT_GLOBALS
@@ -13,6 +22,18 @@ EXPECT_GLOBALS
 ,["ec","B"]
 ,["typedef",["ENUM",[["ec","A",1],["ec","B"]]],"E"]
 ,["var","ES",["ENUM",[["ec","A",1],["ec","B"]]],"z"]]
+
+
+BEGIN Tagged enum definition
+enum E { A=1, B } z;
+DECLARATIONS
+EXPECT_AST
+[["var", "ES", ["ENUM", [["ec", "A", 1], ["ec", "B", 2]]], "z"]]
+EXPECT_GLOBALS
+[["ec","A",1]
+,["ec","B",2]
+,["typedef",["ENUM",[["ec","A",1],["ec","B",2]]],"E"]
+,["var","ES",["ENUM",[["ec","A",1],["ec","B",2]]],"z"]]
 
 
 BEGIN Tagged incomplete enum
@@ -30,24 +51,25 @@ DECLARATIONS
 EXPECT_MESSAGE
 :1:13: error redefinition of enumeration constant 'A'
 EXPECT_GLOBALS
-[["ec","A"]
-,["typedef",["ENUM",[["ec","A"]]],"E"]]
+[["ec","A",0]
+,["typedef",["ENUM",[["ec","A",0]]],"E"]]
 
 
 BEGIN #enum directive
 #enum A
 DECLARATIONS
 EXPECT_GLOBALS
-[["ec","A"]]
+[["ec","A",0]]
 
 
 BEGIN Tagged union with multiple compatible definitions
 enum E { A, B };
 enum E { A, B };
+DECLARATIONS
 EXPECT_GLOBALS
-[["ec","A"]
-,["ec","B"]
-,["typedef",["ENUM",[["ec","A"],["ec","B"]]],"E"]]
+[["ec","A",0]
+,["ec","B",1]
+,["typedef",["ENUM",[["ec","A",0],["ec","B",1]]],"E"]]
 
 
 BEGIN Order of members does not matter for compatible enums
@@ -68,18 +90,19 @@ EXPECT_MESSAGE
 :2:1: error redefinition of 'E' with different type
 :1:1: see other definition
 EXPECT_GLOBALS
-[["ec","A"]
-,["ec","B"]
-,["typedef",["ENUM",[["ec","A"]]],"E"]]
+[["ec","A",0]
+,["ec","B",0]
+,["typedef",["ENUM",[["ec","A",0]]],"E"]]
 
 
 BEGIN Complete enum compatible with incomplete enum (1)
 enum E;
 enum E { A, B };
+DECLARATIONS
 EXPECT_GLOBALS
-[["ec","A"]
-,["ec","B"]
-,["typedef",["ENUM",[["ec","A"],["ec","B"]]],"E"]]
+[["ec","A",0]
+,["ec","B",1]
+,["typedef",["ENUM",[["ec","A",0],["ec","B",1]]],"E"]]
 
 
 BEGIN Complete enum compatible with incomplete enum (2)
@@ -87,9 +110,9 @@ enum E { A, B };
 enum E;
 DECLARATIONS
 EXPECT_GLOBALS
-[["ec","A"]
-,["ec","B"]
-,["typedef",["ENUM",[["ec","A"],["ec","B"]]],"E"]]
+[["ec","A",0]
+,["ec","B",1]
+,["typedef",["ENUM",[["ec","A",0],["ec","B",1]]],"E"]]
 
 
 BEGIN Different enums may not contain the same constants (1)
@@ -107,4 +130,54 @@ enum E2 { A, C };
 DECLARATIONS
 EXPECT_MESSAGE
 :2:11: error redefinition of enumeration constant 'A'
+END
+
+
+BEGIN Enum constant folding
+enum E { A = 1+1 };
+DECLARATIONS
+EXPECT_GLOBALS
+[["ec","A",2],["typedef",["ENUM",[["ec","A",2]]],"E"]]
+
+
+BEGIN Enum constant may refer to prior constants
+enum E { A = 1, B = A };
+DECLARATIONS
+EXPECT_GLOBALS
+[["ec","A",1],["ec","B",1],["typedef",["ENUM",[["ec","A",1],["ec","B",1]]],"E"]]
+
+
+BEGIN Enum constant may refer to following constants
+enum E { B = A, A = 1 };
+DECLARATIONS
+EXPECT_MESSAGE
+:1:14: error 'A' undeclared
+EXPECT_GLOBALS
+[["ec","A",1],["ec","B",0],["typedef",["ENUM",[["ec","B",0],["ec","A",1]]],"E"]]
+
+
+BEGIN Size of incomplete enum
+enum E;
+char a[sizeof(E)];
+DECLARATIONS
+EXPECT_MESSAGE
+:2:8: error sizeof applied to incomplete type
+END
+
+
+BEGIN Size of complete enum
+enum E { A };
+char a[sizeof(E)];
+DECLARATIONS
+EXPECT_GLOBALS
+[["ec","A",0]
+,["typedef",["ENUM",[["ec","A",0]]],"E"]
+,["var","ES",["A","C",4],"a"]]
+
+
+BEGIN Enum is incomplete within its definition
+enum E { A = sizeof(E) };
+DECLARATIONS
+EXPECT_MESSAGE
+:1:14: error sizeof applied to incomplete type
 END
