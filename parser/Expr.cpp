@@ -190,8 +190,8 @@ SizeOfExpr::SizeOfExpr(const Type* type, const Location& location)
     : Expr(location), type(type) {
 }
 
-void SizeOfExpr::resolve(ResolutionContext& ctx) {
-    type = type->resolve(ctx);
+void SizeOfExpr::resolve(ResolutionContext& context) {
+    type = type->resolve(context);
 }
 
 Value SizeOfExpr::emit(EmitContext& context) const {

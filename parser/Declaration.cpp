@@ -88,7 +88,7 @@ static bool is_trivially_cyclic(Declarator* declarator, const Type* type) {
     }
 }
 
-const Type* Declarator::resolve(ResolutionContext& ctx) {
+const Type* Declarator::resolve(ResolutionContext& context) {
     struct ResolutionCycle {};
 
     if (status == ResolutionStatus::RESOLVED) return type;
@@ -99,7 +99,7 @@ const Type* Declarator::resolve(ResolutionContext& ctx) {
     Declarator* resolved_declarator{};
     for (auto declarator = this; declarator; declarator = declarator->next) {
         try {
-            declarator->type = declarator->type->resolve(ctx);
+            declarator->type = declarator->type->resolve(context);
             if (!resolved_declarator) resolved_declarator = declarator;
         } catch (ResolutionCycle) {
             if (!is_trivially_cyclic(this, declarator->type)) {
@@ -115,7 +115,7 @@ const Type* Declarator::resolve(ResolutionContext& ctx) {
         swap(resolved_declarator->type, type);
 
         for (auto declarator = next; declarator; declarator = declarator->next) {
-            declarator->type = declarator->type->resolve(ctx);
+            declarator->type = declarator->type->resolve(context);
             compose(declarator);
         }
     } else {

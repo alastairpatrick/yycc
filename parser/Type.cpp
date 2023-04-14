@@ -36,7 +36,7 @@ const Type* Type::promote() const {
     return this;
 }
 
-const Type* Type::resolve(ResolutionContext& ctx) const {
+const Type* Type::resolve(ResolutionContext& context) const {
     return this;
 }
 
@@ -369,8 +369,8 @@ const Type* convert_arithmetic(const Type* left, const Type* right) {
 
 #pragma region PointerType
 
-const Type* PointerType::resolve(ResolutionContext& ctx) const {
-    return base_type->resolve(ctx)->pointer_to();
+const Type* PointerType::resolve(ResolutionContext& context) const {
+    return base_type->resolve(context)->pointer_to();
 }
 
 LLVMTypeRef PointerType::llvm_type() const {
@@ -413,8 +413,8 @@ bool QualifiedType::is_complete() const {
     return base_type->is_complete();
 }
 
-const Type* QualifiedType::resolve(ResolutionContext& ctx) const {
-    return QualifiedType::of(base_type->resolve(ctx), qualifier_flags);
+const Type* QualifiedType::resolve(ResolutionContext& context) const {
+    return QualifiedType::of(base_type->resolve(context), qualifier_flags);
 }
 
 LLVMTypeRef QualifiedType::llvm_type() const {
@@ -450,8 +450,8 @@ const Type* UnqualifiedType::unqualified() const {
     return this;
 }
 
-const Type* UnqualifiedType::resolve(ResolutionContext& ctx) const {
-    return base_type->resolve(ctx)->unqualified();
+const Type* UnqualifiedType::resolve(ResolutionContext& context) const {
+    return base_type->resolve(context)->unqualified();
 }
 
 void UnqualifiedType::print(std::ostream& stream) const {
@@ -488,11 +488,11 @@ bool FunctionType::is_complete() const {
     return false;
 }
 
-const Type* FunctionType::resolve(ResolutionContext& ctx) const {
-    auto resolved_return_type = return_type->resolve(ctx);
+const Type* FunctionType::resolve(ResolutionContext& context) const {
+    auto resolved_return_type = return_type->resolve(context);
     auto resolved_param_types(parameter_types);
     for (auto& param_type : resolved_param_types) {
-        param_type = param_type->resolve(ctx);
+        param_type = param_type->resolve(context);
 
         // C99 6.7.5.3p7
         if (auto array_type = dynamic_cast<const ArrayType*>(param_type->unqualified())) {
@@ -746,7 +746,7 @@ bool TypeOfType::is_complete() const {
     return false;
 }
 
-const Type* TypeOfType::resolve(ResolutionContext& ctx) const {
+const Type* TypeOfType::resolve(ResolutionContext& context) const {
     return expr->get_type();
 }
 
@@ -788,8 +788,8 @@ const Type* TypeDefType::unqualified() const {
     return this;
 }
 
-const Type* TypeDefType::resolve(ResolutionContext& ctx) const {
-    return declarator->resolve(ctx);
+const Type* TypeDefType::resolve(ResolutionContext& context) const {
+    return declarator->resolve(context);
 }
 
 LLVMTypeRef TypeDefType::llvm_type() const {

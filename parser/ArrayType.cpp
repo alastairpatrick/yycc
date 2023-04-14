@@ -16,15 +16,15 @@ bool UnresolvedArrayType::is_complete() const {
     return false;
 }
 
-const Type* UnresolvedArrayType::resolve(ResolutionContext& ctx) const {
-    auto resolved_element_type = element_type->resolve(ctx);
+const Type* UnresolvedArrayType::resolve(ResolutionContext& context) const {
+    auto resolved_element_type = element_type->resolve(context);
     if (!resolved_element_type->is_complete()) {
         message(Severity::ERROR, location) << "incomplete array element type\n";
         resolved_element_type = IntegerType::default_type();
     }
 
     if (size) {
-        size->resolve(ctx);
+        size->resolve(context);
         auto size_constant = size->fold_constant();
         unsigned long long size_int = 1;
         if (!size_constant.is_const_integer()) {

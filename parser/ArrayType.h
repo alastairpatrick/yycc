@@ -16,7 +16,7 @@ struct UnresolvedArrayType: ASTNode, ArrayType {
 
     UnresolvedArrayType(const Type* element_type, Expr* size, const Location& location);
     virtual bool is_complete() const override;
-    virtual const Type* resolve(ResolutionContext& ctx) const override;
+    virtual const Type* resolve(ResolutionContext& context) const override;
     virtual void print(std::ostream& stream) const override;
 };
 
