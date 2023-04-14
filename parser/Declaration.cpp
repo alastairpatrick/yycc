@@ -88,7 +88,7 @@ static bool is_trivially_cyclic(Declarator* declarator, const Type* type) {
     }
 }
 
-const Type* Declarator::resolve(ResolutionContext& context) {
+const Type* Declarator::resolve(ResolveContext& context) {
     struct ResolutionCycle {};
 
     if (status == ResolutionStatus::RESOLVED) return type;

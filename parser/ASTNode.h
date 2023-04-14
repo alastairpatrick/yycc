@@ -14,7 +14,7 @@ struct EnumConstant;
 enum class IdentifierScope;
 enum class StorageClass;
 enum class Linkage;
-struct ResolutionContext;
+struct ResolveContext;
 struct Type;
 struct TypeDef;
 struct Value;
@@ -58,7 +58,7 @@ struct Declarator: ASTNode {
     TypeDef* type_def();
 
     const Type* to_type() const;
-    const Type* resolve(ResolutionContext& context);
+    const Type* resolve(ResolveContext& context);
     void compose(Declarator* other);
     void print(ostream& stream) const;
 };
@@ -67,7 +67,7 @@ struct Statement: ASTNode {
     Location location;
 
     explicit Statement(const Location& location);
-    virtual void resolve(ResolutionContext& context);
+    virtual void resolve(ResolveContext& context);
 };
 
 struct Expr: Statement {

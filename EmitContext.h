@@ -1,7 +1,7 @@
 #ifndef EMIT_CONTEXT_H
 #define EMIT_CONTEXT_H
 
-struct ResolutionContext;
+struct ResolveContext;
 
 enum class EmitOutcome {
     TYPE,

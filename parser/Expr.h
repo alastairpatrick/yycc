@@ -63,7 +63,7 @@ struct SizeOfExpr: Expr {
     const Type* type;
 
     SizeOfExpr(const Type* type, const Location& location);
-    virtual void resolve(ResolutionContext& context) override;
+    virtual void resolve(ResolveContext& context) override;
     virtual Value emit(EmitContext& context) const override;
     virtual void print(ostream& stream) const override;
 };

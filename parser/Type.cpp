@@ -36,7 +36,7 @@ const Type* Type::promote() const {
     return this;
 }
 
-const Type* Type::resolve(ResolutionContext& context) const {
+const Type* Type::resolve(ResolveContext& context) const {
     return this;
 }
 
@@ -369,7 +369,7 @@ const Type* convert_arithmetic(const Type* left, const Type* right) {
 
 #pragma region PointerType
 
-const Type* PointerType::resolve(ResolutionContext& context) const {
+const Type* PointerType::resolve(ResolveContext& context) const {
     return base_type->resolve(context)->pointer_to();
 }
 
@@ -413,7 +413,7 @@ bool QualifiedType::is_complete() const {
     return base_type->is_complete();
 }
 
-const Type* QualifiedType::resolve(ResolutionContext& context) const {
+const Type* QualifiedType::resolve(ResolveContext& context) const {
     return QualifiedType::of(base_type->resolve(context), qualifier_flags);
 }
 
@@ -450,7 +450,7 @@ const Type* UnqualifiedType::unqualified() const {
     return this;
 }
 
-const Type* UnqualifiedType::resolve(ResolutionContext& context) const {
+const Type* UnqualifiedType::resolve(ResolveContext& context) const {
     return base_type->resolve(context)->unqualified();
 }
 
@@ -488,7 +488,7 @@ bool FunctionType::is_complete() const {
     return false;
 }
 
-const Type* FunctionType::resolve(ResolutionContext& context) const {
+const Type* FunctionType::resolve(ResolveContext& context) const {
     auto resolved_return_type = return_type->resolve(context);
     auto resolved_param_types(parameter_types);
     for (auto& param_type : resolved_param_types) {
@@ -547,7 +547,7 @@ bool StructuredType::is_complete() const {
     return complete;
 }
 
-const Type* StructuredType::resolve(ResolutionContext& context) const {
+const Type* StructuredType::resolve(ResolveContext& context) const {
     for (auto member: members) {
         if (member->status == ResolutionStatus::UNRESOLVED) context.todo.insert(member);
     }
@@ -746,7 +746,7 @@ bool TypeOfType::is_complete() const {
     return false;
 }
 
-const Type* TypeOfType::resolve(ResolutionContext& context) const {
+const Type* TypeOfType::resolve(ResolveContext& context) const {
     return expr->get_type();
 }
 
@@ -788,7 +788,7 @@ const Type* TypeDefType::unqualified() const {
     return this;
 }
 
-const Type* TypeDefType::resolve(ResolutionContext& context) const {
+const Type* TypeDefType::resolve(ResolveContext& context) const {
     return declarator->resolve(context);
 }
 

@@ -33,7 +33,7 @@ struct Type: virtual Printable {
 
     virtual const Type* promote() const;
 
-    virtual const Type* resolve(ResolutionContext& context) const;
+    virtual const Type* resolve(ResolveContext& context) const;
     virtual const Type* compose_type_def_types(const Type* other) const;
 
     virtual LLVMValueRef convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const;
@@ -123,7 +123,7 @@ const Type* convert_arithmetic(const Type* left, const Type* right);
 struct PointerType: Type {
     const Type* const base_type;
 
-    virtual const Type* resolve(ResolutionContext& context) const override;
+    virtual const Type* resolve(ResolveContext& context) const override;
 
     virtual LLVMTypeRef llvm_type() const override;
 
@@ -150,7 +150,7 @@ struct QualifiedType: Type {
     virtual const Type* unqualified() const override;
     virtual bool is_complete() const override;
 
-    virtual const Type* resolve(ResolutionContext& context) const override;
+    virtual const Type* resolve(ResolveContext& context) const override;
 
     virtual LLVMTypeRef llvm_type() const override;
 
@@ -169,7 +169,7 @@ struct UnqualifiedType: ASTNode, Type {
     explicit UnqualifiedType(const Type* base_type);
     virtual unsigned qualifiers() const override;
     virtual const Type* unqualified() const override;
-    virtual const Type* resolve(ResolutionContext& context) const override;
+    virtual const Type* resolve(ResolveContext& context) const override;
     virtual void print(std::ostream& stream) const override;
 };
 
@@ -181,7 +181,7 @@ struct FunctionType: Type {
     const bool variadic;
 
     virtual bool is_complete() const override;
-    virtual const Type* resolve(ResolutionContext& context) const override;
+    virtual const Type* resolve(ResolveContext& context) const override;
 
     virtual LLVMTypeRef llvm_type() const override;
 
@@ -204,7 +204,7 @@ struct StructuredType: Type {
     const Declarator* lookup_member(const Identifier& identifier) const;
 
     virtual bool is_complete() const override;
-    virtual const Type* resolve(ResolutionContext& context) const override;
+    virtual const Type* resolve(ResolveContext& context) const override;
     virtual LLVMTypeRef llvm_type() const override;
     virtual void print(std::ostream& stream) const override;
 };
@@ -244,7 +244,7 @@ struct TypeOfType: ASTNode, Type {
 
     TypeOfType(const Expr* expr, const Location& location);
     virtual bool is_complete() const override;
-    virtual const Type* resolve(ResolutionContext& context) const override;
+    virtual const Type* resolve(ResolveContext& context) const override;
     virtual void print(std::ostream& stream) const override;
 };
 
@@ -268,7 +268,7 @@ struct TypeDefType: Type {
     Declarator* const declarator;
 
     virtual const Type* unqualified() const override;
-    virtual const Type* resolve(ResolutionContext& context) const override;
+    virtual const Type* resolve(ResolveContext& context) const override;
     virtual LLVMTypeRef llvm_type() const override;
     virtual void print(ostream& stream) const override;
 };

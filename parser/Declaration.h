@@ -33,12 +33,12 @@ enum class StorageDuration {
 };
 
 struct FunctionType;
-struct ResolutionContext;
+struct ResolveContext;
 
 ostream& operator<<(ostream& stream, Linkage linkage);
 ostream& operator<<(ostream& stream, StorageDuration duration);
 
-struct ResolutionContext {
+struct ResolveContext {
     unordered_set<Declarator*> todo;
 };
 

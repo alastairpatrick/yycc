@@ -190,7 +190,7 @@ SizeOfExpr::SizeOfExpr(const Type* type, const Location& location)
     : Expr(location), type(type) {
 }
 
-void SizeOfExpr::resolve(ResolutionContext& context) {
+void SizeOfExpr::resolve(ResolveContext& context) {
     type = type->resolve(context);
 }
 

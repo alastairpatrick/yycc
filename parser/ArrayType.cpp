@@ -16,7 +16,7 @@ bool UnresolvedArrayType::is_complete() const {
     return false;
 }
 
-const Type* UnresolvedArrayType::resolve(ResolutionContext& context) const {
+const Type* UnresolvedArrayType::resolve(ResolveContext& context) const {
     auto resolved_element_type = element_type->resolve(context);
     if (!resolved_element_type->is_complete()) {
         message(Severity::ERROR, location) << "incomplete array element type\n";

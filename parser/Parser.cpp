@@ -632,7 +632,7 @@ void Parser::parse() {
     }
 
     if (!preparse) {
-        ResolutionContext context;
+        ResolveContext context;
         for (auto p: identifiers.scopes.front().declarators) {
             context.todo.insert(p.second);
         }
