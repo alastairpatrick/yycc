@@ -2,7 +2,7 @@
 #include "EmitContext.h"
 #include "TranslationUnitContext.h"
 
-Value::Value(LLVMValueRef value, const Type* type)
+Value::Value(const Type* type, LLVMValueRef value)
     : value(value), type(type) {
 }
 
@@ -48,7 +48,7 @@ Value ConditionExpr::emit(EmitContext& context) const {
     auto else_type = else_value.type;
     auto result_type = convert_arithmetic(then_value.type, else_value.type);
     
-    if (context.outcome == EmitOutcome::TYPE) return Value(nullptr, result_type);
+    if (context.outcome == EmitOutcome::TYPE) return Value(result_type);
 
     auto builder = context.builder;
 
@@ -75,7 +75,7 @@ Value ConditionExpr::emit(EmitContext& context) const {
     auto phi_value = LLVMBuildPhi(builder, result_type->llvm_type(), "cond");
     LLVMAddIncoming(phi_value, alt_values, alt_blocks, 2);
 
-    return Value(phi_value, result_type);
+    return Value(result_type, phi_value);
 }
 
 void ConditionExpr::print(ostream& stream) const {
@@ -90,7 +90,7 @@ EntityExpr::EntityExpr(const Declarator* declarator, const Location& location)
 Value EntityExpr::emit(EmitContext& context) const {
     const Type* result_type = declarator->type;
 
-    if (context.outcome == EmitOutcome::TYPE) return Value(nullptr, result_type);
+    if (context.outcome == EmitOutcome::TYPE) return Value(result_type);
 
     // TODO
     assert(false);
@@ -112,7 +112,7 @@ Value BinaryExpr::emit(EmitContext& context) const {
     auto right_value = right->emit(context);
     auto result_type = convert_arithmetic(left_value.type, right_value.type);
 
-    if (context.outcome == EmitOutcome::TYPE) return Value(nullptr, result_type);
+    if (context.outcome == EmitOutcome::TYPE) return Value(result_type);
 
     auto builder = context.builder;
 
@@ -124,16 +124,16 @@ Value BinaryExpr::emit(EmitContext& context) const {
     if (auto result_as_int = dynamic_cast<const IntegerType*>(result_type)) {
         switch (op) {
           case BinaryOp::ADD:
-            return Value(LLVMBuildAdd(builder, left_temp, right_temp, "add"), result_type);
+            return Value(result_type, LLVMBuildAdd(builder, left_temp, right_temp, "add"));
           case BinaryOp::SUB:
-            return Value(LLVMBuildSub(builder, left_temp, right_temp, "sub"), result_type);
+            return Value(result_type, LLVMBuildSub(builder, left_temp, right_temp, "sub"));
           case BinaryOp::MUL:
-            return Value(LLVMBuildMul(builder, left_temp, right_temp, "mul"), result_type);
+            return Value(result_type, LLVMBuildMul(builder, left_temp, right_temp, "mul"));
           case BinaryOp::DIV:
             if (result_as_int->is_signed()) {
-                return Value(LLVMBuildSDiv(builder, left_temp, right_temp, "div"), result_type);
+                return Value(result_type, LLVMBuildSDiv(builder, left_temp, right_temp, "div"));
             } else {
-                return Value(LLVMBuildUDiv(builder, left_temp, right_temp, "div"), result_type);
+                return Value(result_type, LLVMBuildUDiv(builder, left_temp, right_temp, "div"));
             }
         }
     }
@@ -141,13 +141,13 @@ Value BinaryExpr::emit(EmitContext& context) const {
     if (auto result_as_float = dynamic_cast<const FloatingPointType*>(result_type)) {
         switch (op) {
           case BinaryOp::ADD:
-            return Value(LLVMBuildFAdd(builder, left_temp, right_temp, "fadd"), result_type);
+            return Value(result_type, LLVMBuildFAdd(builder, left_temp, right_temp, "fadd"));
           case BinaryOp::SUB:
-            return Value(LLVMBuildFSub(builder, left_temp, right_temp, "fsub"), result_type);
+            return Value(result_type, LLVMBuildFSub(builder, left_temp, right_temp, "fsub"));
           case BinaryOp::MUL:
-            return Value(LLVMBuildFMul(builder, left_temp, right_temp, "fmul"), result_type);
+            return Value(result_type, LLVMBuildFMul(builder, left_temp, right_temp, "fmul"));
           case BinaryOp::DIV:
-            return Value(LLVMBuildFDiv(builder, left_temp, right_temp, "fdiv"), result_type);
+            return Value(result_type, LLVMBuildFDiv(builder, left_temp, right_temp, "fdiv"));
         }
     }
 
@@ -196,10 +196,10 @@ void SizeOfExpr::resolve(ResolutionContext& context) {
 
 Value SizeOfExpr::emit(EmitContext& context) const {
     auto result_type = IntegerType::uintptr_type();
-    if (context.outcome == EmitOutcome::TYPE) return Value(nullptr, result_type);
+    if (context.outcome == EmitOutcome::TYPE) return Value(result_type);
 
     auto size_int = LLVMStoreSizeOfType(context.target_data, type->llvm_type());
-    return Value(LLVMConstInt(result_type->llvm_type(), size_int, false), result_type);
+    return Value(result_type, LLVMConstInt(result_type->llvm_type(), size_int, false));
 }
 
 void SizeOfExpr::print(ostream& stream) const {
@@ -225,7 +225,7 @@ DefaultExpr::DefaultExpr(const Type* type, const Location& location)
 
 Value DefaultExpr::emit(EmitContext& context) const {
     // TODO
-    return Value(nullptr, type);
+    return Value(type);
 }
 
 void DefaultExpr::print(ostream& stream) const {

@@ -87,7 +87,7 @@ IntegerConstant::IntegerConstant(LLVMValueRef value, const IntegerType* type, co
 }
 
 Value IntegerConstant::emit(EmitContext& context) const {
-    return Value(value, type);
+    return Value(type, value);
 }
 
 void IntegerConstant::print(ostream& stream) const {
@@ -121,7 +121,7 @@ FloatingPointConstant::FloatingPointConstant(LLVMValueRef value, const FloatingP
 }
 
 Value FloatingPointConstant::emit(EmitContext& context) const {
-    return Value(value, type);
+    return Value(type, value);
 }
 
 void FloatingPointConstant::print(ostream& stream) const {
