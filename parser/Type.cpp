@@ -84,6 +84,11 @@ const Type* Type::compose(const Type* other) const {
     return nullptr;
 }
 
+LLVMTypeRef CachedType::llvm_type() const {
+    if (cached_llvm_type) return cached_llvm_type;
+    return cached_llvm_type = cache_llvm_type();
+}
+
 const PointerType* Type::pointer_to() const {
     return TranslationUnitContext::it->type.get_pointer_type(this);
 }
@@ -373,9 +378,8 @@ const Type* PointerType::resolve(ResolveContext& context) const {
     return base_type->resolve(context)->pointer_to();
 }
 
-LLVMTypeRef PointerType::llvm_type() const {
-    if (!llvm) llvm = LLVMPointerType(base_type->llvm_type(), 0);
-    return llvm;
+LLVMTypeRef PointerType::cache_llvm_type() const {
+    return LLVMPointerType(base_type->llvm_type(), 0);
 }
 
 void PointerType::print(std::ostream& stream) const {
@@ -508,7 +512,7 @@ const Type* FunctionType::resolve(ResolveContext& context) const {
     return FunctionType::of(resolved_return_type, resolved_param_types, variadic);
 }
 
-LLVMTypeRef FunctionType::llvm_type() const {
+LLVMTypeRef FunctionType::cache_llvm_type() const {
     if (llvm) return llvm;
 
     vector<LLVMTypeRef> param_llvm;
@@ -619,7 +623,7 @@ const Type* StructType::compose_type_def_types(const Type* o) const {
     return complete ? this : other;
 }
 
-LLVMTypeRef StructType::llvm_type() const {
+LLVMTypeRef StructType::cache_llvm_type() const {
     vector<LLVMTypeRef> member_types;
     member_types.reserve(members.size());
     for (auto member: members) {
@@ -671,7 +675,7 @@ const Type* UnionType::compose_type_def_types(const Type* o) const {
     return complete ? this : other;
 }
 
-LLVMTypeRef UnionType::llvm_type() const {
+LLVMTypeRef UnionType::cache_llvm_type() const {
     assert(false);
     return nullptr;
 }

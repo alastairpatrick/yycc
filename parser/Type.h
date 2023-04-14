@@ -44,6 +44,14 @@ struct Type: virtual Printable {
 const Type* compose_types(const Type* a, const Type* b);
 const Type* compose_type_def_types(const Type* a, const Type* b);
 
+struct CachedType: Type {
+    mutable LLVMTypeRef cached_llvm_type{};
+    virtual LLVMTypeRef llvm_type() const override;
+
+private:
+    virtual LLVMTypeRef cache_llvm_type() const = 0;
+};
+
 struct VoidType: Type {
     static const VoidType it;
     virtual LLVMTypeRef llvm_type() const override;
@@ -120,19 +128,16 @@ private:
 
 const Type* convert_arithmetic(const Type* left, const Type* right);
 
-struct PointerType: Type {
+struct PointerType: CachedType {
     const Type* const base_type;
 
     virtual const Type* resolve(ResolveContext& context) const override;
-
-    virtual LLVMTypeRef llvm_type() const override;
-
     virtual void print(std::ostream& stream) const override;
 
 private:
     friend class TypeContext;
-    mutable LLVMTypeRef llvm = nullptr;
     explicit PointerType(const Type* base_type);
+    virtual LLVMTypeRef cache_llvm_type() const override;
 };
 
 enum TypeQualifiers {
@@ -173,7 +178,7 @@ struct UnqualifiedType: ASTNode, Type {
     virtual void print(std::ostream& stream) const override;
 };
 
-struct FunctionType: Type {
+struct FunctionType: CachedType {
     static const FunctionType* of(const Type* return_type, vector<const Type*> parameter_types, bool variadic);
 
     const Type* const return_type;
@@ -182,18 +187,16 @@ struct FunctionType: Type {
 
     virtual bool is_complete() const override;
     virtual const Type* resolve(ResolveContext& context) const override;
-
-    virtual LLVMTypeRef llvm_type() const override;
-
     virtual void print(std::ostream& stream) const override;
     
 private:
     friend class TypeContext;
     mutable LLVMTypeRef llvm = nullptr;
     FunctionType(const Type* return_type, std::vector<const Type*> parameter_types, bool variadic);
+    virtual LLVMTypeRef cache_llvm_type() const override;
 };
 
-struct StructuredType: Type {
+struct StructuredType: CachedType {
     StructuredType(const Location& location);
 
     const Location location;
@@ -212,15 +215,19 @@ struct StructuredType: Type {
 struct StructType: StructuredType {
     explicit StructType(const Location& location);
     virtual const Type* compose_type_def_types(const Type* other) const override;
-    virtual LLVMTypeRef llvm_type() const override;
     virtual void print(std::ostream& stream) const override;
+
+private:
+    virtual LLVMTypeRef cache_llvm_type() const override;
 };
 
 struct UnionType: StructuredType {
     explicit UnionType(const Location& location);
     virtual const Type* compose_type_def_types(const Type* other) const override;
-    virtual LLVMTypeRef llvm_type() const override;
     virtual void print(std::ostream& stream) const override;
+
+private:
+    virtual LLVMTypeRef cache_llvm_type() const override;
 };
 
 struct EnumType: Type {
