@@ -3,7 +3,6 @@
 #include "ArrayType.h"
 #include "Constant.h"
 #include "Declaration.h"
-#include "EmitContext.h"
 #include "Expr.h"
 #include "IdentifierMap.h"
 #include "InternedString.h"
@@ -44,7 +43,7 @@ const Type* Type::compose_type_def_types(const Type* other) const {
     return nullptr;
 }
 
-LLVMValueRef Type::convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const {
+LLVMValueRef Type::convert_to_type(Emitter& context, LLVMValueRef value, const Type* to_type) const {
     if (to_type == this) return value;
 
     assert(false);  // TODO
@@ -209,7 +208,7 @@ VisitTypeOutput IntegerType::accept(Visitor& visitor, const VisitTypeInput& inpu
     return visitor.visit(this, input);
 }
 
-LLVMValueRef IntegerType::convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const {
+LLVMValueRef IntegerType::convert_to_type(Emitter& context, LLVMValueRef value, const Type* to_type) const {
     auto builder = context.builder;
 
     if (to_type == this) return value;
@@ -299,7 +298,7 @@ VisitTypeOutput FloatingPointType::accept(Visitor& visitor, const VisitTypeInput
     return visitor.visit(this, input);
 }
 
-LLVMValueRef FloatingPointType::convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const {
+LLVMValueRef FloatingPointType::convert_to_type(Emitter& context, LLVMValueRef value, const Type* to_type) const {
     auto builder = context.builder;
 
     if (to_type == this) return value;

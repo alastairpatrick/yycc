@@ -1,9 +1,9 @@
 #ifndef COMPILE_CONTEXT_H
 #define COMPILE_CONTEXT_H
 
-#include "EmitContext.h"
-#include "parser/TypeContext.h"
 #include "InternedString.h"
+#include "parser/TypeContext.h"
+#include "visitor/Emitter.h"
 
 struct ASTNode;
 struct Printable;
@@ -29,8 +29,8 @@ struct TranslationUnitContext {
 
     ASTNode* ast_nodes{};
 
-    EmitContext type_emit_context;
-    EmitContext fold_emit_context;
+    Emitter type_emitter;
+    Emitter fold_emitter;
 };
 
 #endif

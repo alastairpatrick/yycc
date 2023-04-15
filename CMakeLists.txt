@@ -36,6 +36,7 @@ add_library(lang_lib STATIC
 
     "preprocessor/Preprocessor.cpp"
     
+    "visitor/Emitter.cpp"
     "visitor/ResolvePass.cpp"
     "visitor/Visitor.cpp"
 

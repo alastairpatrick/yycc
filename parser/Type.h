@@ -7,7 +7,7 @@
 #include "lexer/Token.h"
 #include "Printable.h"
 
-struct EmitContext;
+struct Emitter;
 struct Declaration;
 struct Declarator;
 struct EnumConstant;
@@ -41,7 +41,7 @@ struct Type: virtual Printable {
 
     virtual const Type* compose_type_def_types(const Type* other) const;
 
-    virtual LLVMValueRef convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const;
+    virtual LLVMValueRef convert_to_type(Emitter& context, LLVMValueRef value, const Type* to_type) const;
 
     virtual LLVMTypeRef llvm_type() const;
 };
@@ -99,7 +99,7 @@ struct IntegerType: Type {
     const IntegerSize size;
 
     virtual const Type* promote() const override;
-    virtual LLVMValueRef convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const override;
+    virtual LLVMValueRef convert_to_type(Emitter& context, LLVMValueRef value, const Type* to_type) const override;
 
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;
@@ -124,7 +124,7 @@ struct FloatingPointType: Type {
 
     const FloatingPointSize size;
 
-    virtual LLVMValueRef convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const override;
+    virtual LLVMValueRef convert_to_type(Emitter& context, LLVMValueRef value, const Type* to_type) const override;
 
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;

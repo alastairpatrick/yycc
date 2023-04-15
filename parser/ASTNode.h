@@ -6,7 +6,6 @@
 #include "lexer/Location.h"
 #include "Printable.h"
 
-struct EmitContext;
 struct Declaration;
 struct DeclaratorDelegate;
 struct Entity;
@@ -78,7 +77,6 @@ struct Expr: Statement {
 
     const Type* get_type() const;
     Value fold() const;
-    virtual Value emit(EmitContext& context) const;
 };
 
 

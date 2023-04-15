@@ -13,10 +13,10 @@ TranslationUnitContext::TranslationUnitContext(ostream& message_stream): message
 
     interned_views.insert(*empty_interned_string);
 
-    type_emit_context.outcome = EmitOutcome::TYPE;
+    type_emitter.outcome = EmitOutcome::TYPE;
 
-    fold_emit_context.outcome = EmitOutcome::FOLD;
-    fold_emit_context.builder = LLVMCreateBuilder();
+    fold_emitter.outcome = EmitOutcome::FOLD;
+    fold_emitter.builder = LLVMCreateBuilder();
 }
 
 TranslationUnitContext::~TranslationUnitContext() {

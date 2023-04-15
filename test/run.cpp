@@ -1,6 +1,5 @@
 #include "nlohmann/json.hpp"
 
-#include "EmitContext.h"
 #include "FileCache.h"
 #include "parser/ASTNode.h"
 #include "parser/Expr.h"
@@ -8,6 +7,7 @@
 #include "parser/Parser.h"
 #include "parser/Statement.h"
 #include "TranslationUnitContext.h"
+#include "visitor/Emitter.h"
 
 using json = nlohmann::json;
 
@@ -99,7 +99,7 @@ ASTNodeVector parse_declarations(IdentifierMap& identifiers, const Input& input)
 
 void sweep(ostream& stream, const File& file);
 
-static void init_emit_context(EmitContext& context) {
+static void init_emitter(Emitter& context) {
     extern LLVMTargetRef g_target;
     extern LLVMTargetMachineRef g_target_machine;
     extern LLVMTargetDataRef g_target_data;
@@ -114,8 +114,8 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
         stringstream message_stream;
 
         TranslationUnitContext tu_context(message_stream);
-        init_emit_context(tu_context.type_emit_context);
-        init_emit_context(tu_context.fold_emit_context);
+        init_emitter(tu_context.type_emitter);
+        init_emitter(tu_context.fold_emitter);
 
         IdentifierMap identifiers(test_type == TestType::PREPARSE);
 

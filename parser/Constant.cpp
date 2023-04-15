@@ -91,10 +91,6 @@ VisitStatementOutput IntegerConstant::accept(Visitor& visitor, const VisitStatem
     return visitor.visit(this, input);
 }
 
-Value IntegerConstant::emit(EmitContext& context) const {
-    return Value(type, value);
-}
-
 void IntegerConstant::print(ostream& stream) const {
     auto int_value = LLVMConstIntGetZExtValue(value);
     if (type == IntegerType::of(IntegerSignedness::SIGNED, IntegerSize::INT)) {
@@ -129,10 +125,6 @@ VisitStatementOutput FloatingPointConstant::accept(Visitor& visitor, const Visit
     return visitor.visit(this, input);
 }
 
-Value FloatingPointConstant::emit(EmitContext& context) const {
-    return Value(type, value);
-}
-
 void FloatingPointConstant::print(ostream& stream) const {
     LLVMBool loses_info;
     double float_value = LLVMConstRealGetDouble(value, &loses_info);
@@ -162,9 +154,4 @@ VisitStatementOutput StringConstant::accept(Visitor& visitor, const VisitStateme
 void StringConstant::print(ostream& stream) const {
     string t(utf8_literal);
     stream << "[\"S\", " << char_type << ", " << json(t) << ']';
-}
-
-Value StringConstant::emit(EmitContext& context) const {
-    assert(false);
-    return Value();
 }
