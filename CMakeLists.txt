@@ -36,6 +36,8 @@ add_library(lang_lib STATIC
 
     "preprocessor/Preprocessor.cpp"
     
+    "visitor/ResolvePass.cpp"
+    "visitor/Visitor.cpp"
 
     "Sweep.cpp"
     "TextStream.cpp"

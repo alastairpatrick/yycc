@@ -16,6 +16,9 @@ struct IdentifierMap;
 enum class IdentifierScope;
 struct PointerType;
 struct TypeDef;
+struct Visitor;
+struct VisitTypeInput;
+struct VisitTypeOutput;
 
 struct Type: virtual Printable {
     Type() = default;
@@ -30,11 +33,13 @@ struct Type: virtual Printable {
     virtual bool is_complete() const;
     virtual bool has_tag(const Declarator* declarator) const;
 
+    virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const = 0;
+
     virtual const Type* compose(const Type* other) const;
 
     virtual const Type* promote() const;
 
-    virtual const Type* resolve(ResolveContext& context) const;
+    virtual const Type* resolve(ResolvePass& context) const;
     virtual const Type* compose_type_def_types(const Type* other) const;
 
     virtual LLVMValueRef convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const;
@@ -55,6 +60,7 @@ private:
 
 struct VoidType: Type {
     static const VoidType it;
+    virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;
     virtual void print(std::ostream& stream) const override;
 };
@@ -62,6 +68,7 @@ struct VoidType: Type {
 // UniversalType is compatible with all types.
 struct UniversalType: Type {
     static const UniversalType it;
+    virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;
     virtual void print(std::ostream& stream) const override;
 };
@@ -95,6 +102,7 @@ struct IntegerType: Type {
     virtual const Type* promote() const override;
     virtual LLVMValueRef convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const override;
 
+    virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;
 
     virtual void print(std::ostream& stream) const override;
@@ -119,6 +127,7 @@ struct FloatingPointType: Type {
 
     virtual LLVMValueRef convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const override;
 
+    virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;
 
     virtual void print(std::ostream& stream) const override;
@@ -132,7 +141,8 @@ const Type* convert_arithmetic(const Type* left, const Type* right);
 struct PointerType: CachedType {
     const Type* const base_type;
 
-    virtual const Type* resolve(ResolveContext& context) const override;
+    virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
+    virtual const Type* resolve(ResolvePass& context) const override;
     virtual void print(std::ostream& stream) const override;
 
 private:
@@ -156,7 +166,8 @@ struct QualifiedType: Type {
     virtual const Type* unqualified() const override;
     virtual bool is_complete() const override;
 
-    virtual const Type* resolve(ResolveContext& context) const override;
+    virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
+    virtual const Type* resolve(ResolvePass& context) const override;
 
     virtual LLVMTypeRef llvm_type() const override;
 
@@ -175,7 +186,8 @@ struct UnqualifiedType: ASTNode, Type {
     explicit UnqualifiedType(const Type* base_type);
     virtual unsigned qualifiers() const override;
     virtual const Type* unqualified() const override;
-    virtual const Type* resolve(ResolveContext& context) const override;
+    virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
+    virtual const Type* resolve(ResolvePass& context) const override;
     virtual void print(std::ostream& stream) const override;
 };
 
@@ -187,7 +199,8 @@ struct FunctionType: CachedType {
     const bool variadic;
 
     virtual bool is_complete() const override;
-    virtual const Type* resolve(ResolveContext& context) const override;
+    virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
+    virtual const Type* resolve(ResolvePass& context) const override;
     virtual void print(std::ostream& stream) const override;
     
 private:
@@ -210,12 +223,13 @@ struct StructuredType: CachedType {
 
     virtual bool is_complete() const override;
     virtual bool has_tag(const Declarator* declarator) const override;
-    virtual const Type* resolve(ResolveContext& context) const override;
+    virtual const Type* resolve(ResolvePass& context) const override;
     virtual void print(std::ostream& stream) const override;
 };
 
 struct StructType: StructuredType {
     explicit StructType(const Location& location);
+    virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual const Type* compose_type_def_types(const Type* other) const override;
     virtual void print(std::ostream& stream) const override;
 
@@ -225,6 +239,7 @@ private:
 
 struct UnionType: StructuredType {
     explicit UnionType(const Location& location);
+    virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual const Type* compose_type_def_types(const Type* other) const override;
     virtual void print(std::ostream& stream) const override;
 
@@ -247,7 +262,8 @@ struct EnumType: Type {
 
     virtual bool is_complete() const override;
     virtual bool has_tag(const Declarator* declarator) const override;
-    virtual const Type* resolve(ResolveContext& context) const override;
+    virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
+    virtual const Type* resolve(ResolvePass& context) const override;
     virtual LLVMTypeRef llvm_type() const override;
     virtual const Type* compose_type_def_types(const Type* other) const override;
     virtual void print(std::ostream& stream) const override;
@@ -259,7 +275,8 @@ struct TypeOfType: ASTNode, Type {
 
     TypeOfType(Expr* expr, const Location& location);
     virtual bool is_complete() const override;
-    virtual const Type* resolve(ResolveContext& context) const override;
+    virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
+    virtual const Type* resolve(ResolvePass& context) const override;
     virtual void print(std::ostream& stream) const override;
 };
 
@@ -269,6 +286,7 @@ struct UnboundType: Type {
 
     const Identifier identifier;
 
+    virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;
     virtual void print(ostream& stream) const override;
 
@@ -283,7 +301,8 @@ struct TypeDefType: Type {
     Declarator* const declarator;
 
     virtual const Type* unqualified() const override;
-    virtual const Type* resolve(ResolveContext& context) const override;
+    virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
+    virtual const Type* resolve(ResolvePass& context) const override;
     virtual LLVMTypeRef llvm_type() const override;
     virtual void print(ostream& stream) const override;
 };

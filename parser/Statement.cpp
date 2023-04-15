@@ -3,7 +3,7 @@
 Statement::Statement(const Location& location): location(location) {
 }
 
-void Statement::resolve(ResolveContext& context) {
+void Statement::resolve(ResolvePass& context) {
 }
 
 CompoundStatement::CompoundStatement(ASTNodeVector&& items, const Location& location)

@@ -4,6 +4,7 @@
 #include "IdentifierMap.h"
 #include "Message.h"
 #include "Type.h"
+#include "visitor/Visitor.h"
 
 ostream& operator<<(ostream& stream, Linkage linkage) {
     switch (linkage) {
@@ -76,90 +77,8 @@ const Type* Declarator::to_type() const {
     return delegate->to_type();
 }
 
-static bool is_trivially_cyclic(Declarator* declarator, const Type* type) {
-    for (;;) {
-        if (auto qt = dynamic_cast<const QualifiedType*>(type)) {
-            type = qt->base_type;
-        } else if (auto tdt = dynamic_cast<const TypeDefType*>(type)) {
-            return tdt->declarator == declarator;
-        } else {
-            return false;
-        }
-    }
-}
-
-const Type* Declarator::resolve(ResolveContext& context) {
-    struct ResolutionCycle {};
-
-    if (status == ResolutionStatus::RESOLVED) return type;
-    if (status == ResolutionStatus::RESOLVING) throw ResolutionCycle();
-
-    status = ResolutionStatus::RESOLVING;
-
-    Declarator* acyclic_declarator{};
-    for (auto declarator = this; declarator; declarator = declarator->next) {
-        try {
-            if (declarator->type->has_tag(declarator) && declarator->type->is_complete()) {
-                swap(declarator->type, type);
-                acyclic_declarator = this;
-                status = ResolutionStatus::RESOLVED;
-                type = type->resolve(context);
-                break;
-            }
-
-            declarator->type = declarator->type->resolve(context);
-            if (!acyclic_declarator || (declarator->type->is_complete() && !acyclic_declarator->type->is_complete())) {
-                acyclic_declarator = declarator;
-            }
-        } catch (ResolutionCycle) {
-            if (!is_trivially_cyclic(this, declarator->type)) {
-                message(Severity::ERROR, declarator->location) << "recursive definition of '" << declarator->identifier << "'\n";
-                pause_messages();
-            }
-        }
-    }
-
-    if (type_def()) status = ResolutionStatus::RESOLVED;
-
-    if (acyclic_declarator) {
-        swap(acyclic_declarator->type, type);
-        assert(!dynamic_cast<const TypeDefType*>(type));
-
-        for (auto declarator = next; declarator; declarator = declarator->next) {
-            try {
-                declarator->type = declarator->type->resolve(context);
-            } catch (ResolutionCycle) {
-                message(Severity::ERROR, declarator->location) << "recursive definition of '" << declarator->identifier << "'\n";
-                pause_messages();
-            }
-            compose(declarator);
-        }
-    } else {
-        auto declarator = this;
-        while (declarator->next) {
-            declarator = declarator->next;
-        }
-        type = IntegerType::default_type();
-        message(Severity::ERROR, declarator->location) << "'" << declarator->identifier << "' undeclared\n";
-    }
-
-    next = nullptr;
-    status = ResolutionStatus::RESOLVED;
-
-    return type;
-}
-
-void Declarator::compose(Declarator* other) {
-    if (other->delegate && delegate && typeid(*other->delegate) != typeid(*delegate)) {
-        message(Severity::ERROR, other->location) << "redeclaration of '" << identifier << "' with different type\n";
-        message(Severity::INFO, location) << "see prior declaration\n";
-    }
-
-    if (delegate) {
-        delegate->compose(other);
-    } else {
-        delegate = other->delegate;
-    }
+VisitDeclaratorOutput Declarator::accept(Visitor& visitor, const VisitDeclaratorInput& input) {
+    return delegate->accept(visitor, input);
 }
 
 void Declarator::print(ostream& stream) const {
@@ -233,40 +152,8 @@ Linkage Entity::linkage() const {
     }
 }
 
-void Entity::compose(Declarator* other) {
-    auto composite_type = compose_types(declarator->type, other->type);
-    if (composite_type) {
-        declarator->type = composite_type;
-    } else {
-        message(Severity::ERROR, other->location) << "redeclaration of '" << declarator->identifier << "' with incompatible type\n";
-        message(Severity::INFO, declarator->location) << "see prior declaration\n";
-    }
-
-    auto other_entity = other->entity();
-    if (!other_entity) return;
-
-    if (other_entity->initializer) {
-        if (initializer) {
-            message(Severity::ERROR, other->location) << "redefinition of '" << declarator->identifier << "'\n";
-            message(Severity::INFO, declarator->location) << "see prior definition\n";
-        } else {
-            initializer = other_entity->initializer;
-        }
-    }
-    
-    if (other_entity->body) {
-        if (body) {
-            message(Severity::ERROR, other->location) << "redefinition of '" << declarator->identifier << "'\n";
-            message(Severity::INFO, declarator->location) << "see prior definition\n";
-        } else {
-            body = other_entity->body;
-            params = move(other_entity->params);
-        }
-    }
-  
-    inline_definition = other_entity->inline_definition && inline_definition;
-
-    assert(other_entity->storage_duration() == storage_duration());
+VisitDeclaratorOutput Entity::accept(Visitor& visitor, const VisitDeclaratorInput& input) {
+    return visitor.visit(declarator, this, input);
 }
 
 void Entity::print(ostream& stream) const {
@@ -312,15 +199,8 @@ const Type* TypeDef::to_type() const {
     return &type_def_type;
 }
 
-void TypeDef::compose(Declarator* other) {
-    auto composed = compose_type_def_types(declarator->type, other->type);
-    if (!composed) {
-        message(Severity::ERROR, other->location) << "redefinition of '" << declarator->identifier << "' with different type\n";
-        message(Severity::INFO, declarator->location) << "see other definition\n";
-        return;
-    }
-
-    assert(declarator->type == composed);
+VisitDeclaratorOutput TypeDef::accept(Visitor& visitor, const VisitDeclaratorInput& input) {
+    return visitor.visit(declarator, this, input);
 }
 
 void TypeDef::print(ostream& stream) const {
@@ -339,8 +219,8 @@ DeclaratorKind EnumConstant::kind() const {
     return DeclaratorKind::ENUM_CONSTANT;
 }
 
-void EnumConstant::compose(Declarator* other) {
-    // TODO
+VisitDeclaratorOutput EnumConstant::accept(Visitor& visitor, const VisitDeclaratorInput& input) {
+    return visitor.visit(declarator, this, input);
 }
 
 void EnumConstant::print(ostream& stream) const {

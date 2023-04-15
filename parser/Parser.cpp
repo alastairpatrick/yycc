@@ -8,6 +8,7 @@
 #include "lexer/Token.h"
 #include "Message.h"
 #include "Statement.h"
+#include "visitor/ResolvePass.h"
 
 enum {
     PD_ALLOW_FUNCTION_DEFINITION  = 0x0001,
@@ -635,7 +636,7 @@ void Parser::parse() {
     }
 
     if (!preparse) {
-        ResolveContext context;
+        ResolvePass context;
         for (auto p: identifiers.scopes.front().declarators) {
             context.todo.insert(p.second);
         }
@@ -646,7 +647,7 @@ void Parser::parse() {
             context.todo.erase(it);
 
             resume_messages();
-            declarator->resolve(context);
+            context.resolve(declarator);
             resume_messages();
         }
     }

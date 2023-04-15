@@ -33,14 +33,11 @@ enum class StorageDuration {
 };
 
 struct FunctionType;
-struct ResolveContext;
+struct ResolvePass;
 
 ostream& operator<<(ostream& stream, Linkage linkage);
 ostream& operator<<(ostream& stream, StorageDuration duration);
 
-struct ResolveContext {
-    unordered_set<Declarator*> todo;
-};
 
 struct Declaration: ASTNode {
     Location location;
@@ -69,7 +66,7 @@ struct DeclaratorDelegate: ASTNode {
     virtual DeclaratorKind kind() const = 0;
     virtual Linkage linkage() const;
     virtual const Type* to_type() const;
-    virtual void compose(Declarator* later) = 0;
+    virtual VisitDeclaratorOutput accept(Visitor& visitor, const VisitDeclaratorInput& input) = 0;
     virtual void print(ostream& stream) const = 0;
 
     explicit DeclaratorDelegate(Declarator* declarator);
@@ -95,7 +92,7 @@ struct Entity: DeclaratorDelegate {
 
     virtual DeclaratorKind kind() const override;
     virtual Linkage linkage() const override;
-    virtual void compose(Declarator* later) override;
+    virtual VisitDeclaratorOutput accept(Visitor& visitor, const VisitDeclaratorInput& input) override;
     virtual void print(ostream& stream) const override;
 };
 
@@ -106,7 +103,7 @@ struct TypeDef: DeclaratorDelegate {
 
     virtual DeclaratorKind kind() const override;
     virtual const Type* to_type() const override;
-    virtual void compose(Declarator* later) override;
+    virtual VisitDeclaratorOutput accept(Visitor& visitor, const VisitDeclaratorInput& input) override;
     virtual void print(ostream& stream) const override;
 };
 
@@ -119,7 +116,7 @@ struct EnumConstant: DeclaratorDelegate {
     EnumConstant(Declarator* declarator, const Identifier& enum_tag, Expr* constant);
 
     virtual DeclaratorKind kind() const override;
-    virtual void compose(Declarator* later) override;
+    virtual VisitDeclaratorOutput accept(Visitor& visitor, const VisitDeclaratorInput& input) override;
     virtual void print(ostream& stream) const override;
 };
 

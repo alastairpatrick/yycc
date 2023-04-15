@@ -14,10 +14,13 @@ struct EnumConstant;
 enum class IdentifierScope;
 enum class StorageClass;
 enum class Linkage;
-struct ResolveContext;
+struct ResolvePass;
 struct Type;
 struct TypeDef;
 struct Value;
+struct Visitor;
+struct VisitDeclaratorInput;
+struct VisitDeclaratorOutput;
 
 struct ASTNode: virtual Printable {
     ASTNode();
@@ -58,8 +61,7 @@ struct Declarator: ASTNode {
     TypeDef* type_def();
 
     const Type* to_type() const;
-    const Type* resolve(ResolveContext& context);
-    void compose(Declarator* other);
+    VisitDeclaratorOutput accept(Visitor& visitor, const VisitDeclaratorInput& input);
     void print(ostream& stream) const;
 };
 
@@ -67,7 +69,7 @@ struct Statement: ASTNode {
     Location location;
 
     explicit Statement(const Location& location);
-    virtual void resolve(ResolveContext& context);
+    virtual void resolve(ResolvePass& context);
 };
 
 struct Expr: Statement {

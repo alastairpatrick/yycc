@@ -9,6 +9,8 @@
 #include "InternedString.h"
 #include "Message.h"
 #include "TranslationUnitContext.h"
+#include "visitor/ResolvePass.h"
+#include "visitor/Visitor.h"
 
 // Type codes
 // A array
@@ -38,7 +40,7 @@ const Type* Type::promote() const {
     return this;
 }
 
-const Type* Type::resolve(ResolveContext& context) const {
+const Type* Type::resolve(ResolvePass& context) const {
     return this;
 }
 
@@ -111,6 +113,10 @@ bool Type::has_tag(const Declarator* declarator) const {
 
 const VoidType VoidType::it;
 
+VisitTypeOutput VoidType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
+}
+
 LLVMTypeRef VoidType::llvm_type() const {
     return LLVMVoidType();
 }
@@ -124,6 +130,10 @@ void VoidType::print(std::ostream& stream) const {
 #pragma region UniversalType
 
 const UniversalType UniversalType::it;
+
+VisitTypeOutput UniversalType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
+}
 
 LLVMTypeRef UniversalType::llvm_type() const {
     assert(false);
@@ -198,6 +208,10 @@ const Type* IntegerType::promote() const {
     }
     
     return this;
+}
+
+VisitTypeOutput IntegerType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
 }
 
 LLVMValueRef IntegerType::convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const {
@@ -286,6 +300,9 @@ const FloatingPointType* FloatingPointType::of(FloatingPointSize size) {
     return &types[int(size)];
 }
 
+VisitTypeOutput FloatingPointType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
+}
 
 LLVMValueRef FloatingPointType::convert_to_type(EmitContext& context, LLVMValueRef value, const Type* to_type) const {
     auto builder = context.builder;
@@ -382,7 +399,11 @@ const Type* convert_arithmetic(const Type* left, const Type* right) {
 
 #pragma region PointerType
 
-const Type* PointerType::resolve(ResolveContext& context) const {
+VisitTypeOutput PointerType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
+}
+
+const Type* PointerType::resolve(ResolvePass& context) const {
     return base_type->resolve(context)->pointer_to();
 }
 
@@ -425,7 +446,11 @@ bool QualifiedType::is_complete() const {
     return base_type->is_complete();
 }
 
-const Type* QualifiedType::resolve(ResolveContext& context) const {
+VisitTypeOutput QualifiedType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
+}
+
+const Type* QualifiedType::resolve(ResolvePass& context) const {
     return QualifiedType::of(base_type->resolve(context), qualifier_flags);
 }
 
@@ -462,7 +487,11 @@ const Type* UnqualifiedType::unqualified() const {
     return this;
 }
 
-const Type* UnqualifiedType::resolve(ResolveContext& context) const {
+VisitTypeOutput UnqualifiedType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
+}
+
+const Type* UnqualifiedType::resolve(ResolvePass& context) const {
     return base_type->resolve(context)->unqualified();
 }
 
@@ -500,7 +529,11 @@ bool FunctionType::is_complete() const {
     return false;
 }
 
-const Type* FunctionType::resolve(ResolveContext& context) const {
+VisitTypeOutput FunctionType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
+}
+
+const Type* FunctionType::resolve(ResolvePass& context) const {
     auto resolved_return_type = return_type->resolve(context);
     auto resolved_param_types(parameter_types);
     for (auto& param_type : resolved_param_types) {
@@ -563,12 +596,12 @@ bool StructuredType::has_tag(const Declarator* declarator) const {
     return tag == declarator;
 }
 
-const Type* StructuredType::resolve(ResolveContext& context) const {
+const Type* StructuredType::resolve(ResolvePass& context) const {
     auto want_complete = complete;
     complete = false;
 
     for (auto member: members) {
-        member->resolve(context);
+        context.resolve(member);
 
         if (auto member_entity = member->entity()) {
             if (!member->type->is_complete()) {
@@ -633,6 +666,10 @@ const Type* StructType::compose_type_def_types(const Type* o) const {
     return (complete || !other->complete) ? this : other;
 }
 
+VisitTypeOutput StructType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
+}
+
 LLVMTypeRef StructType::cache_llvm_type() const {
     vector<LLVMTypeRef> member_types;
     member_types.reserve(members.size());
@@ -667,6 +704,10 @@ static bool union_has_member(const StructuredType* type, const Declarator* find)
         }
     }
     return false;
+}
+
+VisitTypeOutput UnionType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
 }
 
 const Type* UnionType::compose_type_def_types(const Type* o) const {
@@ -715,7 +756,11 @@ bool EnumType::has_tag(const Declarator* declarator) const {
     return tag;
 }
 
-const Type* EnumType::resolve(ResolveContext& context) const {
+VisitTypeOutput EnumType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
+}
+
+const Type* EnumType::resolve(ResolvePass& context) const {
     auto want_complete = complete;
     complete = false;
 
@@ -723,7 +768,7 @@ const Type* EnumType::resolve(ResolveContext& context) const {
     long long next_int = 0;
 
     for (auto constant: constants) {
-        constant->declarator->resolve(context);
+        context.resolve(constant->declarator);
         if (constant->constant_expr) {
             constant->constant_expr->resolve(context);
             auto value = constant->constant_expr->fold();
@@ -803,7 +848,11 @@ bool TypeOfType::is_complete() const {
     return false;
 }
 
-const Type* TypeOfType::resolve(ResolveContext& context) const {
+VisitTypeOutput TypeOfType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
+}
+
+const Type* TypeOfType::resolve(ResolvePass& context) const {
     expr->resolve(context);
     return expr->get_type();
 }
@@ -818,6 +867,10 @@ void TypeOfType::print(std::ostream& stream) const {
 
 const UnboundType* UnboundType::of(const Identifier& identifier) {
     return TranslationUnitContext::it->type.get_unbound_type(identifier);
+}
+
+VisitTypeOutput UnboundType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
 }
 
 LLVMTypeRef UnboundType::llvm_type() const {
@@ -846,8 +899,12 @@ const Type* TypeDefType::unqualified() const {
     return this;
 }
 
-const Type* TypeDefType::resolve(ResolveContext& context) const {
-    return declarator->resolve(context);
+VisitTypeOutput TypeDefType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
+}
+
+const Type* TypeDefType::resolve(ResolvePass& context) const {
+    return context.resolve(declarator);
 }
 
 LLVMTypeRef TypeDefType::llvm_type() const {

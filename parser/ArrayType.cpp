@@ -3,6 +3,8 @@
 #include "Expr.h"
 #include "Message.h"
 #include "TranslationUnitContext.h"
+#include "visitor/ResolvePass.h"
+#include "visitor/Visitor.h"
 
 ArrayType::ArrayType(const Type* element_type): element_type(element_type) {
 }
@@ -16,8 +18,12 @@ bool UnresolvedArrayType::is_complete() const {
     return false;
 }
 
-const Type* UnresolvedArrayType::resolve(ResolveContext& context) const {
-    auto resolved_element_type = element_type->resolve(context);
+VisitTypeOutput UnresolvedArrayType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
+}
+
+const Type* UnresolvedArrayType::resolve(ResolvePass& context) const {
+    auto resolved_element_type = context.resolve(element_type);
     if (!resolved_element_type->is_complete()) {
         message(Severity::ERROR, location) << "incomplete array element type\n";
         resolved_element_type = IntegerType::default_type();
@@ -62,6 +68,10 @@ ResolvedArrayType::ResolvedArrayType(ArrayKind kind, const Type* element_type, u
 
 bool ResolvedArrayType::is_complete() const {
     return kind != ArrayKind::INCOMPLETE;
+}
+
+VisitTypeOutput ResolvedArrayType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
 }
 
 const Type* ResolvedArrayType::compose(const Type* o) const {

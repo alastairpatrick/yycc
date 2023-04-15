@@ -3,6 +3,7 @@
 #include "Declaration.h"
 #include "Message.h"
 #include "TranslationUnitContext.h"
+#include "visitor/ResolvePass.h"
 
 Value::Value(const Type* type, LLVMValueRef value)
     : value(value), type(type) {
@@ -89,8 +90,8 @@ EntityExpr::EntityExpr(Declarator* declarator, const Location& location)
     assert(declarator);
 }
 
-void EntityExpr::resolve(ResolveContext& context) {
-    declarator->resolve(context);
+void EntityExpr::resolve(ResolvePass& context) {
+    context.resolve(declarator);
 }
 
 Value EntityExpr::emit(EmitContext& context) const {
@@ -200,7 +201,7 @@ SizeOfExpr::SizeOfExpr(const Type* type, const Location& location)
     : Expr(location), type(type) {
 }
 
-void SizeOfExpr::resolve(ResolveContext& context) {
+void SizeOfExpr::resolve(ResolvePass& context) {
     type = type->resolve(context);
 }
 
