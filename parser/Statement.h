@@ -4,18 +4,18 @@
 #include "ASTNode.h"
 
 struct CompoundStatement: Statement {
-    CompoundStatement(ASTNodeVector&& items, const Location& location);
-
     ASTNodeVector items;
 
+    CompoundStatement(ASTNodeVector&& items, const Location& location);
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
     virtual void print(ostream& stream) const;
 };
 
 struct ReturnStatement: Statement {
-    ReturnStatement(Expr* value, const Location& location);
-
     Expr* value{};
 
+    ReturnStatement(Expr* value, const Location& location);
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
     virtual void print(ostream& stream) const;
 };
 

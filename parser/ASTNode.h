@@ -14,13 +14,14 @@ struct EnumConstant;
 enum class IdentifierScope;
 enum class StorageClass;
 enum class Linkage;
-struct ResolvePass;
 struct Type;
 struct TypeDef;
 struct Value;
 struct Visitor;
 struct VisitDeclaratorInput;
 struct VisitDeclaratorOutput;
+struct VisitStatementInput;
+struct VisitStatementOutput;
 
 struct ASTNode: virtual Printable {
     ASTNode();
@@ -69,7 +70,7 @@ struct Statement: ASTNode {
     Location location;
 
     explicit Statement(const Location& location);
-    virtual void resolve(ResolvePass& context);
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) = 0;
 };
 
 struct Expr: Statement {

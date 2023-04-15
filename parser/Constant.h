@@ -19,6 +19,7 @@ struct IntegerConstant: Constant {
     static IntegerConstant* of(string_view text, TokenKind token, const Location& location);
 
     IntegerConstant(LLVMValueRef value, const IntegerType* type, const Location& location);
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
 
     virtual Value emit(EmitContext& context) const override;
     virtual void print(ostream& stream) const override;
@@ -31,6 +32,7 @@ struct FloatingPointConstant: Constant {
     static FloatingPointConstant* of(string_view text, TokenKind token, const Location& location);
 
     FloatingPointConstant(LLVMValueRef value, const FloatingPointType* type, const Location& location);
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
 
     virtual Value emit(EmitContext& context) const override;
     virtual void print(ostream& stream) const override;
@@ -43,6 +45,7 @@ struct StringConstant: Constant {
     static StringConstant* of(string_view text, const Location& location);
 
     StringConstant(string&& utf8_literal, const IntegerType* char_type, const Location& location);
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
 
     virtual Value emit(EmitContext& context) const override;
     virtual void print(ostream& stream) const override;

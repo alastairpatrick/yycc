@@ -24,7 +24,7 @@ struct ConditionExpr: Expr {
     Expr* else_expr{};
 
     ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, const Location& location);
-
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
     virtual Value emit(EmitContext& context) const override;
     virtual void print(ostream& stream) const override;
 };
@@ -33,8 +33,8 @@ struct EntityExpr: Expr {
     Declarator* declarator{};
 
     EntityExpr(Declarator* declarator, const Location& location);
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
 
-    virtual void resolve(ResolvePass& context) override;
     virtual Value emit(EmitContext& context) const override;
     virtual void print(ostream& stream) const override;
 };
@@ -55,6 +55,7 @@ struct BinaryExpr: Expr {
     BinaryOp op;
     
     BinaryExpr(Expr* left, Expr* right, BinaryOp op, const Location& location);
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
 
     virtual Value emit(EmitContext& context) const override;
     virtual void print(ostream& stream) const override;
@@ -64,7 +65,7 @@ struct SizeOfExpr: Expr {
     const Type* type;
 
     SizeOfExpr(const Type* type, const Location& location);
-    virtual void resolve(ResolvePass& context) override;
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
     virtual Value emit(EmitContext& context) const override;
     virtual void print(ostream& stream) const override;
 };
@@ -73,16 +74,7 @@ struct InitializerExpr: Expr {
     vector<Expr*> elements;
 
     explicit InitializerExpr(const Location& location);
-    virtual void print(ostream& stream) const override;
-};
-
-// The default value of a variable, e.g. zero for static duration and uninitialized for automatic duration
-struct DefaultExpr: Expr {
-    const Type* type;
-
-    DefaultExpr(const Type* type, const Location& location);
-
-    virtual Value emit(EmitContext& context) const override;
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
     virtual void print(ostream& stream) const override;
 };
 

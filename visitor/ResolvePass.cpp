@@ -11,7 +11,9 @@ const Type* ResolvePass::resolve(const Type* type) {
     return type->accept(*this, VisitTypeInput()).type;
 }
 
-
+void ResolvePass::resolve(Statement* statement) {
+    statement->accept(*this, VisitStatementInput());
+}
 
 static bool is_trivially_cyclic(Declarator* declarator, const Type* type) {
     for (;;) {
@@ -227,7 +229,7 @@ VisitTypeOutput ResolvePass::visit(const EnumType* type, const VisitTypeInput& i
     for (auto constant: type->constants) {
         resolve(constant->declarator);
         if (constant->constant_expr) {
-            constant->constant_expr->resolve(*this);
+            resolve(constant->constant_expr);
             auto value = constant->constant_expr->fold();
             next_int = LLVMConstIntGetSExtValue(value.value);
         }
@@ -241,7 +243,7 @@ VisitTypeOutput ResolvePass::visit(const EnumType* type, const VisitTypeInput& i
 }
 
 VisitTypeOutput ResolvePass::visit(const TypeOfType* type, const VisitTypeInput& input) {
-    type->expr->resolve(*this);
+    resolve(type->expr);
     return VisitTypeOutput(type->expr->get_type());
 }
 
@@ -257,7 +259,7 @@ VisitTypeOutput ResolvePass::visit(const UnresolvedArrayType* type, const VisitT
     }
 
     if (type->size) {
-        type->size->resolve(*this);
+        resolve(type->size);
         auto size_constant = type->size->fold();
         unsigned long long size_int = 1;
         if (!size_constant.is_const_integer()) {
@@ -271,3 +273,14 @@ VisitTypeOutput ResolvePass::visit(const UnresolvedArrayType* type, const VisitT
         return VisitTypeOutput(ResolvedArrayType::of(ArrayKind::INCOMPLETE, resolved_element_type, 0));
     }
 }
+
+VisitStatementOutput ResolvePass::visit(EntityExpr* expr, const VisitStatementInput& input) {
+    resolve(expr->declarator);
+    return VisitStatementOutput();
+}
+
+VisitStatementOutput ResolvePass::visit(SizeOfExpr* expr, const VisitStatementInput& input) {
+    expr->type = resolve(expr->type);
+    return VisitStatementOutput();
+}
+

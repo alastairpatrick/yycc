@@ -2,6 +2,9 @@
 #define VISITOR_VISITOR_H
 
 #include "parser/ArrayType.h"
+#include "parser/Constant.h"
+#include "parser/Expr.h"
+#include "parser/Statement.h"
 #include "parser/Type.h"
 
 struct VisitDeclaratorInput {
@@ -22,6 +25,12 @@ struct VisitTypeOutput {
 
     VisitTypeOutput() = default;
     explicit VisitTypeOutput(const Type* type): type(type) {}
+};
+
+struct VisitStatementInput {
+};
+
+struct VisitStatementOutput {
 };
 
 struct Visitor {
@@ -47,6 +56,22 @@ struct Visitor {
     virtual VisitTypeOutput visit(const UniversalType* type, const VisitTypeInput& input);
     virtual VisitTypeOutput visit(const UnqualifiedType* type, const VisitTypeInput& input);
     virtual VisitTypeOutput visit(const UnresolvedArrayType* type, const VisitTypeInput& input);
+
+    virtual VisitStatementOutput visit_default(Statement* statement, const VisitStatementInput& input);
+    virtual VisitStatementOutput visit(CompoundStatement* statement, const VisitStatementInput& input);
+    virtual VisitStatementOutput visit(ReturnStatement* statement, const VisitStatementInput& input);
+
+    virtual VisitStatementOutput visit_default(Expr* expr, const VisitStatementInput& input);
+    virtual VisitStatementOutput visit(BinaryExpr* expr, const VisitStatementInput& input);
+    virtual VisitStatementOutput visit(ConditionExpr* expr, const VisitStatementInput& input);
+    virtual VisitStatementOutput visit(EntityExpr* expr, const VisitStatementInput& input);
+    virtual VisitStatementOutput visit(InitializerExpr* expr, const VisitStatementInput& input);
+    virtual VisitStatementOutput visit(SizeOfExpr* expr, const VisitStatementInput& input);
+
+    virtual VisitStatementOutput visit(IntegerConstant* constant, const VisitStatementInput& input);
+    virtual VisitStatementOutput visit(FloatingPointConstant* constant, const VisitStatementInput& input);
+    virtual VisitStatementOutput visit(StringConstant* constant, const VisitStatementInput& input);
+
 };
 
 #endif

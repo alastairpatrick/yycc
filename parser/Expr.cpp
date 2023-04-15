@@ -3,7 +3,7 @@
 #include "Declaration.h"
 #include "Message.h"
 #include "TranslationUnitContext.h"
-#include "visitor/ResolvePass.h"
+#include "visitor/Visitor.h"
 
 Value::Value(const Type* type, LLVMValueRef value)
     : value(value), type(type) {
@@ -39,6 +39,10 @@ ConditionExpr::ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, 
     assert(this->condition);
     assert(this->then_expr);
     assert(this->else_expr);
+}
+
+VisitStatementOutput ConditionExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
 }
 
 Value ConditionExpr::emit(EmitContext& context) const {
@@ -90,8 +94,8 @@ EntityExpr::EntityExpr(Declarator* declarator, const Location& location)
     assert(declarator);
 }
 
-void EntityExpr::resolve(ResolvePass& context) {
-    context.resolve(declarator);
+VisitStatementOutput EntityExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
 }
 
 Value EntityExpr::emit(EmitContext& context) const {
@@ -116,6 +120,10 @@ BinaryExpr::BinaryExpr(Expr* left, Expr* right, BinaryOp op, const Location& loc
     : Expr(location), left(left), right(right), op(op) {
     assert(this->left);
     assert(this->right);
+}
+
+VisitStatementOutput BinaryExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
 }
 
 Value BinaryExpr::emit(EmitContext& context) const {
@@ -201,8 +209,8 @@ SizeOfExpr::SizeOfExpr(const Type* type, const Location& location)
     : Expr(location), type(type) {
 }
 
-void SizeOfExpr::resolve(ResolvePass& context) {
-    type = context.resolve(type);
+VisitStatementOutput SizeOfExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
 }
 
 Value SizeOfExpr::emit(EmitContext& context) const {
@@ -226,6 +234,10 @@ void SizeOfExpr::print(ostream& stream) const {
 InitializerExpr::InitializerExpr(const Location& location): Expr(location) {
 }
 
+VisitStatementOutput InitializerExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
+}
+
 void InitializerExpr::print(ostream& stream) const {
     stream << "[\"Init\"";
 
@@ -234,17 +246,4 @@ void InitializerExpr::print(ostream& stream) const {
     }
 
     stream << "]";
-}
-
-DefaultExpr::DefaultExpr(const Type* type, const Location& location)
-    : Expr(location), type(type) {
-}
-
-Value DefaultExpr::emit(EmitContext& context) const {
-    // TODO
-    return Value(type);
-}
-
-void DefaultExpr::print(ostream& stream) const {
-    stream << "\"\"";
 }

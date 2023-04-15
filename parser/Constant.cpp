@@ -4,6 +4,7 @@
 #include "Expr.h"
 #include "lexer/Unescape.h"
 #include "Message.h"
+#include "visitor/Visitor.h"
 
 using json = nlohmann::json;
 
@@ -86,6 +87,10 @@ IntegerConstant::IntegerConstant(LLVMValueRef value, const IntegerType* type, co
     assert(value);
 }
 
+VisitStatementOutput IntegerConstant::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
+}
+
 Value IntegerConstant::emit(EmitContext& context) const {
     return Value(type, value);
 }
@@ -120,6 +125,10 @@ FloatingPointConstant::FloatingPointConstant(LLVMValueRef value, const FloatingP
     assert(value);
 }
 
+VisitStatementOutput FloatingPointConstant::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
+}
+
 Value FloatingPointConstant::emit(EmitContext& context) const {
     return Value(type, value);
 }
@@ -144,6 +153,10 @@ StringConstant* StringConstant::of(string_view text, const Location& location) {
 
 StringConstant::StringConstant(string&& utf8_literal, const IntegerType* char_type, const Location& location)
     : Constant(location), char_type(char_type), utf8_literal(move(utf8_literal)) {
+}
+
+VisitStatementOutput StringConstant::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
 }
 
 void StringConstant::print(ostream& stream) const {
