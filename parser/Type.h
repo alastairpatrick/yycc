@@ -37,8 +37,6 @@ struct Type: virtual Printable {
 
     virtual const Type* compose(const Type* other) const;
 
-    virtual const Type* promote() const;
-
     virtual const Type* compose_type_def_types(const Type* other) const;
 
     virtual LLVMTypeRef llvm_type() const;
@@ -95,8 +93,6 @@ struct IntegerType: Type {
 
     const IntegerSignedness signedness;
     const IntegerSize size;
-
-    virtual const Type* promote() const override;
 
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;

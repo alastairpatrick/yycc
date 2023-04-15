@@ -85,10 +85,24 @@ VisitStatementOutput Emitter::visit_default(Expr* expr, const VisitStatementInpu
     return VisitStatementOutput();
 }
 
+const Type* promote_integer(const Type* type) {
+    auto int_type = IntegerType::default_type();
+
+    if (auto type_as_int = dynamic_cast<const IntegerType*>(type)) {
+        // Integer types smaller than int are promoted when an operation is performed on them.
+        if (type_as_int->size < int_type->size || (type_as_int->signedness == IntegerSignedness::SIGNED && type_as_int->size == int_type->size)) {
+            // If all values of the original type can be represented as an int, the value of the smaller type is converted to an int; otherwise, it is converted to an unsigned int.
+            return int_type;
+        }
+    }
+    
+    return type;
+}
+
 // This is applied to binary expressions and to the second and third operands of a conditional expression.
 const Type* convert_arithmetic(const Type* left, const Type* right) {
-    left = left->promote();
-    right = right->promote();
+    left = promote_integer(left);
+    right = promote_integer(right);
 
     // If both operands have the same type, no further conversion is needed.
     if (left == right) return left;

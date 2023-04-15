@@ -34,10 +34,6 @@ const Type* Type::unqualified() const {
     return this;
 }
 
-const Type* Type::promote() const {
-    return this;
-}
-
 const Type* Type::compose_type_def_types(const Type* other) const {
     if (this == other) return this;
     return nullptr;
@@ -183,18 +179,6 @@ const IntegerType* IntegerType::default_type() {
 
 const IntegerType* IntegerType::uintptr_type() {
     return of(IntegerSignedness::UNSIGNED, IntegerSize::LONG_LONG);
-}
-
-const Type* IntegerType::promote() const {
-    auto int_type = IntegerType::default_type();
-
-    // Integer types smaller than int are promoted when an operation is performed on them.
-    if (size < int_type->size || (signedness == IntegerSignedness::SIGNED && size == int_type->size)) {
-        // If all values of the original type can be represented as an int, the value of the smaller type is converted to an int; otherwise, it is converted to an unsigned int.
-        return int_type;
-    }
-    
-    return this;
 }
 
 VisitTypeOutput IntegerType::accept(Visitor& visitor, const VisitTypeInput& input) const {
