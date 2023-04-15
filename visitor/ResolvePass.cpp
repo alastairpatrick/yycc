@@ -104,13 +104,38 @@ struct ResolvePass: Visitor {
             primary->delegate = secondary->delegate;
         }
     }
+    
+    const Type* composite_type(const Type* a, const Type* b) {
+        if (a == b) return a;
+
+        if (a == &UniversalType::it) return b;
+        if (b == &UniversalType::it) return a;
+
+        if (typeid(*a) == typeid(*b)) {
+            if (auto a_array = dynamic_cast<const ResolvedArrayType*>(a)) {
+                auto b_array = static_cast<const ResolvedArrayType*>(b);
+
+                if (a_array->element_type != b_array->element_type) return nullptr;
+
+                if (a_array->kind == ArrayKind::INCOMPLETE) return b_array;
+                if (b_array->kind == ArrayKind::INCOMPLETE) return a_array;
+
+                if (a_array->size == b_array->size) {
+                    assert(a_array == b_array);
+                    return a_array;
+                }
+            }
+        }
+
+        return nullptr;
+    }
 
     virtual VisitDeclaratorOutput visit(Declarator* primary, Entity* primary_entity, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
 
-        auto composite_type = compose_types(primary->type, secondary->type);
-        if (composite_type) {
-            primary->type = composite_type;
+        auto composite = composite_type(primary->type, secondary->type);
+        if (composite) {
+            primary->type = composite;
         } else {
             message(Severity::ERROR, secondary->location) << "redeclaration of '" << primary->identifier << "' with incompatible type\n";
             message(Severity::INFO, primary->location) << "see prior declaration\n";

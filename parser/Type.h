@@ -35,8 +35,6 @@ struct Type: virtual Printable {
 
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const = 0;
 
-    virtual const Type* compose(const Type* other) const;
-
     virtual const Type* compose_type_def_types(const Type* other) const;
 
     virtual LLVMTypeRef llvm_type() const;

@@ -34,7 +34,6 @@ struct ResolvedArrayType: ArrayType {
     static const ResolvedArrayType* of(ArrayKind kind, const Type* element_type, unsigned long long size);
     virtual bool is_complete() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
-    virtual const Type* compose(const Type* other) const override;
     virtual LLVMTypeRef cache_llvm_type() const override;
     virtual void print(std::ostream& stream) const override;
 

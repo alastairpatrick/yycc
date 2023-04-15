@@ -50,22 +50,6 @@ VisitTypeOutput ResolvedArrayType::accept(Visitor& visitor, const VisitTypeInput
     return visitor.visit(this, input);
 }
 
-const Type* ResolvedArrayType::compose(const Type* o) const {
-    auto other = static_cast<const ResolvedArrayType*>(o);
-
-    if (element_type != other->element_type) return nullptr;
-
-    if (kind == ArrayKind::INCOMPLETE) return other;
-    if (other->kind == ArrayKind::INCOMPLETE) return this;
-
-    if (size == other->size) {
-        assert(other == this);
-        return this;
-    }
-
-    return nullptr;
-}
-
 LLVMTypeRef ResolvedArrayType::cache_llvm_type() const {
     // TODO: use LLVMArrayType2 instead after upgrading LLVM
     return LLVMArrayType(element_type->llvm_type(), size);

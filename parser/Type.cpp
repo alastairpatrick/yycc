@@ -44,19 +44,6 @@ LLVMTypeRef Type::llvm_type() const {
     return nullptr;
 }
 
-const Type* compose_types(const Type* a, const Type* b) {
-    if (a == b) return a;
-
-    if (a == &UniversalType::it) return b;
-    if (b == &UniversalType::it) return a;
-
-    if (typeid(*a) == typeid(*b)) {
-        return a->compose(b);
-    }
-
-    return nullptr;
-}
-
 const Type* compose_type_def_types(const Type* a, const Type* b) {
     if (a == b) return a;
 
@@ -64,10 +51,6 @@ const Type* compose_type_def_types(const Type* a, const Type* b) {
         return a->compose_type_def_types(b);
     }
 
-    return nullptr;
-}
-
-const Type* Type::compose(const Type* other) const {
     return nullptr;
 }
 
