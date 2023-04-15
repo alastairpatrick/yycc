@@ -12,9 +12,9 @@ struct Value {
     bool is_const_integer() const;
 
     Value() = default;
-    Value(const Type* type, LLVMValueRef value = nullptr);
+    Value(const Type* type, LLVMValueRef llvm = nullptr);
 
-    LLVMValueRef value{};
+    LLVMValueRef llvm{};
     const Type* type{};
 };
 

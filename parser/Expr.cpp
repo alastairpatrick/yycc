@@ -5,16 +5,16 @@
 #include "visitor/Visitor.h"
 #include "visitor/Emitter.h"
 
-Value::Value(const Type* type, LLVMValueRef value)
-    : value(value), type(type) {
+Value::Value(const Type* type, LLVMValueRef llvm)
+    : llvm(llvm), type(type) {
 }
 
 bool Value::is_const() const {
-    return value && LLVMIsConstant(value);
+    return llvm && LLVMIsConstant(llvm);
 }
 
 bool Value::is_const_integer() const {
-    return value && LLVMIsAConstantInt(value);
+    return llvm && LLVMIsAConstantInt(llvm);
 }
 
 Expr::Expr(const Location& location): Statement(location) {
