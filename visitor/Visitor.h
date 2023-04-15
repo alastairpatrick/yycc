@@ -18,13 +18,16 @@ struct VisitDeclaratorOutput {
 };
 
 struct VisitTypeInput {
+    Value value;
+    const Type* target_type{};
 };
 
 struct VisitTypeOutput {
-    const Type* type{};
+    Value value;
 
     VisitTypeOutput() = default;
-    explicit VisitTypeOutput(const Type* type): type(type) {}
+    explicit VisitTypeOutput(Value value): value(value) {}
+    explicit VisitTypeOutput(const Type* type, LLVMValueRef value = nullptr): value(type, value) {}
 };
 
 struct VisitStatementInput {

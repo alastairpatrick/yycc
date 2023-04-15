@@ -11,7 +11,7 @@ struct ResolvePass: Visitor {
     unordered_set<Declarator*> todo;
 
     const Type* resolve(const Type* type) {
-        return type->accept(*this, VisitTypeInput()).type;
+        return type->accept(*this, VisitTypeInput()).value.type;
     }
 
     void resolve(Statement* statement) {

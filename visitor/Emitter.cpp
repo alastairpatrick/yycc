@@ -6,6 +6,80 @@ Value Emitter::emit(Statement* statement) {
     return statement->accept(*this, VisitStatementInput()).value;
 }
 
+Value Emitter::convert_to_type(Value value, const Type* target_type) {
+    VisitTypeInput input;
+    input.value = value;
+    input.target_type = target_type;
+    auto result = value.type->accept(*this, input).value;
+    assert(result.type == target_type);
+    return result;
+}
+
+VisitTypeOutput Emitter::visit_default(const Type* type, const VisitTypeInput& input) {
+    if (input.target_type == type) return VisitTypeOutput(input.value);
+
+    assert(false);  // TODO
+    return VisitTypeOutput(input.value);
+}
+
+VisitTypeOutput Emitter::visit(const FloatingPointType* type, const VisitTypeInput& input) {
+    auto target_type = input.target_type;
+    auto value = input.value;
+
+    if (target_type == type) return VisitTypeOutput(value);
+
+    if (auto float_target = dynamic_cast<const FloatingPointType*>(target_type)) {
+        if (float_target->size > type->size) {
+            return VisitTypeOutput(target_type, LLVMBuildFPExt(builder, value.value, input.target_type->llvm_type(), "cvt"));
+        } else {
+            return VisitTypeOutput(target_type, LLVMBuildFPTrunc(builder, value.value, input.target_type->llvm_type(), "cvt"));
+        }
+    }
+
+    if (auto int_target = dynamic_cast<const IntegerType*>(input.target_type)) {
+        if (int_target->is_signed()) {
+            return VisitTypeOutput(target_type, LLVMBuildFPToSI(builder, value.value, input.target_type->llvm_type(), "cvt"));
+        } else {
+            return VisitTypeOutput(target_type, LLVMBuildFPToUI(builder, value.value, input.target_type->llvm_type(), "cvt"));
+        }
+    }
+
+    assert(false);  // TODO
+    return VisitTypeOutput(value);
+}
+
+VisitTypeOutput Emitter::visit(const IntegerType* type, const VisitTypeInput& input) {
+    auto target_type = input.target_type;
+    auto value = input.value;
+
+    if (target_type == type) return VisitTypeOutput(value);
+
+    if (auto int_target = dynamic_cast<const IntegerType*>(input.target_type)) {
+        if (int_target->size == type->size) return VisitTypeOutput(value);
+
+        if (int_target->size > type->size) {
+            if (type->is_signed()) {
+                return VisitTypeOutput(target_type, LLVMBuildSExt(builder, value.value, input.target_type->llvm_type(), "cvt"));
+            } else {
+                return VisitTypeOutput(target_type, LLVMBuildZExt(builder, value.value, input.target_type->llvm_type(), "cvt"));
+            }
+        }
+
+        return VisitTypeOutput(target_type, LLVMBuildTrunc(builder, value.value, input.target_type->llvm_type(), 0));
+    }
+
+    if (auto float_target = dynamic_cast<const FloatingPointType*>(input.target_type)) {
+        if (type->is_signed()) {
+            return VisitTypeOutput(target_type, LLVMBuildSIToFP(builder, value.value, input.target_type->llvm_type(), "cvt"));
+        } else {
+            return VisitTypeOutput(target_type, LLVMBuildUIToFP(builder, value.value, input.target_type->llvm_type(), "cvt"));
+        }
+    }
+
+    assert(false); // TODO
+    return VisitTypeOutput(value);
+}
+
 VisitStatementOutput Emitter::visit_default(Expr* expr, const VisitStatementInput& input) {
     assert(false);
     return VisitStatementOutput();
@@ -18,24 +92,24 @@ VisitStatementOutput Emitter::visit(BinaryExpr* expr, const VisitStatementInput&
 
     if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
-    auto left_temp = left_value.type->convert_to_type(*this, left_value.value, result_type);
-    auto right_temp = right_value.type->convert_to_type(*this, right_value.value, result_type);
+    auto left_temp = convert_to_type(left_value, result_type);
+    auto right_temp = convert_to_type(right_value, result_type);
 
     LLVMValueRef result_value;
 
     if (auto result_as_int = dynamic_cast<const IntegerType*>(result_type)) {
         switch (expr->op) {
           case BinaryOp::ADD:
-            return VisitStatementOutput(result_type, LLVMBuildAdd(builder, left_temp, right_temp, "add"));
+            return VisitStatementOutput(result_type, LLVMBuildAdd(builder, left_temp.value, right_temp.value, "add"));
           case BinaryOp::SUB:
-            return VisitStatementOutput(result_type, LLVMBuildSub(builder, left_temp, right_temp, "sub"));
+            return VisitStatementOutput(result_type, LLVMBuildSub(builder, left_temp.value, right_temp.value, "sub"));
           case BinaryOp::MUL:
-            return VisitStatementOutput(result_type, LLVMBuildMul(builder, left_temp, right_temp, "mul"));
+            return VisitStatementOutput(result_type, LLVMBuildMul(builder, left_temp.value, right_temp.value, "mul"));
           case BinaryOp::DIV:
             if (result_as_int->is_signed()) {
-                return VisitStatementOutput(result_type, LLVMBuildSDiv(builder, left_temp, right_temp, "div"));
+                return VisitStatementOutput(result_type, LLVMBuildSDiv(builder, left_temp.value, right_temp.value, "div"));
             } else {
-                return VisitStatementOutput(result_type, LLVMBuildUDiv(builder, left_temp, right_temp, "div"));
+                return VisitStatementOutput(result_type, LLVMBuildUDiv(builder, left_temp.value, right_temp.value, "div"));
             }
         }
     }
@@ -43,13 +117,13 @@ VisitStatementOutput Emitter::visit(BinaryExpr* expr, const VisitStatementInput&
     if (auto result_as_float = dynamic_cast<const FloatingPointType*>(result_type)) {
         switch (expr->op) {
           case BinaryOp::ADD:
-            return VisitStatementOutput(result_type, LLVMBuildFAdd(builder, left_temp, right_temp, "fadd"));
+            return VisitStatementOutput(result_type, LLVMBuildFAdd(builder, left_temp.value, right_temp.value, "fadd"));
           case BinaryOp::SUB:
-            return VisitStatementOutput(result_type, LLVMBuildFSub(builder, left_temp, right_temp, "fsub"));
+            return VisitStatementOutput(result_type, LLVMBuildFSub(builder, left_temp.value, right_temp.value, "fsub"));
           case BinaryOp::MUL:
-            return VisitStatementOutput(result_type, LLVMBuildFMul(builder, left_temp, right_temp, "fmul"));
+            return VisitStatementOutput(result_type, LLVMBuildFMul(builder, left_temp.value, right_temp.value, "fmul"));
           case BinaryOp::DIV:
-            return VisitStatementOutput(result_type, LLVMBuildFDiv(builder, left_temp, right_temp, "fdiv"));
+            return VisitStatementOutput(result_type, LLVMBuildFDiv(builder, left_temp.value, right_temp.value, "fdiv"));
         }
     }
 
@@ -75,17 +149,17 @@ VisitStatementOutput Emitter::visit(ConditionExpr* expr, const VisitStatementInp
     };
     auto merge_block = LLVMAppendBasicBlock(function, "merge");
 
-    auto cond_value = cond_type->convert_to_type(*this, condition_value.value, IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::INT));
-    LLVMBuildCondBr(builder, cond_value, alt_blocks[0], alt_blocks[1]);
+    auto cond_value = convert_to_type(condition_value, IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::INT));
+    LLVMBuildCondBr(builder, cond_value.value, alt_blocks[0], alt_blocks[1]);
 
     LLVMValueRef 
         alt_values[2];
     LLVMPositionBuilderAtEnd(builder, alt_blocks[0]);
-    alt_values[0] = then_type->convert_to_type(*this, then_value.value, result_type);
+    alt_values[0] = convert_to_type(then_value, result_type).value;
     LLVMBuildBr(builder, merge_block);
 
     LLVMPositionBuilderAtEnd(builder, alt_blocks[1]);
-    alt_values[1] = else_type->convert_to_type(*this, else_value.value, result_type);
+    alt_values[1] = convert_to_type(else_value, result_type).value;
     LLVMBuildBr(builder, merge_block);
 
     LLVMPositionBuilderAtEnd(builder, merge_block);

@@ -43,13 +43,6 @@ const Type* Type::compose_type_def_types(const Type* other) const {
     return nullptr;
 }
 
-LLVMValueRef Type::convert_to_type(Emitter& context, LLVMValueRef value, const Type* to_type) const {
-    if (to_type == this) return value;
-
-    assert(false);  // TODO
-    return value;
-}
-
 LLVMTypeRef Type::llvm_type() const {
     assert(false);
     return nullptr;
@@ -208,37 +201,6 @@ VisitTypeOutput IntegerType::accept(Visitor& visitor, const VisitTypeInput& inpu
     return visitor.visit(this, input);
 }
 
-LLVMValueRef IntegerType::convert_to_type(Emitter& context, LLVMValueRef value, const Type* to_type) const {
-    auto builder = context.builder;
-
-    if (to_type == this) return value;
-
-    if (auto to_as_int = dynamic_cast<const IntegerType*>(to_type)) {
-        if (to_as_int->size == size) return value;
-
-        if (to_as_int->size > size) {
-            if (is_signed()) {
-                return LLVMBuildSExt(builder, value, to_type->llvm_type(), "cvt");
-            } else {
-                return LLVMBuildZExt(builder, value, to_type->llvm_type(), "cvt");
-            }
-        }
-
-        return LLVMBuildTrunc(builder, value, to_type->llvm_type(), 0);
-    }
-
-    if (auto to_as_float = dynamic_cast<const FloatingPointType*>(to_type)) {
-        if (is_signed()) {
-            return LLVMBuildSIToFP(builder, value, to_type->llvm_type(), "cvt");
-        } else {
-            return LLVMBuildUIToFP(builder, value, to_type->llvm_type(), "cvt");
-        }
-    }
-
-    assert(false); // TODO
-    return nullptr;
-}
-
 LLVMTypeRef IntegerType::llvm_type() const {
     static const LLVMTypeRef types[unsigned(IntegerSize::NUM)] = {
         LLVMInt1Type(), 
@@ -296,31 +258,6 @@ const FloatingPointType* FloatingPointType::of(FloatingPointSize size) {
 
 VisitTypeOutput FloatingPointType::accept(Visitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
-}
-
-LLVMValueRef FloatingPointType::convert_to_type(Emitter& context, LLVMValueRef value, const Type* to_type) const {
-    auto builder = context.builder;
-
-    if (to_type == this) return value;
-
-    if (auto to_as_float = dynamic_cast<const FloatingPointType*>(to_type)) {
-        if (to_as_float->size > size) {
-            return LLVMBuildFPExt(builder, value, to_type->llvm_type(), "cvt");
-        } else {
-            return LLVMBuildFPTrunc(builder, value, to_type->llvm_type(), "cvt");
-        }
-    }
-
-    if (auto to_as_int = dynamic_cast<const IntegerType*>(to_type)) {
-        if (to_as_int->is_signed()) {
-            return LLVMBuildFPToSI(builder, value, to_type->llvm_type(), "cvt");
-        } else {
-            return LLVMBuildFPToUI(builder, value, to_type->llvm_type(), "cvt");
-        }
-    }
-
-    assert(false);  // TODO
-    return value;
 }
 
 LLVMTypeRef FloatingPointType::llvm_type() const {
