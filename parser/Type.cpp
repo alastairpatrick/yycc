@@ -353,27 +353,8 @@ void UnqualifiedType::print(std::ostream& stream) const {
 #pragma endregion UnqualifiedType
 #pragma region FunctionType
 
-static void print_function_type(ostream& stream, const Type* return_type, const std::vector<const Type*>& parameter_types, bool variadic) {
-    stream << "[\"F\", " << return_type;
-
-    for (auto type: parameter_types) {
-        stream << ", " << type;
-    }
-
-    if (variadic) stream << ", \"?\"";
-    stream << ']';
-}
-
 const FunctionType* FunctionType::of(const Type* return_type, std::vector<const Type*> parameter_types, bool variadic) {
-    stringstream key_stream;
-    print_function_type(key_stream, return_type, parameter_types, variadic);
-
-    auto type = static_cast<const FunctionType*>(TranslationUnitContext::it->type.lookup_indexed_type(key_stream.str()));
-    if (type) return type;
-
-    type = new FunctionType(return_type, move(parameter_types), variadic);
-    TranslationUnitContext::it->type.add_indexed_type(key_stream.str(), type);
-    return type;
+    return TranslationUnitContext::it->type.get_function_type(return_type, parameter_types, variadic);
 }
 
 bool FunctionType::is_complete() const {
@@ -398,7 +379,14 @@ LLVMTypeRef FunctionType::cache_llvm_type() const {
 }
 
 void FunctionType::print(std::ostream& stream) const {
-    print_function_type(stream, return_type, parameter_types, variadic);
+    stream << "[\"F\", " << return_type;
+
+    for (auto type: parameter_types) {
+        stream << ", " << type;
+    }
+
+    if (variadic) stream << ", \"?\"";
+    stream << ']';
 }
 
 FunctionType::FunctionType(const Type* return_type, std::vector<const Type*> parameter_types, bool variadic)
