@@ -636,20 +636,7 @@ void Parser::parse() {
     }
 
     if (!preparse) {
-        ResolvePass context;
-        for (auto p: identifiers.scopes.front().declarators) {
-            context.todo.insert(p.second);
-        }
-
-        while (context.todo.size()) {
-            auto it = context.todo.begin();
-            auto declarator = *it;
-            context.todo.erase(it);
-
-            resume_messages();
-            context.resolve(declarator);
-            resume_messages();
-        }
+        resolve_pass(identifiers.scopes.front());
     }
 }
 
