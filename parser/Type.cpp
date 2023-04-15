@@ -34,23 +34,8 @@ const Type* Type::unqualified() const {
     return this;
 }
 
-const Type* Type::compose_type_def_types(const Type* other) const {
-    if (this == other) return this;
-    return nullptr;
-}
-
 LLVMTypeRef Type::llvm_type() const {
     assert(false);
-    return nullptr;
-}
-
-const Type* compose_type_def_types(const Type* a, const Type* b) {
-    if (a == b) return a;
-
-    if (typeid(*a) == typeid(*b)) {
-        return a->compose_type_def_types(b);
-    }
-
     return nullptr;
 }
 
@@ -430,25 +415,6 @@ StructType::StructType(const Location& location)
     : StructuredType(location) {
 }
 
-const Type* StructType::compose_type_def_types(const Type* o) const {
-    auto other = static_cast<const StructuredType*>(o);
-
-    if (complete && other->complete) {
-        for (size_t i = 0; i < members.size(); ++i) {
-            auto declarator1 = members[i];
-            auto declarator2 = other->members[i];
-
-            if (declarator1->identifier != declarator2->identifier) return nullptr;
-            if (!::compose_type_def_types(declarator1->type, declarator2->type)) return nullptr;
-
-            // TODO bitfield size, etc
-        }
-        return this;
-    }
-
-    return (complete || !other->complete) ? this : other;
-}
-
 VisitTypeOutput StructType::accept(Visitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
@@ -478,37 +444,8 @@ UnionType::UnionType(const Location& location)
     : StructuredType(location) {
 }
 
-static bool union_has_member(const StructuredType* type, const Declarator* find) {
-    auto member = type->lookup_member(find->identifier);
-    for (auto member: type->members) {
-        if (member->identifier == find->identifier &&
-            compose_type_def_types(member->type, find->type)) { // TODO: bit field size
-            return true;
-        }
-    }
-    return false;
-}
-
 VisitTypeOutput UnionType::accept(Visitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
-}
-
-const Type* UnionType::compose_type_def_types(const Type* o) const {
-    auto other = static_cast<const StructuredType*>(o);
-
-    if (complete) {
-        for (auto member: other->members) {
-            if (!union_has_member(this, member)) return nullptr;
-        }
-    }
-
-    if (other->complete) {
-        for (auto member: members) {
-            if (!union_has_member(other, member)) return nullptr;
-        }
-    }
-
-    return complete ? this : other;
 }
 
 LLVMTypeRef UnionType::cache_llvm_type() const {
@@ -557,24 +494,6 @@ const EnumConstant* EnumType::lookup_constant(const Identifier& identifier) cons
     auto it = constant_index.find(identifier.name);
     if (it == constant_index.end()) return nullptr;
     return it->second;
-}
-
-const Type* EnumType::compose_type_def_types(const Type* o) const {
-    auto other = static_cast<const EnumType*>(o);
-
-    if (complete) {
-        for (auto constant: other->constants) {
-            if (constant != lookup_constant(constant->declarator->identifier)) return nullptr;
-        }
-    }
-
-    if (other->complete) {
-        for (auto constant: constants) {
-            if (constant != other->lookup_constant(constant->declarator->identifier)) return nullptr;
-        }
-    }
-
-    return (complete || !other->complete) ? this : other;
 }
 
 void EnumType::print(std::ostream& stream) const {

@@ -34,14 +34,8 @@ struct Type: virtual Printable {
     virtual bool has_tag(const Declarator* declarator) const;
 
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const = 0;
-
-    virtual const Type* compose_type_def_types(const Type* other) const;
-
     virtual LLVMTypeRef llvm_type() const;
 };
-
-const Type* compose_types(const Type* a, const Type* b);
-const Type* compose_type_def_types(const Type* a, const Type* b);
 
 struct CachedType: Type {
     mutable LLVMTypeRef cached_llvm_type{};
@@ -211,7 +205,6 @@ struct StructuredType: CachedType {
 struct StructType: StructuredType {
     explicit StructType(const Location& location);
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
-    virtual const Type* compose_type_def_types(const Type* other) const override;
     virtual void print(std::ostream& stream) const override;
 
 private:
@@ -221,7 +214,6 @@ private:
 struct UnionType: StructuredType {
     explicit UnionType(const Location& location);
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
-    virtual const Type* compose_type_def_types(const Type* other) const override;
     virtual void print(std::ostream& stream) const override;
 
 private:
@@ -245,7 +237,6 @@ struct EnumType: Type {
     virtual bool has_tag(const Declarator* declarator) const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;
-    virtual const Type* compose_type_def_types(const Type* other) const override;
     virtual void print(std::ostream& stream) const override;
 };
 

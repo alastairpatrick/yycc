@@ -169,18 +169,83 @@ struct ResolvePass: Visitor {
 
         return VisitDeclaratorOutput();
     }
+    
+    bool union_has_member(const StructuredType* type, const Declarator* find) {
+        auto member = type->lookup_member(find->identifier);
+        for (auto member: type->members) {
+            if (member->identifier == find->identifier &&
+                compare_types(member->type, find->type)) { // TODO: bit field size
+                return true;
+            }
+        }
+        return false;
+    }
+
+    const Type* compare_types(const Type* a, const Type* b) {
+        if (a == b) return a;
+
+        if (typeid(*a) != typeid(*b)) return nullptr;
+
+        if (auto a_struct = dynamic_cast<const StructType*>(a)) {
+            auto b_struct = static_cast<const StructType*>(b);
+
+            if (a_struct->complete && b_struct->complete) {
+                for (size_t i = 0; i < a_struct->members.size(); ++i) {
+                    auto a_declarator = a_struct->members[i];
+                    auto b_declarator = b_struct->members[i];
+
+                    if (a_declarator->identifier != b_declarator->identifier) return nullptr;
+                    if (!compare_types(a_declarator->type, b_declarator->type)) return nullptr;
+
+                    // TODO bitfield size, etc
+                }
+            }
+        } else if (auto a_union = dynamic_cast<const UnionType*>(a)) {
+            auto b_union = static_cast<const UnionType*>(b);
+
+            if (a_union->complete) {
+                for (auto member: b_union->members) {
+                    if (!union_has_member(a_union, member)) return nullptr;
+                }
+            }
+
+            if (b_union->complete) {
+                for (auto member: a_union->members) {
+                    if (!union_has_member(b_union, member)) return nullptr;
+                }
+            }
+        } else if (auto a_enum = dynamic_cast<const EnumType*>(a)) {
+            auto b_enum = static_cast<const EnumType*>(b);
+
+            if (a_enum->complete) {
+                for (auto constant: b_enum->constants) {
+                    if (constant != a_enum->lookup_constant(constant->declarator->identifier)) return nullptr;
+                }
+            }
+
+            if (b_enum->complete) {
+                for (auto constant: a_enum->constants) {
+                    if (constant != b_enum->lookup_constant(constant->declarator->identifier)) return nullptr;
+                }
+            }
+        } else {
+            return nullptr;
+        }
+
+        return (a->is_complete() || !b->is_complete()) ? a : b;
+    }
 
     virtual VisitDeclaratorOutput visit(Declarator* primary, TypeDef* primary_type_def, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
 
-        auto composed = compose_type_def_types(primary->type, secondary->type);
-        if (!composed) {
+        auto type = compare_types(primary->type, secondary->type);
+        if (!type) {
             message(Severity::ERROR, secondary->location) << "redefinition of '" << primary->identifier << "' with different type\n";
             message(Severity::INFO, primary->location) << "see other definition\n";
             return VisitDeclaratorOutput();
         }
 
-        assert(primary->type == composed);
+        assert(primary->type == type);
 
         return VisitDeclaratorOutput();
     }
