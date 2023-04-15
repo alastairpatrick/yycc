@@ -6,6 +6,7 @@
 #include "parser/Expr.h"
 #include "parser/Statement.h"
 #include "parser/Type.h"
+#include "Value.h"
 
 struct VisitDeclaratorInput {
     Declarator* secondary{};

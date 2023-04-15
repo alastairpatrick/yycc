@@ -19,6 +19,7 @@ add_library(lang_lib STATIC
     "Message.cpp"
     "Printable.cpp"
     "TranslationUnitContext.cpp"
+    "Value.cpp"
 
     "lexer/Location.cpp"
     "lexer/Unescape.cpp"
