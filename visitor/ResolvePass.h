@@ -16,6 +16,17 @@ struct ResolvePass: Visitor {
     virtual VisitDeclaratorOutput visit(Declarator* declarator, TypeDef* type_def, const VisitDeclaratorInput& input) override;
 
     virtual VisitTypeOutput visit_default(const Type* type, const VisitTypeInput& input) override;
+    virtual VisitTypeOutput visit(const PointerType* type, const VisitTypeInput& input) override;
+    virtual VisitTypeOutput visit(const QualifiedType* type, const VisitTypeInput& input) override;
+    virtual VisitTypeOutput visit(const UnqualifiedType* type, const VisitTypeInput& input) override;
+    virtual VisitTypeOutput visit(const FunctionType* type, const VisitTypeInput& input) override;
+    virtual VisitTypeOutput visit(const StructType* type, const VisitTypeInput& input) override;
+    virtual VisitTypeOutput visit(const UnionType* type, const VisitTypeInput& input) override;
+    VisitTypeOutput visit_structured_type(const StructuredType* type, const VisitTypeInput& input);
+    virtual VisitTypeOutput visit(const EnumType* type, const VisitTypeInput& input) override;
+    virtual VisitTypeOutput visit(const TypeOfType* type, const VisitTypeInput& input) override;
+    virtual VisitTypeOutput visit(const TypeDefType* type, const VisitTypeInput& input) override;
+    virtual VisitTypeOutput visit(const UnresolvedArrayType* type, const VisitTypeInput& input) override;
 
     unordered_set<Declarator*> todo;
 };

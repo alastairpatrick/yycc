@@ -202,7 +202,7 @@ SizeOfExpr::SizeOfExpr(const Type* type, const Location& location)
 }
 
 void SizeOfExpr::resolve(ResolvePass& context) {
-    type = type->resolve(context);
+    type = context.resolve(type);
 }
 
 Value SizeOfExpr::emit(EmitContext& context) const {

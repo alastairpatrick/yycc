@@ -17,7 +17,6 @@ struct UnresolvedArrayType: ASTNode, ArrayType {
     UnresolvedArrayType(const Type* element_type, Expr* size, const Location& location);
     virtual bool is_complete() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
-    virtual const Type* resolve(ResolvePass& context) const override;
     virtual LLVMTypeRef cache_llvm_type() const override;
     virtual void print(std::ostream& stream) const override;
 };

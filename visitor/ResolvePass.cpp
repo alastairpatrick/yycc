@@ -2,6 +2,7 @@
 #include "Message.h"
 #include "parser/Declaration.h"
 #include "parser/ArrayType.h"
+#include "parser/Expr.h"
 #include "parser/Type.h"
 #include "Visitor.h"
 
@@ -155,5 +156,118 @@ VisitDeclaratorOutput ResolvePass::visit(Declarator* primary, TypeDef* primary_t
 }
 
 VisitTypeOutput ResolvePass::visit_default(const Type* type, const VisitTypeInput& input) {
-    return VisitTypeOutput(type->resolve(*this));
+    return VisitTypeOutput(type);
+}
+
+VisitTypeOutput ResolvePass::visit(const PointerType* type, const VisitTypeInput& input) {
+  return VisitTypeOutput(resolve(type->base_type)->pointer_to());
+}
+
+VisitTypeOutput ResolvePass::visit(const QualifiedType* type, const VisitTypeInput& input) {
+  return VisitTypeOutput(QualifiedType::of(resolve(type->base_type), type->qualifier_flags));
+}
+
+VisitTypeOutput ResolvePass::visit(const UnqualifiedType* type, const VisitTypeInput& input) {
+  return VisitTypeOutput(resolve(type->base_type)->unqualified());
+}
+
+VisitTypeOutput ResolvePass::visit(const FunctionType* type, const VisitTypeInput& input) {
+    auto resolved_return_type = resolve(type->return_type);
+    auto resolved_param_types(type->parameter_types);
+    for (auto& param_type : resolved_param_types) {
+        param_type = resolve(param_type);
+
+        // C99 6.7.5.3p7
+        if (auto array_type = dynamic_cast<const ArrayType*>(param_type->unqualified())) {
+            param_type = QualifiedType::of(array_type->element_type->pointer_to(), param_type->qualifiers());
+        }
+
+        // C99 6.7.5.3p8
+        if (auto function_type = dynamic_cast<const FunctionType*>(param_type)) {
+            param_type = param_type->pointer_to();
+        }
+
+    }
+    return VisitTypeOutput(FunctionType::of(resolved_return_type, resolved_param_types, type->variadic));
+}
+
+VisitTypeOutput ResolvePass::visit(const StructType* type, const VisitTypeInput& input) {
+    return visit_structured_type(type, input);
+}
+
+VisitTypeOutput ResolvePass::visit(const UnionType* type, const VisitTypeInput& input) {
+    return visit_structured_type(type, input);
+}
+
+VisitTypeOutput ResolvePass::visit_structured_type(const StructuredType* type, const VisitTypeInput& input) {
+    auto want_complete = type->complete;
+    type->complete = false;
+
+    for (auto member: type->members) {
+        resolve(member);
+
+        if (auto member_entity = member->entity()) {
+            if (!member->type->is_complete()) {
+                message(Severity::ERROR, member->location) << "member '" << member->identifier << "' has incomplete type\n";
+            }
+        }
+    }
+
+    type->complete = want_complete;
+    return VisitTypeOutput(type);
+}
+
+VisitTypeOutput ResolvePass::visit(const EnumType* type, const VisitTypeInput& input) {
+    auto want_complete = type->complete;
+    type->complete = false;
+
+    type->base_type = IntegerType::default_type();
+    long long next_int = 0;
+
+    for (auto constant: type->constants) {
+        resolve(constant->declarator);
+        if (constant->constant_expr) {
+            constant->constant_expr->resolve(*this);
+            auto value = constant->constant_expr->fold();
+            next_int = LLVMConstIntGetSExtValue(value.value);
+        }
+
+        constant->constant_int = next_int;
+        ++next_int;
+    }
+
+    type->complete = want_complete;
+    return VisitTypeOutput(type);
+}
+
+VisitTypeOutput ResolvePass::visit(const TypeOfType* type, const VisitTypeInput& input) {
+    type->expr->resolve(*this);
+    return VisitTypeOutput(type->expr->get_type());
+}
+
+VisitTypeOutput ResolvePass::visit(const TypeDefType* type, const VisitTypeInput& input) {
+    return VisitTypeOutput(resolve(type->declarator));
+}
+
+VisitTypeOutput ResolvePass::visit(const UnresolvedArrayType* type, const VisitTypeInput& input) {
+    auto resolved_element_type = resolve(type->element_type);
+    if (!resolved_element_type->is_complete()) {
+        message(Severity::ERROR, type->location) << "incomplete array element type\n";
+        resolved_element_type = IntegerType::default_type();
+    }
+
+    if (type->size) {
+        type->size->resolve(*this);
+        auto size_constant = type->size->fold();
+        unsigned long long size_int = 1;
+        if (!size_constant.is_const_integer()) {
+            message(Severity::ERROR, type->size->location) << "size of array must have integer type\n";
+        } else {
+            size_int = LLVMConstIntGetZExtValue(size_constant.value);
+        }
+
+        return VisitTypeOutput(ResolvedArrayType::of(ArrayKind::COMPLETE, resolved_element_type, size_int));
+    } else {
+        return VisitTypeOutput(ResolvedArrayType::of(ArrayKind::INCOMPLETE, resolved_element_type, 0));
+    }
 }

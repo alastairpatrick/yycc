@@ -9,7 +9,6 @@
 #include "InternedString.h"
 #include "Message.h"
 #include "TranslationUnitContext.h"
-#include "visitor/ResolvePass.h"
 #include "visitor/Visitor.h"
 
 // Type codes
@@ -37,10 +36,6 @@ const Type* Type::unqualified() const {
 }
 
 const Type* Type::promote() const {
-    return this;
-}
-
-const Type* Type::resolve(ResolvePass& context) const {
     return this;
 }
 
@@ -403,10 +398,6 @@ VisitTypeOutput PointerType::accept(Visitor& visitor, const VisitTypeInput& inpu
     return visitor.visit(this, input);
 }
 
-const Type* PointerType::resolve(ResolvePass& context) const {
-    return base_type->resolve(context)->pointer_to();
-}
-
 LLVMTypeRef PointerType::cache_llvm_type() const {
     return LLVMPointerType(base_type->llvm_type(), 0);
 }
@@ -450,10 +441,6 @@ VisitTypeOutput QualifiedType::accept(Visitor& visitor, const VisitTypeInput& in
     return visitor.visit(this, input);
 }
 
-const Type* QualifiedType::resolve(ResolvePass& context) const {
-    return QualifiedType::of(base_type->resolve(context), qualifier_flags);
-}
-
 LLVMTypeRef QualifiedType::llvm_type() const {
     return base_type->llvm_type();
 }
@@ -489,10 +476,6 @@ const Type* UnqualifiedType::unqualified() const {
 
 VisitTypeOutput UnqualifiedType::accept(Visitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
-}
-
-const Type* UnqualifiedType::resolve(ResolvePass& context) const {
-    return base_type->resolve(context)->unqualified();
 }
 
 void UnqualifiedType::print(std::ostream& stream) const {
@@ -531,26 +514,6 @@ bool FunctionType::is_complete() const {
 
 VisitTypeOutput FunctionType::accept(Visitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
-}
-
-const Type* FunctionType::resolve(ResolvePass& context) const {
-    auto resolved_return_type = return_type->resolve(context);
-    auto resolved_param_types(parameter_types);
-    for (auto& param_type : resolved_param_types) {
-        param_type = param_type->resolve(context);
-
-        // C99 6.7.5.3p7
-        if (auto array_type = dynamic_cast<const ArrayType*>(param_type->unqualified())) {
-            param_type = QualifiedType::of(array_type->element_type->pointer_to(), param_type->qualifiers());
-        }
-
-        // C99 6.7.5.3p8
-        if (auto function_type = dynamic_cast<const FunctionType*>(param_type)) {
-            param_type = param_type->pointer_to();
-        }
-
-    }
-    return FunctionType::of(resolved_return_type, resolved_param_types, variadic);
 }
 
 LLVMTypeRef FunctionType::cache_llvm_type() const {
@@ -595,25 +558,6 @@ bool StructuredType::is_complete() const {
 bool StructuredType::has_tag(const Declarator* declarator) const {
     return tag == declarator;
 }
-
-const Type* StructuredType::resolve(ResolvePass& context) const {
-    auto want_complete = complete;
-    complete = false;
-
-    for (auto member: members) {
-        context.resolve(member);
-
-        if (auto member_entity = member->entity()) {
-            if (!member->type->is_complete()) {
-                message(Severity::ERROR, member->location) << "member '" << member->identifier << "' has incomplete type\n";
-            }
-        }
-    }
-
-    complete = want_complete;
-    return this;
-}
-
 
 void StructuredType::print(std::ostream& stream) const {
     stream << '[';
@@ -760,29 +704,6 @@ VisitTypeOutput EnumType::accept(Visitor& visitor, const VisitTypeInput& input) 
     return visitor.visit(this, input);
 }
 
-const Type* EnumType::resolve(ResolvePass& context) const {
-    auto want_complete = complete;
-    complete = false;
-
-    base_type = IntegerType::default_type();
-    long long next_int = 0;
-
-    for (auto constant: constants) {
-        context.resolve(constant->declarator);
-        if (constant->constant_expr) {
-            constant->constant_expr->resolve(context);
-            auto value = constant->constant_expr->fold();
-            next_int = LLVMConstIntGetSExtValue(value.value);
-        }
-
-        constant->constant_int = next_int;
-        ++next_int;
-    }
-
-    complete = want_complete;
-    return this;
-}
-
 LLVMTypeRef EnumType::llvm_type() const {
     return base_type->llvm_type();
 }
@@ -852,11 +773,6 @@ VisitTypeOutput TypeOfType::accept(Visitor& visitor, const VisitTypeInput& input
     return visitor.visit(this, input);
 }
 
-const Type* TypeOfType::resolve(ResolvePass& context) const {
-    expr->resolve(context);
-    return expr->get_type();
-}
-
 void TypeOfType::print(std::ostream& stream) const {
     stream << "[\"typeof\", " << expr << "]";
 }
@@ -901,10 +817,6 @@ const Type* TypeDefType::unqualified() const {
 
 VisitTypeOutput TypeDefType::accept(Visitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
-}
-
-const Type* TypeDefType::resolve(ResolvePass& context) const {
-    return context.resolve(declarator);
 }
 
 LLVMTypeRef TypeDefType::llvm_type() const {
