@@ -130,8 +130,6 @@ private:
     FloatingPointType(FloatingPointSize size);
 };
 
-const Type* convert_arithmetic(const Type* left, const Type* right);
-
 struct PointerType: CachedType {
     const Type* const base_type;
 

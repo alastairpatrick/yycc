@@ -276,58 +276,6 @@ void FloatingPointType::print(ostream& stream) const {
 
 #pragma endregion FloatingPointType
 
-// This is applied to binary expressions and to the second and third operands of a conditional expression.
-const Type* convert_arithmetic(const Type* left, const Type* right) {
-    left = left->promote();
-    right = right->promote();
-
-    // If both operands have the same type, no further conversion is needed.
-    if (left == right) return left;
-
-    auto left_as_float = dynamic_cast<const FloatingPointType*>(left);
-    auto right_as_float = dynamic_cast<const FloatingPointType*>(right);
-    if (left_as_float) {
-        if (right_as_float) {
-            return FloatingPointType::of(max(left_as_float->size, right_as_float->size));
-        }
-        return left_as_float;
-    }
-    if (right_as_float) return right_as_float;
-
-    auto left_as_int = dynamic_cast<const IntegerType*>(left);
-    auto right_as_int = dynamic_cast<const IntegerType*>(right);
-
-    if (left_as_int && right_as_int) {
-        // char was promoted to signed int so DEFAULT is impossible.
-        assert(left_as_int ->signedness != IntegerSignedness::DEFAULT);
-        assert(right_as_int->signedness != IntegerSignedness::DEFAULT);
-
-        // If both operands are of the same integer type (signed or unsigned), the operand with the type of lesser integer conversion rank is converted to the type of the operand with greater rank.
-        if (left_as_int->signedness == right_as_int->signedness) {
-            return IntegerType::of(left_as_int->signedness, max(left_as_int->size, right_as_int->size));
-        }
-
-        // If the operand that has unsigned integer type has rank greater than or equal to the rank of the type of the other operand, the operand with signed integer type is converted to the type of the operand with unsigned integer type.
-        auto unsigned_int = left_as_int->signedness == IntegerSignedness::UNSIGNED ? left_as_int : right_as_int;
-        auto signed_int = left_as_int->signedness == IntegerSignedness::SIGNED ? left_as_int : right_as_int;
-        if (unsigned_int->size >= signed_int->size) {
-            return unsigned_int;
-        }
-
-        // If the type of the operand with signed integer type can represent all of the values of the type of the operand with unsigned integer type, the operand with unsigned integer type is converted to the type of the operand with signed integer type.
-        if (signed_int->size > unsigned_int->size) {
-            return signed_int;
-        }
-
-        // Otherwise, both operands are converted to the unsigned integer type corresponding to the type of the operand with signed integer type.
-        return IntegerType::of(IntegerSignedness::UNSIGNED, signed_int->size);
-    }
-
-    // For class pointer
-    assert(false); // TODO
-    return nullptr;
-}
-
 #pragma region PointerType
 
 VisitTypeOutput PointerType::accept(Visitor& visitor, const VisitTypeInput& input) const {
