@@ -1,5 +1,5 @@
-#ifndef COMPILE_CONTEXT_H
-#define COMPILE_CONTEXT_H
+#ifndef TRANSLATION_UNIT_CONTEXT_H
+#define TRANSLATION_UNIT_CONTEXT_H
 
 #include "InternedString.h"
 #include "parser/TypeContext.h"

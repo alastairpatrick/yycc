@@ -1,5 +1,5 @@
-#ifndef IDENTIFIER_H
-#define IDENTIFIER_H
+#ifndef LEXER_IDENTIFIER_H
+#define LEXER_IDENTIFIER_H
 
 #include "InternedString.h"
 

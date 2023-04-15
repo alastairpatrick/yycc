@@ -1,5 +1,5 @@
-#ifndef PRINT_H
-#define PRINT_H
+#ifndef PRINTABLE_H
+#define PRINTABLE_H
 
 struct Printable {
     virtual void print(ostream& stream) const = 0;

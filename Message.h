@@ -1,3 +1,6 @@
+#ifndef MESSAGE_H
+#define MESSAGE_H
+
 #include "lexer/Location.h"
 
 enum class Severity {
@@ -9,3 +12,5 @@ enum class Severity {
 ostream& message(Severity severity, const Location& location, bool filter = true);
 void pause_messages();
 void resume_messages();
+
+#endif
