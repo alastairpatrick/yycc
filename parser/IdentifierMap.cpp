@@ -6,6 +6,9 @@ Declarator* IdentifierMap::lookup_declarator(const Identifier& identifier) const
     for (auto& scope : scopes) {
         auto it = scope.declarators.find(identifier.name);
         if (it != scope.declarators.end()) {
+            // Note that this intentionally does _not_ always return the primary. For reporting errors
+            // it is better to return a declarator that is currently in scope. The primary declarator
+            // might not be in scope, e.g. it has extern storage class and block scope.
             return it->second;
         }
     }
@@ -21,42 +24,47 @@ const Type* IdentifierMap::lookup_type(const Identifier& identifier) const {
 }
 
 bool IdentifierMap::add_declarator(Declarator* declarator) {
-    bool result = true;
+    Declarator* primary{};
     auto declaration = declarator->declaration;
 
-    if (declaration->scope != IdentifierScope::FILE) {
-        result = add_declarator_to_scope(scopes.front(), declarator) && result;
-    }
-
     if (declaration->scope == IdentifierScope::FILE || declaration->storage_class == StorageClass::EXTERN) {
-        result = add_declarator_to_scope(scopes.back(), declarator) && result;
+        primary = add_declarator_to_scope(scopes.back(), declarator);
     }
 
-    return result;
+    if (declaration->scope != IdentifierScope::FILE) {
+        auto primary2 = add_declarator_to_scope(scopes.front(), declarator);
+        if (primary2) {
+            assert(primary == nullptr || primary == primary2);
+            primary = primary2;
+        }
+    }
+
+    assert(declarator->primary == declarator);
+
+    // Maintain a singly linked list of declarators linked to the same identifier, with the first such declarator
+    // encountered - the primary - always being the first node in the list.
+    if (primary) {
+        declarator->primary = primary;
+        declarator->next = primary->next;
+        primary->next = declarator;
+    }
+
+    return preparse || !primary;
 }
 
-bool IdentifierMap::add_declarator_to_scope(Scope& scope, Declarator* declarator) {
+Declarator* IdentifierMap::add_declarator_to_scope(Scope& scope, Declarator* declarator) {
     auto it = scope.declarators.find(declarator->identifier.name);
-    if (it != scope.declarators.end()) {
-
-        if (declarator->delegate->linkage() == Linkage::INTERNAL && it->second->delegate->linkage() != Linkage::INTERNAL) {
-            message(Severity::ERROR, declarator->location) << "static declaration of '" << declarator->identifier << "' follows non-static declaration\n";
-            message(Severity::INFO, it->second->location) << "see prior declaration\n";
-        }
-
-        if (preparse) {
-            declarator->next = it->second;
-            it->second = declarator;
-        } else {
-            declarator->next = it->second->next;
-            it->second->next = declarator;
-            return false;
-        }
-    } else {
+    if (it == scope.declarators.end()) {
         scope.declarators[declarator->identifier.name] = declarator;
+        return nullptr;
     }
 
-    return true;
+    if (declarator->delegate->linkage() == Linkage::INTERNAL && it->second->delegate->linkage() != Linkage::INTERNAL) {
+        message(Severity::ERROR, declarator->location) << "static declaration of '" << declarator->identifier << "' follows non-static declaration\n";
+        message(Severity::INFO, it->second->location) << "see prior declaration\n";
+    }
+
+    return it->second->primary;
 }
 
 void IdentifierMap::push_scope() {

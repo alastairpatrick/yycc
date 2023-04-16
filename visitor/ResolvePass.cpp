@@ -36,10 +36,11 @@ struct ResolvePass: Visitor {
         }
     }
 
-    const Type* resolve(Declarator* primary) {
+    Declarator* resolve(Declarator* primary) {
         struct ResolutionCycle {};
 
-        if (primary->status == ResolutionStatus::RESOLVED) return primary->type;
+        primary = primary->primary;
+        if (primary->status == ResolutionStatus::RESOLVED) return primary;
         if (primary->status == ResolutionStatus::RESOLVING) throw ResolutionCycle();
 
         primary->status = ResolutionStatus::RESOLVING;
@@ -51,7 +52,8 @@ struct ResolvePass: Visitor {
                     swap(declarator->type, primary->type);
                     acyclic_declarator = primary;
                     primary->status = ResolutionStatus::RESOLVED;
-                    primary->type = resolve(primary->type);
+                    auto resolved_type = resolve(primary->type);
+                    assert(resolved_type == primary->type);  // must be because declarator was already marked resolved
                     break;
                 }
 
@@ -95,13 +97,14 @@ struct ResolvePass: Visitor {
         primary->accept(*this, VisitDeclaratorInput());
         primary->status = ResolutionStatus::RESOLVED;
 
-        return primary->type;
+        return primary;
     }
 
     void compose(Declarator* primary, Declarator* secondary) {
         if (secondary->delegate && primary->delegate && typeid(*secondary->delegate) != typeid(*primary->delegate)) {
             message(Severity::ERROR, secondary->location) << "redeclaration of '" << primary->identifier << "' with different type\n";
             message(Severity::INFO, primary->location) << "see prior declaration\n";
+            return;
         }
 
         if (primary->delegate) {
@@ -357,7 +360,7 @@ struct ResolvePass: Visitor {
     }
 
     virtual VisitTypeOutput visit(const TypeDefType* type, const VisitTypeInput& input) override {
-        return VisitTypeOutput(resolve(type->declarator));
+        return VisitTypeOutput(resolve(type->declarator)->type);
     }
 
     virtual VisitTypeOutput visit(const UnresolvedArrayType* type, const VisitTypeInput& input) override {

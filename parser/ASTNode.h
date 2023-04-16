@@ -46,6 +46,7 @@ struct Declarator: ASTNode {
     Declarator(const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location);
     Declarator(const Declaration* declaration, const Identifier& identifier, const Location& location);
 
+    Declarator* primary{};
     Location location;
     Fragment fragment;
     const Declaration* declaration{};

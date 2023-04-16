@@ -64,9 +64,9 @@ PREPROCESS
 FILE "a.h"
   extern int x;
 EXPECT_TEXT
-
-     #extern x
-#line 1 3 "a.h"
+#line 1 14 "a.h"
+#extern x
+#line 1 3
 extern int x;
 #line 2 2 ""
 int x;
@@ -80,9 +80,9 @@ PREPROCESS
 FILE <a.h>
   extern int x;
 EXPECT_TEXT
-
-     #extern x
-#line 1 3 "a.h"
+#line 1 14 "a.h"
+#extern x
+#line 1 3
 extern int x;
 #line 2 2 ""
 int x;
@@ -126,9 +126,9 @@ extern int x;
 EXPECT_MESSAGE
 :1:15: error unexpected '"' token in directive
 EXPECT_TEXT
-
-    #extern x
-#line 1 "a.h"
+#line 1 12 "a.h"
+#extern x
+#line 1
 extern int x;
 #line 2 ""
 int x;
@@ -158,9 +158,9 @@ FILE "a.h"
 FILE "b.h"
 extern int x;
 EXPECT_TEXT
-
-    #extern x
-#line 1 "b.h"
+#line 1 12 "b.h"
+#extern x
+#line 1
 extern int x;
 #line 2 ""
 int x;
@@ -174,9 +174,9 @@ PREPROCESS
 FILE "c:\a.h"
   extern int x;
 EXPECT_TEXT
-
-     #extern x
-#line 1 3 "c:\\a.h"
+#line 1 14 "c:\\a.h"
+#extern x
+#line 1 3
 extern int x;
 #line 2 2 ""
 int x;

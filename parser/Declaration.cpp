@@ -53,11 +53,11 @@ void Declaration::print(ostream& stream) const {
 }
 
 Declarator::Declarator(const Declaration* declaration, const Type* type, const Identifier &identifier, const Location& location)
-    : location(location), declaration(declaration), type(type), identifier(identifier) {
+    : primary(this), location(location), declaration(declaration), type(type), identifier(identifier) {
 }
 
 Declarator::Declarator(const Declaration* declaration, const Identifier &identifier, const Location& location)
-    : location(location), declaration(declaration), identifier(identifier) {
+    : primary(this), location(location), declaration(declaration), identifier(identifier) {
 }
 
 EnumConstant* Declarator::enum_constant() {

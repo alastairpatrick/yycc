@@ -60,6 +60,7 @@ EXPECT_GLOBALS
 BEGIN Complete union compatible with incomplete union (1)
 union S;
 union S { int x; int y; };
+DECLARATIONS
 EXPECT_GLOBALS
 [["typedef",["UNION",[["x","Si"],["y","Si"]]],"S"]]
 
