@@ -8,7 +8,13 @@
 #include "Visitor.h"
 
 struct ResolvePass: Visitor {
-    unordered_set<Declarator*> todo;
+    // Ordered by declarator location to ensure that messages are consistent between runs.
+    struct DeclaratorComparator {
+        bool operator()(Declarator* a, Declarator* b) const {
+            return a->location < b->location || (a->location == b->location && a < b);
+        }
+    };
+    set<Declarator*, DeclaratorComparator> todo;
 
     const Type* resolve(const Type* type) {
         return type->accept(*this, VisitTypeInput()).value.type;

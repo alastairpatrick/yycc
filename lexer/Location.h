@@ -13,5 +13,6 @@ struct Location {
 };
 
 bool operator<(const Location& a, const Location& b);
+bool operator==(const Location& a, const Location& b);
 
 #endif
