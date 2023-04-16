@@ -919,6 +919,15 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     return declarator;
 }
 
+Declarator* Parser::declare_tag_type(Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location) {
+    auto declarator = new Declarator(declaration, identifier, location);
+    declarator->type = type;
+    declarator->delegate = new TypeDef(declarator);
+    type->tag = declarator;
+    identifiers.add_declarator(declarator);
+    return declarator;
+}
+
 const Type* Parser::parse_structured_type(Declaration* declaration) {
     auto specifier = token;
     auto specifier_location = preprocessor.location();
@@ -927,14 +936,18 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
     Identifier identifier;
     consume_identifier(identifier);
 
+    // C99 6.7.2.3p9
+    Declarator* tag_declarator{};
+    if (token != ';' && token != '{' && !identifier.name->empty()) {
+        tag_declarator = identifiers.lookup_declarator(identifier);
+        if (tag_declarator) {
+            return tag_declarator->type;
+        }
+    }
+
     bool anonymous = declaration->scope == IdentifierScope::STRUCTURED && identifier.name->empty();
 
-    Type* type{};
-    Declarator* declarator{};
-
-    if (!identifier.name->empty()) {
-        declarator = new Declarator(declaration, identifier, specifier_location);
-    }
+    TagType* type{};
 
     if (specifier != TOK_ENUM) {
         StructuredType* structured_type;
@@ -945,31 +958,27 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
         }
         type = structured_type;
 
-        if (declarator) {
-            declarator->type = type;
-            declarator->delegate = new TypeDef(declarator);
-            identifiers.add_declarator(declarator);
-            structured_type->tag = declarator;
-        }
-
         if (consume('{')) {
+            // C99 6.7.2.3p6
+            if (!identifier.name->empty()) tag_declarator = declare_tag_type(declaration, identifier, type, specifier_location);
+
             structured_type->complete = true;
 
             if (!anonymous) identifiers.push_scope();
 
             while (token && token != '}') {
-                auto declaration = dynamic_cast<Declaration*>(parse_declaration_or_statement(IdentifierScope::STRUCTURED));
-                if (!declaration) continue;
+                auto member_declaration = dynamic_cast<Declaration*>(parse_declaration_or_statement(IdentifierScope::STRUCTURED));
+                if (!member_declaration) continue;
 
                 // C11 6.7.2.1p13 anonymous structs and unions
-                if (dynamic_cast<const StructuredType*>(declaration->type) && declaration->declarators.empty()) {
-                    auto declarator = new Declarator(declaration, declaration->type, Identifier(), declaration->location);
-                    declarator->delegate = new Entity(declarator);
-                    declaration->declarators.push_back(declarator);
+                if (dynamic_cast<const StructuredType*>(member_declaration->type) && member_declaration->declarators.empty()) {
+                    auto member_declarator = new Declarator(member_declaration, member_declaration->type, Identifier(), member_declaration->location);
+                    member_declarator->delegate = new Entity(member_declarator);
+                    member_declaration->declarators.push_back(member_declarator);
                 }
 
-                for (auto declarator: declaration->declarators) {
-                    structured_type->members.push_back(declarator);
+                for (auto member: member_declaration->declarators) {
+                    structured_type->members.push_back(member);
                 }
             }
 
@@ -983,14 +992,10 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
         auto enum_type = new EnumType(specifier_location);
         type = enum_type;
 
-        if (declarator) {
-            declarator->type = type;
-            declarator->delegate = new TypeDef(declarator);
-            identifiers.add_declarator(declarator);
-            enum_type->tag = declarator;
-        }
-
         if (consume('{')) {
+            // C99 6.7.2.3p6
+            if (!identifier.name->empty()) tag_declarator = declare_tag_type(declaration, identifier, type, specifier_location);
+
             enum_type->complete = true;
             while (token && token != '}') {
                 auto constant = parse_enum_constant(declaration, enum_type, identifier);
@@ -1000,6 +1005,17 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
             }
 
             require('}');
+        }
+    }
+
+    if (!tag_declarator && !identifier.name->empty()) {
+        if (token == ';') {
+            // C99 6.7.2.3p7
+            tag_declarator = declare_tag_type(declaration, identifier, type, specifier_location);
+        } else {
+            // C99 6.7.2.3p8
+            declaration = new Declaration(IdentifierScope::FILE, specifier_location);
+            tag_declarator = declare_tag_type(declaration, identifier, type, specifier_location);
         }
     }
 

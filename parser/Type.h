@@ -186,14 +186,17 @@ private:
     virtual LLVMTypeRef cache_llvm_type() const override;
 };
 
-struct StructuredType: CachedType {
+struct TagType: CachedType {
+    Declarator* tag{};
+};
+
+struct StructuredType: TagType {
     StructuredType(const Location& location);
 
     const Location location;
     vector<Declarator*> members;
     unordered_map<InternedString, Declarator*> member_index;
     mutable bool complete{};
-    Declarator* tag{};
 
     const Declarator* lookup_member(const Identifier& identifier) const;
 
@@ -220,7 +223,7 @@ private:
     virtual LLVMTypeRef cache_llvm_type() const override;
 };
 
-struct EnumType: Type {
+struct EnumType: TagType {
     explicit EnumType(const Location& location);
     
     const Location location;
@@ -228,7 +231,6 @@ struct EnumType: Type {
     vector<EnumConstant*> constants;
     unordered_map<InternedString, EnumConstant*> constant_index;
     mutable bool complete{};
-    Declarator* tag{};
 
     void add_constant(EnumConstant* constant);
     const EnumConstant* lookup_constant(const Identifier& identifier) const;
@@ -236,7 +238,7 @@ struct EnumType: Type {
     virtual bool is_complete() const override;
     virtual bool has_tag(const Declarator* declarator) const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
-    virtual LLVMTypeRef llvm_type() const override;
+    virtual LLVMTypeRef cache_llvm_type() const override;
     virtual void print(std::ostream& stream) const override;
 };
 

@@ -62,6 +62,7 @@ private:
     Declarator* parse_parameter_declarator();
     Declarator* parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, int flags, bool* last);
     DeclaratorTransform parse_declarator_transform(IdentifierScope scope, int flags);
+    Declarator* declare_tag_type(Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location);
     const Type* parse_structured_type(Declaration* declaration);
     EnumConstant* parse_enum_constant(Declaration* declaration, const EnumType* type, const Identifier& tag);
     const Type* parse_typeof();

@@ -52,6 +52,13 @@ EXPECT_GLOBALS
 ,["var","ES",["STRUCT",["?"]],"z"]]
 
 
+BEGIN Compatible incomplete declarations of struct
+struct S;
+struct S;
+EXPECT_GLOBALS
+[["typedef",["STRUCT",["?"]],"S"]]
+
+
 BEGIN Tagged struct with incomplete and complete definitions (1)
 struct S;
 struct S { int x; int y; };
@@ -286,3 +293,26 @@ DECLARATIONS
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["T","Si"],["x","Si"]]],"S"]
 ,["var","ES",["A","C",4],"a"]]
+
+
+BEGIN Struct binds to prior declation
+struct S {};
+struct T {
+    struct S x;
+};
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[]],"S"]
+,["typedef",["STRUCT",[["x",["STRUCT",[]]]]],"T"]]
+
+
+BEGIN Scoped struct declares new type at file scope
+struct T {
+    struct S* x;
+};
+S* y;
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef",["STRUCT",["?"]],"S"]
+,["typedef",["STRUCT",[["x",["P",["STRUCT",["?"]]]]]],"T"]
+,["var","ES",["P",["STRUCT",["?"]]],"y"]]

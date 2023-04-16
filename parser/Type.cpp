@@ -480,7 +480,7 @@ VisitTypeOutput EnumType::accept(Visitor& visitor, const VisitTypeInput& input) 
     return visitor.visit(this, input);
 }
 
-LLVMTypeRef EnumType::llvm_type() const {
+LLVMTypeRef EnumType::cache_llvm_type() const {
     return base_type->llvm_type();
 }
 

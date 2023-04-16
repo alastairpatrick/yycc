@@ -86,6 +86,7 @@ struct ResolvePass: Visitor {
         }
 
         primary->next = nullptr;
+        primary->accept(*this, VisitDeclaratorInput());
         primary->status = ResolutionStatus::RESOLVED;
 
         return primary->type;
@@ -132,6 +133,9 @@ struct ResolvePass: Visitor {
 
     virtual VisitDeclaratorOutput visit(Declarator* primary, Entity* primary_entity, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
+        if (!secondary) {
+            return VisitDeclaratorOutput();
+        }
 
         auto composite = composite_type(primary->type, secondary->type);
         if (composite) {
@@ -142,7 +146,7 @@ struct ResolvePass: Visitor {
         }
 
         auto secondary_entity = secondary->entity();
-        if (!secondary_entity) return VisitDeclaratorOutput();
+        assert(secondary_entity); //  TODO
 
         if (secondary_entity->initializer) {
             if (primary_entity->initializer) {
@@ -237,6 +241,9 @@ struct ResolvePass: Visitor {
 
     virtual VisitDeclaratorOutput visit(Declarator* primary, TypeDef* primary_type_def, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
+        if (!secondary) {
+            return VisitDeclaratorOutput();
+        }
 
         auto type = compare_types(primary->type, secondary->type);
         if (!type) {
@@ -295,6 +302,7 @@ struct ResolvePass: Visitor {
     }
 
     VisitTypeOutput visit_structured_type(const StructuredType* type, const VisitTypeInput& input) {
+        // C99 6.7.2.3p4
         auto want_complete = type->complete;
         type->complete = false;
 
@@ -313,6 +321,7 @@ struct ResolvePass: Visitor {
     }
 
     virtual VisitTypeOutput visit(const EnumType* type, const VisitTypeInput& input) override {
+        // C99 6.7.2.3p4
         auto want_complete = type->complete;
         type->complete = false;
 
