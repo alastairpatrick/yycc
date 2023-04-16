@@ -228,14 +228,14 @@ struct ResolvePass: Visitor {
             auto b_enum = static_cast<const EnumType*>(b);
 
             if (a_enum->complete) {
-                for (auto constant: b_enum->constants) {
-                    if (constant != a_enum->lookup_constant(constant->declarator->identifier)) return nullptr;
+                for (auto declarator: b_enum->constants) {
+                    if (declarator != a_enum->lookup_constant(declarator->identifier)) return nullptr;
                 }
             }
 
             if (b_enum->complete) {
-                for (auto constant: a_enum->constants) {
-                    if (constant != b_enum->lookup_constant(constant->declarator->identifier)) return nullptr;
+                for (auto declarator: a_enum->constants) {
+                    if (declarator != b_enum->lookup_constant(declarator->identifier)) return nullptr;
                 }
             }
         } else {
@@ -334,15 +334,16 @@ struct ResolvePass: Visitor {
         type->base_type = IntegerType::default_type();
         long long next_int = 0;
 
-        for (auto constant: type->constants) {
-            resolve(constant->declarator);
-            if (constant->constant_expr) {
-                resolve(constant->constant_expr);
-                auto value = constant->constant_expr->fold();
+        for (auto declarator: type->constants) {
+            resolve(declarator);
+            auto enum_constant = declarator->enum_constant();
+            if (enum_constant->constant_expr) {
+                resolve(enum_constant->constant_expr);
+                auto value = enum_constant->constant_expr->fold();
                 next_int = LLVMConstIntGetSExtValue(value.llvm);
             }
 
-            constant->constant_int = next_int;
+            enum_constant->constant_int = next_int;
             ++next_int;
         }
 

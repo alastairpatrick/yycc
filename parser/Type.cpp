@@ -480,13 +480,13 @@ LLVMTypeRef EnumType::cache_llvm_type() const {
     return base_type->llvm_type();
 }
 
-void EnumType::add_constant(EnumConstant* constant) {
-    auto inserted = constant_index.insert(make_pair(constant->declarator->identifier.name, constant));
+void EnumType::add_constant(Declarator* declarator) {
+    auto inserted = constant_index.insert(make_pair(declarator->identifier.name, declarator));
     assert(inserted.second);
-    constants.push_back(constant);
+    constants.push_back(declarator);
 }
 
-const EnumConstant* EnumType::lookup_constant(const Identifier& identifier) const {
+const Declarator* EnumType::lookup_constant(const Identifier& identifier) const {
     auto it = constant_index.find(identifier.name);
     if (it == constant_index.end()) return nullptr;
     return it->second;

@@ -1022,7 +1022,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
     return type;
 }
 
-EnumConstant* Parser::parse_enum_constant(Declaration* declaration, const EnumType* type, const Identifier& tag) {
+Declarator* Parser::parse_enum_constant(Declaration* declaration, const EnumType* type, const Identifier& tag) {
     auto location = preprocessor.location();
 
     Identifier identifier;
@@ -1054,7 +1054,7 @@ EnumConstant* Parser::parse_enum_constant(Declaration* declaration, const EnumTy
         }
     }
 
-    return enum_constant;
+    return declarator;
 }
 
 const Type* Parser::parse_typeof() {
