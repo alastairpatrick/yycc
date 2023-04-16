@@ -334,16 +334,12 @@ VisitTypeOutput FunctionType::accept(Visitor& visitor, const VisitTypeInput& inp
 }
 
 LLVMTypeRef FunctionType::cache_llvm_type() const {
-    if (llvm) return llvm;
-
     vector<LLVMTypeRef> param_llvm;
     param_llvm.reserve(parameter_types.size());
 
     for (auto type: parameter_types) param_llvm.push_back(type->llvm_type());
 
-    llvm = LLVMFunctionType(return_type->llvm_type(), param_llvm.data(), unsigned int(param_llvm.size()), variadic);
-
-    return llvm;
+    return LLVMFunctionType(return_type->llvm_type(), param_llvm.data(), unsigned int(param_llvm.size()), variadic);
 }
 
 void FunctionType::print(std::ostream& stream) const {

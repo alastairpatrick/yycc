@@ -181,7 +181,6 @@ struct FunctionType: CachedType {
     
 private:
     friend class TypeContext;
-    mutable LLVMTypeRef llvm = nullptr;
     FunctionType(const Type* return_type, std::vector<const Type*> parameter_types, bool variadic);
     virtual LLVMTypeRef cache_llvm_type() const override;
 };
