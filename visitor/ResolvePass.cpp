@@ -478,10 +478,18 @@ struct ResolvePass: Visitor {
     }
 };
 
-void resolve_pass(const IdentifierMap::Scope& scope) {
+void resolve_pass(const IdentifierMap::Scope& scope, const ASTNodeVector& declarations) {
     ResolvePass pass;
-    for (auto p: scope.declarators) {
-        pass.todo.insert(p.second);
+    for (auto pair: scope.declarators) {
+        pass.todo.insert(pair.second);
+    }
+
+    for (auto node: declarations) {
+        if (auto declaration = dynamic_cast<Declaration*>(node)) {
+            for (auto declarator: declaration->declarators) {
+                pass.todo.insert(declarator);
+            }
+        }
     }
 
     while (pass.todo.size()) {

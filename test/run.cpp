@@ -99,7 +99,7 @@ ASTNodeVector parse_declarations(IdentifierMap& identifiers, const Input& input)
     Parser parser(preprocessor, identifiers);
     auto declarations = parser.parse();
 
-    if (!identifiers.preparse) resolve_pass(identifiers.scopes.front());
+    if (!identifiers.preparse) resolve_pass(identifiers.scopes.front(), declarations);
 
     return move(declarations);
 }

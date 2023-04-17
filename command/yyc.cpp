@@ -40,7 +40,7 @@ int main(int argc, const char* argv[]) {
         declarations.insert(declarations.end(), unit_declarations.begin(), unit_declarations.end());
     }
 
-    resolve_pass(identifiers.scopes.front());
+    resolve_pass(identifiers.scopes.front(), declarations);
 
     return context.highest_severity == Severity::INFO ? EXIT_SUCCESS : EXIT_FAILURE;
 }

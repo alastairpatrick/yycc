@@ -3,7 +3,7 @@
 
 #include "parser/IdentifierMap.h"
 
-void resolve_pass(const IdentifierMap::Scope& scope);
+void resolve_pass(const IdentifierMap::Scope& scope, const ASTNodeVector& declarations);
 
 #endif
 
