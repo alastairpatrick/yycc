@@ -32,8 +32,8 @@ struct S { int x; int y; };
 struct S { int y; int x; };
 DECLARATIONS
 EXPECT_MESSAGE
-:2:1: error redefinition of 'S' with different type
-:1:1: see other definition
+:2:1: error redefinition of 'S' with incompatible type...
+:1:1: ...see other definition
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
 
@@ -132,8 +132,8 @@ struct S { struct { int x; }; };
 struct S { struct { int y; }; };
 DECLARATIONS
 EXPECT_MESSAGE
-:2:1: error redefinition of 'S' with different type
-:1:1: see other definition
+:2:1: error redefinition of 'S' with incompatible type...
+:1:1: ...see other definition
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["",["STRUCT",[["x","Si"]]]]]],"S"]]
 

@@ -52,8 +52,8 @@ EXPECT_MESSAGE
 :1:13: error redefinition of enumeration constant 'A'
 :1:10: see other
 EXPECT_GLOBALS
-[["ec","A",1]
-,["typedef",["ENUM",[["ec","A",1],["ec","A",1]]],"E"]]
+[["ec","A",0]
+,["typedef",["ENUM",[["ec","A",0],["ec","A"]]],"E"]]
 
 
 BEGIN #enum directive
@@ -88,8 +88,8 @@ enum E { A };
 enum E { B };
 DECLARATIONS
 EXPECT_MESSAGE
-:2:1: error redefinition of 'E' with different type
-:1:1: see other definition
+:2:10: error enum constant 'B'...
+:1:1: ...missing from other definition
 EXPECT_GLOBALS
 [["ec","A",0]
 ,["ec","B",0]
@@ -157,6 +157,17 @@ EXPECT_MESSAGE
 :1:14: error 'A' undeclared
 EXPECT_GLOBALS
 [["ec","A",1],["ec","B",0],["typedef",["ENUM",[["ec","B",0],["ec","A",1]]],"E"]]
+
+
+BEGIN Compatible enum definitions must have same constant values
+enum E { A = 1 };
+enum E { A = 2 };
+DECLARATIONS
+EXPECT_MESSAGE
+:2:10: error incompatible enum constant 'A' value 2...
+:1:10: ...versus 1 here
+EXPECT_GLOBALS
+[["ec","A",1],["typedef",["ENUM",[["ec","A",1]]],"E"]]
 
 
 BEGIN Size of incomplete enum

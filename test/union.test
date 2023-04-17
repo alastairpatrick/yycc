@@ -52,8 +52,8 @@ union S { int x; };
 union S { float x; };
 DECLARATIONS
 EXPECT_MESSAGE
-:2:1: error redefinition of 'S' with different type
-:1:1: see other definition
+:2:1: error redefinition of 'S' with incompatible type...
+:1:1: ...see other definition
 EXPECT_GLOBALS
 [["typedef",["UNION",[["x","Si"]]],"S"]]
 

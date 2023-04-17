@@ -209,6 +209,8 @@ struct ResolvePass: Visitor {
             message(Severity::ERROR, secondary->location) << "redefinition of enumeration constant '" << primary->identifier << "'\n";
             message(Severity::INFO, primary->location) << "see other\n";
         }
+        
+        return VisitDeclaratorOutput();
     }
 
     bool union_has_member(const StructuredType* type, const Declarator* find) {
@@ -230,9 +232,24 @@ struct ResolvePass: Visitor {
             a_constants.insert(make_pair(declarator->identifier.name, declarator));
         }
 
-        for (auto declarator: b_enum->constants) {
-            auto it = a_constants.find(declarator->identifier.name);
-            if (it == a_constants.end()) return false;
+        for (auto b_declarator: b_enum->constants) {
+            auto it = a_constants.find(b_declarator->identifier.name);
+            if (it == a_constants.end()) {
+                message(Severity::ERROR, b_declarator->location) << "enum constant '" << b_declarator->identifier << "'...\n";
+                message(Severity::INFO, a_enum->location) << "...missing from other definition\n";
+                pause_messages();
+                return false;
+            }
+
+            auto a_declarator = it->second;
+            auto b_enum_constant = b_declarator->enum_constant();
+            auto a_enum_constant = a_declarator->enum_constant();
+            if (b_enum_constant->constant_int != a_enum_constant->constant_int) {
+                message(Severity::ERROR, b_declarator->location) << "incompatible enum constant '" << b_declarator->identifier << "' value " << b_enum_constant->constant_int << "...\n";
+                message(Severity::INFO, a_declarator->location) << "...versus " << a_enum_constant->constant_int << " here\n";
+                pause_messages();
+                return false;
+            }
         }
 
         return true;
@@ -290,8 +307,8 @@ struct ResolvePass: Visitor {
 
         auto type = compare_types(primary->type, secondary->type);
         if (!type) {
-            message(Severity::ERROR, secondary->location) << "redefinition of '" << primary->identifier << "' with different type\n";
-            message(Severity::INFO, primary->location) << "see other definition\n";
+            message(Severity::ERROR, secondary->location) << "redefinition of '" << primary->identifier << "' with incompatible type...\n";
+            message(Severity::INFO, primary->location) << "...see other definition\n";
             return VisitDeclaratorOutput();
         }
 

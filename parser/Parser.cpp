@@ -1037,7 +1037,6 @@ Declarator* Parser::parse_enum_constant(Declaration* declaration, const EnumType
     auto enum_constant = new EnumConstant(declarator, tag, constant);
     declarator->delegate = enum_constant;
     identifiers.add_declarator(declarator);
-    declarator = identifiers.lookup_declarator(identifier);
     enum_constant = declarator->enum_constant();
 
     return declarator;
