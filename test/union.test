@@ -18,8 +18,9 @@ union U { int x; int x; };
 DECLARATIONS
 EXPECT_MESSAGE
 :1:22: error duplicate member 'x'
+:1:15: see other
 EXPECT_GLOBALS
-[["typedef",["UNION",[["x","Si"]]],"U"]]
+[["typedef",["UNION",[["x","Si"],["x","Si"]]],"U"]]
 
 
 BEGIN Tagged incomplete union

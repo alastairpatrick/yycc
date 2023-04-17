@@ -1,20 +1,9 @@
-
-BEGIN Redefinition of typedef (1)
+BEGIN Redefinition of typedef
 typedef int a;
 typedef signed a;
-PREPARSE
 EXPECT_AST
 [["typedef", "Si", "a"]
 ,["typedef", "Si", "a"]]
-
-
-BEGIN Redefinition of typedef (2)
-typedef int a;
-typedef signed a;
-DECLARATIONS
-EXPECT_AST
-[["typedef", "Si", "a"]
-,[]]
 
 
 BEGIN Redefinition of typedef with different type
@@ -26,7 +15,7 @@ EXPECT_MESSAGE
 :1:13: see other definition
 EXPECT_AST
 [["typedef", "Si", "a"]
-,[]]
+,["typedef", "Ui", "a"]]
 
 
 BEGIN Typedef as self (preparse)

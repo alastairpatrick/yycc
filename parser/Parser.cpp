@@ -658,14 +658,12 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
             int flags = PD_ALLOW_IDENTIFIER | PD_ALLOW_INITIALIZER;
             if (declarator_count == 0) flags |= PD_ALLOW_FUNCTION_DEFINITION;
             auto declarator = parse_declarator(declaration, base_type, specifiers, flags, &last_declarator);
-            if (declarator) {
-                if (declarator->identifier.name->empty()) {
-                    message(Severity::ERROR, preprocessor.location()) << "expected identifier but got '" << preprocessor.text() << "'\n";
-                    pause_messages();
-                } else {
-                    declaration->declarators.push_back(declarator);
-                    ++declarator_count;
-                }
+            if (declarator->identifier.name->empty()) {
+                message(Severity::ERROR, preprocessor.location()) << "expected identifier but got '" << preprocessor.text() << "'\n";
+                pause_messages();
+            } else {
+                declaration->declarators.push_back(declarator);
+                ++declarator_count;
             }
 
             // No ';' or ',' after function definition.
@@ -906,13 +904,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     }
 
     if (!declarator->identifier.name->empty()) {
-        if (!identifiers.add_declarator(declarator)) {
-            if (declaration->scope == IdentifierScope::STRUCTURED) {
-                message(Severity::ERROR, declarator->location) << "duplicate member '" << declarator->identifier << "'\n";
-            }
-
-            return nullptr;
-        }
+        identifiers.add_declarator(declarator);
     }
 
     declarator->fragment = end_fragment(begin);
@@ -998,9 +990,9 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
             enum_type->complete = true;
             while (token && token != '}') {
-                auto constant = parse_enum_constant(declaration, enum_type, identifier);
-                if (constant) {
-                    enum_type->add_constant(constant);
+                auto declarator = parse_enum_constant(declaration, enum_type, tag_declarator);
+                if (declarator) {
+                    enum_type->constants.push_back(declarator);
                 }
             }
 
@@ -1022,7 +1014,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
     return type;
 }
 
-Declarator* Parser::parse_enum_constant(Declaration* declaration, const EnumType* type, const Identifier& tag) {
+Declarator* Parser::parse_enum_constant(Declaration* declaration, const EnumType* type, Declarator* tag) {
     auto location = preprocessor.location();
 
     Identifier identifier;
@@ -1044,15 +1036,9 @@ Declarator* Parser::parse_enum_constant(Declaration* declaration, const EnumType
     auto declarator = new Declarator(declaration, IntegerType::default_type(), identifier, location);
     auto enum_constant = new EnumConstant(declarator, tag, constant);
     declarator->delegate = enum_constant;
-    if (!identifiers.add_declarator(declarator)) {
-        declarator = identifiers.lookup_declarator(identifier);
-        enum_constant = declarator->enum_constant();
-        
-        if (tag.name->empty() || enum_constant->enum_tag != tag || type->lookup_constant(identifier)) {
-            message(Severity::ERROR, location) << "redefinition of enumeration constant '" << identifier << "'\n";
-            return nullptr;
-        }
-    }
+    identifiers.add_declarator(declarator);
+    declarator = identifiers.lookup_declarator(identifier);
+    enum_constant = declarator->enum_constant();
 
     return declarator;
 }

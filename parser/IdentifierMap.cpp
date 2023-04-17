@@ -23,7 +23,7 @@ const Type* IdentifierMap::lookup_type(const Identifier& identifier) const {
     return declarator->to_type();
 }
 
-bool IdentifierMap::add_declarator(Declarator* declarator) {
+void IdentifierMap::add_declarator(Declarator* declarator) {
     Declarator* primary{};
     auto declaration = declarator->declaration;
 
@@ -48,8 +48,6 @@ bool IdentifierMap::add_declarator(Declarator* declarator) {
         declarator->next = primary->next;
         primary->next = declarator;
     }
-
-    return preparse || !primary;
 }
 
 Declarator* IdentifierMap::add_declarator_to_scope(Scope& scope, Declarator* declarator) {

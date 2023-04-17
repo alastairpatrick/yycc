@@ -15,8 +15,9 @@ struct S { int x; int x; };
 DECLARATIONS
 EXPECT_MESSAGE
 :1:23: error duplicate member 'x'
+:1:16: see other
 EXPECT_GLOBALS
-[["typedef",["STRUCT",[["x","Si"]]],"S"]]
+[["typedef",["STRUCT",[["x","Si"],["x","Si"]]],"S"]]
 
 
 BEGIN Tagged struct with multiple compatible definitions
@@ -106,8 +107,9 @@ struct {
 DECLARATIONS
 EXPECT_MESSAGE
 :3:18: error duplicate member 'x'
+:2:18: see other
 EXPECT_AST
-[["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]],["",["STRUCT",[]]]]],"z"]]
+[["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]],["",["STRUCT",[["x","Si"]]]]]],"z"]]
 
 
 BEGIN Anonymous union in struct

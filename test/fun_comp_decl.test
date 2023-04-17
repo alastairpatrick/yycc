@@ -1,49 +1,28 @@
-BEGIN Multiple function declarations (1)
+BEGIN Multiple function declarations
 int foo(signed);
 signed foo(int);
-PREPARSE
 EXPECT_AST
 [["fun", "E", ["F", "Si", "Si"], "foo"]
 ,["fun", "E", ["F", "Si", "Si"], "foo"]]
 
 
-BEGIN Multiple function declarations (2)
-int foo(signed);
-signed foo(int);
-DECLARATIONS
-EXPECT_AST
-[["fun", "E", ["F", "Si", "Si"], "foo"]
-,[]]
-
-
-BEGIN Multiple function declarations with extern storage class (1)
+BEGIN Multiple function declarations with extern storage class
 extern void foo(int);
 extern void foo(int);
-PREPARSE
 EXPECT_AST
 [["fun", "E", ["F", "V", "Si"], "foo"]
 ,["fun", "E", ["F", "V", "Si"], "foo"]]
 
 
-BEGIN Multiple function declarations with extern storage class (2)
-extern void foo(int);
-extern void foo(int);
-DECLARATIONS
-EXPECT_AST
-[["fun", "E", ["F", "V", "Si"], "foo"]
-,[]]
-
-
 BEGIN Function declaration having internal linkage may not follow function declaration having external linkage
 extern void foo(int);
 static void foo(int);
-DECLARATIONS
 EXPECT_MESSAGE
 :2:13: error static declaration of 'foo' follows non-static declaration
 :1:13: see prior declaration
 EXPECT_AST
-[["fun", "E", ["F", "V", "Si"], "foo"]
-,[]]
+[["fun","E",["F","V","Si"],"foo"]
+,["fun","I",["F","V","Si"],"foo"]]
 
 
 BEGIN Function declaration having internal linkage may preceed function declaration having external linkage (1)
@@ -58,28 +37,17 @@ EXPECT_AST
 BEGIN Function declaration having internal linkage may preceed function declaration having external linkage (2)
 static void foo(int);
 extern void foo(int);
-DECLARATIONS
 EXPECT_AST
-[["fun","I",["F", "V", "Si"],"foo"]
-,[]]
+[["fun","I",["F","V","Si"],"foo"]
+,["fun","E",["F","V","Si"],"foo"]]
 
 
-BEGIN Multiple function declarations with internal linkage (1)
+BEGIN Multiple function declarations with internal linkage
 static void foo(int);
 static void foo(int);
-PREPARSE
 EXPECT_AST
 [["fun","I",["F", "V", "Si"],"foo"]
 ,["fun","I",["F", "V", "Si"],"foo"]]
-
-
-BEGIN Multiple function declarations with internal linkage (2)
-static void foo(int);
-static void foo(int);
-DECLARATIONS
-EXPECT_AST
-[["fun","I",["F", "V", "Si"],"foo"]
-,[]]
 
 
 BEGIN Empty function definition
@@ -94,9 +62,8 @@ static void foo(int);
 void foo(int x) {
 }
 DECLARATIONS
-EXPECT_AST
-[["fun","I",["F", "V", "Si"],"foo",["x"],["block",[]]]
-,[]]
+EXPECT_GLOBALS
+[["fun","I",["F","V","Si"],"foo",["x"],["block",[]]]]
 
 
 BEGIN Function definition with function declaration (2)
@@ -104,9 +71,8 @@ void foo(int x) {
 }
 extern void foo(int);
 DECLARATIONS
-EXPECT_AST
-[["fun", "E", ["F", "V", "Si"], "foo", ["x"], ["block", []]]
-,[]]
+EXPECT_GLOBALS
+[["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]]
 
 
 BEGIN Function initially declared with a function-typed typedef (preparse)
@@ -127,10 +93,9 @@ F foo;
 void foo(int x) {
 }
 DECLARATIONS
-EXPECT_AST
+EXPECT_GLOBALS
 [["typedef",["F","V","Si"],"F"]
-,["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]
-,[]]
+,["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]]
 
 
 BEGIN Function declared with a function-typed typedef in another translation unit (1)
@@ -172,12 +137,9 @@ void foo(int);
 }
 DECLARATIONS
 EXPECT_AST
-[
-    ["fun", "E", ["F", "V", "Si"], "foo"],
-    ["block", [
-        []
-    ]]
-]
+[["fun","E",["F","V","Si"],"foo"],["block",[
+    ["fun","E",["F","V","Si"],"foo"]]
+]]
 
 
 BEGIN Redeclare variable with internal linkage at block scope.
@@ -192,14 +154,12 @@ void foo(int);
 }
 DECLARATIONS
 EXPECT_AST
-[
-    ["var","IS","Si","x"],
-    ["fun","E",["F","V","Si"],"foo"],
-        ["block",[
-            ["typedef","Si","x"],
-            ["block",[
-                ["var","ES","Si","y"],
-                ["*","Nx","Ny"]
-            ]]
-        ]]
-]
+[["var","IS","Si","x"]
+,["fun","E",["F","V","Si"],"foo"],["block",[
+    ["typedef","Si","x"]
+    ,["block",[
+        [["var","ES","Si","x"]
+        ,["var","ES","Si","y"]]
+        ,["*","Nx","Ny"]]
+    ]]
+]]

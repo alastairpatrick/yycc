@@ -387,10 +387,9 @@ BEGIN Variable of typeof_unqual qualified type name (2)
 typeof_unqual(T) x;
 typedef const double T;
 DECLARATIONS
-EXPECT_AST
+EXPECT_GLOBALS
 [["typedef",["Qc","Fd"],"T"]
-,["var","ES","Fd","x"]
-,[]]
+,["var","ES","Fd","x"]]
 
 
 BEGIN #extern directive

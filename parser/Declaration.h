@@ -108,12 +108,12 @@ struct TypeDef: DeclaratorDelegate {
 };
 
 struct EnumConstant: DeclaratorDelegate {
-    Identifier enum_tag;
+    Declarator* enum_tag{};
     Expr* constant_expr{};
     long long constant_int{};
 
     explicit EnumConstant(Declarator* declarator);
-    EnumConstant(Declarator* declarator, const Identifier& enum_tag, Expr* constant);
+    EnumConstant(Declarator* declarator, Declarator* enum_tag, Expr* constant);
 
     virtual DeclaratorKind kind() const override;
     virtual VisitDeclaratorOutput accept(Visitor& visitor, const VisitDeclaratorInput& input) override;

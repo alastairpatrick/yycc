@@ -228,11 +228,7 @@ struct EnumType: TagType {
     const Location location;
     mutable const Type* base_type{};
     vector<Declarator*> constants;
-    unordered_map<InternedString, Declarator*> constant_index;
     mutable bool complete{};
-
-    void add_constant(Declarator* constant);
-    const Declarator* lookup_constant(const Identifier& identifier) const;
 
     virtual bool is_complete() const override;
     virtual bool has_tag(const Declarator* declarator) const override;

@@ -88,10 +88,9 @@ BEGIN Function parameters of typedef array type are adjusted to pointer
 int foo(T x);
 typedef int T[];
 DECLARATIONS
-EXPECT_AST
+EXPECT_GLOBALS
 [["typedef",["A","Si"],"T"]
-,["fun","E",["F","Si",["P","Si"]],"foo"]
-,[]]
+,["fun","E",["F","Si",["P","Si"]],"foo"]]
 
 
 BEGIN Prototype and external linkage
@@ -215,9 +214,8 @@ extern void foo();
 inline void foo() {
 }
 DECLARATIONS
-EXPECT_AST
-[["fun","E",["F", "V"],"foo",[],["block",[]]]
-,[]]
+EXPECT_GLOBALS
+[["fun","E",["F","V"],"foo",[],["block",[]]]]
 
 
 BEGIN Extern storage class prevents inline definition (3)
@@ -225,9 +223,8 @@ inline void foo() {
 }
 extern void foo();
 DECLARATIONS
-EXPECT_AST
-[["fun","E",["F", "V"],"foo",[],["block",[]]]
-,[]]
+EXPECT_GLOBALS
+[["fun","E",["F","V"],"foo",[],["block",[]]]]
 
 
 BEGIN Inline specifier may be given multiple times

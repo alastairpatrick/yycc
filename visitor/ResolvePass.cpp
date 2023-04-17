@@ -146,6 +146,18 @@ struct ResolvePass: Visitor {
             return VisitDeclaratorOutput();
         }
 
+        auto secondary_entity = secondary->entity();
+        assert(secondary_entity); //  TODO
+
+        if (primary_entity->linkage() == Linkage::NONE || secondary_entity->linkage() == Linkage::NONE) {
+            if (primary->declaration->scope == IdentifierScope::STRUCTURED) {
+                message(Severity::ERROR, secondary->location) << "duplicate member '" << primary->identifier << "'\n";
+            } else {
+                message(Severity::ERROR, secondary->location) << "redeclaration of '" << primary->identifier << "' with no linkage\n";
+            }
+            message(Severity::INFO, primary->location) << "see other\n";
+        }
+
         auto composite = composite_type(primary->type, secondary->type);
         if (composite) {
             primary->type = composite;
@@ -153,9 +165,6 @@ struct ResolvePass: Visitor {
             message(Severity::ERROR, secondary->location) << "redeclaration of '" << primary->identifier << "' with incompatible type\n";
             message(Severity::INFO, primary->location) << "see prior declaration\n";
         }
-
-        auto secondary_entity = secondary->entity();
-        assert(secondary_entity); //  TODO
 
         if (secondary_entity->initializer) {
             if (primary_entity->initializer) {
@@ -183,6 +192,25 @@ struct ResolvePass: Visitor {
         return VisitDeclaratorOutput();
     }
     
+    virtual VisitDeclaratorOutput visit(Declarator* primary, EnumConstant* primary_enum_constant, const VisitDeclaratorInput& input) override {
+        auto secondary = input.secondary;
+        if (!secondary) {
+            return VisitDeclaratorOutput();
+        }
+
+        auto secondary_enum_constant = secondary->enum_constant();
+        assert(secondary_enum_constant); //  TODO
+
+        if (!primary_enum_constant->enum_tag ||                                                       // enum { A }; enum E { A };
+            !secondary_enum_constant->enum_tag ||                                                     // enum E { A }; enum { A };
+            primary_enum_constant->enum_tag == secondary_enum_constant->enum_tag ||                   // enum E { A, A };
+            primary_enum_constant->enum_tag->primary != secondary_enum_constant->enum_tag->primary    // enum E1 { A }; enum E2 { A };
+        ) {
+            message(Severity::ERROR, secondary->location) << "redefinition of enumeration constant '" << primary->identifier << "'\n";
+            message(Severity::INFO, primary->location) << "see other\n";
+        }
+    }
+
     bool union_has_member(const StructuredType* type, const Declarator* find) {
         auto member = type->lookup_member(find->identifier);
         for (auto member: type->members) {
@@ -192,6 +220,22 @@ struct ResolvePass: Visitor {
             }
         }
         return false;
+    }
+
+    bool compare_enum_types(const EnumType* a_enum, const EnumType* b_enum) {
+        if (!a_enum->complete) return true;
+        
+        unordered_map<InternedString, Declarator*> a_constants;
+        for (auto declarator: a_enum->constants) {
+            a_constants.insert(make_pair(declarator->identifier.name, declarator));
+        }
+
+        for (auto declarator: b_enum->constants) {
+            auto it = a_constants.find(declarator->identifier.name);
+            if (it == a_constants.end()) return false;
+        }
+
+        return true;
     }
 
     const Type* compare_types(const Type* a, const Type* b) {
@@ -229,18 +273,8 @@ struct ResolvePass: Visitor {
             }
         } else if (auto a_enum = dynamic_cast<const EnumType*>(a)) {
             auto b_enum = static_cast<const EnumType*>(b);
-
-            if (a_enum->complete) {
-                for (auto declarator: b_enum->constants) {
-                    if (declarator != a_enum->lookup_constant(declarator->identifier)) return nullptr;
-                }
-            }
-
-            if (b_enum->complete) {
-                for (auto declarator: a_enum->constants) {
-                    if (declarator != b_enum->lookup_constant(declarator->identifier)) return nullptr;
-                }
-            }
+            if (!compare_enum_types(a_enum, b_enum)) return nullptr;
+            if (!compare_enum_types(b_enum, a_enum)) return nullptr;
         } else {
             return nullptr;
         }
