@@ -16,3 +16,8 @@ EXPECT_AST
 [["return", 7]]
 
 
+BEGIN Resolves return statement
+return sizeof(int[1+1]);
+DECLARATIONS
+EXPECT_AST
+[["return",["sizeof",["A","Si",2]]]]

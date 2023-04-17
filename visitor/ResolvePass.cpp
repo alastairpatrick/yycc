@@ -467,6 +467,11 @@ struct ResolvePass: Visitor {
         }
     }
 
+    virtual VisitStatementOutput visit(ReturnStatement* statement, const VisitStatementInput& input) override {
+        resolve(statement->expr);
+        return VisitStatementOutput();
+    }
+
     virtual VisitStatementOutput visit(EntityExpr* expr, const VisitStatementInput& input) override {
         resolve(expr->declarator);
         return VisitStatementOutput();
@@ -483,12 +488,10 @@ void resolve_pass(const IdentifierMap::Scope& scope, const ASTNodeVector& declar
     for (auto pair: scope.declarators) {
         pass.todo.insert(pair.second);
     }
-
+    
     for (auto node: declarations) {
-        if (auto declaration = dynamic_cast<Declaration*>(node)) {
-            for (auto declarator: declaration->declarators) {
-                pass.todo.insert(declarator);
-            }
+        if (auto statement = dynamic_cast<Statement*>(node)) {
+            pass.resolve(statement);
         }
     }
 

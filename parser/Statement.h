@@ -12,9 +12,9 @@ struct CompoundStatement: Statement {
 };
 
 struct ReturnStatement: Statement {
-    Expr* value{};
+    Expr* expr{};
 
-    ReturnStatement(Expr* value, const Location& location);
+    ReturnStatement(Expr* expr, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
     virtual void print(ostream& stream) const;
 };
