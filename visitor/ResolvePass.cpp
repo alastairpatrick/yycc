@@ -281,10 +281,25 @@ struct ResolvePass: Visitor {
         return true;
     }
 
+    bool compare_tags(const TagType* a_type, const TagType* b_type) {
+        bool a_has_tag = a_type->tag;
+        bool b_has_tag = b_type->tag;
+        if (a_has_tag != b_has_tag) return false;
+        
+        if (a_has_tag && b_has_tag && a_type->tag->identifier.name != b_type->tag->identifier.name) return false;
+
+        return true;
+    }
+
     const Type* compare_types(const Type* a, const Type* b) {
         if (a == b) return a;
 
         if (typeid(*a) != typeid(*b)) return nullptr;
+
+        if (auto a_tagged = dynamic_cast<const TagType*>(a)) {
+            auto b_tagged = static_cast<const TagType*>(b);
+            if (!compare_tags(a_tagged, b_tagged)) return nullptr;
+        }
 
         if (auto a_struct = dynamic_cast<const StructType*>(a)) {
             auto b_struct = static_cast<const StructType*>(b);

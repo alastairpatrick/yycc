@@ -138,6 +138,34 @@ EXPECT_GLOBALS
 [["typedef",["STRUCT",[["",["STRUCT",[["x","Si"]]]]]],"S"]]
 
 
+BEGIN Tagged structs with multiple incompatible definitions having internal structs with different tags (1)
+struct S { struct { int x; }; };
+struct S { struct B { int x; }; };
+DECLARATIONS
+EXPECT_MESSAGE
+:2:1: error redefinition of struct 'S' with incompatible type...
+:1:1: ...see other
+END
+
+BEGIN Tagged structs with multiple incompatible definitions having internal structs with different tags (2)
+struct S { struct A { int x; }; };
+struct S { struct { int x; }; };
+DECLARATIONS
+EXPECT_MESSAGE
+:2:1: error redefinition of struct 'S' with incompatible type...
+:1:1: ...see other
+END
+
+
+BEGIN Tagged structs with multiple incompatible definitions having internal structs with different tags (3)
+struct S { struct A { int x; }; };
+struct S { struct B { int x; }; };
+DECLARATIONS
+EXPECT_MESSAGE
+:2:1: error redefinition of struct 'S' with incompatible type...
+:1:1: ...see other
+END
+
 BEGIN Tagged structs with multiple definitions and incompatible anonymous struct
 struct S { struct { int x; }; };
 struct S { struct { int y; }; };
@@ -149,12 +177,20 @@ EXPECT_GLOBALS
 [["typedef",["STRUCT",[["",["STRUCT",[["x","Si"]]]]]],"S"]]
 
 
-BEGIN Tagged structs with multiple definitions and anonymous union
+BEGIN Tagged structs with multiple compatible definitions and anonymous internal union
 struct S { union { int y; int x; }; };
 struct S { union { int x; int y; }; };
 DECLARATIONS
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["",["UNION",[["y","Si"],["x","Si"]]]]]],"S"]]
+
+
+BEGIN Tagged structs with multiple compatible definitions and internal enum
+struct S { enum { A } e; };
+struct S { enum { A } e; };
+DECLARATIONS
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["e",["ENUM",[["ec","A",0]]]]]],"S"]]
 
 
 BEGIN Anonymous non-structured member with no declarators.
