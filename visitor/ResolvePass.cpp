@@ -14,7 +14,6 @@ struct ResolvePass: Visitor {
             return a->location < b->location || (a->location == b->location && a < b);
         }
     };
-    set<Declarator*, DeclaratorComparator> todo;
 
     const Type* resolve(const Type* type) {
         return type->accept(*this, VisitTypeInput()).value.type;
@@ -486,22 +485,14 @@ struct ResolvePass: Visitor {
 void resolve_pass(const IdentifierMap::Scope& scope, const ASTNodeVector& declarations) {
     ResolvePass pass;
     for (auto pair: scope.declarators) {
-        pass.todo.insert(pair.second);
+        resume_messages();
+        pass.resolve(pair.second);
+        resume_messages();
     }
     
     for (auto node: declarations) {
         if (auto statement = dynamic_cast<Statement*>(node)) {
             pass.resolve(statement);
         }
-    }
-
-    while (pass.todo.size()) {
-        auto it = pass.todo.begin();
-        auto declarator = *it;
-        pass.todo.erase(it);
-
-        resume_messages();
-        pass.resolve(declarator);
-        resume_messages();
     }
 }
