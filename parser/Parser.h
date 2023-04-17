@@ -12,7 +12,7 @@ struct Expr;
 struct DeclaratorTransform {
     function<const Type*(const Type*)> type_transform;
     Identifier identifier;
-    vector<Entity*> params;
+    vector<Declarator*> params;
     CompoundStatement* body{};
 
     const Type* apply(const Type* type);

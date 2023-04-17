@@ -104,7 +104,7 @@ Entity::Entity(Declarator* declarator, Expr* initializer, Expr* bit_field_size)
     : DeclaratorDelegate(declarator), initializer(initializer), bit_field_size(bit_field_size) {
 }
 
-Entity::Entity(Declarator* declarator, uint32_t specifiers, vector<Entity*>&& params, Statement* body)
+Entity::Entity(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&& params, Statement* body)
     : DeclaratorDelegate(declarator), params(move(params)), body(body) {
     auto scope = declarator->declaration->scope;
     auto storage_class = declarator->declaration->storage_class;
@@ -185,7 +185,7 @@ void Entity::print(ostream& stream) const {
             stream << ", [";
             for (auto i = 0; i < params.size(); ++i) {
                 if (i != 0) stream << ", ";
-                auto identifier = params[i]->declarator->identifier;
+                auto identifier = params[i]->identifier;
                 stream << '"' << identifier << '"';
             }
             stream << "], " << body;

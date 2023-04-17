@@ -16,13 +16,17 @@ struct Emitter: Visitor {
     LLVMTargetMachineRef target_machine{};
     LLVMTargetDataRef target_data{};
 
-    LLVMModuleRef mod{};
+    LLVMModuleRef module{};
     LLVMValueRef function{};
     LLVMBuilderRef builder{};
 
     const Type* get_type(Expr* expr);
+    void emit(Declaration* declaration);
+    void emit(Declarator* declarator);
     Value emit(Statement* statement);
     Value convert_to_type(Value value, const Type* target_type);
+
+    virtual VisitDeclaratorOutput visit(Declarator* declarator, Entity* entity, const VisitDeclaratorInput& input) override;
 
     virtual VisitTypeOutput visit_default(const Type* type, const VisitTypeInput& input) override;
     virtual VisitTypeOutput visit(const FloatingPointType* type, const VisitTypeInput& input) override;

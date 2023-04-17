@@ -41,8 +41,6 @@ LLVMTypeRef Type::llvm_type() const {
 
 LLVMTypeRef CachedType::llvm_type() const {
     if (cached_llvm_type) return cached_llvm_type;
-
-    assert(is_complete());
     return cached_llvm_type = cache_llvm_type();
 }
 

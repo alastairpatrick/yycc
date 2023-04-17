@@ -13,5 +13,5 @@ InternedString intern_string(string_view source) {
     strings.push_back(string(source));
 
     auto& inserted = strings.back();
-    return &*views.insert(string_view(inserted)).first;
+    return &*views.insert(string_view(inserted.c_str())).first;
 }

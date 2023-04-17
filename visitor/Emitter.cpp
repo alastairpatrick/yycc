@@ -2,6 +2,16 @@
 #include "Message.h"
 #include "parser/Declaration.h"
 
+void Emitter::emit(Declaration* declaration) {
+    for (auto declarator: declaration->declarators) {
+        emit(declarator);
+    }
+}
+
+void Emitter::emit(Declarator* declarator) {
+    declarator->accept(*this, VisitDeclaratorInput());
+}
+
 Value Emitter::emit(Statement* statement) {
     return statement->accept(*this, VisitStatementInput()).value;
 }
@@ -13,6 +23,21 @@ Value Emitter::convert_to_type(Value value, const Type* target_type) {
     auto result = value.type->accept(*this, input).value;
     assert(result.type == target_type);
     return result;
+}
+
+VisitDeclaratorOutput Emitter::visit(Declarator* declarator, Entity* entity, const VisitDeclaratorInput& input) {
+    if (!entity->is_function() || !entity->body) return VisitDeclaratorOutput();
+
+    assert(!function);
+
+    function = LLVMAddFunction(module, declarator->identifier.name->data(), declarator->primary->type->llvm_type());
+
+    LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
+    LLVMPositionBuilderAtEnd(builder, entry);
+
+    emit(entity->body);
+
+    function = nullptr;
 }
 
 VisitTypeOutput Emitter::visit_default(const Type* type, const VisitTypeInput& input) {

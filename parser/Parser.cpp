@@ -813,10 +813,7 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, in
                         message(Severity::ERROR, preprocessor.location()) << "expected parameter declaration\n";
                         skip_expr(ASSIGN_PREC);
                     } else {
-                        auto entity = param_declarator->entity();
-                        assert(entity);
-
-                        declarator.params.push_back(entity);
+                        declarator.params.push_back(param_declarator);
 
                         if (param_declarator->type == &VoidType::it) {
                             if (seen_void || !param_types.empty()) {
