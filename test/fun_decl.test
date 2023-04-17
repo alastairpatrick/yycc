@@ -99,6 +99,14 @@ EXPECT_AST
 [["fun","E",["F","Si","Ff"],"foo"]]
 
 
+BEGIN Error on typedef parameter declaration
+int foo(typedef int x, float y);
+EXPECT_MESSAGE
+:1:9: error invalid storage class
+EXPECT_AST
+[["fun","E",["F","Si","Si","Ff"],"foo"]]
+
+
 BEGIN Function parameters of typedef array type are adjusted to pointer
 #type T
 int foo(T x);
@@ -107,6 +115,15 @@ DECLARATIONS
 EXPECT_GLOBALS
 [["typedef",["A","Si"],"T"]
 ,["fun","E",["F","Si",["P","Si"]],"foo"]]
+
+
+BEGIN Error on function definition as parameter declaration
+int foo(void x() {}, float y);
+DECLARATIONS
+EXPECT_MESSAGE
+:1:18: error expected parameter declaration
+EXPECT_GLOBALS
+[["fun","E",["F","Si",["P",["F","V"]],"Ff"],"foo"]]
 
 
 BEGIN Prototype and external linkage
