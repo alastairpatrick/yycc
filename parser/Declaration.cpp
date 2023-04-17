@@ -139,6 +139,22 @@ DeclaratorKind Entity::kind() const {
     return DeclaratorKind::ENTITY;
 }
 
+const char* Entity::error_kind() const {
+    if (is_function()) {
+        return "function";
+    } else {
+        if (declarator->declaration->scope == IdentifierScope::STRUCTURED) {
+            return "member";
+        } else {
+            return "variable";
+        }
+    }
+}
+
+bool Entity::is_definition() const {
+    return body || initializer;
+}
+
 Linkage Entity::linkage() const {
     auto storage_class = declarator->declaration->storage_class;
     auto scope = declarator->declaration->scope;
@@ -195,8 +211,23 @@ DeclaratorKind TypeDef::kind() const {
     return DeclaratorKind::TYPE_DEF;
 }
 
+const char* TypeDef::error_kind() const {
+    if (dynamic_cast<const StructType*>(type_def_type.declarator->type)) {
+        return "struct";
+    } else if (dynamic_cast<const UnionType*>(type_def_type.declarator->type)) {
+        return "union";
+    } else if (dynamic_cast<const UnionType*>(type_def_type.declarator->type)) {
+        return "enum";
+    }
+    return "typedef";
+}
+
 const Type* TypeDef::to_type() const {
     return &type_def_type;
+}
+
+bool TypeDef::is_definition() const {
+    return true;
 }
 
 VisitDeclaratorOutput TypeDef::accept(Visitor& visitor, const VisitDeclaratorInput& input) {
@@ -217,6 +248,14 @@ EnumConstant::EnumConstant(Declarator* declarator, Declarator* enum_tag, Expr* c
 
 DeclaratorKind EnumConstant::kind() const {
     return DeclaratorKind::ENUM_CONSTANT;
+}
+
+const char* EnumConstant::error_kind() const {
+    return "enum constant";
+}
+
+bool EnumConstant::is_definition() const {
+    return true;
 }
 
 VisitDeclaratorOutput EnumConstant::accept(Visitor& visitor, const VisitDeclaratorInput& input) {

@@ -64,6 +64,8 @@ struct DeclaratorDelegate: ASTNode {
     Declarator* declarator;
 
     virtual DeclaratorKind kind() const = 0;
+    virtual const char* error_kind() const = 0;
+    virtual bool is_definition() const = 0;
     virtual Linkage linkage() const;
     virtual const Type* to_type() const;
     virtual VisitDeclaratorOutput accept(Visitor& visitor, const VisitDeclaratorInput& input) = 0;
@@ -91,6 +93,8 @@ struct Entity: DeclaratorDelegate {
     bool is_function() const;
 
     virtual DeclaratorKind kind() const override;
+    virtual const char* error_kind() const override;
+    virtual bool is_definition() const override;
     virtual Linkage linkage() const override;
     virtual VisitDeclaratorOutput accept(Visitor& visitor, const VisitDeclaratorInput& input) override;
     virtual void print(ostream& stream) const override;
@@ -102,7 +106,9 @@ struct TypeDef: DeclaratorDelegate {
     explicit TypeDef(Declarator* declarator);
 
     virtual DeclaratorKind kind() const override;
+    virtual const char* error_kind() const override;
     virtual const Type* to_type() const override;
+    virtual bool is_definition() const override;
     virtual VisitDeclaratorOutput accept(Visitor& visitor, const VisitDeclaratorInput& input) override;
     virtual void print(ostream& stream) const override;
 };
@@ -116,6 +122,8 @@ struct EnumConstant: DeclaratorDelegate {
     EnumConstant(Declarator* declarator, Declarator* enum_tag, Expr* constant);
 
     virtual DeclaratorKind kind() const override;
+    virtual const char* error_kind() const override;
+    virtual bool is_definition() const override;
     virtual VisitDeclaratorOutput accept(Visitor& visitor, const VisitDeclaratorInput& input) override;
     virtual void print(ostream& stream) const override;
 };

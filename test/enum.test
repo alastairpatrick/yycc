@@ -49,8 +49,8 @@ BEGIN Enum constant names must be distinct
 enum E { A, A };
 DECLARATIONS
 EXPECT_MESSAGE
-:1:13: error redefinition of enumeration constant 'A'
-:1:10: see other
+:1:13: error redefinition of enum constant 'A'...
+:1:10: ...see other
 EXPECT_GLOBALS
 [["ec","A",0]
 ,["typedef",["ENUM",[["ec","A",0],["ec","A"]]],"E"]]
@@ -121,8 +121,8 @@ enum { A, B } a;
 enum { A, C } b;
 DECLARATIONS
 EXPECT_MESSAGE
-:2:8: error redefinition of enumeration constant 'A'
-:1:8: see other
+:2:8: error redefinition of enum constant 'A'...
+:1:8: ...see other
 END
 
 
@@ -131,8 +131,8 @@ enum E1 { A, B };
 enum E2 { A, C };
 DECLARATIONS
 EXPECT_MESSAGE
-:2:11: error redefinition of enumeration constant 'A'
-:1:11: see other
+:2:11: error redefinition of enum constant 'A'...
+:1:11: ...see other
 END
 
 

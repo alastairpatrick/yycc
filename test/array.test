@@ -69,8 +69,8 @@ int x[2];
 int x[1];
 DECLARATIONS
 EXPECT_MESSAGE
-:2:5: error redeclaration of 'x' with incompatible type
-:1:5: see prior declaration
+:2:5: error redeclaration of variable 'x' with incompatible type...
+:1:5: ...see other
 EXPECT_GLOBALS
 [["var","ES",["A","Si",2],"x"]]
 

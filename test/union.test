@@ -17,8 +17,8 @@ BEGIN Union member names must be distinct
 union U { int x; int x; };
 DECLARATIONS
 EXPECT_MESSAGE
-:1:22: error duplicate member 'x'
-:1:15: see other
+:1:22: error duplicate member 'x'...
+:1:15: ...see other
 EXPECT_GLOBALS
 [["typedef",["UNION",[["x","Si"],["x","Si"]]],"U"]]
 
@@ -52,8 +52,8 @@ union S { int x; };
 union S { float x; };
 DECLARATIONS
 EXPECT_MESSAGE
-:2:1: error redefinition of 'S' with incompatible type...
-:1:1: ...see other definition
+:2:1: error redefinition of union 'S' with incompatible type...
+:1:1: ...see other
 EXPECT_GLOBALS
 [["typedef",["UNION",[["x","Si"]]],"S"]]
 

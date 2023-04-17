@@ -99,11 +99,35 @@ struct ResolvePass: Visitor {
 
         return primary;
     }
+    
+    void see_other_message(const Location& location) {
+        message(Severity::INFO, location) << "...see other\n";
+    }
+
+    void redeclaration_error(const Declarator* secondary, const Location &primary_location, const char* problem) {
+        auto& stream = message(Severity::ERROR, secondary->location);
+        
+        if (secondary->delegate->is_definition()) {
+            stream << "redefinition";
+        } else {
+            stream << "redeclaration";
+        }
+        
+        stream << " of " << secondary->delegate->error_kind() << " '" << secondary->identifier << "'";
+        
+        if (problem) {
+            stream << ' ' << problem;
+        }
+
+        stream << "...\n";
+
+        see_other_message(primary_location);
+        pause_messages();
+    }
 
     void compose(Declarator* primary, Declarator* secondary) {
         if (secondary->delegate && primary->delegate && typeid(*secondary->delegate) != typeid(*primary->delegate)) {
-            message(Severity::ERROR, secondary->location) << "redeclaration of '" << primary->identifier << "' with different type\n";
-            message(Severity::INFO, primary->location) << "see prior declaration\n";
+            redeclaration_error(secondary, primary->location, "with different kind of identifier");
             return;
         }
 
@@ -151,25 +175,23 @@ struct ResolvePass: Visitor {
 
         if (primary_entity->linkage() == Linkage::NONE || secondary_entity->linkage() == Linkage::NONE) {
             if (primary->declaration->scope == IdentifierScope::STRUCTURED) {
-                message(Severity::ERROR, secondary->location) << "duplicate member '" << primary->identifier << "'\n";
+                message(Severity::ERROR, secondary->location) << "duplicate member '" << primary->identifier << "'...\n";
+                see_other_message(primary->location);
             } else {
-                message(Severity::ERROR, secondary->location) << "redeclaration of '" << primary->identifier << "' with no linkage\n";
+                redeclaration_error(secondary, primary->location, "with no linkage");
             }
-            message(Severity::INFO, primary->location) << "see other\n";
         }
 
         auto composite = composite_type(primary->type, secondary->type);
         if (composite) {
             primary->type = composite;
         } else {
-            message(Severity::ERROR, secondary->location) << "redeclaration of '" << primary->identifier << "' with incompatible type\n";
-            message(Severity::INFO, primary->location) << "see prior declaration\n";
+            redeclaration_error(secondary, primary->location, "with incompatible type");
         }
 
         if (secondary_entity->initializer) {
             if (primary_entity->initializer) {
-                message(Severity::ERROR, secondary->location) << "redefinition of '" << primary->identifier << "'\n";
-                message(Severity::INFO, primary->location) << "see prior definition\n";
+                redeclaration_error(secondary, primary->location, nullptr);
             } else {
                 primary_entity->initializer = secondary_entity->initializer;
             }
@@ -177,8 +199,7 @@ struct ResolvePass: Visitor {
     
         if (secondary_entity->body) {
             if (primary_entity->body) {
-                message(Severity::ERROR, secondary->location) << "redefinition of '" << primary->identifier << "'\n";
-                message(Severity::INFO, primary->location) << "see prior definition\n";
+                redeclaration_error(secondary, primary->location, nullptr);
             } else {
                 primary_entity->body = secondary_entity->body;
                 primary_entity->params = move(secondary_entity->params);
@@ -206,8 +227,7 @@ struct ResolvePass: Visitor {
             primary_enum_constant->enum_tag == secondary_enum_constant->enum_tag ||                   // enum E { A, A };
             primary_enum_constant->enum_tag->primary != secondary_enum_constant->enum_tag->primary    // enum E1 { A }; enum E2 { A };
         ) {
-            message(Severity::ERROR, secondary->location) << "redefinition of enumeration constant '" << primary->identifier << "'\n";
-            message(Severity::INFO, primary->location) << "see other\n";
+            redeclaration_error(secondary, primary->location, nullptr);
         }
         
         return VisitDeclaratorOutput();
@@ -307,8 +327,7 @@ struct ResolvePass: Visitor {
 
         auto type = compare_types(primary->type, secondary->type);
         if (!type) {
-            message(Severity::ERROR, secondary->location) << "redefinition of '" << primary->identifier << "' with incompatible type...\n";
-            message(Severity::INFO, primary->location) << "...see other definition\n";
+            redeclaration_error(secondary, primary->location, "with incompatible type");
             return VisitDeclaratorOutput();
         }
 

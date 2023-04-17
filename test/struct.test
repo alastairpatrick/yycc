@@ -14,8 +14,8 @@ BEGIN Struct member names must be distinct
 struct S { int x; int x; };
 DECLARATIONS
 EXPECT_MESSAGE
-:1:23: error duplicate member 'x'
-:1:16: see other
+:1:23: error duplicate member 'x'...
+:1:16: ...see other
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["x","Si"]]],"S"]]
 
@@ -32,8 +32,8 @@ struct S { int x; int y; };
 struct S { int y; int x; };
 DECLARATIONS
 EXPECT_MESSAGE
-:2:1: error redefinition of 'S' with incompatible type...
-:1:1: ...see other definition
+:2:1: error redefinition of struct 'S' with incompatible type...
+:1:1: ...see other
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
 
@@ -106,8 +106,8 @@ struct {
 } z;
 DECLARATIONS
 EXPECT_MESSAGE
-:3:18: error duplicate member 'x'
-:2:18: see other
+:3:18: error duplicate member 'x'...
+:2:18: ...see other
 EXPECT_AST
 [["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]],["",["STRUCT",[["x","Si"]]]]]],"z"]]
 
@@ -132,8 +132,8 @@ struct S { struct { int x; }; };
 struct S { struct { int y; }; };
 DECLARATIONS
 EXPECT_MESSAGE
-:2:1: error redefinition of 'S' with incompatible type...
-:1:1: ...see other definition
+:2:1: error redefinition of struct 'S' with incompatible type...
+:1:1: ...see other
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["",["STRUCT",[["x","Si"]]]]]],"S"]]
 
