@@ -356,9 +356,6 @@ Expr* Parser::parse_unary_expr() {
         else if (token == TOK_IDENTIFIER) {
             Declarator* declarator = identifiers.lookup_declarator(preprocessor.identifier());
             if (declarator) {
-                // TokenKind would have to be TOK_TYPEDEF_IDENTIFIER for declarator to be a typedef.
-                assert(!declarator->type_def());
-
                 result = new EntityExpr(declarator, preprocessor.location());
             } else {
                 message(Severity::ERROR, preprocessor.location()) << '\'' << preprocessor.identifier() << "' undeclared\n";

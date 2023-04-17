@@ -35,7 +35,6 @@ void ConditionExpr::print(ostream& stream) const {
 
 EntityExpr::EntityExpr(Declarator* declarator, const Location& location)
     : Expr(location), declarator(declarator) {
-    assert(declarator);
 }
 
 VisitStatementOutput EntityExpr::accept(Visitor& visitor, const VisitStatementInput& input) {

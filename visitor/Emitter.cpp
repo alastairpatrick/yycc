@@ -240,12 +240,13 @@ VisitStatementOutput Emitter::visit(EntityExpr* expr, const VisitStatementInput&
 
     if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
-    if (auto enum_constant = dynamic_cast<EnumConstant*>(expr->declarator->delegate)) {
+    if (auto enum_constant = expr->declarator->enum_constant()) {
         return VisitStatementOutput(result_type, LLVMConstInt(result_type->llvm_type(), enum_constant->constant_int, true));
+    } else {
+        message(Severity::ERROR, expr->location) << "identifier is not an expression\n";
+        pause_messages();
     }
 
-    // TODO
-    assert(false);
     return VisitStatementOutput();
 }
 
