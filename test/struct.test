@@ -147,6 +147,7 @@ EXPECT_MESSAGE
 :1:1: ...see other
 END
 
+
 BEGIN Tagged structs with multiple incompatible definitions having internal structs with different tags (2)
 struct S { struct A { int x; }; };
 struct S { struct { int x; }; };
@@ -166,6 +167,7 @@ EXPECT_MESSAGE
 :1:1: ...see other
 END
 
+
 BEGIN Tagged structs with multiple definitions and incompatible anonymous struct
 struct S { struct { int x; }; };
 struct S { struct { int y; }; };
@@ -183,6 +185,18 @@ struct S { union { int x; int y; }; };
 DECLARATIONS
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["",["UNION",[["y","Si"],["x","Si"]]]]]],"S"]]
+
+
+BEGIN Duplicate member in anonymous struct
+struct S {
+    int x;
+    struct { int x; };
+};
+DECLARATIONS
+EXPECT_MESSAGE
+:3:18: error duplicate member 'x'...
+:2:9: ...see other
+END
 
 
 BEGIN Tagged structs with multiple compatible definitions and internal enum

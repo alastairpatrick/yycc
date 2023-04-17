@@ -16,20 +16,20 @@ EXPECT_AST
 [["fun", "E", ["F", "V", "Ff", "Ff"], "foo"]]
 
 
-BEGIN Error if prototype has multiple void parameters (1)
-int foo(void, void);
-EXPECT_MESSAGE
-:1:15: error a parameter may not have void type
-EXPECT_AST
-[["fun", "E", ["F", "Si"], "foo"]]
-
-
-BEGIN Error if prototype has multiple void parameters (2)
+BEGIN Error if prototype has second void parameter
 int foo(float, void);
 EXPECT_MESSAGE
 :1:16: error a parameter may not have void type
 EXPECT_AST
 [["fun", "E", ["F", "Si", "Ff"], "foo"]]
+
+
+BEGIN Error if prototype has multiple void parameters
+int foo(void, void);
+EXPECT_MESSAGE
+:1:15: error a parameter may not have void type
+EXPECT_AST
+[["fun", "E", ["F", "Si"], "foo"]]
 
 
 BEGIN Function parameters of function type are adjusted to pointer
@@ -81,6 +81,22 @@ int foo(int x[static 1]);
 DECLARATIONS
 EXPECT_AST
 [["fun","E",["F","Si",["P","Si"]],"foo"]]
+
+
+BEGIN Error on parameter that parses as an expression
+int foo(1+1, float y);
+EXPECT_MESSAGE
+:1:9: error expected parameter declaration
+EXPECT_AST
+[["fun","E",["F","Si","Ff"],"foo"]]
+
+
+BEGIN Error on unexpected token in parameter
+int foo(?, float y);
+EXPECT_MESSAGE
+:1:9: error expected parameter declaration
+EXPECT_AST
+[["fun","E",["F","Si","Ff"],"foo"]]
 
 
 BEGIN Function parameters of typedef array type are adjusted to pointer

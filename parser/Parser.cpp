@@ -162,7 +162,12 @@ void Parser::balance_until(int t) {
 bool Parser::require(int t, Location* location) {
     if (token != t) {
         if (t >= 32 && t < 128) {
-            message(Severity::ERROR, preprocessor.location()) << "expected '" << (char) t << "' but got '" << preprocessor.text() << "'\n";
+            auto& stream = message(Severity::ERROR, preprocessor.location()) << "expected '" << (char) t << "' but ";
+            if (token == TOK_EOF) {
+                stream << "reached end of file\n";
+            } else {
+                stream << "got '" << preprocessor.text() << "'\n";
+            }
             pause_messages();
         } else {
             skip_unexpected();
@@ -713,8 +718,6 @@ CompoundStatement* Parser::parse_compound_statement() {
             list.push_back(parse_declaration_or_statement(IdentifierScope::BLOCK));
         }
 
-        // Must pop scope before consuming '}' in case '}' is immediately followed by an identifier that the
-        // preprocessor must correctly identify as TOK_IDENTIFIER or TOK_TYPEDEF_IDENTIFIER.
         identifiers.pop_scope();
 
         require('}');
@@ -732,7 +735,7 @@ Declarator* Parser::parse_parameter_declarator() {
     uint32_t specifiers;
     auto declaration = parse_declaration_specifiers(IdentifierScope::PROTOTYPE, base_type, specifiers);
     if (!declaration) {
-        // TODO
+        return nullptr;
     }
 
     if (declaration->storage_class != StorageClass::NONE && declaration->storage_class != StorageClass::REGISTER) {
@@ -814,20 +817,23 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, in
             bool seen_void = false;
             while (token && !consume(')')) {
                 auto param_declarator = parse_parameter_declarator();
-
-                // Functions are adjusted to variable of function pointer type.
-                auto entity = param_declarator->entity();
-                assert(entity);
-
-                declarator.params.push_back(entity);
-
-                if (param_declarator->type == &VoidType::it) {
-                    if (seen_void || !param_types.empty()) {
-                        message(Severity::ERROR, param_declarator->location) << "a parameter may not have void type\n";
-                    }
-                    seen_void = true;
+                if (!param_declarator) {
+                    message(Severity::ERROR, preprocessor.location()) << "expected parameter declaration\n";
+                    skip_expr(ASSIGN_PREC);
                 } else {
-                    param_types.push_back(param_declarator->type);
+                    auto entity = param_declarator->entity();
+                    assert(entity);
+
+                    declarator.params.push_back(entity);
+
+                    if (param_declarator->type == &VoidType::it) {
+                        if (seen_void || !param_types.empty()) {
+                            message(Severity::ERROR, param_declarator->location) << "a parameter may not have void type\n";
+                        }
+                        seen_void = true;
+                    } else {
+                        param_types.push_back(param_declarator->type);
+                    }
                 }
                 consume(',');
             }
