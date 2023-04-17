@@ -812,27 +812,33 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, in
 
             vector<const Type*> param_types;
             bool seen_void = false;
-            while (token && !consume(')')) {
-                auto param_declarator = parse_parameter_declarator();
-                if (!param_declarator) {
-                    message(Severity::ERROR, preprocessor.location()) << "expected parameter declaration\n";
-                    skip_expr(ASSIGN_PREC);
-                } else {
-                    auto entity = param_declarator->entity();
-                    assert(entity);
-
-                    declarator.params.push_back(entity);
-
-                    if (param_declarator->type == &VoidType::it) {
-                        if (seen_void || !param_types.empty()) {
-                            message(Severity::ERROR, param_declarator->location) << "a parameter may not have void type\n";
-                        }
-                        seen_void = true;
+            if (!consume(')')) {
+                while (token) {
+                    auto param_declarator = parse_parameter_declarator();
+                    if (!param_declarator) {
+                        message(Severity::ERROR, preprocessor.location()) << "expected parameter declaration\n";
+                        skip_expr(ASSIGN_PREC);
                     } else {
-                        param_types.push_back(param_declarator->type);
+                        auto entity = param_declarator->entity();
+                        assert(entity);
+
+                        declarator.params.push_back(entity);
+
+                        if (param_declarator->type == &VoidType::it) {
+                            if (seen_void || !param_types.empty()) {
+                                message(Severity::ERROR, param_declarator->location) << "a parameter may not have void type\n";
+                            }
+                            seen_void = true;
+                        } else {
+                            param_types.push_back(param_declarator->type);
+                        }
+                    }
+
+                    if (!consume(',')) {
+                        require(')');
+                        break;
                     }
                 }
-                consume(',');
             }
 
             right_transform = [right_transform, param_types=move(param_types)](const Type* type) {

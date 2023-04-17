@@ -40,6 +40,7 @@ private:
     bool consume_identifier(Identifier& identifier);
     void balance_until(int t);
     bool require(int t, Location* location = nullptr);
+
     void skip_unexpected();
     void unexpected_token();
     size_t position() const;

@@ -99,6 +99,14 @@ EXPECT_AST
 [["fun","E",["F","Si","Ff"],"foo"]]
 
 
+BEGIN Error missing comma between parameters
+int foo(int a float b);
+EXPECT_MESSAGE
+:1:15: error expected ')' but got 'float'
+EXPECT_AST
+[["fun","E",["F","Si","Si"],"foo"]]
+
+
 BEGIN Error on typedef parameter declaration
 int foo(typedef int x, float y);
 EXPECT_MESSAGE
@@ -121,9 +129,18 @@ BEGIN Error on function definition as parameter declaration
 int foo(void x() {}, float y);
 DECLARATIONS
 EXPECT_MESSAGE
-:1:18: error expected parameter declaration
+:1:18: error expected ')' but got '{'
 EXPECT_GLOBALS
-[["fun","E",["F","Si",["P",["F","V"]],"Ff"],"foo"]]
+[["fun","E",["F","Si",["P",["F","V"]]],"foo"]]
+
+
+BEGIN Error on initializer in parameter declaration
+int foo(void x = 7, float y);
+DECLARATIONS
+EXPECT_MESSAGE
+:1:16: error expected ')' but got '='
+EXPECT_GLOBALS
+[["fun","E",["F","Si"],"foo"]]
 
 
 BEGIN Prototype and external linkage
