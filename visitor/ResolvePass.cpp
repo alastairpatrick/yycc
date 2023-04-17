@@ -453,8 +453,8 @@ struct ResolvePass: Visitor {
 
         if (type->size) {
             resolve(type->size);
-            auto size_constant = type->size->fold();
             unsigned long long size_int = 1;
+            auto size_constant = type->size->fold(size_int);
             if (!size_constant.is_const_integer()) {
                 message(Severity::ERROR, type->size->location) << "size of array must have integer type\n";
             } else {

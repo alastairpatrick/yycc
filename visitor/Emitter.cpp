@@ -245,6 +245,7 @@ VisitStatementOutput Emitter::visit(EntityExpr* expr, const VisitStatementInput&
     } else {
         message(Severity::ERROR, expr->location) << "identifier is not an expression\n";
         pause_messages();
+        throw EmitError();
     }
 
     return VisitStatementOutput();

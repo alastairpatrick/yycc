@@ -22,6 +22,8 @@ struct VisitDeclaratorOutput;
 struct VisitStatementInput;
 struct VisitStatementOutput;
 
+struct EmitError {};
+
 struct ASTNode: virtual Printable {
     ASTNode();
     ASTNode(const ASTNode&);
@@ -77,7 +79,7 @@ struct Expr: Statement {
     explicit Expr(const Location& location);
 
     const Type* get_type() const;
-    Value fold() const;
+    Value fold(unsigned long long error_value = 0) const;
 };
 
 
