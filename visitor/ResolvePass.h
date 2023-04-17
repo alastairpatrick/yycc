@@ -1,9 +1,9 @@
 #ifndef VISITOR_RESOLVE_PASS_H
 #define VISITOR_RESOLVE_PASS_H
 
-#include "parser/IdentifierMap.h"
+#include "parser/ASTNode.h"
+#include "parser/Scope.h"
 
-void resolve_pass(const IdentifierMap::Scope& scope, const ASTNodeVector& declarations);
+void resolve_pass(const Scope& scope, const ASTNodeVector& nodes);
 
 #endif
-

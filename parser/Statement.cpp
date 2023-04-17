@@ -4,8 +4,8 @@
 Statement::Statement(const Location& location): location(location) {
 }
 
-CompoundStatement::CompoundStatement(ASTNodeVector&& items, const Location& location)
-    : Statement(location), items(move(items)) {
+CompoundStatement::CompoundStatement(Scope&& scope, ASTNodeVector&& nodes, const Location& location)
+    : Statement(location), scope(scope), nodes(move(nodes)) {
 }
 
 VisitStatementOutput CompoundStatement::accept(Visitor& visitor, const VisitStatementInput& input) {
@@ -13,7 +13,7 @@ VisitStatementOutput CompoundStatement::accept(Visitor& visitor, const VisitStat
 }
 
 void CompoundStatement::print(ostream& stream) const {
-    stream << "[\"block\", " << items << ']';
+    stream << "[\"block\", " << nodes << ']';
 }
 
 ReturnStatement::ReturnStatement(Expr* expr, const Location& location)

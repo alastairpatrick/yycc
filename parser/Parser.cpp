@@ -692,30 +692,28 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
 
 CompoundStatement* Parser::parse_compound_statement() {
     CompoundStatement* statement{};
-    ASTNodeVector list;
     if (preparse) {
         Location loc;
         require('{', &loc);
         balance_until('}');
         require('}');
 
-
-        statement = new CompoundStatement(move(list), loc);
+        statement = new CompoundStatement(Scope(), ASTNodeVector(), loc);
     } else {
         identifiers.push_scope();
 
         Location loc;
         require('{', &loc);
 
+        ASTNodeVector nodes;
         while (token && token != '}') {
-            list.push_back(parse_declaration_or_statement(IdentifierScope::BLOCK));
+            nodes.push_back(parse_declaration_or_statement(IdentifierScope::BLOCK));
         }
 
-        identifiers.pop_scope();
+        Scope scope = identifiers.pop_scope();
+        statement = new CompoundStatement(move(scope), move(nodes), loc);
 
         require('}');
-
-        statement = new CompoundStatement(move(list), loc);
     }
 
     return statement;

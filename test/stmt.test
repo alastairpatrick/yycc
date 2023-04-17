@@ -10,6 +10,13 @@ EXPECT_AST
 [["block", [7]]]
 
 
+BEGIN Resolves compound statement
+{ int a[1+1]; }
+DECLARATIONS
+EXPECT_AST
+[["block",[["var","",["A","Si",2],"a"]]]]
+
+
 BEGIN Return statement
 return 7;
 EXPECT_AST

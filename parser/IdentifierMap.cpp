@@ -69,7 +69,7 @@ void IdentifierMap::push_scope() {
     scopes.push_front(Scope());
 }
 
-IdentifierMap::Scope IdentifierMap::pop_scope() {
+Scope IdentifierMap::pop_scope() {
     auto scope = move(scopes.front());
     scopes.pop_front();
     return scope;

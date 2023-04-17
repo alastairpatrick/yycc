@@ -2,11 +2,13 @@
 #define PARSER_STATEMENT_H
 
 #include "ASTNode.h"
+#include "Scope.h"
 
 struct CompoundStatement: Statement {
-    ASTNodeVector items;
+    Scope scope;
+    ASTNodeVector nodes;
 
-    CompoundStatement(ASTNodeVector&& items, const Location& location);
+    CompoundStatement(Scope&& scope, ASTNodeVector&& items, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
     virtual void print(ostream& stream) const;
 };

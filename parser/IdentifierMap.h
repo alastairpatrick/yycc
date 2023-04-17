@@ -2,6 +2,7 @@
 #define PARSER_IDENTIFIER_MAP_H
 
 #include "ASTNode.h"
+#include "Scope.h"
 #include "Type.h"
 
 struct Declarator;
@@ -11,9 +12,6 @@ struct IdentifierMap {
     explicit IdentifierMap(bool preparse);
     void operator=(const IdentifierMap&) = delete;
 
-    struct Scope {
-        unordered_map<InternedString, Declarator*> declarators;
-    };
     list<Scope> scopes;
     const bool preparse;
 
