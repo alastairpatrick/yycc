@@ -8,7 +8,6 @@
 #include "lexer/Token.h"
 #include "Message.h"
 #include "Statement.h"
-#include "visitor/ResolvePass.h"
 
 enum {
     PD_ALLOW_FUNCTION_DEFINITION  = 0x0001,
@@ -636,11 +635,6 @@ ASTNodeVector Parser::parse() {
     while (token) {
         declarations.push_back(parse_declaration_or_statement(IdentifierScope::FILE));
     }
-
-    if (!preparse) {
-        resolve_pass(identifiers.scopes.front());
-    }
-
     return declarations;
 }
 

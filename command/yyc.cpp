@@ -4,6 +4,7 @@
 #include "Message.h"
 #include "parser/Parser.h"
 #include "preprocessor/Preprocessor.h"
+#include "visitor/ResolvePass.h"
 
 void sweep(ostream& stream, const File& file);
 
@@ -38,6 +39,8 @@ int main(int argc, const char* argv[]) {
         ASTNodeVector unit_declarations = input.parser.parse();
         declarations.insert(declarations.end(), unit_declarations.begin(), unit_declarations.end());
     }
+
+    resolve_pass(identifiers.scopes.front());
 
     return context.highest_severity == Severity::INFO ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -8,6 +8,7 @@
 #include "parser/Statement.h"
 #include "TranslationUnitContext.h"
 #include "visitor/Emitter.h"
+#include "visitor/ResolvePass.h"
 
 using json = nlohmann::json;
 
@@ -83,17 +84,23 @@ static ostream& print_error(const string& name, const string& file, int line) {
 Expr* parse_expr(IdentifierMap& identifiers, const Input& input) {
     Preprocessor preprocessor(false);
     preprocessor.in(input);
+
     Parser parser(preprocessor, identifiers);
     auto result = parser.parse_standalone_expr();
     if (!parser.check_eof()) return nullptr;
+
     return result;
 }
 
 ASTNodeVector parse_declarations(IdentifierMap& identifiers, const Input& input) {
     Preprocessor preprocessor(identifiers.preparse);
     preprocessor.in(input);
+
     Parser parser(preprocessor, identifiers);
     auto declarations = parser.parse();
+
+    if (!identifiers.preparse) resolve_pass(identifiers.scopes.front());
+
     return move(declarations);
 }
 
