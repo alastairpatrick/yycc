@@ -38,6 +38,17 @@ EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
 
 
+BEGIN Compatible structs with internal untagged struct member
+struct S {
+    struct { int x; } y;
+};
+struct S {
+    struct { int x; } y;
+};
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["y",["STRUCT",[["x","Si"]]]]]],"S"]]
+
+
 BEGIN Tagged incomplete struct
 struct S;
 EXPECT_GLOBALS
