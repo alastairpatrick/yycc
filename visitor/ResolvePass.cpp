@@ -36,11 +36,11 @@ struct ResolvePass: Visitor {
         }
     }
 
-    Declarator* resolve(Declarator* primary) {
+    const Type* resolve(Declarator* primary) {
         struct ResolutionCycle {};
 
         primary = primary->primary;
-        if (primary->status == ResolutionStatus::RESOLVED) return primary;
+        if (primary->status == ResolutionStatus::RESOLVED) return primary->type;
         if (primary->status == ResolutionStatus::RESOLVING) throw ResolutionCycle();
 
         primary->status = ResolutionStatus::RESOLVING;
@@ -97,7 +97,7 @@ struct ResolvePass: Visitor {
         primary->accept(*this, VisitDeclaratorInput());
         primary->status = ResolutionStatus::RESOLVED;
 
-        return primary;
+        return primary->type;
     }
     
     void see_other_message(const Location& location) {
@@ -233,15 +233,21 @@ struct ResolvePass: Visitor {
         return VisitDeclaratorOutput();
     }
 
-    bool union_has_member(const StructuredType* type, const Declarator* find) {
-        auto member = type->lookup_member(find->identifier);
-        for (auto member: type->members) {
-            if (member->identifier == find->identifier &&
-                compare_types(member->type, find->type)) { // TODO: bit field size
-                return true;
-            }
+    bool compare_union_types(const UnionType* a_union, const UnionType* b_union) {
+        if (!a_union->complete) return true;
+
+        unordered_map<InternedString, Declarator*> a_members;
+        for (auto a_member: a_union->members) {
+            a_members.insert(make_pair(a_member->identifier.name, a_member));
         }
-        return false;
+
+        for (auto b_member: b_union->members) {
+            auto it = a_members.find(b_member->identifier.name);
+            if (it == a_members.end()) return false;
+            if (!compare_types(it->second->type, b_member->type)) return false;
+        }
+
+        return true;
     }
 
     bool compare_enum_types(const EnumType* a_enum, const EnumType* b_enum) {
@@ -296,18 +302,8 @@ struct ResolvePass: Visitor {
             }
         } else if (auto a_union = dynamic_cast<const UnionType*>(a)) {
             auto b_union = static_cast<const UnionType*>(b);
-
-            if (a_union->complete) {
-                for (auto member: b_union->members) {
-                    if (!union_has_member(a_union, member)) return nullptr;
-                }
-            }
-
-            if (b_union->complete) {
-                for (auto member: a_union->members) {
-                    if (!union_has_member(b_union, member)) return nullptr;
-                }
-            }
+            if (!compare_union_types(a_union, b_union)) return nullptr;
+            if (!compare_union_types(b_union, a_union)) return nullptr;
         } else if (auto a_enum = dynamic_cast<const EnumType*>(a)) {
             auto b_enum = static_cast<const EnumType*>(b);
             if (!compare_enum_types(a_enum, b_enum)) return nullptr;
@@ -386,10 +382,10 @@ struct ResolvePass: Visitor {
         type->complete = false;
 
         for (auto member: type->members) {
-            resolve(member);
+            auto member_type = resolve(member);
 
             if (auto member_entity = member->entity()) {
-                if (!member->type->is_complete()) {
+                if (!member_type->is_complete()) {
                     message(Severity::ERROR, member->location) << "member '" << member->identifier << "' has incomplete type\n";
                 }
             }
@@ -430,7 +426,7 @@ struct ResolvePass: Visitor {
     }
 
     virtual VisitTypeOutput visit(const TypeDefType* type, const VisitTypeInput& input) override {
-        return VisitTypeOutput(resolve(type->declarator)->type);
+        return VisitTypeOutput(resolve(type->declarator));
     }
 
     virtual VisitTypeOutput visit(const UnresolvedArrayType* type, const VisitTypeInput& input) override {
