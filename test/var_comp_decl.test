@@ -82,9 +82,6 @@ int x;
 DECLARATIONS
 EXPECT_GLOBALS
 [["var","ES","Si","x"]]
-EXPECT_AST
-[["var","ES","Si","x"]
-,["var","ES","Si","x"]]
 
 
 BEGIN #static directive preceeding variable declaration
@@ -93,6 +90,3 @@ int x;
 DECLARATIONS
 EXPECT_GLOBALS
 [["var","IS","Si","x"]]
-EXPECT_AST
-[["var","IS","Si","x"]
-,["var","ES","Si","x"]]

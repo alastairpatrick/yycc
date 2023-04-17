@@ -24,10 +24,8 @@ struct Parser {
 
     Declaration* parse_initial_directives();
     Expr* parse_standalone_expr();  // for testing
-    void parse();
+    ASTNodeVector parse();
     bool check_eof();
-
-    ASTNodeVector declarations;
 
 private:
     Preprocessor& preprocessor;

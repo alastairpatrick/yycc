@@ -68,7 +68,6 @@ void Parser::handle_declaration_directive() {
     auto pp_token = preprocessor.next_pp_token();
 
     auto declaration = new Declaration(IdentifierScope::FILE, storage_class, &UniversalType::it, preprocessor.location());
-    declarations.push_back(declaration);
 
     while (pp_token && pp_token != '\n') {
         if (pp_token == TOK_IDENTIFIER) {
@@ -632,7 +631,8 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
     return declaration;
 }
 
-void Parser::parse() {
+ASTNodeVector Parser::parse() {
+    ASTNodeVector declarations;
     while (token) {
         declarations.push_back(parse_declaration_or_statement(IdentifierScope::FILE));
     }
@@ -640,6 +640,8 @@ void Parser::parse() {
     if (!preparse) {
         resolve_pass(identifiers.scopes.front());
     }
+
+    return declarations;
 }
 
 ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {

@@ -35,8 +35,7 @@ int main(int argc, const char* argv[]) {
 
     ASTNodeVector declarations;
     for (auto& input : inputs) {
-        input.parser.parse();
-        auto unit_declarations = input.parser.declarations;
+        ASTNodeVector unit_declarations = input.parser.parse();
         declarations.insert(declarations.end(), unit_declarations.begin(), unit_declarations.end());
     }
 
