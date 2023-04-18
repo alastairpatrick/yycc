@@ -184,7 +184,7 @@ EXPECT_AST
 
 BEGIN No implicit int declaration
 static x;
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :1:8: error type 'x' undefined
 END
@@ -363,21 +363,21 @@ EXPECT_AST
 
 BEGIN Variable of unevaluated typeof expression
 typeof(1L / 0L) x;
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["var", "ES", "Sl", "x"]]
 
 
 BEGIN Variable of typeof type name
 typeof(const double) x;
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["var","ES",["Qc","Fd"],"x"]]
 
 
 BEGIN Variable of typeof_unqual qualified type name (1)
 typeof_unqual(const double) x;
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["var", "ES", "Fd", "x"]]
 
@@ -386,7 +386,7 @@ BEGIN Variable of typeof_unqual qualified type name (2)
 #type T
 typeof_unqual(T) x;
 typedef const double T;
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["typedef",["Qc","Fd"],"T"]
 ,["var","ES","Fd","x"]]
@@ -394,14 +394,14 @@ EXPECT_GLOBALS
 
 BEGIN #extern directive
 #extern x
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["var","ES","?","x"]]
 
 
 BEGIN #static directive
 #static x
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["var","IS","?","x"]]
 
@@ -409,7 +409,7 @@ EXPECT_GLOBALS
 BEGIN Error if identifier declared with both #extern and #static
 #extern x
 #static x
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:9: error static declaration of 'x' follows non-static declaration
 :1:9: see prior declaration
@@ -449,7 +449,7 @@ EXPECT_AST
 BEGIN typeof variable
 const double x;
 typeof(x) y;
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["var","ES",["Qc","Fd"],"x"]
 ,["var","ES",["Qc","Fd"],"y"]]
@@ -458,7 +458,7 @@ EXPECT_AST
 BEGIN typeof_unqual variable
 const double x;
 typeof_unqual(x) y;
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["var","ES",["Qc","Fd"],"x"]
 ,["var","ES","Fd","y"]]

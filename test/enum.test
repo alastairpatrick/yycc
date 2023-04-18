@@ -7,7 +7,7 @@ EXPECT_AST
 
 BEGIN Untagged enum definition
 enum { A=1, B } z;
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["var", "ES", ["ENUM", [["ec", "A", 1], ["ec", "B", 2]]], "z"]]
 
@@ -26,7 +26,7 @@ EXPECT_GLOBALS
 
 BEGIN Tagged enum definition
 enum E { A=1, B } z;
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["var", "ES", ["ENUM", [["ec", "A", 1], ["ec", "B", 2]]], "z"]]
 EXPECT_GLOBALS
@@ -47,7 +47,7 @@ EXPECT_GLOBALS
 
 BEGIN Enum constant names must be distinct
 enum E { A, A };
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :1:13: error redefinition of enum constant 'A'...
 :1:10: ...see other
@@ -58,7 +58,7 @@ EXPECT_GLOBALS
 
 BEGIN #enum directive
 #enum A
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["ec","A",0]]
 
@@ -66,7 +66,7 @@ EXPECT_GLOBALS
 BEGIN Tagged union with multiple compatible definitions
 enum E { A, B };
 enum E { A, B };
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["ec","A",0]
 ,["ec","B",1]
@@ -76,7 +76,7 @@ EXPECT_GLOBALS
 BEGIN Order of members does not matter for compatible enums
 enum E { B=2, A=1 };
 enum E { A=1, B=2 };
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["ec","A",1]
 ,["ec","B",2]
@@ -86,7 +86,7 @@ EXPECT_GLOBALS
 BEGIN Complete enum must contain all members of compatible enum
 enum E { A };
 enum E { B };
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:10: error enum constant 'B'...
 :1:1: ...missing from other definition
@@ -99,7 +99,7 @@ EXPECT_GLOBALS
 BEGIN Complete enum compatible with incomplete enum (1)
 enum E;
 enum E { A, B };
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["ec","A",0]
 ,["ec","B",1]
@@ -109,7 +109,7 @@ EXPECT_GLOBALS
 BEGIN Complete enum compatible with incomplete enum (2)
 enum E { A, B };
 enum E;
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["ec","A",0]
 ,["ec","B",1]
@@ -119,7 +119,7 @@ EXPECT_GLOBALS
 BEGIN Different enums may not contain the same constants (1)
 enum { A, B } a;
 enum { A, C } b;
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:8: error redefinition of enum constant 'A'...
 :1:8: ...see other
@@ -129,7 +129,7 @@ END
 BEGIN Different enums may not contain the same constants (2)
 enum E1 { A, B };
 enum E2 { A, C };
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:11: error redefinition of enum constant 'A'...
 :1:11: ...see other
@@ -138,21 +138,21 @@ END
 
 BEGIN Enum constant folding
 enum E { A = 1+1 };
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["ec","A",2],["typedef",["ENUM",[["ec","A",2]]],"E"]]
 
 
 BEGIN Enum constant may refer to prior constants
 enum E { A = 1, B = A };
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["ec","A",1],["ec","B",1],["typedef",["ENUM",[["ec","A",1],["ec","B",1]]],"E"]]
 
 
 BEGIN Enum constant may refer to following constants
 enum E { B = A, A = 1 };
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :1:14: error 'A' undeclared
 EXPECT_GLOBALS
@@ -162,7 +162,7 @@ EXPECT_GLOBALS
 BEGIN Compatible enum definitions must have same constant values
 enum E { A = 1 };
 enum E { A = 2 };
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:10: error incompatible enum constant 'A' value 2...
 :1:10: ...versus 1 here
@@ -173,7 +173,7 @@ EXPECT_GLOBALS
 BEGIN Size of incomplete enum
 enum E;
 char a[sizeof(E)];
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:8: error sizeof applied to incomplete type
 END
@@ -182,7 +182,7 @@ END
 BEGIN Size of complete enum
 enum E { A };
 char a[sizeof(E)];
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["ec","A",0]
 ,["typedef",["ENUM",[["ec","A",0]]],"E"]
@@ -191,7 +191,7 @@ EXPECT_GLOBALS
 
 BEGIN Enum is incomplete within its definition
 enum E { A = sizeof(E) };
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :1:14: error sizeof applied to incomplete type
 END

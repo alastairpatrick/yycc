@@ -14,7 +14,7 @@ using json = nlohmann::json;
 
 enum class TestType {
     EXPRESSION,
-    DECLARATIONS,
+    RESOLVE,
     PREPARSE,
     PREPROCESS,
 
@@ -56,17 +56,17 @@ static const Test tests[] = {
     { "enum",               TestType::PREPARSE },
     { "array",              TestType::PREPARSE },
 
-    { "typedef",            TestType::DECLARATIONS },
-    { "typedef_comp",       TestType::DECLARATIONS },
-    { "var_decl",           TestType::DECLARATIONS },
-    { "var_comp_decl",      TestType::DECLARATIONS },
-    { "fun_decl",           TestType::DECLARATIONS },
-    { "fun_comp_decl",      TestType::DECLARATIONS },
-    { "struct",             TestType::DECLARATIONS },
-    { "union",              TestType::DECLARATIONS },
-    { "enum",               TestType::DECLARATIONS },
-    { "stmt",               TestType::DECLARATIONS },
-    { "array",              TestType::DECLARATIONS },
+    { "typedef",            TestType::RESOLVE },
+    { "typedef_comp",       TestType::RESOLVE },
+    { "var_decl",           TestType::RESOLVE },
+    { "var_comp_decl",      TestType::RESOLVE },
+    { "fun_decl",           TestType::RESOLVE },
+    { "fun_comp_decl",      TestType::RESOLVE },
+    { "struct",             TestType::RESOLVE },
+    { "union",              TestType::RESOLVE },
+    { "enum",               TestType::RESOLVE },
+    { "stmt",               TestType::RESOLVE },
+    { "array",              TestType::RESOLVE },
 
     { "string_literal",     TestType::EXPRESSION },
     { "lex",                TestType::EXPRESSION },
@@ -277,8 +277,8 @@ bool run_parser_tests() {
             } else if (line == "EXPRESSION") {
                 enabled_types[unsigned(TestType::EXPRESSION)] = true;
                 ++num_enabled_types;
-            } else if (line == "DECLARATIONS") {
-                enabled_types[unsigned(TestType::DECLARATIONS)] = true;
+            } else if (line == "RESOLVE") {
+                enabled_types[unsigned(TestType::RESOLVE)] = true;
                 ++num_enabled_types;
             } else if (line == "PREPARSE") {
                 enabled_types[unsigned(TestType::PREPARSE)] = true;

@@ -71,7 +71,7 @@ EXPECT_AST
 BEGIN #extern directives composed
 #extern x
 #extern x
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["var","ES","?","x"]]
 
@@ -79,7 +79,7 @@ EXPECT_GLOBALS
 BEGIN #extern directive preceeding variable declaration
 #extern x
 int x;
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["var","ES","Si","x"]]
 
@@ -87,6 +87,6 @@ EXPECT_GLOBALS
 BEGIN #static directive preceeding variable declaration
 #static x
 int x;
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["var","IS","Si","x"]]

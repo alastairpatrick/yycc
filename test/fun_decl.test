@@ -34,42 +34,42 @@ EXPECT_AST
 
 BEGIN Function parameters of function type are adjusted to pointer
 int foo(int bar(void));
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["fun", "E", ["F", "Si", ["P", ["F", "Si"]]], "foo"]]
 
 
 BEGIN Function parameters of array type are adjusted to pointer (1)
 int foo(int x[]);
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["fun", "E", ["F", "Si", ["P", "Si"]], "foo"]]
 
 
 BEGIN Function parameters of array type are adjusted to pointer (2)
 int foo(int x[2]);
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["fun", "E", ["F", "Si", ["P", "Si"]], "foo"]]
 
 
 BEGIN Function parameters of array type are adjusted to pointer (3)
 int foo(int x[2][3]);
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["fun","E",["F","Si",["P",["A","Si",3]]],"foo"]]
 
 
 BEGIN Qualified array type parameter
 int foo(int x[const volatile restrict 1]);
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["fun","E",["F","Si",["Qcrv",["P","Si"]]],"foo"]]
 
 
 BEGIN Error on qualified array type parameter that is not outer-most
 int foo(int x[2][const volatile restrict 3]);
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :1:18: error unexpected token 'const'
 EXPECT_AST
@@ -78,7 +78,7 @@ EXPECT_AST
 
 BEGIN Static array type parameter
 int foo(int x[static 1]);
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["fun","E",["F","Si",["P","Si"]],"foo"]]
 
@@ -119,7 +119,7 @@ BEGIN Function parameters of typedef array type are adjusted to pointer
 #type T
 int foo(T x);
 typedef int T[];
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["typedef",["A","Si"],"T"]
 ,["fun","E",["F","Si",["P","Si"]],"foo"]]
@@ -127,7 +127,7 @@ EXPECT_GLOBALS
 
 BEGIN Error on function definition as parameter declaration
 int foo(void x() {}, float y);
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :1:18: error expected ')' but got '{'
 EXPECT_GLOBALS
@@ -136,7 +136,7 @@ EXPECT_GLOBALS
 
 BEGIN Error on initializer in parameter declaration
 int foo(void x = 7, float y);
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :1:16: error expected ')' but got '='
 EXPECT_GLOBALS
@@ -181,7 +181,7 @@ BEGIN Function definition with local variables
 void foo() {
     int x = 1;
 }
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["fun", "E", ["F", "V"], "foo", [], ["block", [
     ["var", "", "Si", "x", 1]
@@ -201,7 +201,7 @@ EXPECT_AST
 BEGIN Function definition may not share external declaration with declarators (2)
 int bar(int x) {
 }, foo;
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:2: error unexpected token ','
 EXPECT_AST
@@ -222,7 +222,7 @@ BEGIN Parameters have function prototype scope (2)
 int foo(int bar) {
     int bar;
 }
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["fun", "E", ["F", "Si", "Si"], "foo", ["bar"], ["block", [["var", "", "Si", "bar"]]]]]
 
@@ -231,7 +231,7 @@ BEGIN Cannot declare static function at block scope
 void f(void) {
     static void foo(void);
 }
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:17: error invalid storage class
 EXPECT_AST
@@ -263,7 +263,7 @@ BEGIN Extern storage class prevents inline definition (2)
 extern void foo();
 inline void foo() {
 }
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["fun","E",["F","V"],"foo",[],["block",[]]]]
 
@@ -272,7 +272,7 @@ BEGIN Extern storage class prevents inline definition (3)
 inline void foo() {
 }
 extern void foo();
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["fun","E",["F","V"],"foo",[],["block",[]]]]
 
@@ -296,7 +296,7 @@ BEGIN Function definition with return statement
 int main(int argc, const char* argv) {
     return argc;
 }
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["fun", "E", ["F", "Si", "Si", ["P", ["Qc", "C"]]], "main", ["argc", "argv"], ["block", [
     ["return", "Nargc"]
@@ -311,7 +311,7 @@ EXPECT_AST
 
 BEGIN typeof parameter
 void foo(int x, typeof(x) y);
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["fun","E",["F","V","Si","Si"],"foo"]]
 

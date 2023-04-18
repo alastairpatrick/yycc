@@ -12,7 +12,7 @@ EXPECT_GLOBALS
 
 BEGIN Struct member names must be distinct
 struct S { int x; int x; };
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :1:23: error duplicate member 'x'...
 :1:16: ...see other
@@ -30,7 +30,7 @@ EXPECT_GLOBALS
 BEGIN Tagged structs with incompatible definitions
 struct S { int x; int y; };
 struct S { int y; int x; };
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:1: error redefinition of struct 'S' with incompatible type...
 :1:1: ...see other
@@ -74,7 +74,7 @@ EXPECT_GLOBALS
 BEGIN Tagged struct with incomplete and complete definitions (1)
 struct S;
 struct S { int x; int y; };
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
 
@@ -82,7 +82,7 @@ EXPECT_GLOBALS
 BEGIN Tagged struct with incomplete and complete definitions (2)
 struct S { int x; int y; };
 struct S;
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
 
@@ -115,7 +115,7 @@ struct {
     struct { int x; };
     struct { int x; };
 } z;
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :3:18: error duplicate member 'x'...
 :2:18: ...see other
@@ -141,7 +141,7 @@ EXPECT_GLOBALS
 BEGIN Tagged structs with multiple incompatible definitions having internal structs with different tags (1)
 struct S { struct { int x; }; };
 struct S { struct B { int x; }; };
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:1: error redefinition of struct 'S' with incompatible type...
 :1:1: ...see other
@@ -151,7 +151,7 @@ END
 BEGIN Tagged structs with multiple incompatible definitions having internal structs with different tags (2)
 struct S { struct A { int x; }; };
 struct S { struct { int x; }; };
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:1: error redefinition of struct 'S' with incompatible type...
 :1:1: ...see other
@@ -161,7 +161,7 @@ END
 BEGIN Tagged structs with multiple incompatible definitions having internal structs with different tags (3)
 struct S { struct A { int x; }; };
 struct S { struct B { int x; }; };
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:1: error redefinition of struct 'S' with incompatible type...
 :1:1: ...see other
@@ -171,7 +171,7 @@ END
 BEGIN Tagged structs with multiple definitions and incompatible anonymous struct
 struct S { struct { int x; }; };
 struct S { struct { int y; }; };
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:1: error redefinition of struct 'S' with incompatible type...
 :1:1: ...see other
@@ -182,7 +182,7 @@ EXPECT_GLOBALS
 BEGIN Tagged structs with multiple compatible definitions and anonymous internal union
 struct S { union { int y; int x; }; };
 struct S { union { int x; int y; }; };
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["",["UNION",[["y","Si"],["x","Si"]]]]]],"S"]]
 
@@ -192,7 +192,7 @@ struct S {
     int x;
     struct { int x; };
 };
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :3:18: error duplicate member 'x'...
 :2:9: ...see other
@@ -202,7 +202,7 @@ END
 BEGIN Tagged structs with multiple compatible definitions and internal enum
 struct S { enum { A } e; };
 struct S { enum { A } e; };
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["e",["ENUM",[["ec","A",0]]]]]],"S"]]
 
@@ -245,7 +245,7 @@ BEGIN Struct is in scope within body (1)
 struct S {
     S* p;
 };
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["p",["P","recursive"]]]],"S"]]
 
@@ -255,7 +255,7 @@ struct S {
     typedef S T;
     T* p;
 };
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["T","recursive"],["p",["P","recursive"]]]],"S"]]
 
@@ -265,7 +265,7 @@ BEGIN Struct is in scope within body (3)
 struct S {
     S* p;
 };
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["p",["P","recursive"]]]],"S"]]
 
@@ -275,7 +275,7 @@ struct T;
 struct S {
     T x;
 };
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :3:7: error member 'x' has incomplete type
 END
@@ -285,7 +285,7 @@ BEGIN Struct members must have complete type (2)
 struct S {
     S x;
 };
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:7: error member 'x' has incomplete type
 END
@@ -299,7 +299,7 @@ struct S {
 struct T {
     S x;
 };
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :3:7: error member 'x' has incomplete type
 END
@@ -309,7 +309,7 @@ BEGIN Struct members must have complete type (4)
 struct S {
     struct T x;
 };
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:14: error member 'x' has incomplete type
 END
@@ -330,7 +330,7 @@ struct S {
     double x;
     typeof(x) y;
 };
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Fd"],["y","Fd"]]],"S"]]
 
@@ -340,7 +340,7 @@ struct S {
     int x, y;
 };
 char a[sizeof(S)];
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]
 ,["var","ES",["A","C",8],"a"]]
@@ -352,7 +352,7 @@ struct S {
     int x;
 };
 char a[sizeof(S)];
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["T","Si"],["x","Si"]]],"S"]
 ,["var","ES",["A","C",4],"a"]]
@@ -363,7 +363,7 @@ struct S {};
 struct T {
     struct S x;
 };
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[]],"S"]
 ,["typedef",["STRUCT",[["x",["STRUCT",[]]]]],"T"]]
@@ -374,7 +374,7 @@ struct T {
     struct S* x;
 };
 S* y;
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",["?"]],"S"]
 ,["typedef",["STRUCT",[["x",["P",["STRUCT",["?"]]]]]],"T"]

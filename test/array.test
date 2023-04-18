@@ -1,6 +1,6 @@
 BEGIN Array type of non-parameter variable may not be qualified
 int x[const volatile restrict 1];
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :1:7: error unexpected token 'const'
 EXPECT_AST
@@ -9,7 +9,7 @@ EXPECT_AST
 
 BEGIN Array type of non-parameter variable may not be static
 int x[static 1];
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :1:7: error unexpected token 'static'
 EXPECT_AST
@@ -18,7 +18,7 @@ EXPECT_AST
 
 BEGIN Error if array size is not integer
 int x[1.5];
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :1:7: error size of array must have integer type
 EXPECT_AST
@@ -27,7 +27,7 @@ EXPECT_AST
 
 BEGIN Constant folds array size
 int x[1 + 1];
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["var","ES",["A","Si",2],"x"]]
 
@@ -35,7 +35,7 @@ EXPECT_AST
 BEGIN Composite type of incomplete array and complete array (1)
 int x[];
 int x[1];
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["var","ES",["A","Si",1],"x"]]
 
@@ -43,7 +43,7 @@ EXPECT_GLOBALS
 BEGIN Composite type of incomplete array and complete array (2)
 int x[1];
 int x[];
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["var","ES",["A","Si",1],"x"]]
 
@@ -51,7 +51,7 @@ EXPECT_GLOBALS
 BEGIN Composite type of complete arrays with same size
 int x[1];
 int x[1];
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["var","ES",["A","Si",1],"x"]]
 
@@ -59,7 +59,7 @@ EXPECT_GLOBALS
 BEGIN Composite type of complete arrays with different constant integer size expressions evaluating to same size
 int x[2];
 int x[1+1];
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["var","ES",["A","Si",2],"x"]]
 
@@ -67,7 +67,7 @@ EXPECT_GLOBALS
 BEGIN Complete arrays with different sizes are not compatible
 int x[2];
 int x[1];
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:5: error redeclaration of variable 'x' with incompatible type...
 :1:5: ...see other
@@ -77,7 +77,7 @@ EXPECT_GLOBALS
 
 BEGIN Error on array of incomplete array type
 int x[][];
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :1:6: error incomplete array element type
 EXPECT_GLOBALS
@@ -87,7 +87,7 @@ EXPECT_GLOBALS
 BEGIN Error on array of incomplete struct type
 struct S;
 S x[1];
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:4: error incomplete array element type
 EXPECT_GLOBALS
@@ -98,7 +98,7 @@ EXPECT_GLOBALS
 BEGIN Error on array of incomplete union type
 union U;
 U x[1];
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:4: error incomplete array element type
 EXPECT_GLOBALS
@@ -109,7 +109,7 @@ EXPECT_GLOBALS
 BEGIN Error on array of incomplete enum type
 enum E;
 E x[1];
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:4: error incomplete array element type
 EXPECT_GLOBALS
@@ -120,7 +120,7 @@ EXPECT_GLOBALS
 BEGIN Error on array of function type
 typedef void F(void);
 F x[1];
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:4: error incomplete array element type
 EXPECT_GLOBALS
@@ -131,7 +131,7 @@ EXPECT_GLOBALS
 BEGIN Error on array of qualified incomplete type
 struct S;
 const S x[1];
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:10: error incomplete array element type
 EXPECT_GLOBALS
@@ -142,7 +142,7 @@ EXPECT_GLOBALS
 BEGIN Array size given by sizeof expression
 int x;
 char a[sizeof(x)];
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["var","ES",["A","C",4],"a"]
 ,["var","ES","Si","x"]]
@@ -151,7 +151,7 @@ EXPECT_GLOBALS
 BEGIN Size of array
 char c[3];
 char a[sizeof(c)];
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["var","ES",["A","C",3],"a"]
 ,["var","ES",["A","C",3],"c"]]
@@ -159,7 +159,7 @@ EXPECT_GLOBALS
 
 BEGIN Error on sizeof incomplete array type
 char a[sizeof(float[])];
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :1:8: error sizeof applied to incomplete type
 EXPECT_GLOBALS
@@ -168,7 +168,7 @@ EXPECT_GLOBALS
 
 BEGIN Impossible recursive array size (1)
 char a[sizeof(a)];
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :1:15: error 'a' undeclared
 EXPECT_GLOBALS
@@ -178,7 +178,7 @@ EXPECT_GLOBALS
 BEGIN Impossible recursive array size (2)
 char a[];
 char a[sizeof(a)];
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :2:6: error recursive definition of 'a'
 EXPECT_GLOBALS

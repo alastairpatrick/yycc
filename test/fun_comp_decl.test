@@ -61,7 +61,7 @@ BEGIN Function definition with function declaration (1)
 static void foo(int);
 void foo(int x) {
 }
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["fun","I",["F","V","Si"],"foo",["x"],["block",[]]]]
 
@@ -70,7 +70,7 @@ BEGIN Function definition with function declaration (2)
 void foo(int x) {
 }
 extern void foo(int);
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]]
 
@@ -92,7 +92,7 @@ typedef void F(int x);
 F foo;
 void foo(int x) {
 }
-DECLARATIONS
+RESOLVE
 EXPECT_GLOBALS
 [["typedef",["F","V","Si"],"F"]
 ,["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]]
@@ -123,7 +123,7 @@ void foo(int x) {
 }
 void foo(int x) {
 }
-DECLARATIONS
+RESOLVE
 EXPECT_MESSAGE
 :3:6: error redefinition of function 'foo'...
 :1:6: ...see other
@@ -135,7 +135,7 @@ void foo(int);
 {
     extern void foo(int);
 }
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["fun","E",["F","V","Si"],"foo"],["block",[
     ["fun","E",["F","V","Si"],"foo"]]
@@ -152,7 +152,7 @@ void foo(int);
         x * y;  // Multiplies rather than declaring variable "y" of type "int*"
     }
 }
-DECLARATIONS
+RESOLVE
 EXPECT_AST
 [["var","IS","Si","x"]
 ,["fun","E",["F","V","Si"],"foo"],["block",[
