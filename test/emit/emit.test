@@ -71,3 +71,18 @@ entry:
   ret i32 %2
 }
 END
+
+
+BEGIN Assign parameter value
+void f(int x) {
+    x = 1;
+}
+EXPECT_IR
+define void @f(i32 %0) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  store i32 1, ptr %x, align 4
+  ret void
+}
+END

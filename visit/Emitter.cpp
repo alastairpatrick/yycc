@@ -182,6 +182,24 @@ struct Emitter: Visitor {
         return VisitStatementOutput();
     }
 
+    bool is_assignment(TokenKind token) {
+        switch (token) {
+          default:
+            return false;
+          case '=':
+          case TOK_MUL_ASSIGN:
+          case TOK_DIV_ASSIGN:
+          case TOK_MOD_ASSIGN:
+          case TOK_ADD_ASSIGN:
+          case TOK_SUB_ASSIGN:
+          case TOK_LEFT_ASSIGN:
+          case TOK_RIGHT_ASSIGN:
+          case TOK_AND_ASSIGN:
+          case TOK_OR_ASSIGN:
+          case TOK_XOR_ASSIGN:
+            return true;
+        }
+    }
 
     const Type* promote_integer(const Type* type) {
         auto int_type = IntegerType::default_type();
@@ -250,49 +268,73 @@ struct Emitter: Visitor {
     }
 
     virtual VisitStatementOutput visit(BinaryExpr* expr, const VisitStatementInput& input) override {
+        bool is_assign = is_assignment(expr->op);
+
         auto left_value = emit(expr->left);
         auto right_value = emit(expr->right);
-        auto result_type = convert_arithmetic(left_value.type, right_value.type);
+        auto result_type = is_assign ? left_value.type : convert_arithmetic(left_value.type, right_value.type);
 
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
         auto left_temp = convert_to_type(left_value, result_type);
         auto right_temp = convert_to_type(right_value, result_type);
-
-        LLVMValueRef result_value;
+        LLVMValueRef intermediate{};
 
         if (auto result_as_int = dynamic_cast<const IntegerType*>(result_type)) {
             switch (expr->op) {
+              default:
+                assert(false); // TODO
+                break;
+              case '=':
+                intermediate = right_temp.llvm_rvalue(builder);
+                break;
               case '+':
-                return VisitStatementOutput(result_type, LLVMBuildAdd(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "add"));
+                intermediate = LLVMBuildAdd(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
+                break;
               case '-':
-                return VisitStatementOutput(result_type, LLVMBuildSub(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "sub"));
+                intermediate = LLVMBuildSub(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
+                break;
               case '*':
-                return VisitStatementOutput(result_type, LLVMBuildMul(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "mul"));
+                intermediate = LLVMBuildMul(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
+                break;
               case '/':
                 if (result_as_int->is_signed()) {
-                    return VisitStatementOutput(result_type, LLVMBuildSDiv(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "div"));
+                    intermediate = LLVMBuildSDiv(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
                 } else {
-                    return VisitStatementOutput(result_type, LLVMBuildUDiv(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "div"));
+                    intermediate = LLVMBuildUDiv(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
                 }
+                break;
             }
         }
 
         if (auto result_as_float = dynamic_cast<const FloatingPointType*>(result_type)) {
             switch (expr->op) {
+              default:
+                assert(false); // TODO
+                break;
+              case '=':
+                intermediate = right_temp.llvm_rvalue(builder);
+                break;
               case '+':
-                return VisitStatementOutput(result_type, LLVMBuildFAdd(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "fadd"));
+                intermediate = LLVMBuildFAdd(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
+                break;
               case '-':
-                return VisitStatementOutput(result_type, LLVMBuildFSub(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "fsub"));
+                intermediate = LLVMBuildFSub(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
+                break;
               case '*':
-                return VisitStatementOutput(result_type, LLVMBuildFMul(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "fmul"));
+                intermediate = LLVMBuildFMul(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
+                break;
               case '/':
-                return VisitStatementOutput(result_type, LLVMBuildFDiv(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "fdiv"));
+                intermediate = LLVMBuildFDiv(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
+                break;
             }
         }
 
-        assert(false); // TODO
-        return VisitStatementOutput();
+        if (is_assign) {
+            LLVMBuildStore(builder, intermediate, left_temp.llvm_lvalue());
+        }
+
+        return VisitStatementOutput(result_type, intermediate);
     }
 
     virtual VisitStatementOutput visit(ConditionExpr* expr, const VisitStatementInput& input) override {
