@@ -56,25 +56,14 @@ bool emit(const ASTNodeVector& nodes) {
     emitter.builder = LLVMCreateBuilder();
 
     for (auto node: nodes) {
-        if (auto declaration = dynamic_cast<Declaration*>(node)) {
-            emitter.emit(declaration);
-        }
+        emitter.emit(node);
     }
 
-    char *error{};
-    LLVMVerifyModule(emitter.module, LLVMAbortProcessAction, &error);
-    if (error) {
-        cerr << error << "\n";
-        LLVMDisposeMessage(error);
-        return false;
-    }
+    LLVMVerifyModule(emitter.module, LLVMAbortProcessAction, nullptr);
 
+    char* error{};
     LLVMTargetMachineEmitToFile(g_target_machine, emitter.module, "generated.asm", LLVMAssemblyFile, &error);
-    if (error) {
-        cerr << error << "\n";
-        LLVMDisposeMessage(error);
-        return false;
-    }
+    LLVMDisposeMessage(error);
 
     return true;
 }

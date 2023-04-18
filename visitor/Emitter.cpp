@@ -2,6 +2,14 @@
 #include "Message.h"
 #include "parser/Declaration.h"
 
+void Emitter::emit(ASTNode* node) {
+    if (auto declaration = dynamic_cast<Declaration*>(node)) {
+        emit(declaration);
+    } else if (auto statement = dynamic_cast<Statement*>(node)) {
+        emit(statement);
+    }
+}
+
 void Emitter::emit(Declaration* declaration) {
     for (auto declarator: declaration->declarators) {
         emit(declarator);
@@ -38,6 +46,8 @@ VisitDeclaratorOutput Emitter::visit(Declarator* declarator, Entity* entity, con
     emit(entity->body);
 
     function = nullptr;
+
+    return VisitDeclaratorOutput();
 }
 
 VisitTypeOutput Emitter::visit_default(const Type* type, const VisitTypeInput& input) {
@@ -109,6 +119,20 @@ VisitStatementOutput Emitter::visit_default(Expr* expr, const VisitStatementInpu
     assert(false);
     return VisitStatementOutput();
 }
+
+VisitStatementOutput Emitter::visit(CompoundStatement* statement, const VisitStatementInput& input) {
+    for (auto node: statement->nodes) {
+        emit(node);
+    }
+    return VisitStatementOutput();
+};
+
+VisitStatementOutput Emitter::visit(ReturnStatement* statement, const VisitStatementInput& input) {
+    auto value = emit(statement->expr);
+    LLVMBuildRet(builder, value.llvm);
+    return VisitStatementOutput();
+}
+
 
 const Type* promote_integer(const Type* type) {
     auto int_type = IntegerType::default_type();

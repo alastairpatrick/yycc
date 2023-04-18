@@ -94,12 +94,12 @@ VisitStatementOutput Visitor::visit_default(Statement* statement, const VisitSta
     return VisitStatementOutput();
 }
 
-VisitStatementOutput Visitor::visit(CompoundStatement* expr, const VisitStatementInput& input) {
-    return visit_default(expr, input);
+VisitStatementOutput Visitor::visit(CompoundStatement* statement, const VisitStatementInput& input) {
+    return visit_default(statement, input);
 }
 
-VisitStatementOutput Visitor::visit(ReturnStatement* expr, const VisitStatementInput& input) {
-    return visit_default(expr, input);
+VisitStatementOutput Visitor::visit(ReturnStatement* statement, const VisitStatementInput& input) {
+    return visit_default(statement, input);
 }
 
 /* Expressions */
