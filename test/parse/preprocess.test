@@ -1,9 +1,6 @@
 BEGIN preprocess
 void foo() {}
-SWEEP
 EXPECT_TEXT
-     #extern foo
-#line 1
 void foo() {}
 END
 
@@ -11,10 +8,7 @@ END
 BEGIN valid #line directive
 #line 7
 int x;
-SWEEP
 EXPECT_TEXT
-#line 7 5
-#extern x
 #line 7
 int x;
 END
@@ -23,11 +17,8 @@ END
 BEGIN valid #line directive with path
 #line 7 "foo.h"
 int x;
-SWEEP
 EXPECT_TEXT
-#line 7 5 "foo.h"
-#extern x
-#line 7
+#line 7 "foo.h"
 int x;
 END
 
@@ -35,11 +26,8 @@ END
 BEGIN valid #line directive with path with escape sequence
 #line 7 "\\foo.h"
 int x;
-SWEEP
 EXPECT_TEXT
-#line 7 5 "\\foo.h"
-#extern x
-#line 7
+#line 7 "\\foo.h"
 int x;
 END
 
@@ -48,10 +36,7 @@ BEGIN combines #line directives
 #line 6
 #line 7
 int x;
-SWEEP
 EXPECT_TEXT
-#line 7 5
-#extern x
 #line 7
 int x;
 END
@@ -60,13 +45,10 @@ END
 BEGIN valid #include directive
 #include "a.h"
  int x;
-SWEEP
 FILE "a.h"
   extern int x;
 EXPECT_TEXT
-#line 1 14 "a.h"
-#extern x
-#line 1 3
+#line 1 3 "a.h"
 extern int x;
 #line 2 2 ""
 int x;
@@ -76,13 +58,10 @@ END
 BEGIN valid system #include directive
 #include <a.h>
  int x;
-SWEEP
 FILE <a.h>
   extern int x;
 EXPECT_TEXT
-#line 1 14 "a.h"
-#extern x
-#line 1 3
+#line 1 3 "a.h"
 extern int x;
 #line 2 2 ""
 int x;
@@ -106,13 +85,10 @@ END
 BEGIN #include directive with invalid filename
 #include 7
 int x;
-SWEEP
 EXPECT_MESSAGE
 :1:10: error unexpected '7' token in directive
 EXPECT_TEXT
 
-    #extern x
-#line 2
 int x;
 END
 
@@ -120,15 +96,12 @@ END
 BEGIN #include directive with superfluous tokens
 #include "a.h""
 int x;
-SWEEP
 FILE "a.h"
 extern int x;
 EXPECT_MESSAGE
 :1:15: error unexpected '"' token in directive
 EXPECT_TEXT
-#line 1 12 "a.h"
-#extern x
-#line 1
+#line 1 "a.h"
 extern int x;
 #line 2 ""
 int x;
@@ -138,13 +111,10 @@ END
 BEGIN #include directive with missing file
 #include "a.h"
 int x;
-SWEEP
 EXPECT_MESSAGE
 :1:10: error cannot read file "a.h"
 EXPECT_TEXT
 
-    #extern x
-#line 2
 int x;
 END
 
@@ -152,15 +122,12 @@ END
 BEGIN nested #include directives
 #include "a.h"
 int x;
-SWEEP
 FILE "a.h"
 #include "b.h"
 FILE "b.h"
 extern int x;
 EXPECT_TEXT
-#line 1 12 "b.h"
-#extern x
-#line 1
+#line 1 "b.h"
 extern int x;
 #line 2 ""
 int x;
@@ -170,13 +137,10 @@ END
 BEGIN #include directive with backslash in filename
 #include "c:\a.h"
  int x;
-SWEEP
 FILE "c:\a.h"
   extern int x;
 EXPECT_TEXT
-#line 1 14 "c:\\a.h"
-#extern x
-#line 1 3
+#line 1 3 "c:\\a.h"
 extern int x;
 #line 2 2 ""
 int x;

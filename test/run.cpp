@@ -13,6 +13,7 @@
 using json = nlohmann::json;
 
 enum class TestType {
+    PREPROCESS,
     SWEEP,
     EXPRESSION,
     PREPARSE,
@@ -45,7 +46,7 @@ enum Section {
 };
 
 static const Test tests[] = {
-    { "preprocess",                 TestType::SWEEP },
+    { "parse/preprocess",           TestType::PREPROCESS },
     { "parse/sweep",                TestType::SWEEP },
 
     { "parse/string_literal",       TestType::EXPRESSION },
@@ -136,6 +137,11 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
                 type = get_expr_type(expr);
             }
             output_stream << expr;
+        } else if (test_type == TestType::PREPROCESS) {
+            Preprocessor preprocessor(sections[INPUT], true);
+            while (preprocessor.next_token() != TOK_EOF) {
+            }
+            output_stream << preprocessor.output();
         } else if (test_type == TestType::SWEEP) {
             File file;
             file.text = sections[INPUT];
@@ -315,6 +321,9 @@ bool run_parser_tests() {
                 ++num_enabled_types;
             } else if (line == "PREPARSE") {
                 enabled_types[unsigned(TestType::PREPARSE)] = true;
+                ++num_enabled_types;
+            } else if (line == "PREPROCESS") {
+                enabled_types[unsigned(TestType::PREPROCESS)] = true;
                 ++num_enabled_types;
             } else if (line == "SWEEP") {
                 enabled_types[unsigned(TestType::SWEEP)] = true;
