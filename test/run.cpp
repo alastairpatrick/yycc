@@ -13,9 +13,10 @@
 using json = nlohmann::json;
 
 enum class TestType {
-    PREPROCESS,
+    SWEEP,
     EXPRESSION,
     PREPARSE,
+    PARSE,
     RESOLVE,
     EMIT,
 
@@ -44,40 +45,50 @@ enum Section {
 };
 
 static const Test tests[] = {
-    { "preprocess",         TestType::PREPROCESS },
-    { "sweep",              TestType::PREPROCESS },
+    { "preprocess",                 TestType::SWEEP },
+    { "sweep",                      TestType::SWEEP },
 
-    { "typedef",            TestType::PREPARSE },
-    { "typedef_comp",       TestType::PREPARSE },
-    { "var_decl",           TestType::PREPARSE },
-    { "var_comp_decl",      TestType::PREPARSE },
-    { "fun_decl",           TestType::PREPARSE },
-    { "fun_comp_decl",      TestType::PREPARSE },
-    { "struct",             TestType::PREPARSE },
-    { "union",              TestType::PREPARSE },
-    { "enum",               TestType::PREPARSE },
-    { "array",              TestType::PREPARSE },
+    { "parse/string_literal",       TestType::EXPRESSION },
+    { "parse/lex",                  TestType::EXPRESSION },
+    { "parse/int_literal",          TestType::EXPRESSION },
+    { "parse/float_literal",        TestType::EXPRESSION },
+    { "parse/expr",                 TestType::EXPRESSION },
 
-    { "string_literal",     TestType::EXPRESSION },
-    { "lex",                TestType::EXPRESSION },
-    { "int_literal",        TestType::EXPRESSION },
-    { "conversion",         TestType::EXPRESSION },
-    { "float_literal",      TestType::EXPRESSION },
-    { "expr",               TestType::EXPRESSION },
+    { "parse/array",                TestType::PREPARSE },
+    { "parse/array",                TestType::PARSE },
+    { "resolve/array",              TestType::RESOLVE },
 
-    { "typedef",            TestType::RESOLVE },
-    { "typedef_comp",       TestType::RESOLVE },
-    { "var_decl",           TestType::RESOLVE },
-    { "var_comp_decl",      TestType::RESOLVE },
-    { "fun_decl",           TestType::RESOLVE },
-    { "fun_comp_decl",      TestType::RESOLVE },
-    { "struct",             TestType::RESOLVE },
-    { "union",              TestType::RESOLVE },
-    { "enum",               TestType::RESOLVE },
-    { "stmt",               TestType::RESOLVE },
-    { "array",              TestType::RESOLVE },
+    { "parse/enum",                 TestType::PREPARSE },
+    { "parse/enum",                 TestType::PARSE },
+    { "resolve/enum",               TestType::RESOLVE},
 
-    { "emit",               TestType::EMIT },
+    { "parse/function",             TestType::PREPARSE },
+    { "parse/function",             TestType::PARSE },
+    { "resolve/function",           TestType::RESOLVE },
+
+    { "parse/statement",            TestType::PREPARSE },
+    { "parse/statement",            TestType::PARSE },
+    { "resolve/statement",          TestType::RESOLVE },
+
+    { "parse/struct",               TestType::PREPARSE },
+    { "parse/struct",               TestType::PARSE },
+    { "resolve/struct",             TestType::RESOLVE },
+
+    { "parse/typedef",              TestType::PREPARSE },
+    { "parse/typedef",              TestType::PARSE },
+    { "resolve/typedef",            TestType::RESOLVE},
+
+    { "parse/union",                TestType::PREPARSE },
+    { "parse/union",                TestType::PARSE },
+    { "resolve/union",              TestType::RESOLVE },
+
+    { "parse/variable",             TestType::PREPARSE },
+    { "parse/variable",             TestType::PARSE },
+    { "resolve/variable",           TestType::RESOLVE },
+
+    { "emit/conversion",            TestType::EXPRESSION },
+
+    { "emit/emit",                  TestType::EMIT },
 };
 
 static ostream& print_error(const string& name, const string& file, int line) {
@@ -125,7 +136,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
                 type = get_expr_type(expr);
             }
             output_stream << expr;
-        } else if (test_type == TestType::PREPROCESS) {
+        } else if (test_type == TestType::SWEEP) {
             File file;
             file.text = sections[INPUT];
             sweep(output_stream, file);
@@ -299,11 +310,14 @@ bool run_parser_tests() {
             } else if (line == "RESOLVE") {
                 enabled_types[unsigned(TestType::RESOLVE)] = true;
                 ++num_enabled_types;
+            } else if (line == "PARSE") {
+                enabled_types[unsigned(TestType::PARSE)] = true;
+                ++num_enabled_types;
             } else if (line == "PREPARSE") {
                 enabled_types[unsigned(TestType::PREPARSE)] = true;
                 ++num_enabled_types;
-            } else if (line == "PREPROCESS") {
-                enabled_types[unsigned(TestType::PREPROCESS)] = true;
+            } else if (line == "SWEEP") {
+                enabled_types[unsigned(TestType::SWEEP)] = true;
                 ++num_enabled_types;
             } else {
                 if (section == EXPECT_TYPE) {

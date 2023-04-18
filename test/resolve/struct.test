@@ -1,18 +1,5 @@
-BEGIN Untagged struct definition with declarator
-struct { int x; int y; } z;
-EXPECT_GLOBALS
-[["var","ES",["STRUCT",[["x","Si"],["y","Si"]]],"z"]]
-
-
-BEGIN Tagged struct definition
-struct S { int x; int y; };
-EXPECT_GLOBALS
-[["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
-
-
 BEGIN Struct member names must be distinct
 struct S { int x; int x; };
-RESOLVE
 EXPECT_MESSAGE
 :1:23: error duplicate member 'x'...
 :1:16: ...see other
@@ -20,20 +7,19 @@ EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["x","Si"]]],"S"]]
 
 
-BEGIN Tagged struct with multiple compatible definitions
+BEGIN Tagged structs with incompatible definitions
 struct S { int x; int y; };
-struct S { int x; int y; };
+struct S { int y; int x; };
+EXPECT_MESSAGE
+:2:1: error redefinition of struct 'S' with incompatible type...
+:1:1: ...see other
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
 
 
-BEGIN Tagged structs with incompatible definitions
+BEGIN Tagged struct with multiple compatible definitions
 struct S { int x; int y; };
-struct S { int y; int x; };
-RESOLVE
-EXPECT_MESSAGE
-:2:1: error redefinition of struct 'S' with incompatible type...
-:1:1: ...see other
+struct S { int x; int y; };
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
 
@@ -49,21 +35,6 @@ EXPECT_GLOBALS
 [["typedef",["STRUCT",[["y",["STRUCT",[["x","Si"]]]]]],"S"]]
 
 
-BEGIN Tagged incomplete struct
-struct S;
-EXPECT_GLOBALS
-[["typedef",["STRUCT",["?"]],"S"]]
-
-
-BEGIN Tagged incomplete struct with declarator
-struct S z;
-EXPECT_AST
-[["var","ES",["STRUCT",["?"]],"z"]]
-EXPECT_GLOBALS
-[["typedef",["STRUCT",["?"]],"S"]
-,["var","ES",["STRUCT",["?"]],"z"]]
-
-
 BEGIN Compatible incomplete declarations of struct
 struct S;
 struct S;
@@ -74,7 +45,6 @@ EXPECT_GLOBALS
 BEGIN Tagged struct with incomplete and complete definitions (1)
 struct S;
 struct S { int x; int y; };
-RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
 
@@ -82,53 +52,20 @@ EXPECT_GLOBALS
 BEGIN Tagged struct with incomplete and complete definitions (2)
 struct S { int x; int y; };
 struct S;
-RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
 
 
-BEGIN Bit-field
-struct { int x: 15; int y: 17; } z;
-EXPECT_AST
-[["var", "ES", ["STRUCT", [["x", "Si", 15], ["y", "Si", 17]]], "z"]]
-
-
-BEGIN Anonymous struct
-struct {
-    struct { int x; };
-} z;
-EXPECT_AST
-[["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]]]],"z"]]
-
-
-BEGIN Multiple anonymous struct
-struct {
-    struct { int x; };
-    struct { int y; };
-} z;
-EXPECT_AST
-[["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]],["",["STRUCT",[["y","Si"]]]]]],"z"]]
-
-
-BEGIN Multiple anonymous struct with duplicate members
+BEGIN Anonymous struct with duplicate members
 struct {
     struct { int x; };
     struct { int x; };
 } z;
-RESOLVE
 EXPECT_MESSAGE
 :3:18: error duplicate member 'x'...
 :2:18: ...see other
 EXPECT_AST
 [["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]],["",["STRUCT",[["x","Si"]]]]]],"z"]]
-
-
-BEGIN Anonymous union in struct
-struct {
-    union { int x; };
-} z;
-EXPECT_AST
-[["var","ES",["STRUCT",[["",["UNION",[["x","Si"]]]]]],"z"]]
 
 
 BEGIN Tagged structs with multiple definitions and anonymous struct
@@ -141,7 +78,6 @@ EXPECT_GLOBALS
 BEGIN Tagged structs with multiple incompatible definitions having internal structs with different tags (1)
 struct S { struct { int x; }; };
 struct S { struct B { int x; }; };
-RESOLVE
 EXPECT_MESSAGE
 :2:1: error redefinition of struct 'S' with incompatible type...
 :1:1: ...see other
@@ -151,7 +87,6 @@ END
 BEGIN Tagged structs with multiple incompatible definitions having internal structs with different tags (2)
 struct S { struct A { int x; }; };
 struct S { struct { int x; }; };
-RESOLVE
 EXPECT_MESSAGE
 :2:1: error redefinition of struct 'S' with incompatible type...
 :1:1: ...see other
@@ -161,7 +96,6 @@ END
 BEGIN Tagged structs with multiple incompatible definitions having internal structs with different tags (3)
 struct S { struct A { int x; }; };
 struct S { struct B { int x; }; };
-RESOLVE
 EXPECT_MESSAGE
 :2:1: error redefinition of struct 'S' with incompatible type...
 :1:1: ...see other
@@ -171,7 +105,6 @@ END
 BEGIN Tagged structs with multiple definitions and incompatible anonymous struct
 struct S { struct { int x; }; };
 struct S { struct { int y; }; };
-RESOLVE
 EXPECT_MESSAGE
 :2:1: error redefinition of struct 'S' with incompatible type...
 :1:1: ...see other
@@ -182,7 +115,6 @@ EXPECT_GLOBALS
 BEGIN Tagged structs with multiple compatible definitions and anonymous internal union
 struct S { union { int y; int x; }; };
 struct S { union { int x; int y; }; };
-RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["",["UNION",[["y","Si"],["x","Si"]]]]]],"S"]]
 
@@ -192,7 +124,6 @@ struct S {
     int x;
     struct { int x; };
 };
-RESOLVE
 EXPECT_MESSAGE
 :3:18: error duplicate member 'x'...
 :2:9: ...see other
@@ -202,50 +133,14 @@ END
 BEGIN Tagged structs with multiple compatible definitions and internal enum
 struct S { enum { A } e; };
 struct S { enum { A } e; };
-RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["e",["ENUM",[["ec","A",0]]]]]],"S"]]
-
-
-BEGIN Anonymous non-structured member with no declarators.
-struct {
-    int;
-} z;
-EXPECT_AST
-[["var","ES",["STRUCT",[]],"z"]]
-
-
-BEGIN Error on bit-field variable
-int x: 2;
-EXPECT_MESSAGE
-:1:6: error expected ';' but got ':'
-EXPECT_AST
-[["var", "ES", "Si", "x"]]
-
-
-BEGIN Standalone struct keyword
-struct;
-EXPECT_AST
-[[]]
-EXPECT_GLOBALS
-[]
-
-
-BEGIN Struct members are not added to symbol map
-int x;
-struct Foo {
-    float x, y;
-};
-EXPECT_GLOBALS
-[["typedef",["STRUCT",[["x","Ff"],["y","Ff"]]],"Foo"]
-,["var","ES","Si","x"]]
 
 
 BEGIN Struct is in scope within body (1)
 struct S {
     S* p;
 };
-RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["p",["P","recursive"]]]],"S"]]
 
@@ -255,7 +150,6 @@ struct S {
     typedef S T;
     T* p;
 };
-RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["T","recursive"],["p",["P","recursive"]]]],"S"]]
 
@@ -265,7 +159,6 @@ BEGIN Struct is in scope within body (3)
 struct S {
     S* p;
 };
-RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["p",["P","recursive"]]]],"S"]]
 
@@ -275,7 +168,6 @@ struct T;
 struct S {
     T x;
 };
-RESOLVE
 EXPECT_MESSAGE
 :3:7: error member 'x' has incomplete type
 END
@@ -285,7 +177,6 @@ BEGIN Struct members must have complete type (2)
 struct S {
     S x;
 };
-RESOLVE
 EXPECT_MESSAGE
 :2:7: error member 'x' has incomplete type
 END
@@ -299,7 +190,6 @@ struct S {
 struct T {
     S x;
 };
-RESOLVE
 EXPECT_MESSAGE
 :3:7: error member 'x' has incomplete type
 END
@@ -309,20 +199,9 @@ BEGIN Struct members must have complete type (4)
 struct S {
     struct T x;
 };
-RESOLVE
 EXPECT_MESSAGE
 :2:14: error member 'x' has incomplete type
 END
-
-
-BEGIN Error on combination of struct specifier and type specifier
-typedef float T;
-T struct S v;
-EXPECT_MESSAGE
-:2:3: error invalid type specifier combination
-EXPECT_AST
-[["typedef","Ff","T"]
-,["var","ES","Si","v"]]
 
 
 BEGIN typeof member
@@ -330,7 +209,6 @@ struct S {
     double x;
     typeof(x) y;
 };
-RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Fd"],["y","Fd"]]],"S"]]
 
@@ -340,7 +218,6 @@ struct S {
     int x, y;
 };
 char a[sizeof(S)];
-RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]
 ,["var","ES",["A","C",8],"a"]]
@@ -352,7 +229,6 @@ struct S {
     int x;
 };
 char a[sizeof(S)];
-RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["T","Si"],["x","Si"]]],"S"]
 ,["var","ES",["A","C",4],"a"]]
@@ -363,7 +239,6 @@ struct S {};
 struct T {
     struct S x;
 };
-RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[]],"S"]
 ,["typedef",["STRUCT",[["x",["STRUCT",[]]]]],"T"]]
@@ -374,7 +249,6 @@ struct T {
     struct S* x;
 };
 S* y;
-RESOLVE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",["?"]],"S"]
 ,["typedef",["STRUCT",[["x",["P",["STRUCT",["?"]]]]]],"T"]

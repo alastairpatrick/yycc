@@ -1,0 +1,17 @@
+BEGIN Array type of non-parameter variable may not be qualified
+int x[const volatile restrict 1];
+PARSE
+EXPECT_MESSAGE
+:1:7: error unexpected token 'const'
+EXPECT_AST
+[["var", "ES", ["A", "Si", 1], "x"]]
+
+
+BEGIN Array type of non-parameter variable may not be static
+int x[static 1];
+PARSE
+EXPECT_MESSAGE
+:1:7: error unexpected token 'static'
+EXPECT_AST
+[["var", "ES", ["A", "Si", 1], "x"]]
+

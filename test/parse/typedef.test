@@ -1,7 +1,7 @@
-BEGIN Variable declaration of typedef type (declarations).
+BEGIN Variable declaration of typedef type (parse).
 typedef short foo_t;
 foo_t foo;
-RESOLVE
+PARSE
 EXPECT_AST
 [["typedef", "Ss", "foo_t"]
 ,["var", "ES", "Ss", "foo"]]
@@ -24,40 +24,13 @@ EXPECT_AST
 [[]]
 
 
-BEGIN Pointer typedef
-typedef float T;
-typedef T* P;
-P x;
-RESOLVE
-EXPECT_GLOBALS
-[["typedef",["P","Ff"],"P"],["typedef","Ff","T"],["var","ES",["P","Ff"],"x"]]
-
-
-BEGIN Array typedef
-typedef float T;
-typedef T A[1];
-A x;
-RESOLVE
-EXPECT_GLOBALS
-[["typedef",["A","Ff",1],"A"],["typedef","Ff","T"],["var","ES",["A","Ff",1],"x"]]
-
-
-BEGIN Qualified typedef
-typedef float T;
-typedef const T U;
-U x;
-RESOLVE
-EXPECT_GLOBALS
-[["typedef","Ff","T"],["typedef",["Qc","Ff"],"U"],["var","ES",["Qc","Ff"],"x"]]
-
-
-BEGIN Function typedef
-typedef float T;
-typedef T F(T);
-F f;
-RESOLVE
-EXPECT_GLOBALS
-[["typedef",["F","Ff","Ff"],"F"],["typedef","Ff","T"],["fun","E",["F","Ff","Ff"],"f"]]
+BEGIN Typedef as self (preparse)
+typedef a a;
+typedef int a;
+PREPARSE
+EXPECT_AST
+[["typedef", "Na", "a"]
+,["typedef", "Si", "a"]]
 
 
 BEGIN Typedef in block scope
@@ -65,7 +38,7 @@ typedef int a;
 void f(void) {
     typedef long a;
 }
-RESOLVE
+PARSE
 EXPECT_AST
 [
     ["typedef", "Si", "a"],
@@ -75,14 +48,14 @@ EXPECT_AST
 ]
 
 
-BEGIN Disambiguates between multiplication and variable declaration of pointer type
+BEGIN Disambiguates between multiplication and variable declaration of pointer type while parsing
 int p, q;
 void f(void) {
     q * p; // "q" is not a type so this is multiplication.
     typedef short q;
     q * v; // now "q" is a type so this declares variable "v" with type "q*".
 }
-RESOLVE
+PARSE
 EXPECT_AST
 [
     [["var", "ES", "Si", "p"],
@@ -103,7 +76,7 @@ void f(void) {
     }
     q * p; // Identifier "q" immediately follows '}'
 }
-RESOLVE
+PARSE
 EXPECT_AST
 [["fun","E",["F", "V"],"f",[""], ["block", [
     [["var", "", "Si", "p"],
@@ -120,7 +93,7 @@ typedef long p;
 void f(void) {
     p+p;
 }
-RESOLVE
+PARSE
 EXPECT_MESSAGE
 :3:6: error expected identifier but got '+'
 EXPECT_AST
@@ -156,55 +129,11 @@ EXPECT_AST
 [["typedef", "NT", "S"]]
 
 
-BEGIN cyclic #type directive with no accompanying type definition
+BEGIN #type directive
 #type T
-RESOLVE
-EXPECT_MESSAGE
-:1:7: error 'T' undeclared
+PARSE
 EXPECT_GLOBALS
-[["typedef","Si","T"]]
-
-
-BEGIN Non-trivial recursive typedefs are an error (1)
-#type T
-typedef T T[];
-RESOLVE
-EXPECT_MESSAGE
-:2:11: error recursive definition of 'T'
-EXPECT_GLOBALS
-[["typedef","Si","T"]]
-
-
-BEGIN  Non-trivial recursive typedefs are an error (2)
-#type T
-typedef T T[];
-typedef int T[];
-RESOLVE
-EXPECT_MESSAGE
-:2:11: error recursive definition of 'T'
-EXPECT_GLOBALS
-[["typedef",["A","Si"],"T"]]
-
-
-BEGIN  Non-trivial recursive typedefs are an error (3)
-#type T
-typedef int T[];
-typedef T T[];
-RESOLVE
-EXPECT_MESSAGE
-:3:11: error recursive definition of 'T'
-EXPECT_GLOBALS
-[["typedef",["A","Si"],"T"]]
-
-
-BEGIN Trivial recursive typedefs are an error if not accompanied by non-recursive definition
-#type T
-typedef T T;
-RESOLVE
-EXPECT_MESSAGE
-:2:11: error 'T' undeclared
-EXPECT_GLOBALS
-[["typedef","Si","T"]]
+[["typedef","recursive","T"]]
 
 
 BEGIN #type resolves ambiguity as to whether identifier is type or not
@@ -213,24 +142,11 @@ void f(void) {
     T * v; // "T" is a type so this declares variable "v" with type "T*".
 }
 typedef float T;
-RESOLVE
-EXPECT_GLOBALS
+PARSE
+EXPECT_AST
 [
-    ["typedef","Ff","T"],
-    ["fun","E",["F","V"],"f",[""],
-        ["block",[
-            ["var","",["P","Ff"],"v"]
-        ]]
-    ]
+    ["fun","E",["F","V"],"f",[""],["block",[
+        ["var","",["P","recursive"],"v"]
+    ]]]
+   ,["typedef","Ff","T"]
 ]
-
-
-BEGIN Error on use of type name as an expression
-typedef int T;
-char a[T];
-RESOLVE
-EXPECT_MESSAGE
-:2:8: error identifier is not an expression
-EXPECT_GLOBALS
-[["typedef","Si","T"],["var","ES",["A","C",1],"a"]]
-

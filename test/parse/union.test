@@ -1,0 +1,22 @@
+BEGIN Untagged union definition
+union { int x; int y; } z;
+EXPECT_AST
+[["var", "ES", ["UNION", [["x", "Si"], ["y", "Si"]]], "z"]]
+
+
+BEGIN Tagged union definition
+union S { int x; int y; } z;
+EXPECT_AST
+[["var", "ES", ["UNION", [["x", "Si"], ["y", "Si"]]], "z"]]
+EXPECT_GLOBALS
+[["typedef",["UNION",[["x","Si"],["y","Si"]]],"S"]
+,["var","ES",["UNION",[["x","Si"],["y","Si"]]],"z"]]
+
+
+BEGIN Tagged incomplete union
+union S z;
+EXPECT_AST
+[["var","ES",["UNION",["?"]],"z"]]
+EXPECT_GLOBALS
+[["typedef",["UNION",["?"]],"S"]
+,["var","ES",["UNION",["?"]],"z"]]

@@ -1,35 +1,10 @@
-BEGIN Untagged union definition
-union { int x; int y; } z;
-EXPECT_AST
-[["var", "ES", ["UNION", [["x", "Si"], ["y", "Si"]]], "z"]]
-
-
-BEGIN Tagged union definition
-union S { int x; int y; } z;
-EXPECT_AST
-[["var", "ES", ["UNION", [["x", "Si"], ["y", "Si"]]], "z"]]
-EXPECT_GLOBALS
-[["typedef",["UNION",[["x","Si"],["y","Si"]]],"S"]
-,["var","ES",["UNION",[["x","Si"],["y","Si"]]],"z"]]
-
-
 BEGIN Union member names must be distinct
 union U { int x; int x; };
-RESOLVE
 EXPECT_MESSAGE
 :1:22: error duplicate member 'x'...
 :1:15: ...see other
 EXPECT_GLOBALS
 [["typedef",["UNION",[["x","Si"],["x","Si"]]],"U"]]
-
-
-BEGIN Tagged incomplete union
-union S z;
-EXPECT_AST
-[["var","ES",["UNION",["?"]],"z"]]
-EXPECT_GLOBALS
-[["typedef",["UNION",["?"]],"S"]
-,["var","ES",["UNION",["?"]],"z"]]
 
 
 BEGIN Tagged union with multiple compatible definitions
@@ -42,7 +17,6 @@ EXPECT_GLOBALS
 BEGIN Order of members does not matter for compatible unions
 union S { int y; int x; };
 union S { int x; int y; };
-RESOLVE
 EXPECT_GLOBALS
 [["typedef",["UNION",[["y","Si"],["x","Si"]]],"S"]]
 
@@ -50,7 +24,6 @@ EXPECT_GLOBALS
 BEGIN Complete union must contain all members of compatible union
 union S { int x; };
 union S { float x; };
-RESOLVE
 EXPECT_MESSAGE
 :2:1: error redefinition of union 'S' with incompatible type...
 :1:1: ...see other
@@ -61,7 +34,6 @@ EXPECT_GLOBALS
 BEGIN Complete union compatible with incomplete union (1)
 union S;
 union S { int x; int y; };
-RESOLVE
 EXPECT_GLOBALS
 [["typedef",["UNION",[["x","Si"],["y","Si"]]],"S"]]
 
@@ -69,14 +41,12 @@ EXPECT_GLOBALS
 BEGIN Complete union compatible with incomplete union (2)
 union S { int x; int y; };
 union S;
-RESOLVE
 EXPECT_GLOBALS
 [["typedef",["UNION",[["x","Si"],["y","Si"]]],"S"]]
 
 
 BEGIN Partially complete unions not allowed
 union S { int x; ... };
-RESOLVE
 EXPECT_MESSAGE
 :1:18: error unexpected token '...'
 EXPECT_GLOBALS

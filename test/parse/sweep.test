@@ -1,7 +1,6 @@
 BEGIN marks identifiers in declaration type
 #include "a.h"
 T x;
-PREPROCESS
 FILE "a.h"
 typedef int T;
 EXPECT_TEXT
@@ -19,7 +18,6 @@ END
 BEGIN marks identifiers in array declarator
 #include "a.h"
 int x;
-PREPROCESS
 FILE "a.h"
 extern int x;
 EXPECT_TEXT
@@ -35,7 +33,6 @@ END
 BEGIN marks identifiers in array declarator size expression
 #include "a.h"
 int x[y];
-PREPROCESS
 FILE "a.h"
 const int y = 2;  // TODO: replace this with a avalid constant integer expression
 EXPECT_TEXT
@@ -53,7 +50,6 @@ END
 BEGIN marks identifiers in function prototype
 #include "a.h"
 int foo(T x);
-PREPROCESS
 FILE "a.h"
 typedef int T;
 EXPECT_TEXT
@@ -73,7 +69,6 @@ BEGIN marks identifiers in function definition body
 int foo(void) {
     T x;
 }
-PREPROCESS
 FILE "a.h"
 typedef int T;
 EXPECT_TEXT
@@ -95,7 +90,6 @@ BEGIN Keeps marked struct
 int foo(void) {
     S x;
 }
-PREPROCESS
 FILE "a.h"
 struct S {
     int x;
@@ -121,7 +115,6 @@ BEGIN Keeps enum marked via constant
 int foo(void) {
     return GREEN;
 }
-PREPROCESS
 FILE "a.h"
 enum Color { RED, GREEN, BLUE };
 EXPECT_TEXT

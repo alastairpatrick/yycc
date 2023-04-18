@@ -1,0 +1,150 @@
+BEGIN Resolves pointer to typedef
+typedef float T;
+typedef T* P;
+P x;
+EXPECT_GLOBALS
+[["typedef",["P","Ff"],"P"],["typedef","Ff","T"],["var","ES",["P","Ff"],"x"]]
+
+
+BEGIN Resolved array of typedef
+typedef float T;
+typedef T A[1];
+A x;
+EXPECT_GLOBALS
+[["typedef",["A","Ff",1],"A"],["typedef","Ff","T"],["var","ES",["A","Ff",1],"x"]]
+
+
+BEGIN Resolves qualified typedef
+typedef float T;
+typedef const T U;
+U x;
+EXPECT_GLOBALS
+[["typedef","Ff","T"],["typedef",["Qc","Ff"],"U"],["var","ES",["Qc","Ff"],"x"]]
+
+
+BEGIN Resolves function with typedef return and parameter type
+typedef float T;
+typedef T F(T);
+F f;
+EXPECT_GLOBALS
+[["typedef",["F","Ff","Ff"],"F"],["typedef","Ff","T"],["fun","E",["F","Ff","Ff"],"f"]]
+
+
+BEGIN Non-trivial recursive typedefs are an error (1)
+#type T
+typedef T T[];
+EXPECT_MESSAGE
+:2:11: error recursive definition of 'T'
+EXPECT_GLOBALS
+[["typedef","Si","T"]]
+
+
+BEGIN  Non-trivial recursive typedefs are an error (2)
+#type T
+typedef T T[];
+typedef int T[];
+EXPECT_MESSAGE
+:2:11: error recursive definition of 'T'
+EXPECT_GLOBALS
+[["typedef",["A","Si"],"T"]]
+
+
+BEGIN  Non-trivial recursive typedefs are an error (3)
+#type T
+typedef int T[];
+typedef T T[];
+EXPECT_MESSAGE
+:3:11: error recursive definition of 'T'
+EXPECT_GLOBALS
+[["typedef",["A","Si"],"T"]]
+
+
+BEGIN Trivial recursive typedefs are an error if not accompanied by non-recursive definition
+#type T
+typedef T T;
+EXPECT_MESSAGE
+:2:11: error 'T' undeclared
+EXPECT_GLOBALS
+[["typedef","Si","T"]]
+
+
+BEGIN Error on use of typedef name as a constant integer expression
+typedef int T;
+char a[T];
+EXPECT_MESSAGE
+:2:8: error identifier is not an expression
+EXPECT_GLOBALS
+[["typedef","Si","T"],["var","ES",["A","C",1],"a"]]
+
+
+BEGIN Redefinition of typedef
+typedef int a;
+typedef signed a;
+EXPECT_AST
+[["typedef", "Si", "a"]
+,["typedef", "Si", "a"]]
+
+
+BEGIN Redefinition of typedef with different type
+typedef int a;
+typedef unsigned a;
+EXPECT_MESSAGE
+:2:18: error redefinition of typedef 'a' with incompatible type...
+:1:13: ...see other
+EXPECT_AST
+[["typedef", "Si", "a"]
+,["typedef", "Ui", "a"]]
+
+
+BEGIN Typedef as self (1)
+#type a
+typedef int a;
+typedef a a;
+EXPECT_GLOBALS
+[["typedef", "Si", "a"]]
+
+
+BEGIN Typedef as self (2)
+#type a
+typedef a a;
+typedef int a;
+EXPECT_GLOBALS
+[["typedef", "Si", "a"]]
+
+
+
+BEGIN Redefining typedef with compatible type that is not same type is an error (1)
+typedef int T[];
+typedef int T[1];
+EXPECT_MESSAGE
+:2:13: error redefinition of typedef 'T' with incompatible type...
+:1:13: ...see other
+EXPECT_GLOBALS
+[["typedef",["A","Si",1],"T"]]
+
+
+BEGIN Redefining typedef with compatible type that is not same type is an error (2)
+typedef int T[1];
+typedef int T[];
+EXPECT_MESSAGE
+:2:13: error redefinition of typedef 'T' with incompatible type...
+:1:13: ...see other
+EXPECT_GLOBALS
+[["typedef",["A","Si", 1],"T"]]
+
+
+BEGIN Typedef may not be redeclared as a variable of same type
+typedef int a;
+int a;
+EXPECT_MESSAGE
+:2:5: error redeclaration of variable 'a' with different kind of identifier...
+:1:13: ...see other
+END
+
+
+BEGIN #type directives composed
+#type T
+#type T
+typedef float T;
+EXPECT_GLOBALS
+[["typedef","Ff","T"]]

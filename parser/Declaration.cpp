@@ -131,8 +131,7 @@ StorageDuration Entity::storage_duration() const {
 }
 
 bool Entity::is_function() const {
-    auto type = declarator->type->unqualified();
-    return dynamic_cast<const FunctionType*>(type);
+    return dynamic_cast<const FunctionType*>(declarator->type);
 }
 
 DeclaratorKind Entity::kind() const {

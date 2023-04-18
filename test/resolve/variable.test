@@ -1,0 +1,62 @@
+BEGIN Variable of unevaluated typeof expression
+typeof(1L / 0L) x;
+EXPECT_AST
+[["var", "ES", "Sl", "x"]]
+
+
+BEGIN Variable of typeof type name
+typeof(const double) x;
+EXPECT_AST
+[["var","ES",["Qc","Fd"],"x"]]
+
+
+BEGIN Variable of typeof_unqual qualified type name (1)
+typeof_unqual(const double) x;
+EXPECT_AST
+[["var", "ES", "Fd", "x"]]
+
+
+BEGIN Variable of typeof_unqual qualified type name (2)
+#type T
+typeof_unqual(T) x;
+typedef const double T;
+EXPECT_GLOBALS
+[["typedef",["Qc","Fd"],"T"]
+,["var","ES","Fd","x"]]
+
+
+BEGIN typeof variable
+const double x;
+typeof(x) y;
+EXPECT_AST
+[["var","ES",["Qc","Fd"],"x"]
+,["var","ES",["Qc","Fd"],"y"]]
+
+
+BEGIN typeof_unqual variable
+const double x;
+typeof_unqual(x) y;
+EXPECT_AST
+[["var","ES",["Qc","Fd"],"x"]
+,["var","ES","Fd","y"]]
+
+
+BEGIN #extern directives composed
+#extern x
+#extern x
+EXPECT_GLOBALS
+[["var","ES","?","x"]]
+
+
+BEGIN #extern directive preceeding variable declaration
+#extern x
+int x;
+EXPECT_GLOBALS
+[["var","ES","Si","x"]]
+
+
+BEGIN #static directive preceeding variable declaration
+#static x
+int x;
+EXPECT_GLOBALS
+[["var","IS","Si","x"]]

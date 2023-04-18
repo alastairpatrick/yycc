@@ -1,6 +1,6 @@
 BEGIN preprocess
 void foo() {}
-PREPROCESS
+SWEEP
 EXPECT_TEXT
      #extern foo
 #line 1
@@ -11,7 +11,7 @@ END
 BEGIN valid #line directive
 #line 7
 int x;
-PREPROCESS
+SWEEP
 EXPECT_TEXT
 #line 7 5
 #extern x
@@ -23,7 +23,7 @@ END
 BEGIN valid #line directive with path
 #line 7 "foo.h"
 int x;
-PREPROCESS
+SWEEP
 EXPECT_TEXT
 #line 7 5 "foo.h"
 #extern x
@@ -35,7 +35,7 @@ END
 BEGIN valid #line directive with path with escape sequence
 #line 7 "\\foo.h"
 int x;
-PREPROCESS
+SWEEP
 EXPECT_TEXT
 #line 7 5 "\\foo.h"
 #extern x
@@ -48,7 +48,7 @@ BEGIN combines #line directives
 #line 6
 #line 7
 int x;
-PREPROCESS
+SWEEP
 EXPECT_TEXT
 #line 7 5
 #extern x
@@ -60,7 +60,7 @@ END
 BEGIN valid #include directive
 #include "a.h"
  int x;
-PREPROCESS
+SWEEP
 FILE "a.h"
   extern int x;
 EXPECT_TEXT
@@ -76,7 +76,7 @@ END
 BEGIN valid system #include directive
 #include <a.h>
  int x;
-PREPROCESS
+SWEEP
 FILE <a.h>
   extern int x;
 EXPECT_TEXT
@@ -92,7 +92,7 @@ END
 BEGIN #include directive with no filename
 #include
 int x;
-PREPROCESS
+SWEEP
 EXPECT_MESSAGE
 :1:9: error unexpected new-line token in directive
 EXPECT_TEXT
@@ -106,7 +106,7 @@ END
 BEGIN #include directive with invalid filename
 #include 7
 int x;
-PREPROCESS
+SWEEP
 EXPECT_MESSAGE
 :1:10: error unexpected '7' token in directive
 EXPECT_TEXT
@@ -120,7 +120,7 @@ END
 BEGIN #include directive with superfluous tokens
 #include "a.h""
 int x;
-PREPROCESS
+SWEEP
 FILE "a.h"
 extern int x;
 EXPECT_MESSAGE
@@ -138,7 +138,7 @@ END
 BEGIN #include directive with missing file
 #include "a.h"
 int x;
-PREPROCESS
+SWEEP
 EXPECT_MESSAGE
 :1:10: error cannot read file "a.h"
 EXPECT_TEXT
@@ -152,7 +152,7 @@ END
 BEGIN nested #include directives
 #include "a.h"
 int x;
-PREPROCESS
+SWEEP
 FILE "a.h"
 #include "b.h"
 FILE "b.h"
@@ -170,7 +170,7 @@ END
 BEGIN #include directive with backslash in filename
 #include "c:\a.h"
  int x;
-PREPROCESS
+SWEEP
 FILE "c:\a.h"
   extern int x;
 EXPECT_TEXT

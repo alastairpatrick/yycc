@@ -1,15 +1,3 @@
-BEGIN Expression statement
-7;
-EXPECT_AST
-[7]
-
-
-BEGIN Compound statement
-{7;}
-EXPECT_AST
-[["block", [7]]]
-
-
 BEGIN Resolves compound statement
 { int a[1+1]; }
 RESOLVE
@@ -17,14 +5,9 @@ EXPECT_AST
 [["block",[["var","",["A","Si",2],"a"]]]]
 
 
-BEGIN Return statement
-return 7;
-EXPECT_AST
-[["return", 7]]
-
-
 BEGIN Resolves return statement
 return sizeof(int[1+1]);
 RESOLVE
 EXPECT_AST
 [["return",["sizeof",["A","Si",2]]]]
+

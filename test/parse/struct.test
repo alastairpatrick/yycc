@@ -1,0 +1,97 @@
+BEGIN Untagged struct definition with declarator
+struct { int x; int y; } z;
+EXPECT_GLOBALS
+[["var","ES",["STRUCT",[["x","Si"],["y","Si"]]],"z"]]
+
+
+BEGIN Tagged struct definition
+struct S { int x; int y; };
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
+
+
+BEGIN Tagged incomplete struct
+struct S;
+EXPECT_GLOBALS
+[["typedef",["STRUCT",["?"]],"S"]]
+
+
+BEGIN Tagged incomplete struct with declarator
+struct S z;
+EXPECT_AST
+[["var","ES",["STRUCT",["?"]],"z"]]
+
+
+BEGIN Bit-fields
+struct { int x: 15; int y: 17; } z;
+EXPECT_AST
+[["var", "ES", ["STRUCT", [["x", "Si", 15], ["y", "Si", 17]]], "z"]]
+
+
+BEGIN Anonymous struct
+struct {
+    struct { int x; };
+} z;
+EXPECT_AST
+[["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]]]],"z"]]
+
+
+BEGIN Multiple anonymous struct
+struct {
+    struct { int x; };
+    struct { int y; };
+} z;
+EXPECT_AST
+[["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]],["",["STRUCT",[["y","Si"]]]]]],"z"]]
+
+
+BEGIN Anonymous union in struct
+struct {
+    union { int x; };
+} z;
+EXPECT_AST
+[["var","ES",["STRUCT",[["",["UNION",[["x","Si"]]]]]],"z"]]
+
+
+BEGIN Anonymous non-structured member with no declarators.
+struct {
+    int;
+} z;
+EXPECT_AST
+[["var","ES",["STRUCT",[]],"z"]]
+
+
+BEGIN Error on bit-field variable
+int x: 2;
+EXPECT_MESSAGE
+:1:6: error expected ';' but got ':'
+EXPECT_AST
+[["var", "ES", "Si", "x"]]
+
+
+BEGIN Standalone struct keyword
+struct;
+EXPECT_AST
+[[]]
+EXPECT_GLOBALS
+[]
+
+
+BEGIN Struct members are not added to identifier map
+int x;
+struct Foo {
+    float x, y;
+};
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["x","Ff"],["y","Ff"]]],"Foo"]
+,["var","ES","Si","x"]]
+
+
+BEGIN Error on combination of struct specifier and type specifier
+typedef float T;
+T struct S v;
+EXPECT_MESSAGE
+:2:3: error invalid type specifier combination
+EXPECT_AST
+[["typedef","Ff","T"]
+,["var","ES","Si","v"]]

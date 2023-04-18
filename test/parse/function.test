@@ -32,57 +32,6 @@ EXPECT_AST
 [["fun", "E", ["F", "Si"], "foo"]]
 
 
-BEGIN Function parameters of function type are adjusted to pointer
-int foo(int bar(void));
-RESOLVE
-EXPECT_AST
-[["fun", "E", ["F", "Si", ["P", ["F", "Si"]]], "foo"]]
-
-
-BEGIN Function parameters of array type are adjusted to pointer (1)
-int foo(int x[]);
-RESOLVE
-EXPECT_AST
-[["fun", "E", ["F", "Si", ["P", "Si"]], "foo"]]
-
-
-BEGIN Function parameters of array type are adjusted to pointer (2)
-int foo(int x[2]);
-RESOLVE
-EXPECT_AST
-[["fun", "E", ["F", "Si", ["P", "Si"]], "foo"]]
-
-
-BEGIN Function parameters of array type are adjusted to pointer (3)
-int foo(int x[2][3]);
-RESOLVE
-EXPECT_AST
-[["fun","E",["F","Si",["P",["A","Si",3]]],"foo"]]
-
-
-BEGIN Qualified array type parameter
-int foo(int x[const volatile restrict 1]);
-RESOLVE
-EXPECT_AST
-[["fun","E",["F","Si",["Qcrv",["P","Si"]]],"foo"]]
-
-
-BEGIN Error on qualified array type parameter that is not outer-most
-int foo(int x[2][const volatile restrict 3]);
-RESOLVE
-EXPECT_MESSAGE
-:1:18: error unexpected token 'const'
-EXPECT_AST
-[["fun","E",["F","Si",["P",["A","Si",3]]],"foo"]]
-
-
-BEGIN Static array type parameter
-int foo(int x[static 1]);
-RESOLVE
-EXPECT_AST
-[["fun","E",["F","Si",["P","Si"]],"foo"]]
-
-
 BEGIN Error on parameter that parses as an expression
 int foo(1+1, float y);
 EXPECT_MESSAGE
@@ -115,28 +64,18 @@ EXPECT_AST
 [["fun","E",["F","Si","Si","Ff"],"foo"]]
 
 
-BEGIN Function parameters of typedef array type are adjusted to pointer
-#type T
-int foo(T x);
-typedef int T[];
-RESOLVE
-EXPECT_GLOBALS
-[["typedef",["A","Si"],"T"]
-,["fun","E",["F","Si",["P","Si"]],"foo"]]
-
-
 BEGIN Error on function definition as parameter declaration
 int foo(void x() {}, float y);
-RESOLVE
+PARSE
 EXPECT_MESSAGE
 :1:18: error expected ')' but got '{'
 EXPECT_GLOBALS
-[["fun","E",["F","Si",["P",["F","V"]]],"foo"]]
+[["fun","E",["F","Si",["F","V"]],"foo"]]
 
 
 BEGIN Error on initializer in parameter declaration
 int foo(void x = 7, float y);
-RESOLVE
+PARSE
 EXPECT_MESSAGE
 :1:16: error expected ')' but got '='
 EXPECT_GLOBALS
@@ -181,7 +120,7 @@ BEGIN Function definition with local variables
 void foo() {
     int x = 1;
 }
-RESOLVE
+PARSE
 EXPECT_AST
 [["fun", "E", ["F", "V"], "foo", [], ["block", [
     ["var", "", "Si", "x", 1]
@@ -201,7 +140,7 @@ EXPECT_AST
 BEGIN Function definition may not share external declaration with declarators (2)
 int bar(int x) {
 }, foo;
-RESOLVE
+PARSE
 EXPECT_MESSAGE
 :2:2: error unexpected token ','
 EXPECT_AST
@@ -214,24 +153,28 @@ EXPECT_AST
 BEGIN Parameters have function prototype scope (1)
 int foo(int foo) {
 }
-EXPECT_AST
-[["fun", "E", ["F", "Si", "Si"], "foo", ["foo"], ["block", []]]]
+EXPECT_GLOBALS
+[["fun","E",["F","Si","Si"],"foo",["foo"],["block",[]]]]
 
 
 BEGIN Parameters have function prototype scope (2)
 int foo(int bar) {
     int bar;
 }
-RESOLVE
-EXPECT_AST
-[["fun", "E", ["F", "Si", "Si"], "foo", ["bar"], ["block", [["var", "", "Si", "bar"]]]]]
+PARSE
+EXPECT_GLOBALS
+[
+    ["fun","E",["F","Si","Si"],"foo",["bar"],["block",[
+        ["var","","Si","bar"]
+    ]]]
+]
 
 
 BEGIN Cannot declare static function at block scope
 void f(void) {
     static void foo(void);
 }
-RESOLVE
+PARSE
 EXPECT_MESSAGE
 :2:17: error invalid storage class
 EXPECT_AST
@@ -250,31 +193,6 @@ inline void foo() {
 }
 EXPECT_AST
 [["fun", "Ei", ["F", "V"], "foo", [], ["block", []]]]
-
-
-BEGIN Extern storage class prevents inline definition (1)
-extern inline void foo() {
-}
-EXPECT_AST
-[["fun", "E", ["F", "V"], "foo", [], ["block", []]]]
-
-
-BEGIN Extern storage class prevents inline definition (2)
-extern void foo();
-inline void foo() {
-}
-RESOLVE
-EXPECT_GLOBALS
-[["fun","E",["F","V"],"foo",[],["block",[]]]]
-
-
-BEGIN Extern storage class prevents inline definition (3)
-inline void foo() {
-}
-extern void foo();
-RESOLVE
-EXPECT_GLOBALS
-[["fun","E",["F","V"],"foo",[],["block",[]]]]
 
 
 BEGIN Inline specifier may be given multiple times
@@ -296,7 +214,7 @@ BEGIN Function definition with return statement
 int main(int argc, const char* argv) {
     return argc;
 }
-RESOLVE
+PARSE
 EXPECT_AST
 [["fun", "E", ["F", "Si", "Si", ["P", ["Qc", "C"]]], "main", ["argc", "argv"], ["block", [
     ["return", "Nargc"]
@@ -309,9 +227,84 @@ EXPECT_AST
 [["fun","E",["F",["P",["F","Si","Si","Ff"]],["P",["F","Si","Sl"]],"Si"],"fpfi"]]
 
 
-BEGIN typeof parameter
-void foo(int x, typeof(x) y);
-RESOLVE
+BEGIN Multiple function declarations
+int foo(signed);
+signed foo(int);
 EXPECT_AST
-[["fun","E",["F","V","Si","Si"],"foo"]]
+[["fun", "E", ["F", "Si", "Si"], "foo"]
+,["fun", "E", ["F", "Si", "Si"], "foo"]]
 
+
+BEGIN Multiple function declarations with extern storage class
+extern void foo(int);
+extern void foo(int);
+EXPECT_AST
+[["fun", "E", ["F", "V", "Si"], "foo"]
+,["fun", "E", ["F", "V", "Si"], "foo"]]
+
+
+BEGIN Function declaration having internal linkage may not follow function declaration having external linkage
+extern void foo(int);
+static void foo(int);
+EXPECT_MESSAGE
+:2:13: error static declaration of 'foo' follows non-static declaration
+:1:13: see prior declaration
+EXPECT_AST
+[["fun","E",["F","V","Si"],"foo"]
+,["fun","I",["F","V","Si"],"foo"]]
+
+
+
+BEGIN Function declaration having internal linkage may preceed function declaration having external linkage
+static void foo(int);
+extern void foo(int);
+EXPECT_AST
+[["fun","I",["F","V","Si"],"foo"]
+,["fun","E",["F","V","Si"],"foo"]]
+
+
+BEGIN Multiple function declarations with internal linkage
+static void foo(int);
+static void foo(int);
+EXPECT_AST
+[["fun","I",["F", "V", "Si"],"foo"]
+,["fun","I",["F", "V", "Si"],"foo"]]
+
+
+BEGIN Empty function definition
+void foo(int) {
+}
+EXPECT_AST
+[["fun", "E", ["F", "V", "Si"], "foo", [""], ["block", []]]]
+
+
+BEGIN Function initially declared with a function-typed typedef
+typedef void F(int x);
+F foo;
+void foo(int x) {
+}
+PREPARSE
+EXPECT_AST
+[["typedef",["F","V","Si"],"F"]
+,["var","ES","NF","foo"]
+,["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]]
+
+
+BEGIN Function declared with a function-typed typedef in another translation unit (1)
+F foo;  // F typedef in another translation unit
+void foo(int x) {
+}
+PREPARSE
+EXPECT_AST
+[["var","ES","NF","foo"]
+,["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]]
+
+
+BEGIN Function declared with a function-typed typedef in another translation unit (2)
+void foo(int x) {
+}
+F foo;  // F typedef in another translation unit
+PREPARSE
+EXPECT_AST
+[["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]
+,["var","ES","NF","foo"]]
