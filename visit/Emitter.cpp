@@ -55,6 +55,8 @@ struct Emitter: Visitor {
     }
 
     void emit_function_definition(Declarator* declarator, Entity* entity) {
+        auto type = dynamic_cast<const FunctionType*>(declarator->primary->type);
+
         function = LLVMAddFunction(module, declarator->identifier.name->data(), declarator->primary->type->llvm_type());
 
         LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
@@ -63,7 +65,11 @@ struct Emitter: Visitor {
         need_terminating_return = true;
         emit(entity->body);
         if (need_terminating_return) {
-            LLVMBuildRetVoid(builder);
+            if (type->return_type == &VoidType::it) {
+                LLVMBuildRetVoid(builder);
+            } else {
+                LLVMBuildRet(builder, LLVMConstNull(type->return_type->llvm_type()));
+            }
         }
 
         function = nullptr;

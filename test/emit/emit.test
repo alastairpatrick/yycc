@@ -31,3 +31,26 @@ entry:
   ret i32 0
 }
 END
+
+
+BEGIN Emit implicit return null value (1)
+int f() {
+}
+EXPECT_IR
+define i32 @f() {
+entry:
+  ret i32 0
+}
+END
+
+
+BEGIN Emit implicit return null value (2)
+struct S { int x; };
+S f() {
+}
+EXPECT_IR
+define { i32 } @f() {
+entry:
+  ret { i32 } zeroinitializer
+}
+END
