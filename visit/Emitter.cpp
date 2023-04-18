@@ -66,8 +66,9 @@ struct Emitter: Visitor {
             auto param = entity->params[i];
             auto param_entity = param->entity();
 
-            param_entity->value = Value(param->type, LLVMBuildAlloca(builder, param->type->llvm_type(), param->identifier.name->data()));
-            LLVMBuildStore(builder, LLVMGetParam(function, i), param_entity->value.llvm);
+            auto storage = LLVMBuildAlloca(builder, param->type->llvm_type(), param->identifier.name->data());
+            param_entity->value = Value(ValueKind::LVALUE, param->type, storage);
+            LLVMBuildStore(builder, LLVMGetParam(function, i), storage);
         }
 
         need_terminating_return = true;
@@ -107,17 +108,17 @@ struct Emitter: Visitor {
 
         if (auto float_target = dynamic_cast<const FloatingPointType*>(target_type)) {
             if (float_target->size > type->size) {
-                return VisitTypeOutput(target_type, LLVMBuildFPExt(builder, value.llvm, input.target_type->llvm_type(), "cvt"));
+                return VisitTypeOutput(target_type, LLVMBuildFPExt(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), "cvt"));
             } else {
-                return VisitTypeOutput(target_type, LLVMBuildFPTrunc(builder, value.llvm, input.target_type->llvm_type(), "cvt"));
+                return VisitTypeOutput(target_type, LLVMBuildFPTrunc(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), "cvt"));
             }
         }
 
         if (auto int_target = dynamic_cast<const IntegerType*>(input.target_type)) {
             if (int_target->is_signed()) {
-                return VisitTypeOutput(target_type, LLVMBuildFPToSI(builder, value.llvm, input.target_type->llvm_type(), "cvt"));
+                return VisitTypeOutput(target_type, LLVMBuildFPToSI(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), "cvt"));
             } else {
-                return VisitTypeOutput(target_type, LLVMBuildFPToUI(builder, value.llvm, input.target_type->llvm_type(), "cvt"));
+                return VisitTypeOutput(target_type, LLVMBuildFPToUI(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), "cvt"));
             }
         }
 
@@ -136,20 +137,20 @@ struct Emitter: Visitor {
 
             if (int_target->size > type->size) {
                 if (type->is_signed()) {
-                    return VisitTypeOutput(target_type, LLVMBuildSExt(builder, value.llvm, input.target_type->llvm_type(), "cvt"));
+                    return VisitTypeOutput(target_type, LLVMBuildSExt(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), "cvt"));
                 } else {
-                    return VisitTypeOutput(target_type, LLVMBuildZExt(builder, value.llvm, input.target_type->llvm_type(), "cvt"));
+                    return VisitTypeOutput(target_type, LLVMBuildZExt(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), "cvt"));
                 }
             }
 
-            return VisitTypeOutput(target_type, LLVMBuildTrunc(builder, value.llvm, input.target_type->llvm_type(), 0));
+            return VisitTypeOutput(target_type, LLVMBuildTrunc(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), 0));
         }
 
         if (auto float_target = dynamic_cast<const FloatingPointType*>(input.target_type)) {
             if (type->is_signed()) {
-                return VisitTypeOutput(target_type, LLVMBuildSIToFP(builder, value.llvm, input.target_type->llvm_type(), "cvt"));
+                return VisitTypeOutput(target_type, LLVMBuildSIToFP(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), "cvt"));
             } else {
-                return VisitTypeOutput(target_type, LLVMBuildUIToFP(builder, value.llvm, input.target_type->llvm_type(), "cvt"));
+                return VisitTypeOutput(target_type, LLVMBuildUIToFP(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), "cvt"));
             }
         }
 
@@ -173,7 +174,7 @@ struct Emitter: Visitor {
     virtual VisitStatementOutput visit(ReturnStatement* statement, const VisitStatementInput& input) override {
         if (statement->expr) {
             auto value = emit(statement->expr);
-            LLVMBuildRet(builder, value.llvm);
+            LLVMBuildRet(builder, value.llvm_rvalue(builder));
         } else {
             LLVMBuildRetVoid(builder);
         }
@@ -263,16 +264,16 @@ struct Emitter: Visitor {
         if (auto result_as_int = dynamic_cast<const IntegerType*>(result_type)) {
             switch (expr->op) {
               case '+':
-                return VisitStatementOutput(result_type, LLVMBuildAdd(builder, left_temp.llvm, right_temp.llvm, "add"));
+                return VisitStatementOutput(result_type, LLVMBuildAdd(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "add"));
               case '-':
-                return VisitStatementOutput(result_type, LLVMBuildSub(builder, left_temp.llvm, right_temp.llvm, "sub"));
+                return VisitStatementOutput(result_type, LLVMBuildSub(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "sub"));
               case '*':
-                return VisitStatementOutput(result_type, LLVMBuildMul(builder, left_temp.llvm, right_temp.llvm, "mul"));
+                return VisitStatementOutput(result_type, LLVMBuildMul(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "mul"));
               case '/':
                 if (result_as_int->is_signed()) {
-                    return VisitStatementOutput(result_type, LLVMBuildSDiv(builder, left_temp.llvm, right_temp.llvm, "div"));
+                    return VisitStatementOutput(result_type, LLVMBuildSDiv(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "div"));
                 } else {
-                    return VisitStatementOutput(result_type, LLVMBuildUDiv(builder, left_temp.llvm, right_temp.llvm, "div"));
+                    return VisitStatementOutput(result_type, LLVMBuildUDiv(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "div"));
                 }
             }
         }
@@ -280,13 +281,13 @@ struct Emitter: Visitor {
         if (auto result_as_float = dynamic_cast<const FloatingPointType*>(result_type)) {
             switch (expr->op) {
               case '+':
-                return VisitStatementOutput(result_type, LLVMBuildFAdd(builder, left_temp.llvm, right_temp.llvm, "fadd"));
+                return VisitStatementOutput(result_type, LLVMBuildFAdd(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "fadd"));
               case '-':
-                return VisitStatementOutput(result_type, LLVMBuildFSub(builder, left_temp.llvm, right_temp.llvm, "fsub"));
+                return VisitStatementOutput(result_type, LLVMBuildFSub(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "fsub"));
               case '*':
-                return VisitStatementOutput(result_type, LLVMBuildFMul(builder, left_temp.llvm, right_temp.llvm, "fmul"));
+                return VisitStatementOutput(result_type, LLVMBuildFMul(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "fmul"));
               case '/':
-                return VisitStatementOutput(result_type, LLVMBuildFDiv(builder, left_temp.llvm, right_temp.llvm, "fdiv"));
+                return VisitStatementOutput(result_type, LLVMBuildFDiv(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "fdiv"));
             }
         }
 
@@ -313,16 +314,16 @@ struct Emitter: Visitor {
         auto merge_block = LLVMAppendBasicBlock(function, "merge");
 
         auto cond_value = convert_to_type(condition_value, IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::INT));
-        LLVMBuildCondBr(builder, cond_value.llvm, alt_blocks[0], alt_blocks[1]);
+        LLVMBuildCondBr(builder, cond_value.llvm_rvalue(builder), alt_blocks[0], alt_blocks[1]);
 
         LLVMValueRef 
             alt_values[2];
         LLVMPositionBuilderAtEnd(builder, alt_blocks[0]);
-        alt_values[0] = convert_to_type(then_value, result_type).llvm;
+        alt_values[0] = convert_to_type(then_value, result_type).llvm_rvalue(builder);
         LLVMBuildBr(builder, merge_block);
 
         LLVMPositionBuilderAtEnd(builder, alt_blocks[1]);
-        alt_values[1] = convert_to_type(else_value, result_type).llvm;
+        alt_values[1] = convert_to_type(else_value, result_type).llvm_rvalue(builder);
         LLVMBuildBr(builder, merge_block);
 
         LLVMPositionBuilderAtEnd(builder, merge_block);
@@ -340,8 +341,7 @@ struct Emitter: Visitor {
         if (auto enum_constant = expr->declarator->enum_constant()) {
             return VisitStatementOutput(result_type, LLVMConstInt(result_type->llvm_type(), enum_constant->constant_int, true));
         } else if (auto entity = expr->declarator->entity()) {
-            return VisitStatementOutput(entity->value.type,
-                                        LLVMBuildLoad2(builder, entity->value.type->llvm_type(), entity->value.llvm, expr->declarator->identifier.name->data()));
+            return VisitStatementOutput(entity->value);
         } else {
             message(Severity::ERROR, expr->location) << "identifier is not an expression\n";
             pause_messages();

@@ -417,7 +417,7 @@ struct ResolvePass: Visitor {
             if (enum_constant->constant_expr) {
                 resolve(enum_constant->constant_expr);
                 auto value = fold_expr(enum_constant->constant_expr);
-                next_int = LLVMConstIntGetSExtValue(value.llvm);
+                next_int = LLVMConstIntGetSExtValue(value.llvm_const_rvalue());
             }
 
             enum_constant->constant_int = next_int;
@@ -451,7 +451,7 @@ struct ResolvePass: Visitor {
             if (!size_constant.is_const_integer()) {
                 message(Severity::ERROR, type->size->location) << "size of array must have integer type\n";
             } else {
-                size_int = LLVMConstIntGetZExtValue(size_constant.llvm);
+                size_int = LLVMConstIntGetZExtValue(size_constant.llvm_const_rvalue());
             }
 
             return VisitTypeOutput(ResolvedArrayType::of(ArrayKind::COMPLETE, resolved_element_type, size_int));
