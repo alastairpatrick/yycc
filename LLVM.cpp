@@ -9,7 +9,7 @@ void initialize_llvm() {
     LLVMInitializeARMTarget();
     LLVMInitializeARMTargetMC();
     LLVMInitializeARMTargetInfo();
-    //LLVMInitializeAllAsmPrinters();
+    LLVMInitializeARMAsmPrinter();
     
     char* error{};
     LLVMGetTargetFromTriple(g_llvm_triple, &g_llvm_target, &error);
