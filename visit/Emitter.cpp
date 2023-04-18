@@ -62,6 +62,14 @@ struct Emitter: Visitor {
         LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
         LLVMPositionBuilderAtEnd(builder, entry);
 
+        for (size_t i = 0; i < entity->params.size(); ++i) {
+            auto param = entity->params[i];
+            auto param_entity = param->entity();
+
+            param_entity->value = Value(param->type, LLVMBuildAlloca(builder, param->type->llvm_type(), param->identifier.name->data()));
+            LLVMBuildStore(builder, LLVMGetParam(function, i), param_entity->value.llvm);
+        }
+
         need_terminating_return = true;
         emit(entity->body);
         if (need_terminating_return) {
@@ -331,6 +339,9 @@ struct Emitter: Visitor {
 
         if (auto enum_constant = expr->declarator->enum_constant()) {
             return VisitStatementOutput(result_type, LLVMConstInt(result_type->llvm_type(), enum_constant->constant_int, true));
+        } else if (auto entity = expr->declarator->entity()) {
+            return VisitStatementOutput(entity->value.type,
+                                        LLVMBuildLoad2(builder, entity->value.type->llvm_type(), entity->value.llvm, expr->declarator->identifier.name->data()));
         } else {
             message(Severity::ERROR, expr->location) << "identifier is not an expression\n";
             pause_messages();

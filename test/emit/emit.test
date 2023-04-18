@@ -54,3 +54,20 @@ entry:
   ret { i32 } zeroinitializer
 }
 END
+
+
+BEGIN Load parameter value
+int f(int x, int y) {
+    return y;
+}
+EXPECT_IR
+define i32 @f(i32 %0, i32 %1) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %y = alloca i32, align 4
+  store i32 %1, ptr %y, align 4
+  %y1 = load i32, ptr %y, align 4
+  ret i32 %y1
+}
+END

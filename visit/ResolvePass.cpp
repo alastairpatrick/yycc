@@ -472,6 +472,7 @@ struct ResolvePass: Visitor {
 
     virtual VisitStatementOutput visit(EntityExpr* expr, const VisitStatementInput& input) override {
         resolve(expr->declarator);
+        expr->declarator = expr->declarator->primary;
         return VisitStatementOutput();
     }
 

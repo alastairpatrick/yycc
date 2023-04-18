@@ -3,6 +3,7 @@
 
 #include "ASTNode.h"
 #include "Type.h"
+#include "Value.h"
 
 enum class IdentifierScope {
     FILE,
@@ -85,6 +86,7 @@ struct Entity: DeclaratorDelegate {
     vector<Declarator*> params;
     Statement* body{};
     bool inline_definition{};
+    Value value;
 
     Entity(Declarator* declarator, Expr* initializer, Expr* bit_field_size);
     Entity(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&& params, Statement* body);
