@@ -1,5 +1,5 @@
 #include "TranslationUnitContext.h"
-#include "lexer/Fragment.h"
+#include "lex/Fragment.h"
 #include "FileCache.h"
 #include "Message.h"
 

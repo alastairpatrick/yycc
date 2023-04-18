@@ -1,8 +1,8 @@
 #include "FileCache.h"
-#include "parser/Declaration.h"
-#include "parser/IdentifierMap.h"
-#include "parser/Parser.h"
-#include "preprocessor/Preprocessor.h"
+#include "parse/Declaration.h"
+#include "parse/IdentifierMap.h"
+#include "parse/Parser.h"
+#include "preprocess/Preprocessor.h"
 #include "TextStream.h"
 
 struct DeclarationMarker {

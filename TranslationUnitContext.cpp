@@ -1,7 +1,7 @@
 #include "TranslationUnitContext.h"
 
 #include "Message.h"
-#include "parser/ASTNode.h"
+#include "parse/ASTNode.h"
 
 thread_local TranslationUnitContext* TranslationUnitContext::it;
 

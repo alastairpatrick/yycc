@@ -10,7 +10,7 @@ message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 set(GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 add_library(lang_lib_c STATIC
-    "parser/AssocPrec.c"
+    "parse/AssocPrec.c"
 )
 
 add_library(lang_lib STATIC
@@ -22,25 +22,25 @@ add_library(lang_lib STATIC
     "TranslationUnitContext.cpp"
     "Value.cpp"
 
-    "lexer/Location.cpp"
-    "lexer/Unescape.cpp"
+    "lex/Location.cpp"
+    "lex/Unescape.cpp"
 
-    "parser/ASTNode.cpp"
-    "parser/Constant.cpp"
-    "parser/Declaration.cpp"
-    "parser/Expr.cpp"
-    "parser/IdentifierMap.cpp"
-    "parser/Parser.cpp"
-    "parser/Statement.cpp"
-    "parser/ArrayType.cpp"
-    "parser/Type.cpp"
-    "parser/TypeContext.cpp"
+    "parse/ASTNode.cpp"
+    "parse/Constant.cpp"
+    "parse/Declaration.cpp"
+    "parse/Expr.cpp"
+    "parse/IdentifierMap.cpp"
+    "parse/Parser.cpp"
+    "parse/Statement.cpp"
+    "parse/ArrayType.cpp"
+    "parse/Type.cpp"
+    "parse/TypeContext.cpp"
 
-    "preprocessor/Preprocessor.cpp"
+    "preprocess/Preprocessor.cpp"
     
-    "visitor/Emitter.cpp"
-    "visitor/ResolvePass.cpp"
-    "visitor/Visitor.cpp"
+    "visit/Emitter.cpp"
+    "visit/ResolvePass.cpp"
+    "visit/Visitor.cpp"
 
     "Sweep.cpp"
     "TextStream.cpp"
@@ -53,24 +53,24 @@ add_library(lang_lib STATIC
 target_precompile_headers(lang_lib PUBLIC "pch.h")
 
 add_custom_command(
-    DEPENDS reflex lexer/PPTokenLexer.l
+    DEPENDS reflex lex/PPTokenLexer.l
     OUTPUT  "${GENERATED_DIR}/PPTokenLexer.yy.cpp" "${GENERATED_DIR}/PPTokenLexer.yy.h"
     COMMAND reflex "--header-file=${GENERATED_DIR}/PPTokenLexer.yy.h" "--outfile=${GENERATED_DIR}/PPTokenLexer.yy.cpp"
-            ${CMAKE_CURRENT_SOURCE_DIR}/lexer/PPTokenLexer.l
+            ${CMAKE_CURRENT_SOURCE_DIR}/lex/PPTokenLexer.l
 )
 
 add_custom_command(
-    DEPENDS reflex lexer/IdentifierLexer.l
+    DEPENDS reflex lex/IdentifierLexer.l
     OUTPUT  "${GENERATED_DIR}/IdentifierLexer.yy.cpp" "${GENERATED_DIR}/IdentifierLexer.yy.h"
     COMMAND reflex "--header-file=${GENERATED_DIR}/IdentifierLexer.yy.h" "--outfile=${GENERATED_DIR}/IdentifierLexer.yy.cpp"
-            ${CMAKE_CURRENT_SOURCE_DIR}/lexer/IdentifierLexer.l
+            ${CMAKE_CURRENT_SOURCE_DIR}/lex/IdentifierLexer.l
 )
 
 add_custom_command(
-    DEPENDS reflex lexer/PPNumberLexer.l
+    DEPENDS reflex lex/PPNumberLexer.l
     OUTPUT  "${GENERATED_DIR}/PPNumberLexer.yy.cpp" "${GENERATED_DIR}/PPNumberLexer.yy.h"
     COMMAND reflex "--header-file=${GENERATED_DIR}/PPNumberLexer.yy.h" "--outfile=${GENERATED_DIR}/PPNumberLexer.yy.cpp"
-            ${CMAKE_CURRENT_SOURCE_DIR}/lexer/PPNumberLexer.l
+            ${CMAKE_CURRENT_SOURCE_DIR}/lex/PPNumberLexer.l
 )
 
 target_include_directories(lang_lib

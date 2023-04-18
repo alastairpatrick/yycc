@@ -2,7 +2,7 @@
 #define TRANSLATION_UNIT_CONTEXT_H
 
 #include "InternedString.h"
-#include "parser/TypeContext.h"
+#include "parse/TypeContext.h"
 
 struct ASTNode;
 struct Printable;

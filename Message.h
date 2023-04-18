@@ -1,7 +1,7 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
-#include "lexer/Location.h"
+#include "lex/Location.h"
 
 enum class Severity {
     INFO,

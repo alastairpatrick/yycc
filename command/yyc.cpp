@@ -1,14 +1,14 @@
 #include "FileCache.h"
-#include "lexer/Fragment.h"
+#include "lex/Fragment.h"
 #include "LLVM.h"
 #include "Message.h"
-#include "parser/Declaration.h"
-#include "parser/Parser.h"
-#include "parser/Statement.h"
-#include "preprocessor/Preprocessor.h"
+#include "parse/Declaration.h"
+#include "parse/Parser.h"
+#include "parse/Statement.h"
+#include "preprocess/Preprocessor.h"
 #include "TranslationUnitContext.h"
-#include "visitor/Emitter.h"
-#include "visitor/ResolvePass.h"
+#include "visit/Emitter.h"
+#include "visit/ResolvePass.h"
 
 struct TranslationInput {
     explicit TranslationInput(IdentifierMap& identifiers, File&& f): file(f), preprocessor(file.text, false), parser(preprocessor, identifiers) {

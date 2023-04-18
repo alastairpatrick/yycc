@@ -1,14 +1,14 @@
 #include "nlohmann/json.hpp"
 
 #include "FileCache.h"
-#include "parser/ASTNode.h"
-#include "parser/Expr.h"
-#include "parser/Declaration.h"
-#include "parser/Parser.h"
-#include "parser/Statement.h"
+#include "parse/ASTNode.h"
+#include "parse/Expr.h"
+#include "parse/Declaration.h"
+#include "parse/Parser.h"
+#include "parse/Statement.h"
 #include "TranslationUnitContext.h"
-#include "visitor/Emitter.h"
-#include "visitor/ResolvePass.h"
+#include "visit/Emitter.h"
+#include "visit/ResolvePass.h"
 
 using json = nlohmann::json;
 

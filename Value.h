@@ -1,7 +1,7 @@
 #ifndef VALUE_H
 #define VALUE_H
 
-#include "parser/Type.h"
+#include "parse/Type.h"
 
 struct Value {
     bool is_const() const;

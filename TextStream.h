@@ -1,7 +1,7 @@
 #ifndef TEXT_STREAM_H
 #define TEXT_STREAM_H
 
-#include "lexer/Location.h"
+#include "lex/Location.h"
 
 // Writes program text to a stream, maintaining location by synthesizing white space tokens and #line directives.
 struct TextStream {
