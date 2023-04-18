@@ -37,3 +37,9 @@ LLVMValueRef Value::llvm_rvalue(LLVMBuilderRef builder) const {
         return LLVMBuildLoad2(builder, type->llvm_type(), llvm, "");
     }
 }
+
+Value Value::signedness_cast(const Type* type) const {
+    auto result(*this);
+    result.type = type;
+    return result;
+}

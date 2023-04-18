@@ -133,7 +133,7 @@ struct Emitter: Visitor {
         if (target_type == type) return VisitTypeOutput(value);
 
         if (auto int_target = dynamic_cast<const IntegerType*>(input.target_type)) {
-            if (int_target->size == type->size) return VisitTypeOutput(value);
+            if (int_target->size == type->size) return VisitTypeOutput(value.signedness_cast(target_type));
 
             if (int_target->size > type->size) {
                 if (type->is_signed()) {
@@ -289,15 +289,19 @@ struct Emitter: Visitor {
                 intermediate = right_temp.llvm_rvalue(builder);
                 break;
               case '+':
+              case TOK_ADD_ASSIGN:
                 intermediate = LLVMBuildAdd(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
                 break;
               case '-':
+              case TOK_SUB_ASSIGN:
                 intermediate = LLVMBuildSub(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
                 break;
               case '*':
+              case TOK_MUL_ASSIGN:
                 intermediate = LLVMBuildMul(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
                 break;
               case '/':
+              case TOK_DIV_ASSIGN:
                 if (result_as_int->is_signed()) {
                     intermediate = LLVMBuildSDiv(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
                 } else {
@@ -316,15 +320,19 @@ struct Emitter: Visitor {
                 intermediate = right_temp.llvm_rvalue(builder);
                 break;
               case '+':
+              case TOK_ADD_ASSIGN:
                 intermediate = LLVMBuildFAdd(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
                 break;
               case '-':
+              case TOK_SUB_ASSIGN:
                 intermediate = LLVMBuildFSub(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
                 break;
               case '*':
+              case TOK_MUL_ASSIGN:
                 intermediate = LLVMBuildFMul(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
                 break;
               case '/':
+              case TOK_DIV_ASSIGN:
                 intermediate = LLVMBuildFDiv(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
                 break;
             }
