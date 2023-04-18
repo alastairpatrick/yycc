@@ -13,10 +13,11 @@
 using json = nlohmann::json;
 
 enum class TestType {
-    EXPRESSION,
-    RESOLVE,
-    PREPARSE,
     PREPROCESS,
+    EXPRESSION,
+    PREPARSE,
+    RESOLVE,
+    EMIT,
 
     NUM
 };
@@ -99,30 +100,16 @@ ASTNodeVector parse_declarations(IdentifierMap& identifiers, const Input& input)
     Parser parser(preprocessor, identifiers);
     auto declarations = parser.parse();
 
-    if (!identifiers.preparse) resolve_pass(identifiers.scopes.front(), declarations);
-
     return move(declarations);
 }
 
 void sweep(ostream& stream, const File& file);
 
-static void init_emitter(Emitter& context) {
-    extern LLVMTargetRef g_target;
-    extern LLVMTargetMachineRef g_target_machine;
-    extern LLVMTargetDataRef g_target_data;
-
-    context.target = g_target;
-    context.target_machine = g_target_machine;
-    context.target_data = g_target_data;
-}
-
 static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], const string& name, const string& file, int line) {
     //try {
         stringstream message_stream;
 
-        TranslationUnitContext tu_context(message_stream);
-        init_emitter(tu_context.type_emitter);
-        init_emitter(tu_context.fold_emitter);
+        TranslationUnitContext context(message_stream);
 
         IdentifierMap identifiers(test_type == TestType::PREPARSE);
 
@@ -139,8 +126,11 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
             file.text = sections[INPUT];
             sweep(output_stream, file);
         } else {
-            auto statements = parse_declarations(identifiers, sections[INPUT]);
-            output_stream << statements;
+            auto declarations = parse_declarations(identifiers, sections[INPUT]);
+
+            if (test_type >= TestType::RESOLVE) resolve_pass(identifiers.scopes.front(), declarations);
+
+            output_stream << declarations;
         }
 
         

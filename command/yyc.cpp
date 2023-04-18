@@ -1,5 +1,6 @@
 #include "FileCache.h"
 #include "lexer/Fragment.h"
+#include "LLVM.h"
 #include "Message.h"
 #include "parser/Declaration.h"
 #include "parser/Parser.h"
@@ -19,38 +20,8 @@ struct TranslationInput {
     Parser parser;
 };
 
-const char* g_triple = "thumbv6m-none-eabi";
-LLVMTargetRef g_target;
-LLVMTargetMachineRef g_target_machine;
-LLVMTargetDataRef g_target_data;
-
-void initialize_llvm() {
-    LLVMInitializeAllTargets();
-    LLVMInitializeAllTargets();
-    LLVMInitializeAllTargetMCs();
-    LLVMInitializeAllTargetInfos();
-    LLVMInitializeAllAsmPrinters();
-
-    char* error{};
-    LLVMGetTargetFromTriple(g_triple, &g_target, &error);
-    if (error) {
-        cerr << error << "\n";
-        LLVMDisposeMessage(error);
-    }
-
-    g_target_machine = LLVMCreateTargetMachine(g_target, g_triple, "generic", "", LLVMCodeGenLevelDefault, LLVMRelocDefault, LLVMCodeModelDefault);
-    g_target_data = LLVMCreateTargetDataLayout(g_target_machine);
-}
-
-static void init_emitter(Emitter& context) {
-    context.target = g_target;
-    context.target_machine = g_target_machine;
-    context.target_data = g_target_data;
-}
-
 bool emit(const ASTNodeVector& nodes) {
     Emitter emitter;
-    init_emitter(emitter);
     emitter.outcome = EmitOutcome::IR;
     emitter.module = LLVMModuleCreateWithName("my_module");
     emitter.builder = LLVMCreateBuilder();
@@ -62,7 +33,7 @@ bool emit(const ASTNodeVector& nodes) {
     LLVMVerifyModule(emitter.module, LLVMAbortProcessAction, nullptr);
 
     char* error{};
-    LLVMTargetMachineEmitToFile(g_target_machine, emitter.module, "generated.asm", LLVMAssemblyFile, &error);
+    LLVMTargetMachineEmitToFile(g_llvm_target_machine, emitter.module, "generated.asm", LLVMAssemblyFile, &error);
     LLVMDisposeMessage(error);
 
     return true;
@@ -73,8 +44,6 @@ int main(int argc, const char* argv[]) {
     FileCache file_cache(true);
 
     TranslationUnitContext context(cerr);
-    init_emitter(context.type_emitter);
-    init_emitter(context.fold_emitter);
 
     IdentifierMap identifiers(false);
     list<TranslationInput> inputs;

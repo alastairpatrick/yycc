@@ -1,4 +1,5 @@
 #include "Emitter.h"
+#include "LLVM.h"
 #include "Message.h"
 #include "parser/Declaration.h"
 
@@ -310,7 +311,7 @@ VisitStatementOutput Emitter::visit(SizeOfExpr* expr, const VisitStatementInput&
 
     if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
-    auto size_int = LLVMStoreSizeOfType(target_data, expr->type->llvm_type());
+    auto size_int = LLVMStoreSizeOfType(g_llvm_target_data, expr->type->llvm_type());
     return VisitStatementOutput(result_type, LLVMConstInt(result_type->llvm_type(), size_int, false));
 }
 

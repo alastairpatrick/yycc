@@ -16,6 +16,7 @@ add_library(lang_lib_c STATIC
 add_library(lang_lib STATIC
     "FileCache.cpp"
     "InternedString.cpp"
+    "LLVM.cpp"
     "Message.cpp"
     "Printable.cpp"
     "TranslationUnitContext.cpp"

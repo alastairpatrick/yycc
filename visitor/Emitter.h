@@ -12,10 +12,6 @@ enum class EmitOutcome {
 struct Emitter: Visitor {
     EmitOutcome outcome = EmitOutcome::TYPE;
 
-    LLVMTargetRef target{};
-    LLVMTargetMachineRef target_machine{};
-    LLVMTargetDataRef target_data{};
-
     LLVMModuleRef module{};
     LLVMValueRef function{};
     LLVMBuilderRef builder{};

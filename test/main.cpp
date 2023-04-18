@@ -1,25 +1,11 @@
-bool run_parser_tests();
+#include "LLVM.h"
 
-const char* g_triple = "thumbv6m-none-eabi";
-LLVMTargetRef g_target;
-LLVMTargetMachineRef g_target_machine;
-LLVMTargetDataRef g_target_data;
+bool run_parser_tests();
 
 int main(int argc, const char *argv[]) {
     char *error = NULL;
 
-    LLVMInitializeARMTarget();
-    LLVMInitializeARMTargetMC();
-    LLVMInitializeARMTargetInfo();
-    //LLVMInitializeAllAsmPrinters();
-
-    error = NULL;
-    LLVMGetTargetFromTriple(g_triple, &g_target, &error);
-    LLVMDisposeMessage(error);
-
-    g_target_machine = LLVMCreateTargetMachine(g_target, g_triple, "generic", "", LLVMCodeGenLevelDefault, LLVMRelocDefault, LLVMCodeModelDefault);
-
-    g_target_data = LLVMCreateTargetDataLayout(g_target_machine);
+    initialize_llvm();
 
     auto success = true;
 
