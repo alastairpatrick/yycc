@@ -8,13 +8,6 @@
 #include "Visitor.h"
 
 struct ResolvePass: Visitor {
-    // Ordered by declarator location to ensure that messages are consistent between runs.
-    struct DeclaratorComparator {
-        bool operator()(Declarator* a, Declarator* b) const {
-            return a->location < b->location || (a->location == b->location && a < b);
-        }
-    };
-
     const Type* resolve(const Type* type) {
         return type->accept(*this, VisitTypeInput()).value.type;
     }
@@ -488,10 +481,20 @@ struct ResolvePass: Visitor {
 };
 
 void resolve_pass(const Scope& scope, const ASTNodeVector& nodes) {
-    ResolvePass pass;
+    // Sort declarators so error messages don't vary between runs.
+    vector<Declarator*> ordered;
     for (auto pair: scope.declarators) {
+        ordered.push_back(pair.second);
+    }
+
+    sort(ordered.begin(), ordered.end(), [](Declarator* a, Declarator* b) {
+        return a->location < b->location || (a->location == b->location && a < b);
+    });
+
+    ResolvePass pass;
+    for (auto declarator: ordered) {
         resume_messages();
-        pass.resolve(pair.second);
+        pass.resolve(declarator);
     }
     
     for (auto node: nodes) {
