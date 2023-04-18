@@ -32,6 +32,7 @@ enum Section {
 
     EXPECT_AST,
     EXPECT_GLOBALS,
+    EXPECT_IR,
     EXPECT_MESSAGE,
     EXPECT_TEXT,
     EXPECT_TYPE,
@@ -57,6 +58,13 @@ static const Test tests[] = {
     { "enum",               TestType::PREPARSE },
     { "array",              TestType::PREPARSE },
 
+    { "string_literal",     TestType::EXPRESSION },
+    { "lex",                TestType::EXPRESSION },
+    { "int_literal",        TestType::EXPRESSION },
+    { "conversion",         TestType::EXPRESSION },
+    { "float_literal",      TestType::EXPRESSION },
+    { "expr",               TestType::EXPRESSION },
+
     { "typedef",            TestType::RESOLVE },
     { "typedef_comp",       TestType::RESOLVE },
     { "var_decl",           TestType::RESOLVE },
@@ -69,12 +77,7 @@ static const Test tests[] = {
     { "stmt",               TestType::RESOLVE },
     { "array",              TestType::RESOLVE },
 
-    { "string_literal",     TestType::EXPRESSION },
-    { "lex",                TestType::EXPRESSION },
-    { "int_literal",        TestType::EXPRESSION },
-    { "conversion",         TestType::EXPRESSION },
-    { "float_literal",      TestType::EXPRESSION },
-    { "expr",               TestType::EXPRESSION },
+    { "emit",               TestType::EMIT },
 };
 
 static ostream& print_error(const string& name, const string& file, int line) {
@@ -114,6 +117,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
         IdentifierMap identifiers(test_type == TestType::PREPARSE);
 
         const Type* type{};
+        string module_ir;
         stringstream output_stream;
         if (test_type == TestType::EXPRESSION) {
             auto expr = parse_expr(identifiers, sections[INPUT]);
@@ -129,6 +133,19 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
             auto declarations = parse_declarations(identifiers, sections[INPUT]);
 
             if (test_type >= TestType::RESOLVE) resolve_pass(identifiers.scopes.front(), declarations);
+
+            if (test_type >= TestType::EMIT) {
+                auto module = emit_pass(declarations);
+                char* module_string = LLVMPrintModuleToString(module);
+                module_ir = module_string;
+                LLVMDisposeMessage(module_string);
+                LLVMDisposeModule(module);
+
+                // Erase first three lines:
+                module_ir.erase(0, module_ir.find("\n") + 1);
+                module_ir.erase(0, module_ir.find("\n") + 1);
+                module_ir.erase(0, module_ir.find("\n") + 1);
+            }
 
             output_stream << declarations;
         }
@@ -174,6 +191,13 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
 
             if (parsed_globals != parsed_expected) {
                 print_error(name, file, line) << "Expected globals: " << parsed_expected << "\n  Actual globals: " << parsed_globals << "\n";
+                return false;
+            }
+        }
+        
+        if (!sections[EXPECT_IR].empty()) {
+            if (module_ir != sections[EXPECT_IR]) {
+                print_error(name, file, line) << "Expected IR:\n" << sections[EXPECT_IR] << "\n  Actual IR:\n" << module_ir << "\n";
                 return false;
             }
         }
@@ -258,12 +282,17 @@ bool run_parser_tests() {
                 section = Section::EXPECT_AST;
             } else if (line == "EXPECT_GLOBALS") {
                 section = Section::EXPECT_GLOBALS;
+            } else if (line == "EXPECT_IR") {
+                section = Section::EXPECT_IR;
             } else if (line == "EXPECT_MESSAGE") {
                 section = Section::EXPECT_MESSAGE;
             } else if (line == "EXPECT_TEXT") {
                 section = Section::EXPECT_TEXT;
             } else if (line == "EXPECT_TYPE") {
                 section = Section::EXPECT_TYPE;
+            } else if (line == "EMIT") {
+                enabled_types[unsigned(TestType::EMIT)] = true;
+                ++num_enabled_types;
             } else if (line == "EXPRESSION") {
                 enabled_types[unsigned(TestType::EXPRESSION)] = true;
                 ++num_enabled_types;
