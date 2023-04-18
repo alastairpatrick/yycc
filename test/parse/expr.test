@@ -144,6 +144,78 @@ EXPECT_AST
       , ["%", 2, 3]]
 
 
+BEGIN Assignment expression
+1 = 2
+EXPECT_AST
+["=", 1, 2]
+
+
+BEGIN Assignment right associative
+1 = 2 = 3
+EXPECT_AST
+["=", 1, ["=", 2, 3]]
+
+
+BEGIN Multiply assignment expression
+1 *= 2
+EXPECT_AST
+["*=", 1, 2]
+
+
+BEGIN Divide assignment expression
+1 /= 2
+EXPECT_AST
+["/=", 1, 2]
+
+
+BEGIN Modulo assignment expression
+1 %= 2
+EXPECT_AST
+["%=", 1, 2]
+
+
+BEGIN Add assignment expression
+1 += 2
+EXPECT_AST
+["+=", 1, 2]
+
+
+BEGIN Subtract assignment expression
+1 -= 2
+EXPECT_AST
+["-=", 1, 2]
+
+
+BEGIN Left shift assignment expression
+1 <<= 2
+EXPECT_AST
+["<<=", 1, 2]
+
+
+BEGIN Right shift assignment expression
+1 >>= 2
+EXPECT_AST
+[">>=", 1, 2]
+
+
+BEGIN And assignment expression
+1 &= 2
+EXPECT_AST
+["&=", 1, 2]
+
+
+BEGIN Or assignment expression
+1 |= 2
+EXPECT_AST
+["|=", 1, 2]
+
+
+BEGIN Exclusive or assignment expression
+1 ^= 2
+EXPECT_AST
+["^=", 1, 2]
+
+
 BEGIN Parentheses
 1 + ( 2 + 3 )
 EXPECT_AST

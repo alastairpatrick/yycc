@@ -262,13 +262,13 @@ struct Emitter: Visitor {
 
         if (auto result_as_int = dynamic_cast<const IntegerType*>(result_type)) {
             switch (expr->op) {
-              case BinaryOp::ADD:
+              case '+':
                 return VisitStatementOutput(result_type, LLVMBuildAdd(builder, left_temp.llvm, right_temp.llvm, "add"));
-              case BinaryOp::SUB:
+              case '-':
                 return VisitStatementOutput(result_type, LLVMBuildSub(builder, left_temp.llvm, right_temp.llvm, "sub"));
-              case BinaryOp::MUL:
+              case '*':
                 return VisitStatementOutput(result_type, LLVMBuildMul(builder, left_temp.llvm, right_temp.llvm, "mul"));
-              case BinaryOp::DIV:
+              case '/':
                 if (result_as_int->is_signed()) {
                     return VisitStatementOutput(result_type, LLVMBuildSDiv(builder, left_temp.llvm, right_temp.llvm, "div"));
                 } else {
@@ -279,13 +279,13 @@ struct Emitter: Visitor {
 
         if (auto result_as_float = dynamic_cast<const FloatingPointType*>(result_type)) {
             switch (expr->op) {
-              case BinaryOp::ADD:
+              case '+':
                 return VisitStatementOutput(result_type, LLVMBuildFAdd(builder, left_temp.llvm, right_temp.llvm, "fadd"));
-              case BinaryOp::SUB:
+              case '-':
                 return VisitStatementOutput(result_type, LLVMBuildFSub(builder, left_temp.llvm, right_temp.llvm, "fsub"));
-              case BinaryOp::MUL:
+              case '*':
                 return VisitStatementOutput(result_type, LLVMBuildFMul(builder, left_temp.llvm, right_temp.llvm, "fmul"));
-              case BinaryOp::DIV:
+              case '/':
                 return VisitStatementOutput(result_type, LLVMBuildFDiv(builder, left_temp.llvm, right_temp.llvm, "fdiv"));
             }
         }

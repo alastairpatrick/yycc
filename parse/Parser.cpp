@@ -252,10 +252,21 @@ Expr* Parser::parse_expr(OperatorPrec min_prec) {
             }
         }
         else {
-            BinaryOp op;
+            TokenKind op;
             switch (token) {
               default:
                 return result;
+              case '=':
+              case TOK_MUL_ASSIGN:
+              case TOK_DIV_ASSIGN:
+              case TOK_MOD_ASSIGN:
+              case TOK_ADD_ASSIGN:
+              case TOK_SUB_ASSIGN:
+              case TOK_LEFT_ASSIGN:
+              case TOK_RIGHT_ASSIGN:
+              case TOK_AND_ASSIGN:
+              case TOK_OR_ASSIGN:
+              case TOK_XOR_ASSIGN:
               case TOK_OR_OP:
               case TOK_AND_OP:
               case '+':
@@ -264,7 +275,7 @@ Expr* Parser::parse_expr(OperatorPrec min_prec) {
               case '/':
               case '%':
                 loc = preprocessor.location();
-                op = BinaryOp(token);
+                op = token;
                 consume();
                 break;
             }

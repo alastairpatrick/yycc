@@ -25,22 +25,13 @@ struct EntityExpr: Expr {
     virtual void print(ostream& stream) const override;
 };
 
-enum class BinaryOp {
-    LOGICAL_OR			= TOK_OR_OP,
-    LOGICAL_AND			= TOK_AND_OP,
-    ADD					= '+',
-    SUB					= '-',
-    MUL					= '*',
-    DIV					= '/',
-    MOD					= '%',
-};
 
 struct BinaryExpr: Expr {
     Expr* left{};
     Expr* right{};
-    BinaryOp op;
+    TokenKind op;
     
-    BinaryExpr(Expr* left, Expr* right, BinaryOp op, const Location& location);
+    BinaryExpr(Expr* left, Expr* right, TokenKind op, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
     virtual void print(ostream& stream) const override;
 };

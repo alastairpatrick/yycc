@@ -34,7 +34,7 @@ void EntityExpr::print(ostream& stream) const {
     stream << "\"N" << declarator->identifier << '"';
 }
 
-BinaryExpr::BinaryExpr(Expr* left, Expr* right, BinaryOp op, const Location& location)
+BinaryExpr::BinaryExpr(Expr* left, Expr* right, TokenKind op, const Location& location)
     : Expr(location), left(left), right(right), op(op) {
     assert(this->left);
     assert(this->right);
@@ -45,34 +45,52 @@ VisitStatementOutput BinaryExpr::accept(Visitor& visitor, const VisitStatementIn
 }
 
 void BinaryExpr::print(ostream& stream) const {
+    stream << "[\"";
+
     switch (op) {
+      case TOK_MUL_ASSIGN:
+        stream << "*=";
+        break;
+      case TOK_DIV_ASSIGN:
+        stream << "/=";
+        break;
+      case TOK_MOD_ASSIGN:
+        stream << "%=";
+        break;
+      case TOK_ADD_ASSIGN:
+        stream << "+=";
+        break;
+      case TOK_SUB_ASSIGN:
+        stream << "-=";
+        break;
+      case TOK_LEFT_ASSIGN:
+        stream << "<<=";
+        break;
+      case TOK_RIGHT_ASSIGN:
+        stream << ">>=";
+        break;
+      case TOK_AND_ASSIGN:
+        stream << "&=";
+        break;
+      case TOK_OR_ASSIGN:
+        stream << "|=";
+        break;
+      case TOK_XOR_ASSIGN:
+        stream << "^=";
+        break;
+      case TOK_OR_OP:
+        stream << "||";
+        break;
+      case TOK_AND_OP:
+        stream << "&&";
+        break;
       default:
-        stream << "[\"UnknownBinary\", ";
-        break;
-      case BinaryOp::LOGICAL_OR:
-        stream << "[\"||\", ";
-        break;
-      case BinaryOp::LOGICAL_AND:
-        stream << "[\"&&\", ";
-        break;
-      case BinaryOp::ADD:
-        stream << "[\"+\", ";
-        break;
-      case BinaryOp::SUB:
-        stream << "[\"-\", ";
-        break;
-      case BinaryOp::MUL:
-        stream << "[\"*\", ";
-        break;
-      case BinaryOp::DIV:
-        stream << "[\"/\", ";
-        break;
-      case BinaryOp::MOD:
-        stream << "[\"%\", ";
+        assert(op > 32 && op < 128);
+        stream << (char) op;
         break;
     }
 
-    stream << left << ", " << right << "]";
+    stream << "\", " << left << ", " << right << "]";
 }
 
 SizeOfExpr::SizeOfExpr(const Type* type, const Location& location)
