@@ -3,7 +3,6 @@
 
 #include "InternedString.h"
 #include "parser/TypeContext.h"
-#include "visitor/Emitter.h"
 
 struct ASTNode;
 struct Printable;
@@ -28,9 +27,6 @@ struct TranslationUnitContext {
     unordered_set<string_view> interned_views;
 
     ASTNode* ast_nodes{};
-
-    Emitter type_emitter;
-    Emitter fold_emitter;
 };
 
 #endif

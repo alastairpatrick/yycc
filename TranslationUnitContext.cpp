@@ -12,11 +12,6 @@ TranslationUnitContext::TranslationUnitContext(ostream& message_stream): message
     null_message_stream.setstate(ios_base::badbit);
 
     interned_views.insert(*empty_interned_string);
-
-    type_emitter.outcome = EmitOutcome::TYPE;
-
-    fold_emitter.outcome = EmitOutcome::FOLD;
-    fold_emitter.builder = LLVMCreateBuilder();
 }
 
 TranslationUnitContext::~TranslationUnitContext() {

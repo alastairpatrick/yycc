@@ -20,25 +20,6 @@ struct TranslationInput {
     Parser parser;
 };
 
-bool emit(const ASTNodeVector& nodes) {
-    Emitter emitter;
-    emitter.outcome = EmitOutcome::IR;
-    emitter.module = LLVMModuleCreateWithName("my_module");
-    emitter.builder = LLVMCreateBuilder();
-
-    for (auto node: nodes) {
-        emitter.emit(node);
-    }
-
-    LLVMVerifyModule(emitter.module, LLVMAbortProcessAction, nullptr);
-
-    char* error{};
-    LLVMTargetMachineEmitToFile(g_llvm_target_machine, emitter.module, "generated.asm", LLVMAssemblyFile, &error);
-    LLVMDisposeMessage(error);
-
-    return true;
-}
-
 int main(int argc, const char* argv[]) {
     initialize_llvm();
     FileCache file_cache(true);
@@ -65,7 +46,11 @@ int main(int argc, const char* argv[]) {
 
     resolve_pass(identifiers.scopes.front(), nodes);
 
-    emit(nodes);
+    auto module = emit_pass(nodes);
+    
+    char* error{};
+    LLVMTargetMachineEmitToFile(g_llvm_target_machine, module, "generated.asm", LLVMAssemblyFile, &error);
+    LLVMDisposeMessage(error);
 
     return context.highest_severity == Severity::INFO ? EXIT_SUCCESS : EXIT_FAILURE;
 }

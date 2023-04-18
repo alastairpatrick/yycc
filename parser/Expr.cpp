@@ -3,27 +3,8 @@
 #include "Message.h"
 #include "TranslationUnitContext.h"
 #include "visitor/Visitor.h"
-#include "visitor/Emitter.h"
 
 Expr::Expr(const Location& location): Statement(location) {
-}
-
-const Type* Expr::get_type() const {
-    auto& emitter = TranslationUnitContext::it->type_emitter;
-    try {
-        return emitter.emit(const_cast<Expr*>(this)).type;
-    } catch (EmitError&) {
-        return IntegerType::default_type();
-    }
-}
-
-Value Expr::fold(unsigned long long error_value) const {
-    auto& emitter = TranslationUnitContext::it->fold_emitter;
-    try {
-        return emitter.emit(const_cast<Expr*>(this));
-    } catch (EmitError&) {
-        return Value(IntegerType::default_type(), LLVMConstInt(IntegerType::default_type()->llvm_type(), error_value, false));
-    }
 }
 
 ConditionExpr::ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, const Location& location)

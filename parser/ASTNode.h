@@ -77,9 +77,6 @@ struct Statement: ASTNode {
 
 struct Expr: Statement {
     explicit Expr(const Location& location);
-
-    const Type* get_type() const;
-    Value fold(unsigned long long error_value = 0) const;
 };
 
 

@@ -1,4 +1,5 @@
 #include "ResolvePass.h"
+#include "Emitter.h"
 #include "Message.h"
 #include "parser/Declaration.h"
 #include "parser/ArrayType.h"
@@ -415,7 +416,7 @@ struct ResolvePass: Visitor {
             auto enum_constant = declarator->enum_constant();
             if (enum_constant->constant_expr) {
                 resolve(enum_constant->constant_expr);
-                auto value = enum_constant->constant_expr->fold();
+                auto value = fold_expr(enum_constant->constant_expr);
                 next_int = LLVMConstIntGetSExtValue(value.llvm);
             }
 
@@ -429,7 +430,7 @@ struct ResolvePass: Visitor {
 
     virtual VisitTypeOutput visit(const TypeOfType* type, const VisitTypeInput& input) override {
         resolve(type->expr);
-        return VisitTypeOutput(type->expr->get_type());
+        return VisitTypeOutput(get_expr_type(type->expr));
     }
 
     virtual VisitTypeOutput visit(const TypeDefType* type, const VisitTypeInput& input) override {
@@ -446,7 +447,7 @@ struct ResolvePass: Visitor {
         if (type->size) {
             resolve(type->size);
             unsigned long long size_int = 1;
-            auto size_constant = type->size->fold(size_int);
+            auto size_constant = fold_expr(type->size, size_int);
             if (!size_constant.is_const_integer()) {
                 message(Severity::ERROR, type->size->location) << "size of array must have integer type\n";
             } else {
