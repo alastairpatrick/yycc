@@ -1,8 +1,30 @@
-BEGIN Emit
+BEGIN Emit explicit return void
+void f() {
+    return;
+}
+EXPECT_IR
+define void @f() {
+entry:
+  ret void
+}
+END
+
+
+BEGIN Emit implicit return void
+void f() {
+}
+EXPECT_IR
+define void @f() {
+entry:
+  ret void
+}
+END
+
+
+BEGIN Emit return constant
 int f() {
     return 0;
 }
-EMIT
 EXPECT_IR
 define i32 @f() {
 entry:

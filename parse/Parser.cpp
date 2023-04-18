@@ -679,7 +679,11 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
         if (token == '{') {
             statement = parse_compound_statement();
         } else if (consume(TOK_RETURN)) {
-            statement = new ReturnStatement(parse_expr(SEQUENCE_PREC), location);
+            Expr* expr{};
+            if (token != ';') {
+                expr = parse_expr(SEQUENCE_PREC);
+            }
+            statement = new ReturnStatement(expr, location);
             require(';');
         } else {
             statement = parse_expr(SEQUENCE_PREC);

@@ -18,6 +18,12 @@ EXPECT_AST
 [["block", []]]
 
 
+BEGIN Parses void return statement
+return;
+EXPECT_AST
+[["return"]]
+
+
 BEGIN Parses return statement
 return 7;
 EXPECT_AST

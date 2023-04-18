@@ -25,5 +25,9 @@ VisitStatementOutput ReturnStatement::accept(Visitor& visitor, const VisitStatem
 }
 
 void ReturnStatement::print(ostream& stream) const {
-    stream << "[\"return\", " << expr << ']';
+    stream << "[\"return\"";
+    if (expr) {
+        stream << ", " << expr;
+    }
+    stream << ']';
 }

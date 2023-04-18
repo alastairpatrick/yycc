@@ -14,8 +14,10 @@ struct Emitter: Visitor {
     EmitOutcome outcome = EmitOutcome::TYPE;
 
     LLVMModuleRef module{};
+
     LLVMValueRef function{};
     LLVMBuilderRef builder{};
+    bool need_terminating_return = true;
 
     ~Emitter() {
         if (builder) LLVMDisposeBuilder(builder);
@@ -52,19 +54,26 @@ struct Emitter: Visitor {
         return result;
     }
 
-    virtual VisitDeclaratorOutput visit(Declarator* declarator, Entity* entity, const VisitDeclaratorInput& input) override {
-        if (!entity->is_function() || !entity->body) return VisitDeclaratorOutput();
-
-        assert(!function);
-
+    void emit_function_definition(Declarator* declarator, Entity* entity) {
         function = LLVMAddFunction(module, declarator->identifier.name->data(), declarator->primary->type->llvm_type());
 
         LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
         LLVMPositionBuilderAtEnd(builder, entry);
 
+        need_terminating_return = true;
         emit(entity->body);
+        if (need_terminating_return) {
+            LLVMBuildRetVoid(builder);
+        }
 
         function = nullptr;
+    }
+
+    virtual VisitDeclaratorOutput visit(Declarator* declarator, Entity* entity, const VisitDeclaratorInput& input) override {
+        if (!entity->is_function() || !entity->body) return VisitDeclaratorOutput();
+
+        assert(!function);
+        emit_function_definition(declarator, entity);
 
         return VisitDeclaratorOutput();
     }
@@ -141,14 +150,20 @@ struct Emitter: Visitor {
 
     virtual VisitStatementOutput visit(CompoundStatement* statement, const VisitStatementInput& input) override {
         for (auto node: statement->nodes) {
+            need_terminating_return = true;
             emit(node);
         }
         return VisitStatementOutput();
     };
 
     virtual VisitStatementOutput visit(ReturnStatement* statement, const VisitStatementInput& input) override {
-        auto value = emit(statement->expr);
-        LLVMBuildRet(builder, value.llvm);
+        if (statement->expr) {
+            auto value = emit(statement->expr);
+            LLVMBuildRet(builder, value.llvm);
+        } else {
+            LLVMBuildRetVoid(builder);
+        }
+        need_terminating_return = false;
         return VisitStatementOutput();
     }
 
@@ -374,7 +389,7 @@ LLVMModuleRef emit_pass(const ASTNodeVector& nodes) {
         emitter.emit(node);
     }
 
-    LLVMVerifyModule(emitter.module, LLVMAbortProcessAction, nullptr);
+    LLVMVerifyModule(emitter.module, LLVMPrintMessageAction, nullptr);
 
     return emitter.module;
 }
