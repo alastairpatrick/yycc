@@ -21,7 +21,7 @@ struct Value {
     LLVMValueRef llvm_const_rvalue() const;
     LLVMValueRef llvm_lvalue() const;
     LLVMValueRef llvm_rvalue(LLVMBuilderRef builder) const;
-    Value signedness_cast(const Type* type) const;
+    Value bit_cast(const Type* type) const;
 
 private:
     LLVMValueRef llvm{};

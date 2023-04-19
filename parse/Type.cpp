@@ -233,7 +233,7 @@ VisitTypeOutput PointerType::accept(Visitor& visitor, const VisitTypeInput& inpu
 }
 
 LLVMTypeRef PointerType::cache_llvm_type() const {
-    return LLVMPointerType(base_type->llvm_type(), 0);
+    return LLVMPointerType(LLVMInt32Type(), 0);
 }
 
 void PointerType::print(std::ostream& stream) const {

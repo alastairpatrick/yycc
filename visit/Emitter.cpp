@@ -133,7 +133,7 @@ struct Emitter: Visitor {
         if (target_type == type) return VisitTypeOutput(value);
 
         if (auto int_target = dynamic_cast<const IntegerType*>(input.target_type)) {
-            if (int_target->size == type->size) return VisitTypeOutput(value.signedness_cast(target_type));
+            if (int_target->size == type->size) return VisitTypeOutput(value.bit_cast(target_type));
 
             if (int_target->size > type->size) {
                 if (type->is_signed()) {
@@ -156,6 +156,15 @@ struct Emitter: Visitor {
 
         assert(false); // TODO
         return VisitTypeOutput(value);
+    }
+    
+    VisitTypeOutput visit(const PointerType* type, const VisitTypeInput& input) {
+        if (dynamic_cast<const PointerType*>(input.target_type)) {
+            return VisitTypeOutput(input.value.bit_cast(input.target_type));
+        }
+
+        assert(false); // TODO
+        return VisitTypeOutput(input.value);
     }
 
     virtual VisitStatementOutput visit_default(Expr* expr, const VisitStatementInput& input) override {
