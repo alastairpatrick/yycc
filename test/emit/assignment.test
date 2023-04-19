@@ -1,0 +1,183 @@
+BEGIN Assign integer parameter value
+void f(int x) {
+    x = 1;
+}
+EXPECT_IR
+define void @f(i32 %0) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  store i32 1, ptr %x, align 4
+  ret void
+}
+END
+
+
+BEGIN += integer parameter value
+void f(int x) {
+    x += 1;
+}
+EXPECT_IR
+define void @f(i32 %0) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %1 = load i32, ptr %x, align 4
+  %2 = add i32 %1, 1
+  store i32 %2, ptr %x, align 4
+  ret void
+}
+END
+
+
+BEGIN -= integer parameter value
+void f(int x) {
+    x -= 1;
+}
+EXPECT_IR
+define void @f(i32 %0) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %1 = load i32, ptr %x, align 4
+  %2 = sub i32 %1, 1
+  store i32 %2, ptr %x, align 4
+  ret void
+}
+END
+
+
+BEGIN *= integer parameter value
+void f(int x) {
+    x *= 1;
+}
+EXPECT_IR
+define void @f(i32 %0) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %1 = load i32, ptr %x, align 4
+  %2 = mul i32 %1, 1
+  store i32 %2, ptr %x, align 4
+  ret void
+}
+END
+
+
+BEGIN /= integer signed parameter value
+void f(int x) {
+    x /= 1;
+}
+EXPECT_IR
+define void @f(i32 %0) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %1 = load i32, ptr %x, align 4
+  %2 = sdiv i32 %1, 1
+  store i32 %2, ptr %x, align 4
+  ret void
+}
+END
+
+
+BEGIN /= integer unsigned parameter value
+void f(unsigned x) {
+    x /= 1;
+}
+EXPECT_IR
+define void @f(i32 %0) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %1 = load i32, ptr %x, align 4
+  %2 = udiv i32 %1, 1
+  store i32 %2, ptr %x, align 4
+  ret void
+}
+END
+
+
+====
+
+BEGIN Assign floating point parameter value
+void f(float x) {
+    x = 1;
+}
+EXPECT_IR
+define void @f(float %0) {
+entry:
+  %x = alloca float, align 4
+  store float %0, ptr %x, align 4
+  store float 1.000000e+00, ptr %x, align 4
+  ret void
+}
+END
+
+
+BEGIN += floating point parameter value
+void f(float x) {
+    x += 1;
+}
+EXPECT_IR
+define void @f(float %0) {
+entry:
+  %x = alloca float, align 4
+  store float %0, ptr %x, align 4
+  %1 = load float, ptr %x, align 4
+  %2 = fadd float %1, 1.000000e+00
+  store float %2, ptr %x, align 4
+  ret void
+}
+END
+
+
+BEGIN -= floating point parameter value
+void f(float x) {
+    x -= 1;
+}
+EXPECT_IR
+define void @f(float %0) {
+entry:
+  %x = alloca float, align 4
+  store float %0, ptr %x, align 4
+  %1 = load float, ptr %x, align 4
+  %2 = fsub float %1, 1.000000e+00
+  store float %2, ptr %x, align 4
+  ret void
+}
+END
+
+
+BEGIN *= floating point parameter value
+void f(float x) {
+    x *= 1;
+}
+EXPECT_IR
+define void @f(float %0) {
+entry:
+  %x = alloca float, align 4
+  store float %0, ptr %x, align 4
+  %1 = load float, ptr %x, align 4
+  %2 = fmul float %1, 1.000000e+00
+  store float %2, ptr %x, align 4
+  ret void
+}
+END
+
+
+BEGIN /= floating point parameter value
+void f(float x) {
+    x /= 1;
+}
+EXPECT_IR
+define void @f(float %0) {
+entry:
+  %x = alloca float, align 4
+  store float %0, ptr %x, align 4
+  %1 = load float, ptr %x, align 4
+  %2 = fdiv float %1, 1.000000e+00
+  store float %2, ptr %x, align 4
+  ret void
+}
+END

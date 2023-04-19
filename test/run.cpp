@@ -90,6 +90,7 @@ static const Test tests[] = {
     { "emit/conversion",            TestType::EXPRESSION },
 
     { "emit/emit",                  TestType::EMIT },
+    { "emit/assignment",            TestType::EMIT },
 };
 
 static ostream& print_error(const string& name, const string& file, int line) {
