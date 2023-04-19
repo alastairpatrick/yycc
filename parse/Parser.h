@@ -52,7 +52,6 @@ private:
     OperatorPrec prec();
 
     Expr* parse_expr(OperatorPrec min_prec);
-    Expr* parse_cast_expr();
     Expr* parse_unary_expr();
     Expr* parse_initializer();
     Declaration* parse_declaration_specifiers(IdentifierScope scope, const Type*& type, uint32_t& specifiers);
@@ -65,7 +64,7 @@ private:
     const Type* parse_structured_type(Declaration* declaration);
     Declarator* parse_enum_constant(Declaration* declaration, const EnumType* type, Declarator* tag);
     const Type* parse_typeof();
-    const Type* parse_type_name();
+    const Type* parse_type();
 };
 
 #endif

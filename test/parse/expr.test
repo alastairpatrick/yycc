@@ -231,6 +231,12 @@ EXPECT_AST
 ["+", 1, 0]
 
 
+BEGIN Cast expression
+(int*) 0
+EXPECT_AST
+["cast",["P","Si"],0]
+
+
 BEGIN Sizeof int type
 sizeof(int)
 EXPECT_AST

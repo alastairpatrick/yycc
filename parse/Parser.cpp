@@ -239,7 +239,7 @@ Expr* Parser::parse_expr(OperatorPrec min_prec) {
         return result;
     }
 
-    result = parse_cast_expr();
+    result = parse_unary_expr();
 
     while (prec() >= min_prec) {
         auto next_min_prec = assoc() == ASSOC_LEFT ? OperatorPrec(prec() + 1) : prec();
@@ -322,10 +322,6 @@ void Parser::skip_expr(OperatorPrec min_prec) {
     }
 }
 
-Expr* Parser::parse_cast_expr() {
-    return parse_unary_expr();
-}
-
 Expr* Parser::parse_unary_expr() {
     Location loc;
     Expr* result{};
@@ -335,7 +331,7 @@ Expr* Parser::parse_unary_expr() {
             auto consumed_paren = consume('(');
             
             const Type* type{};
-            if (consumed_paren) type = parse_type_name();
+            if (consumed_paren) type = parse_type();
 
             if (type) {
                 result = new SizeOfExpr(type, loc);
@@ -372,9 +368,16 @@ Expr* Parser::parse_unary_expr() {
             }
             consume();
             break;
-        } else if (consume('(')) {
-            result = parse_expr(SEQUENCE_PREC);
-            require(')');
+        } else if (consume('(', &loc)) {
+            auto type = parse_type();
+            if (type) {
+                require(')');
+                auto expr = parse_unary_expr();
+                return new CastExpr(type, expr, loc);
+            } else {
+                result = parse_expr(SEQUENCE_PREC);
+                require(')');
+            }
         } else {
             skip_unexpected();
         }
@@ -1064,7 +1067,7 @@ const Type* Parser::parse_typeof() {
     consume();
     require('(');
 
-    auto type = parse_type_name();
+    auto type = parse_type();
     if (!type) {
         auto expr = parse_expr(SEQUENCE_PREC);
         type = new TypeOfType(expr, location);
@@ -1076,7 +1079,7 @@ const Type* Parser::parse_typeof() {
     return type;
 }
 
-const Type* Parser::parse_type_name() {
+const Type* Parser::parse_type() {
     const Type* type{};
     uint32_t specifiers{};
     auto declaration = parse_declaration_specifiers(IdentifierScope::EXPRESSION, type, specifiers);

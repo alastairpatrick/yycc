@@ -112,6 +112,10 @@ VisitStatementOutput Visitor::visit(BinaryExpr* expr, const VisitStatementInput&
     return visit_default(expr, input);
 }
 
+VisitStatementOutput Visitor::visit(CastExpr* expr, const VisitStatementInput& input) {
+    return visit_default(expr, input);
+}
+
 VisitStatementOutput Visitor::visit(ConditionExpr* expr, const VisitStatementInput& input) {
     return visit_default(expr, input);
 }

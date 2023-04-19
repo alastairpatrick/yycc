@@ -68,6 +68,21 @@ void BinaryExpr::print(ostream& stream) const {
 }
 
 
+CastExpr::CastExpr(const Type* type, Expr* expr, const Location& location)
+    : Expr(location), type(type), expr(expr) {
+    assert(type);
+    assert(expr);
+}
+
+VisitStatementOutput CastExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
+}
+
+void CastExpr::print(ostream& stream) const {
+    stream << "[\"cast\", " << type << ", " << expr << ']';
+}
+
+
 ConditionExpr::ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, const Location& location)
     : Expr(location), condition(condition), then_expr(then_expr), else_expr(else_expr) {
     assert(this->condition);

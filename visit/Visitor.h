@@ -72,6 +72,7 @@ struct Visitor {
 
     virtual VisitStatementOutput visit_default(Expr* expr, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(BinaryExpr* expr, const VisitStatementInput& input);
+    virtual VisitStatementOutput visit(CastExpr* expr, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(ConditionExpr* expr, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(EntityExpr* expr, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(InitializerExpr* expr, const VisitStatementInput& input);

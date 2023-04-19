@@ -17,6 +17,15 @@ struct BinaryExpr: Expr {
     virtual void print(ostream& stream) const override;
 };
 
+struct CastExpr: Expr {
+    const Type* type;
+    Expr* expr{};
+    
+    CastExpr(const Type* type, Expr* expr, const Location& location);
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual void print(ostream& stream) const override;
+};
+
 struct ConditionExpr: Expr {
     Expr* condition{};
     Expr* then_expr{};
