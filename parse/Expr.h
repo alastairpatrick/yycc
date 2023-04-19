@@ -7,6 +7,16 @@
 
 struct Decl;
 
+struct BinaryExpr: Expr {
+    Expr* left{};
+    Expr* right{};
+    TokenKind op;
+    
+    BinaryExpr(Expr* left, Expr* right, TokenKind op, const Location& location);
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual void print(ostream& stream) const override;
+};
+
 struct ConditionExpr: Expr {
     Expr* condition{};
     Expr* then_expr{};
@@ -25,13 +35,10 @@ struct EntityExpr: Expr {
     virtual void print(ostream& stream) const override;
 };
 
+struct InitializerExpr: Expr {
+    vector<Expr*> elements;
 
-struct BinaryExpr: Expr {
-    Expr* left{};
-    Expr* right{};
-    TokenKind op;
-    
-    BinaryExpr(Expr* left, Expr* right, TokenKind op, const Location& location);
+    explicit InitializerExpr(const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
     virtual void print(ostream& stream) const override;
 };
@@ -40,14 +47,6 @@ struct SizeOfExpr: Expr {
     const Type* type;
 
     SizeOfExpr(const Type* type, const Location& location);
-    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
-    virtual void print(ostream& stream) const override;
-};
-
-struct InitializerExpr: Expr {
-    vector<Expr*> elements;
-
-    explicit InitializerExpr(const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
     virtual void print(ostream& stream) const override;
 };

@@ -7,32 +7,6 @@
 Expr::Expr(const Location& location): Statement(location) {
 }
 
-ConditionExpr::ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, const Location& location)
-    : Expr(location), condition(condition), then_expr(then_expr), else_expr(else_expr) {
-    assert(this->condition);
-    assert(this->then_expr);
-    assert(this->else_expr);
-}
-
-VisitStatementOutput ConditionExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
-    return visitor.visit(this, input);
-}
-
-void ConditionExpr::print(ostream& stream) const {
-    stream << "[\"?:\", " << condition << ", " << then_expr << ", " << else_expr << "]";
-}
-
-EntityExpr::EntityExpr(Declarator* declarator, const Location& location)
-    : Expr(location), declarator(declarator) {
-}
-
-VisitStatementOutput EntityExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
-    return visitor.visit(this, input);
-}
-
-void EntityExpr::print(ostream& stream) const {
-    stream << "\"N" << declarator->identifier << '"';
-}
 
 BinaryExpr::BinaryExpr(Expr* left, Expr* right, TokenKind op, const Location& location)
     : Expr(location), left(left), right(right), op(op) {
@@ -93,17 +67,35 @@ void BinaryExpr::print(ostream& stream) const {
     stream << "\", " << left << ", " << right << "]";
 }
 
-SizeOfExpr::SizeOfExpr(const Type* type, const Location& location)
-    : Expr(location), type(type) {
+
+ConditionExpr::ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, const Location& location)
+    : Expr(location), condition(condition), then_expr(then_expr), else_expr(else_expr) {
+    assert(this->condition);
+    assert(this->then_expr);
+    assert(this->else_expr);
 }
 
-VisitStatementOutput SizeOfExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
+VisitStatementOutput ConditionExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
     return visitor.visit(this, input);
 }
 
-void SizeOfExpr::print(ostream& stream) const {
-    stream << "[\"sizeof\", " << type << "]";
+void ConditionExpr::print(ostream& stream) const {
+    stream << "[\"?:\", " << condition << ", " << then_expr << ", " << else_expr << "]";
 }
+
+
+EntityExpr::EntityExpr(Declarator* declarator, const Location& location)
+    : Expr(location), declarator(declarator) {
+}
+
+VisitStatementOutput EntityExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
+}
+
+void EntityExpr::print(ostream& stream) const {
+    stream << "\"N" << declarator->identifier << '"';
+}
+
 
 InitializerExpr::InitializerExpr(const Location& location): Expr(location) {
 }
@@ -120,4 +112,18 @@ void InitializerExpr::print(ostream& stream) const {
     }
 
     stream << "]";
+}
+
+
+
+SizeOfExpr::SizeOfExpr(const Type* type, const Location& location)
+    : Expr(location), type(type) {
+}
+
+VisitStatementOutput SizeOfExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
+}
+
+void SizeOfExpr::print(ostream& stream) const {
+    stream << "[\"sizeof\", " << type << "]";
 }
