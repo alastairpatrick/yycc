@@ -133,7 +133,7 @@ struct Emitter: Visitor {
             return VisitTypeOutput(target_type, LLVMBuildIntCast2(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), type->is_signed(), ""));
         }
 
-        if (auto float_target = dynamic_cast<const FloatingPointType*>(input.target_type)) {
+        if (dynamic_cast<const FloatingPointType*>(input.target_type)) {
             if (type->is_signed()) {
                 return VisitTypeOutput(target_type, LLVMBuildSIToFP(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), ""));
             } else {
@@ -141,13 +141,24 @@ struct Emitter: Visitor {
             }
         }
 
+        if (dynamic_cast<const PointerType*>(input.target_type)) {
+            return VisitTypeOutput(target_type, LLVMBuildIntToPtr(builder, value.llvm_rvalue(builder), target_type->llvm_type(), ""));
+        }
+
         assert(false); // TODO
         return VisitTypeOutput(value);
     }
     
     VisitTypeOutput visit(const PointerType* type, const VisitTypeInput& input) {
+        auto target_type = input.target_type;
+        auto value = input.value;
+
         if (dynamic_cast<const PointerType*>(input.target_type)) {
-            return VisitTypeOutput(input.value.bit_cast(input.target_type));
+            return VisitTypeOutput(value.bit_cast(input.target_type));
+        }
+
+        if (dynamic_cast<const IntegerType*>(input.target_type)) {
+            return VisitTypeOutput(target_type, LLVMBuildPtrToInt(builder, value.llvm_rvalue(builder), target_type->llvm_type(), ""));
         }
 
         assert(false); // TODO
