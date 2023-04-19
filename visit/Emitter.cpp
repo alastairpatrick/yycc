@@ -49,8 +49,9 @@ struct Emitter: Visitor {
     Value convert_to_type(Value value, const Type* target_type) {
         VisitTypeInput input;
         input.value = value;
-        input.target_type = target_type;
+        input.target_type = target_type->unqualified();
         auto result = value.type->accept(*this, input).value;
+        result = result.bit_cast(QualifiedType::of(result.type, target_type->qualifiers()));
         assert(result.type == target_type);
         return result;
     }
@@ -163,6 +164,10 @@ struct Emitter: Visitor {
 
         assert(false); // TODO
         return VisitTypeOutput(input.value);
+    }
+
+    VisitTypeOutput visit(const QualifiedType* type, const VisitTypeInput& input) {
+        return VisitTypeOutput(convert_to_type(input.value.bit_cast(type->base_type), input.target_type));
     }
 
     virtual VisitStatementOutput visit_default(Expr* expr, const VisitStatementInput& input) override {

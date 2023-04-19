@@ -202,3 +202,79 @@ entry:
   ret ptr %2
 }
 END
+
+
+BEGIN Qualified to unqualifed conversion
+int f(const int x) {
+    return x;
+}
+EXPECT_IR
+define i32 @f(i32 %0) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %1 = load i32, ptr %x, align 4
+  ret i32 %1
+}
+END
+
+
+BEGIN Unqualified to qualifed conversion
+const int f(int x) {
+    return x;
+}
+EXPECT_IR
+define i32 @f(i32 %0) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %1 = load i32, ptr %x, align 4
+  ret i32 %1
+}
+END
+
+
+BEGIN Qualified to qualifed conversion
+volatile int f(volatile short x) {
+    return x;
+}
+EXPECT_IR
+define i32 @f(i16 %0) {
+entry:
+  %x = alloca i16, align 2
+  store i16 %0, ptr %x, align 2
+  %1 = load i16, ptr %x, align 2
+  %2 = sext i16 %1 to i32
+  ret i32 %2
+}
+END
+
+
+BEGIN Pointer to qualified -> pointer to unqualifed conversion
+int* f(const int* x) {
+    return x;
+}
+EXPECT_IR
+define ptr @f(ptr %0) {
+entry:
+  %x = alloca ptr, align 8
+  store ptr %0, ptr %x, align 8
+  %1 = load ptr, ptr %x, align 8
+  ret ptr %1
+}
+END
+
+
+BEGIN Pointer to unqualified -> pointer to qualifed conversion
+const int* f(int* x) {
+    return x;
+}
+EXPECT_IR
+define ptr @f(ptr %0) {
+entry:
+  %x = alloca ptr, align 8
+  store ptr %0, ptr %x, align 8
+  %1 = load ptr, ptr %x, align 8
+  ret ptr %1
+}
+END
