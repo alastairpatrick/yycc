@@ -63,6 +63,8 @@ static const Test tests[] = {
     { "parse/enum",                 TestType::PARSE },
     { "resolve/enum",               TestType::RESOLVE},
 
+    { "resolve/expr",               TestType::RESOLVE},
+
     { "parse/function",             TestType::PREPARSE },
     { "parse/function",             TestType::PARSE },
     { "resolve/function",           TestType::RESOLVE },

@@ -470,14 +470,20 @@ struct ResolvePass: Visitor {
         return VisitStatementOutput();
     }
 
-    virtual VisitStatementOutput visit(EntityExpr* expr, const VisitStatementInput& input) override {
-        resolve(expr->declarator);
-        expr->declarator = expr->declarator->primary;
+    virtual VisitStatementOutput visit(CastExpr* cast_expr, const VisitStatementInput& input) override {
+        cast_expr->type = resolve(cast_expr->type);
+        resolve(cast_expr->expr);
         return VisitStatementOutput();
     }
 
-    virtual VisitStatementOutput visit(SizeOfExpr* expr, const VisitStatementInput& input) override {
-        expr->type = resolve(expr->type);
+    virtual VisitStatementOutput visit(EntityExpr* entity_expr, const VisitStatementInput& input) override {
+        resolve(entity_expr->declarator);
+        entity_expr->declarator = entity_expr->declarator->primary;
+        return VisitStatementOutput();
+    }
+
+    virtual VisitStatementOutput visit(SizeOfExpr* size_of_expr, const VisitStatementInput& input) override {
+        size_of_expr->type = resolve(size_of_expr->type);
         return VisitStatementOutput();
     }
 };

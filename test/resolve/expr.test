@@ -1,0 +1,6 @@
+BEGIN Resolves cast expression
+return (int(*)[1+1]) 0;
+RESOLVE
+EXPECT_AST
+[["return",["cast",["P",["A","Si",2]],0]]]
+
