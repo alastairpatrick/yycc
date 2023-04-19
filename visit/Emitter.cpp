@@ -16,6 +16,7 @@ struct Emitter: Visitor {
     LLVMModuleRef module{};
 
     LLVMValueRef function{};
+    Declarator* function_declarator{};
     const FunctionType* function_type{};
     LLVMBuilderRef temp_builder{};
     LLVMBuilderRef builder{};
@@ -60,6 +61,7 @@ struct Emitter: Visitor {
     }
 
     void emit_function_definition(Declarator* declarator, Entity* entity) {
+        function_declarator = declarator;
         function_type = dynamic_cast<const FunctionType*>(declarator->primary->type);
         function = LLVMAddFunction(module, declarator->identifier.name->data(), declarator->primary->type->llvm_type());
 
@@ -91,22 +93,37 @@ struct Emitter: Visitor {
     void emit_variable(Declarator* declarator, Entity* entity) {
         auto llvm_type = declarator->type->llvm_type();
 
-        auto first_insn = LLVMGetFirstInstruction(entry_block);
-        if (first_insn) {
-            LLVMPositionBuilderBefore(temp_builder, first_insn);
-        } else {
-            LLVMPositionBuilderAtEnd(temp_builder, entry_block);
-        }
-        auto storage = LLVMBuildAlloca(temp_builder, llvm_type, declarator->identifier.name->data());
-
         LLVMValueRef initial_value{};
         if (entity->initializer) {
             initial_value = emit(entity->initializer).llvm_rvalue(builder);
         } else {
             initial_value = LLVMConstNull(llvm_type);
         }
-        LLVMBuildStore(builder, initial_value, storage);
-        entity->value = Value(ValueKind::LVALUE, declarator->type, storage);
+
+        if (entity->storage_duration() == StorageDuration::AUTO) {
+            auto first_insn = LLVMGetFirstInstruction(entry_block);
+            if (first_insn) {
+                LLVMPositionBuilderBefore(temp_builder, first_insn);
+            } else {
+                LLVMPositionBuilderAtEnd(temp_builder, entry_block);
+            }
+            auto storage = LLVMBuildAlloca(temp_builder, llvm_type, declarator->identifier.name->data());
+
+            LLVMBuildStore(builder, initial_value, storage);
+            entity->value = Value(ValueKind::LVALUE, declarator->type, storage);
+
+        } else if (entity->storage_duration() == StorageDuration::STATIC) {
+            string name(*function_declarator->identifier.name);
+            name += '.';
+            name += *declarator->identifier.name;
+
+            auto global = LLVMAddGlobal(module, llvm_type, name.c_str());
+            LLVMSetInitializer(global, initial_value);
+            LLVMSetLinkage(global, LLVMInternalLinkage);
+            LLVMSetGlobalConstant(global, declarator->type->qualifiers() & QUAL_CONST);
+
+            entity->value = Value(ValueKind::LVALUE, declarator->type, global);
+        }
     }
 
     virtual VisitDeclaratorOutput visit(Declarator* declarator, Entity* entity, const VisitDeclaratorInput& input) override {
