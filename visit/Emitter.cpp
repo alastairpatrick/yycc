@@ -108,17 +108,17 @@ struct Emitter: Visitor {
 
         if (auto float_target = dynamic_cast<const FloatingPointType*>(target_type)) {
             if (float_target->size > type->size) {
-                return VisitTypeOutput(target_type, LLVMBuildFPExt(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), "cvt"));
+                return VisitTypeOutput(target_type, LLVMBuildFPExt(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), ""));
             } else {
-                return VisitTypeOutput(target_type, LLVMBuildFPTrunc(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), "cvt"));
+                return VisitTypeOutput(target_type, LLVMBuildFPTrunc(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), ""));
             }
         }
 
         if (auto int_target = dynamic_cast<const IntegerType*>(input.target_type)) {
             if (int_target->is_signed()) {
-                return VisitTypeOutput(target_type, LLVMBuildFPToSI(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), "cvt"));
+                return VisitTypeOutput(target_type, LLVMBuildFPToSI(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), ""));
             } else {
-                return VisitTypeOutput(target_type, LLVMBuildFPToUI(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), "cvt"));
+                return VisitTypeOutput(target_type, LLVMBuildFPToUI(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), ""));
             }
         }
 

@@ -71,8 +71,8 @@ entry:
   %x = alloca float, align 4
   store float %0, ptr %x, align 4
   %1 = load float, ptr %x, align 4
-  %cvt = fpext float %1 to double
-  ret double %cvt
+  %2 = fpext float %1 to double
+  ret double %2
 }
 END
 
@@ -87,8 +87,8 @@ entry:
   %x = alloca double, align 8
   store double %0, ptr %x, align 8
   %1 = load double, ptr %x, align 8
-  %cvt = fptrunc double %1 to float
-  ret float %cvt
+  %2 = fptrunc double %1 to float
+  ret float %2
 }
 END
 
