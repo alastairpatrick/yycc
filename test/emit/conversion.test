@@ -13,7 +13,7 @@ entry:
 END
 
 
-BEGIN Integer zero extending cast
+BEGIN Integer zero extending conversion
 unsigned f(unsigned short x) {
     return x;
 }
@@ -29,7 +29,7 @@ entry:
 END
 
 
-BEGIN Integer sign extending cast
+BEGIN Integer sign extending conversion
 int f(short x) {
     return x;
 }
@@ -45,7 +45,7 @@ entry:
 END
 
 
-BEGIN Integer truncating cast
+BEGIN Integer truncating conversion
 short f(int x) {
     return x;
 }
@@ -61,7 +61,7 @@ entry:
 END
 
 
-BEGIN Floating point extending cast
+BEGIN Floating point extending conversion
 double f(float x) {
     return x;
 }
@@ -77,7 +77,7 @@ entry:
 END
 
 
-BEGIN Floating point truncating cast
+BEGIN Floating point truncating conversion
 float f(double x) {
     return x;
 }
@@ -93,7 +93,7 @@ entry:
 END
 
 
-BEGIN Signed integer to floating point cast
+BEGIN Signed integer to floating point conversion
 float f(int x) {
     return x;
 }
@@ -109,7 +109,7 @@ entry:
 END
 
 
-BEGIN Unsigned integer to floating point cast
+BEGIN Unsigned integer to floating point conversion
 float f(unsigned x) {
     return x;
 }
@@ -125,7 +125,7 @@ entry:
 END
 
 
-BEGIN Floating point to signed integer cast
+BEGIN Floating point to signed integer conversion
 int f(float x) {
     return x;
 }
@@ -141,7 +141,7 @@ entry:
 END
 
 
-BEGIN Floating point to unsigned integer cast
+BEGIN Floating point to unsigned integer conversion
 unsigned f(float x) {
     return x;
 }
