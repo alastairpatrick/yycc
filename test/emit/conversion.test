@@ -1,72 +1,96 @@
-BEGIN Binary arithmetic operands are promoted
-'a' + 'b'
-EXPECT_TYPE
-"Si"
+BEGIN Integer signedness only conversion
+unsigned f(int x) {
+    return x;
+}
+EXPECT_IR
+define i32 @f(i32 %0) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %1 = load i32, ptr %x, align 4
+  ret i32 %1
+}
+END
 
 
-BEGIN Binary arithmetic with signed and signed int yields signed
-1LL + 1
-EXPECT_TYPE
-"Sm"
+BEGIN Integer zero extending cast
+unsigned f(unsigned short x) {
+    return x;
+}
+EXPECT_IR
+define i32 @f(i16 %0) {
+entry:
+  %x = alloca i16, align 2
+  store i16 %0, ptr %x, align 2
+  %1 = load i16, ptr %x, align 2
+  %2 = zext i16 %1 to i32
+  ret i32 %2
+}
+END
 
 
-BEGIN Binary arithmetic with unsigned and unsigned int yields unsigned
-1LLU + 1U
-EXPECT_TYPE
-"Um"
+BEGIN Integer sign extending cast
+int f(short x) {
+    return x;
+}
+EXPECT_IR
+define i32 @f(i16 %0) {
+entry:
+  %x = alloca i16, align 2
+  store i16 %0, ptr %x, align 2
+  %1 = load i16, ptr %x, align 2
+  %2 = sext i16 %1 to i32
+  ret i32 %2
+}
+END
 
 
-BEGIN Binary arithmetic with signed and unsigned int yields unsigned if unsigned has higher rank
-1LLU + 1
-EXPECT_TYPE
-"Um"
+BEGIN Integer truncating cast
+short f(int x) {
+    return x;
+}
+EXPECT_IR
+define i16 @f(i32 %0) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %1 = load i32, ptr %x, align 4
+  %2 = trunc i32 %1 to i16
+  ret i16 %2
+}
+END
 
 
-BEGIN Binary arithmetic with unsigned and signed int yields unsigned if unsigned has higher rank
-1 + 1LLU
-EXPECT_TYPE
-"Um"
+BEGIN Floating point extending cast
+double f(float x) {
+    return x;
+}
+EXPECT_IR
+define double @f(float %0) {
+entry:
+  %x = alloca float, align 4
+  store float %0, ptr %x, align 4
+  %1 = load float, ptr %x, align 4
+  %cvt = fpext float %1 to double
+  ret double %cvt
+}
+END
 
 
-BEGIN Binary arithmetic with signed and unsigned int yields signed if signed can represent all unsigned values
-1LL + 1U
-EXPECT_TYPE
-"Sm"
+BEGIN Floating point truncating cast
+float f(double x) {
+    return x;
+}
+EXPECT_IR
+define float @f(double %0) {
+entry:
+  %x = alloca double, align 8
+  store double %0, ptr %x, align 8
+  %1 = load double, ptr %x, align 8
+  %cvt = fptrunc double %1 to float
+  ret float %cvt
+}
+END
 
-
-BEGIN Binary arithmetic with unsigned and signed int yields signed if signed can represent all unsigned values
-1U + 1LL
-EXPECT_TYPE
-"Sm"
-
-
-BEGIN Binary arithmetic with signed and unsigned int of same bit size yields unsigned
-2 + 1U
-EXPECT_TYPE
-"Ui"
-
-
-BEGIN Binary arithmetic with unsigned and signed int of same bit size yields unsigned
-1U + 2
-EXPECT_TYPE
-"Ui"
-
-
-BEGIN Binary floating point arithmetic result is wider type
-1.0f + 1.0
-EXPECT_TYPE
-"Fd"
-
-
-BEGIN Binary floating point arithmetic between float and int yields float
-1.0f + 1LL
-EXPECT_TYPE
-"Ff"
-
-
-BEGIN Binary floating point arithmetic between int and float yields float
-1LL + 1.0f
-EXPECT_TYPE
-"Ff"
 
 

@@ -89,11 +89,12 @@ static const Test tests[] = {
     { "parse/variable",             TestType::PARSE },
     { "resolve/variable",           TestType::RESOLVE },
 
-    { "emit/conversion",            TestType::EXPRESSION },
+    { "emit/conversion_type",       TestType::EXPRESSION },
 
-    { "emit/emit",                  TestType::EMIT },
     { "emit/assignment",            TestType::EMIT },
     { "emit/binary_expr",           TestType::EMIT },
+    { "emit/conversion",            TestType::EMIT },
+    { "emit/emit",                  TestType::EMIT },
 };
 
 static ostream& print_error(const string& name, const string& file, int line) {

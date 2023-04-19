@@ -16,6 +16,7 @@ struct Emitter: Visitor {
     LLVMModuleRef module{};
 
     LLVMValueRef function{};
+    const FunctionType* function_type;
     LLVMBuilderRef builder{};
     bool need_terminating_return = true;
 
@@ -55,8 +56,7 @@ struct Emitter: Visitor {
     }
 
     void emit_function_definition(Declarator* declarator, Entity* entity) {
-        auto type = dynamic_cast<const FunctionType*>(declarator->primary->type);
-
+        function_type = dynamic_cast<const FunctionType*>(declarator->primary->type);
         function = LLVMAddFunction(module, declarator->identifier.name->data(), declarator->primary->type->llvm_type());
 
         LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
@@ -74,10 +74,10 @@ struct Emitter: Visitor {
         need_terminating_return = true;
         emit(entity->body);
         if (need_terminating_return) {
-            if (type->return_type == &VoidType::it) {
+            if (function_type->return_type == &VoidType::it) {
                 LLVMBuildRetVoid(builder);
             } else {
-                LLVMBuildRet(builder, LLVMConstNull(type->return_type->llvm_type()));
+                LLVMBuildRet(builder, LLVMConstNull(function_type->return_type->llvm_type()));
             }
         }
 
@@ -137,20 +137,20 @@ struct Emitter: Visitor {
 
             if (int_target->size > type->size) {
                 if (type->is_signed()) {
-                    return VisitTypeOutput(target_type, LLVMBuildSExt(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), "cvt"));
+                    return VisitTypeOutput(target_type, LLVMBuildSExt(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), ""));
                 } else {
-                    return VisitTypeOutput(target_type, LLVMBuildZExt(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), "cvt"));
+                    return VisitTypeOutput(target_type, LLVMBuildZExt(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), ""));
                 }
             }
 
-            return VisitTypeOutput(target_type, LLVMBuildTrunc(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), 0));
+            return VisitTypeOutput(target_type, LLVMBuildTrunc(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), ""));
         }
 
         if (auto float_target = dynamic_cast<const FloatingPointType*>(input.target_type)) {
             if (type->is_signed()) {
-                return VisitTypeOutput(target_type, LLVMBuildSIToFP(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), "cvt"));
+                return VisitTypeOutput(target_type, LLVMBuildSIToFP(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), ""));
             } else {
-                return VisitTypeOutput(target_type, LLVMBuildUIToFP(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), "cvt"));
+                return VisitTypeOutput(target_type, LLVMBuildUIToFP(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), ""));
             }
         }
 
@@ -174,6 +174,7 @@ struct Emitter: Visitor {
     virtual VisitStatementOutput visit(ReturnStatement* statement, const VisitStatementInput& input) override {
         if (statement->expr) {
             auto value = emit(statement->expr);
+            value = convert_to_type(value, function_type->return_type);
             LLVMBuildRet(builder, value.llvm_rvalue(builder));
         } else {
             LLVMBuildRetVoid(builder);
