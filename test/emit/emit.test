@@ -71,3 +71,36 @@ entry:
   ret i32 %2
 }
 END
+
+
+BEGIN Allocate null initialized automatic local variables
+void f() {
+    int x;
+    int y;
+}
+EXPECT_IR
+define void @f() {
+entry:
+  %y = alloca i32, align 4
+  %x = alloca i32, align 4
+  store i32 0, ptr %x, align 4
+  store i32 0, ptr %y, align 4
+  ret void
+}
+END
+
+
+BEGIN Allocate explicitly initialized automatic local variable
+void f() {
+    int x = 7;
+}
+EXPECT_IR
+define void @f() {
+entry:
+  %x = alloca i32, align 4
+  store i32 7, ptr %x, align 4
+  ret void
+}
+END
+
+

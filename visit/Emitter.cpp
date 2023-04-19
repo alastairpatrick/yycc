@@ -16,12 +16,15 @@ struct Emitter: Visitor {
     LLVMModuleRef module{};
 
     LLVMValueRef function{};
-    const FunctionType* function_type;
+    const FunctionType* function_type{};
+    LLVMBuilderRef temp_builder{};
     LLVMBuilderRef builder{};
+    LLVMBasicBlockRef entry_block;
     bool need_terminating_return = true;
 
     ~Emitter() {
         if (builder) LLVMDisposeBuilder(builder);
+        if (temp_builder) LLVMDisposeBuilder(temp_builder);
     }
 
     void emit(ASTNode* node) {
@@ -60,8 +63,8 @@ struct Emitter: Visitor {
         function_type = dynamic_cast<const FunctionType*>(declarator->primary->type);
         function = LLVMAddFunction(module, declarator->identifier.name->data(), declarator->primary->type->llvm_type());
 
-        LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
-        LLVMPositionBuilderAtEnd(builder, entry);
+        entry_block = LLVMAppendBasicBlock(function, "entry");
+        LLVMPositionBuilderAtEnd(builder, entry_block);
 
         for (size_t i = 0; i < entity->params.size(); ++i) {
             auto param = entity->params[i];
@@ -85,11 +88,36 @@ struct Emitter: Visitor {
         function = nullptr;
     }
 
-    virtual VisitDeclaratorOutput visit(Declarator* declarator, Entity* entity, const VisitDeclaratorInput& input) override {
-        if (!entity->is_function() || !entity->body) return VisitDeclaratorOutput();
+    void emit_variable(Declarator* declarator, Entity* entity) {
+        auto llvm_type = declarator->type->llvm_type();
 
-        assert(!function);
-        emit_function_definition(declarator, entity);
+        auto first_insn = LLVMGetFirstInstruction(entry_block);
+        if (first_insn) {
+            LLVMPositionBuilderBefore(temp_builder, first_insn);
+        } else {
+            LLVMPositionBuilderAtEnd(temp_builder, entry_block);
+        }
+        auto storage = LLVMBuildAlloca(temp_builder, llvm_type, declarator->identifier.name->data());
+
+        LLVMValueRef initial_value{};
+        if (entity->initializer) {
+            initial_value = emit(entity->initializer).llvm_rvalue(builder);
+        } else {
+            initial_value = LLVMConstNull(llvm_type);
+        }
+        LLVMBuildStore(builder, initial_value, storage);
+        entity->value = Value(ValueKind::LVALUE, declarator->type, storage);
+    }
+
+    virtual VisitDeclaratorOutput visit(Declarator* declarator, Entity* entity, const VisitDeclaratorInput& input) override {
+        if (entity->is_function()) {
+            if (entity->body) {
+                assert(!function);
+                emit_function_definition(declarator, entity);
+            }
+        } else {
+            emit_variable(declarator, entity);
+        }
 
         return VisitDeclaratorOutput();
     }
@@ -461,6 +489,7 @@ LLVMModuleRef emit_pass(const ASTNodeVector& nodes) {
     emitter.outcome = EmitOutcome::IR;
     emitter.module = LLVMModuleCreateWithName("my_module");
     emitter.builder = LLVMCreateBuilder();
+    emitter.temp_builder = LLVMCreateBuilder();
 
     for (auto node: nodes) {
         emitter.emit(node);
