@@ -276,8 +276,8 @@ struct Emitter: Visitor {
 
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
-        auto left_temp = convert_to_type(left_value, result_type);
-        auto right_temp = convert_to_type(right_value, result_type);
+        left_value = convert_to_type(left_value, result_type);
+        right_value = convert_to_type(right_value, result_type);
         LLVMValueRef intermediate{};
 
         if (auto result_as_int = dynamic_cast<const IntegerType*>(result_type)) {
@@ -286,26 +286,26 @@ struct Emitter: Visitor {
                 assert(false); // TODO
                 break;
               case '=':
-                intermediate = right_temp.llvm_rvalue(builder);
+                intermediate = right_value.llvm_rvalue(builder);
                 break;
               case '+':
               case TOK_ADD_ASSIGN:
-                intermediate = LLVMBuildAdd(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
+                intermediate = LLVMBuildAdd(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), "");
                 break;
               case '-':
               case TOK_SUB_ASSIGN:
-                intermediate = LLVMBuildSub(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
+                intermediate = LLVMBuildSub(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), "");
                 break;
               case '*':
               case TOK_MUL_ASSIGN:
-                intermediate = LLVMBuildMul(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
+                intermediate = LLVMBuildMul(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), "");
                 break;
               case '/':
               case TOK_DIV_ASSIGN:
                 if (result_as_int->is_signed()) {
-                    intermediate = LLVMBuildSDiv(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
+                    intermediate = LLVMBuildSDiv(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), "");
                 } else {
-                    intermediate = LLVMBuildUDiv(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
+                    intermediate = LLVMBuildUDiv(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), "");
                 }
                 break;
             }
@@ -317,29 +317,29 @@ struct Emitter: Visitor {
                 assert(false); // TODO
                 break;
               case '=':
-                intermediate = right_temp.llvm_rvalue(builder);
+                intermediate = right_value.llvm_rvalue(builder);
                 break;
               case '+':
               case TOK_ADD_ASSIGN:
-                intermediate = LLVMBuildFAdd(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
+                intermediate = LLVMBuildFAdd(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), "");
                 break;
               case '-':
               case TOK_SUB_ASSIGN:
-                intermediate = LLVMBuildFSub(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
+                intermediate = LLVMBuildFSub(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), "");
                 break;
               case '*':
               case TOK_MUL_ASSIGN:
-                intermediate = LLVMBuildFMul(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
+                intermediate = LLVMBuildFMul(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), "");
                 break;
               case '/':
               case TOK_DIV_ASSIGN:
-                intermediate = LLVMBuildFDiv(builder, left_temp.llvm_rvalue(builder), right_temp.llvm_rvalue(builder), "");
+                intermediate = LLVMBuildFDiv(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), "");
                 break;
             }
         }
 
         if (is_assign) {
-            LLVMBuildStore(builder, intermediate, left_temp.llvm_lvalue());
+            LLVMBuildStore(builder, intermediate, left_value.llvm_lvalue());
         }
 
         return VisitStatementOutput(result_type, intermediate);
@@ -350,9 +350,6 @@ struct Emitter: Visitor {
         Value then_value = emit(expr->then_expr);
         Value else_value = emit(expr->else_expr);
 
-        auto cond_type = condition_value.type;
-        auto then_type = then_value.type;
-        auto else_type = else_value.type;
         auto result_type = convert_arithmetic(then_value.type, else_value.type);
     
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
