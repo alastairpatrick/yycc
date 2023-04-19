@@ -4,7 +4,6 @@ void f(int x) {
 }
 EXPECT_IR
 define void @f(i32 %0) {
-entry:
   %x = alloca i32, align 4
   store i32 %0, ptr %x, align 4
   store i32 1, ptr %x, align 4
@@ -19,12 +18,11 @@ void f(int x) {
 }
 EXPECT_IR
 define void @f(i32 %0) {
-entry:
   %x = alloca i32, align 4
   store i32 %0, ptr %x, align 4
-  %1 = load i32, ptr %x, align 4
-  %2 = add i32 %1, 1
-  store i32 %2, ptr %x, align 4
+  %2 = load i32, ptr %x, align 4
+  %3 = add i32 %2, 1
+  store i32 %3, ptr %x, align 4
   ret void
 }
 END
@@ -36,12 +34,11 @@ void f(int x) {
 }
 EXPECT_IR
 define void @f(i32 %0) {
-entry:
   %x = alloca i32, align 4
   store i32 %0, ptr %x, align 4
-  %1 = load i32, ptr %x, align 4
-  %2 = sub i32 %1, 1
-  store i32 %2, ptr %x, align 4
+  %2 = load i32, ptr %x, align 4
+  %3 = sub i32 %2, 1
+  store i32 %3, ptr %x, align 4
   ret void
 }
 END
@@ -53,12 +50,11 @@ void f(int x) {
 }
 EXPECT_IR
 define void @f(i32 %0) {
-entry:
   %x = alloca i32, align 4
   store i32 %0, ptr %x, align 4
-  %1 = load i32, ptr %x, align 4
-  %2 = mul i32 %1, 1
-  store i32 %2, ptr %x, align 4
+  %2 = load i32, ptr %x, align 4
+  %3 = mul i32 %2, 1
+  store i32 %3, ptr %x, align 4
   ret void
 }
 END
@@ -70,12 +66,11 @@ void f(int x) {
 }
 EXPECT_IR
 define void @f(i32 %0) {
-entry:
   %x = alloca i32, align 4
   store i32 %0, ptr %x, align 4
-  %1 = load i32, ptr %x, align 4
-  %2 = sdiv i32 %1, 1
-  store i32 %2, ptr %x, align 4
+  %2 = load i32, ptr %x, align 4
+  %3 = sdiv i32 %2, 1
+  store i32 %3, ptr %x, align 4
   ret void
 }
 END
@@ -87,12 +82,11 @@ void f(unsigned x) {
 }
 EXPECT_IR
 define void @f(i32 %0) {
-entry:
   %x = alloca i32, align 4
   store i32 %0, ptr %x, align 4
-  %1 = load i32, ptr %x, align 4
-  %2 = udiv i32 %1, 1
-  store i32 %2, ptr %x, align 4
+  %2 = load i32, ptr %x, align 4
+  %3 = udiv i32 %2, 1
+  store i32 %3, ptr %x, align 4
   ret void
 }
 END
@@ -104,7 +98,6 @@ void f(float x) {
 }
 EXPECT_IR
 define void @f(float %0) {
-entry:
   %x = alloca float, align 4
   store float %0, ptr %x, align 4
   store float 1.000000e+00, ptr %x, align 4
@@ -119,12 +112,11 @@ void f(float x) {
 }
 EXPECT_IR
 define void @f(float %0) {
-entry:
   %x = alloca float, align 4
   store float %0, ptr %x, align 4
-  %1 = load float, ptr %x, align 4
-  %2 = fadd float %1, 1.000000e+00
-  store float %2, ptr %x, align 4
+  %2 = load float, ptr %x, align 4
+  %3 = fadd float %2, 1.000000e+00
+  store float %3, ptr %x, align 4
   ret void
 }
 END
@@ -136,12 +128,11 @@ void f(float x) {
 }
 EXPECT_IR
 define void @f(float %0) {
-entry:
   %x = alloca float, align 4
   store float %0, ptr %x, align 4
-  %1 = load float, ptr %x, align 4
-  %2 = fsub float %1, 1.000000e+00
-  store float %2, ptr %x, align 4
+  %2 = load float, ptr %x, align 4
+  %3 = fsub float %2, 1.000000e+00
+  store float %3, ptr %x, align 4
   ret void
 }
 END
@@ -153,12 +144,11 @@ void f(float x) {
 }
 EXPECT_IR
 define void @f(float %0) {
-entry:
   %x = alloca float, align 4
   store float %0, ptr %x, align 4
-  %1 = load float, ptr %x, align 4
-  %2 = fmul float %1, 1.000000e+00
-  store float %2, ptr %x, align 4
+  %2 = load float, ptr %x, align 4
+  %3 = fmul float %2, 1.000000e+00
+  store float %3, ptr %x, align 4
   ret void
 }
 END
@@ -170,12 +160,11 @@ void f(float x) {
 }
 EXPECT_IR
 define void @f(float %0) {
-entry:
   %x = alloca float, align 4
   store float %0, ptr %x, align 4
-  %1 = load float, ptr %x, align 4
-  %2 = fdiv float %1, 1.000000e+00
-  store float %2, ptr %x, align 4
+  %2 = load float, ptr %x, align 4
+  %3 = fdiv float %2, 1.000000e+00
+  store float %3, ptr %x, align 4
   ret void
 }
 END

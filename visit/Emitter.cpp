@@ -63,7 +63,7 @@ struct Emitter: Visitor {
         function_type = dynamic_cast<const FunctionType*>(declarator->primary->type);
         function = LLVMAddFunction(module, declarator->identifier.name->data(), declarator->primary->type->llvm_type());
 
-        entry_block = LLVMAppendBasicBlock(function, "entry");
+        entry_block = LLVMAppendBasicBlock(function, "");
         LLVMPositionBuilderAtEnd(builder, entry_block);
 
         for (size_t i = 0; i < entity->params.size(); ++i) {

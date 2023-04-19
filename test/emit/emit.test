@@ -4,7 +4,6 @@ void f() {
 }
 EXPECT_IR
 define void @f() {
-entry:
   ret void
 }
 END
@@ -15,7 +14,6 @@ void f() {
 }
 EXPECT_IR
 define void @f() {
-entry:
   ret void
 }
 END
@@ -27,7 +25,6 @@ int f() {
 }
 EXPECT_IR
 define i32 @f() {
-entry:
   ret i32 0
 }
 END
@@ -38,7 +35,6 @@ int f() {
 }
 EXPECT_IR
 define i32 @f() {
-entry:
   ret i32 0
 }
 END
@@ -50,7 +46,6 @@ S f() {
 }
 EXPECT_IR
 define { i32 } @f() {
-entry:
   ret { i32 } zeroinitializer
 }
 END
@@ -62,13 +57,12 @@ int f(int x, int y) {
 }
 EXPECT_IR
 define i32 @f(i32 %0, i32 %1) {
-entry:
   %x = alloca i32, align 4
   store i32 %0, ptr %x, align 4
   %y = alloca i32, align 4
   store i32 %1, ptr %y, align 4
-  %2 = load i32, ptr %y, align 4
-  ret i32 %2
+  %3 = load i32, ptr %y, align 4
+  ret i32 %3
 }
 END
 
@@ -80,7 +74,6 @@ void f() {
 }
 EXPECT_IR
 define void @f() {
-entry:
   %y = alloca i32, align 4
   %x = alloca i32, align 4
   store i32 0, ptr %x, align 4
@@ -96,7 +89,6 @@ void f() {
 }
 EXPECT_IR
 define void @f() {
-entry:
   %x = alloca i32, align 4
   store i32 7, ptr %x, align 4
   ret void
