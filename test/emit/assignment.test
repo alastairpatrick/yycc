@@ -98,8 +98,6 @@ entry:
 END
 
 
-====
-
 BEGIN Assign floating point parameter value
 void f(float x) {
     x = 1;

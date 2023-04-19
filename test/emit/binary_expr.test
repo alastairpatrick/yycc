@@ -1,0 +1,144 @@
+BEGIN Integer addition
+int f(int x) {
+    return x + 1;
+}
+EXPECT_IR
+define i32 @f(i32 %0) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %1 = load i32, ptr %x, align 4
+  %2 = add i32 %1, 1
+  ret i32 %2
+}
+END
+
+
+BEGIN Integer subtraction
+int f(int x) {
+    return x - 1;
+}
+EXPECT_IR
+define i32 @f(i32 %0) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %1 = load i32, ptr %x, align 4
+  %2 = sub i32 %1, 1
+  ret i32 %2
+}
+END
+
+
+BEGIN Integer multiplication
+int f(int x) {
+    return x * 1;
+}
+EXPECT_IR
+define i32 @f(i32 %0) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %1 = load i32, ptr %x, align 4
+  %2 = mul i32 %1, 1
+  ret i32 %2
+}
+END
+
+
+BEGIN Signed integer multiplication
+int f(int x) {
+    return x / 1;
+}
+EXPECT_IR
+define i32 @f(i32 %0) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %1 = load i32, ptr %x, align 4
+  %2 = sdiv i32 %1, 1
+  ret i32 %2
+}
+END
+
+
+BEGIN Unsigned integer multiplication
+unsigned f(unsigned x) {
+    return x / 1;
+}
+EXPECT_IR
+define i32 @f(i32 %0) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %1 = load i32, ptr %x, align 4
+  %2 = udiv i32 %1, 1
+  ret i32 %2
+}
+END
+
+
+BEGIN Floating point addition
+float f(float x) {
+    return x + 1;
+}
+EXPECT_IR
+define float @f(float %0) {
+entry:
+  %x = alloca float, align 4
+  store float %0, ptr %x, align 4
+  %1 = load float, ptr %x, align 4
+  %2 = fadd float %1, 1.000000e+00
+  ret float %2
+}
+END
+
+
+BEGIN Floating point subtraction
+float f(float x) {
+    return x - 1;
+}
+EXPECT_IR
+define float @f(float %0) {
+entry:
+  %x = alloca float, align 4
+  store float %0, ptr %x, align 4
+  %1 = load float, ptr %x, align 4
+  %2 = fsub float %1, 1.000000e+00
+  ret float %2
+}
+END
+
+
+BEGIN Floating point multiplication
+float f(float x) {
+    return x * 1;
+}
+EXPECT_IR
+define float @f(float %0) {
+entry:
+  %x = alloca float, align 4
+  store float %0, ptr %x, align 4
+  %1 = load float, ptr %x, align 4
+  %2 = fmul float %1, 1.000000e+00
+  ret float %2
+}
+END
+
+
+BEGIN Floating point division
+float f(float x) {
+    return x / 1;
+}
+EXPECT_IR
+define float @f(float %0) {
+entry:
+  %x = alloca float, align 4
+  store float %0, ptr %x, align 4
+  %1 = load float, ptr %x, align 4
+  %2 = fdiv float %1, 1.000000e+00
+  ret float %2
+}
+END
+
+
