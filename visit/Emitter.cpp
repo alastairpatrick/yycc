@@ -471,8 +471,8 @@ struct Emitter: Visitor {
         };
         auto merge_block = LLVMAppendBasicBlock(function, "merge");
 
-        auto cond_value = convert_to_type(condition_value, IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::INT));
-        LLVMBuildCondBr(builder, cond_value.llvm_rvalue(builder), alt_blocks[0], alt_blocks[1]);
+        condition_value = convert_to_type(condition_value, IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL));
+        LLVMBuildCondBr(builder, condition_value.llvm_rvalue(builder), alt_blocks[0], alt_blocks[1]);
 
         LLVMValueRef 
             alt_values[2];

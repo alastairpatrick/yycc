@@ -33,7 +33,7 @@ int foo(int x[2][const volatile restrict 3]);
 EXPECT_MESSAGE
 :1:18: error unexpected token 'const'
 EXPECT_AST
-[["fun","E",["F","Si",["P",["A","Si",3]]],"foo"]]
+[["fun","E",["F","Si",["P",["A","Si"]]],"foo"]]
 
 
 BEGIN Static array type parameter

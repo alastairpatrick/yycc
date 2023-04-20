@@ -29,6 +29,7 @@ const AssocPrec g_assoc_prec[TOK_NUM] = {
     // <conditional-expression> ::= <logical-or-expression>
     //                            | <logical-or-expression> ? <expression> : <conditional-expression>
     ['?']               = { ASSOC_RIGHT, CONDITIONAL_PREC },
+    [':']               = { ASSOC_RIGHT, CONDITIONAL_PREC },
 
     // <logical-or-expression> ::= <logical-and-expression>
     //                           | <logical-or-expression> || <logical-and-expression>

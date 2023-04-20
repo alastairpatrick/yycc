@@ -326,60 +326,50 @@ Expr* Parser::parse_unary_expr() {
     Location loc;
     Expr* result{};
 
-    while (token && token != '}' && token != ')' && token != ']' && token != ';') {
-        if (consume(TOK_SIZEOF, &loc)) {
-            auto consumed_paren = consume('(');
+    if (consume(TOK_SIZEOF, &loc)) {
+        auto consumed_paren = consume('(');
             
-            const Type* type{};
-            if (consumed_paren) type = parse_type();
+        const Type* type{};
+        if (consumed_paren) type = parse_type();
 
-            if (type) {
-                result = new SizeOfExpr(type, loc);
-            } else {
-                auto expr = parse_unary_expr();
-                result = new SizeOfExpr(new TypeOfType(expr, loc), loc);
-            }
-
-            if (consumed_paren) require(')');
-
-            break;
-        } else if (token == TOK_BIN_INT_LITERAL || token == TOK_OCT_INT_LITERAL || token == TOK_DEC_INT_LITERAL || token == TOK_HEX_INT_LITERAL || token == TOK_CHAR_LITERAL) {
-            result = IntegerConstant::of(preprocessor.text(), token, preprocessor.location());
-            consume();
-            break;
-        }
-        else if (token == TOK_DEC_FLOAT_LITERAL || token == TOK_HEX_FLOAT_LITERAL) {
-            result = FloatingPointConstant::of(preprocessor.text(), token, preprocessor.location());
-            consume();
-            break;
-        }
-        else if (token == TOK_STRING_LITERAL) {
-            result = StringConstant::of(preprocessor.text(), preprocessor.location());
-            consume();
-            break;
-        }
-        else if (token == TOK_IDENTIFIER) {
-            Declarator* declarator = identifiers.lookup_declarator(preprocessor.identifier());
-            if (declarator) {
-                result = new EntityExpr(declarator, preprocessor.location());
-            } else {
-                message(Severity::ERROR, preprocessor.location()) << '\'' << preprocessor.identifier() << "' undeclared\n";
-                result = IntegerConstant::default_expr(preprocessor.location());
-            }
-            consume();
-            break;
-        } else if (consume('(', &loc)) {
-            auto type = parse_type();
-            if (type) {
-                require(')');
-                auto expr = parse_unary_expr();
-                return new CastExpr(type, expr, loc);
-            } else {
-                result = parse_expr(SEQUENCE_PREC);
-                require(')');
-            }
+        if (type) {
+            result = new SizeOfExpr(type, loc);
         } else {
-            skip_unexpected();
+            auto expr = parse_unary_expr();
+            result = new SizeOfExpr(new TypeOfType(expr, loc), loc);
+        }
+
+        if (consumed_paren) require(')');
+    } else if (token == TOK_BIN_INT_LITERAL || token == TOK_OCT_INT_LITERAL || token == TOK_DEC_INT_LITERAL || token == TOK_HEX_INT_LITERAL || token == TOK_CHAR_LITERAL) {
+        result = IntegerConstant::of(preprocessor.text(), token, preprocessor.location());
+        consume();
+    }
+    else if (token == TOK_DEC_FLOAT_LITERAL || token == TOK_HEX_FLOAT_LITERAL) {
+        result = FloatingPointConstant::of(preprocessor.text(), token, preprocessor.location());
+        consume();
+    }
+    else if (token == TOK_STRING_LITERAL) {
+        result = StringConstant::of(preprocessor.text(), preprocessor.location());
+        consume();
+    }
+    else if (token == TOK_IDENTIFIER) {
+        Declarator* declarator = identifiers.lookup_declarator(preprocessor.identifier());
+        if (declarator) {
+            result = new EntityExpr(declarator, preprocessor.location());
+        } else {
+            message(Severity::ERROR, preprocessor.location()) << '\'' << preprocessor.identifier() << "' undeclared\n";
+            result = IntegerConstant::default_expr(preprocessor.location());
+        }
+        consume();
+    } else if (consume('(', &loc)) {
+        auto type = parse_type();
+        if (type) {
+            require(')');
+            auto expr = parse_unary_expr();
+            return new CastExpr(type, expr, loc);
+        } else {
+            result = parse_expr(SEQUENCE_PREC);
+            require(')');
         }
     }
 
@@ -389,7 +379,7 @@ Expr* Parser::parse_unary_expr() {
         return result;
     }
 
-    while (token && token != '}' && token != ')' && token != ']' && token != ';') {
+    while (token) {
         if (consume('[', &loc)) {
             auto index = parse_expr(SEQUENCE_PREC);
             result = new SubscriptExpr(result, index, loc);
