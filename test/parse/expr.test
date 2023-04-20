@@ -258,6 +258,13 @@ EXPECT_AST
 END
 
 
+BEGIN Dereference operator
+*1
+EXPECT_AST
+["deref", 1]
+END
+
+
 BEGIN Subscript expression
 1[2]
 EXPECT_AST

@@ -350,6 +350,9 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind) {
     } else if (kind >= SubExpressionKind::UNARY && consume('&', &loc)) {
         auto expr = parse_sub_expr(SubExpressionKind::CAST);
         result = new AddressExpr(expr, loc);
+    } else if (kind >= SubExpressionKind::UNARY && consume('*', &loc)) {
+        auto expr = parse_sub_expr(SubExpressionKind::CAST);
+        result = new DereferenceExpr(expr, loc);
     } else if (kind >= SubExpressionKind::UNARY && consume(TOK_SIZEOF, &loc)) {
         auto consumed_paren = consume('(');
             

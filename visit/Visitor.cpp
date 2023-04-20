@@ -124,6 +124,10 @@ VisitStatementOutput Visitor::visit(ConditionExpr* expr, const VisitStatementInp
     return visit_default(expr, input);
 }
 
+VisitStatementOutput Visitor::visit(DereferenceExpr* expr, const VisitStatementInput& input) {
+    return visit_default(expr, input);
+}
+
 VisitStatementOutput Visitor::visit(EntityExpr* expr, const VisitStatementInput& input) {
     return visit_default(expr, input);
 }

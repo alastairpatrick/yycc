@@ -44,6 +44,14 @@ struct ConditionExpr: Expr {
     virtual void print(ostream& stream) const override;
 };
 
+struct DereferenceExpr: Expr {
+    Expr* expr;
+    
+    DereferenceExpr(Expr* expr, const Location& location);
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual void print(ostream& stream) const override;
+};
+
 struct EntityExpr: Expr {
     Declarator* declarator{};
 

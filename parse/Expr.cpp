@@ -112,6 +112,19 @@ void ConditionExpr::print(ostream& stream) const {
 }
 
 
+DereferenceExpr::DereferenceExpr(Expr* expr, const Location& location)
+    : Expr(location), expr(expr) {
+}
+
+VisitStatementOutput DereferenceExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
+}
+
+void DereferenceExpr::print(ostream& stream) const {
+    stream << "[\"deref\", " << expr << ']';
+}
+
+
 EntityExpr::EntityExpr(Declarator* declarator, const Location& location)
     : Expr(location), declarator(declarator) {
 }
