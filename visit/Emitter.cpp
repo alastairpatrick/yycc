@@ -11,17 +11,26 @@ enum class EmitOutcome {
 };
 
 struct Emitter: Visitor {
-    EmitOutcome outcome = EmitOutcome::TYPE;
+    EmitOutcome outcome;
 
     LLVMModuleRef module{};
 
-    LLVMValueRef function{};
     Declarator* function_declarator{};
     const FunctionType* function_type{};
-    LLVMBuilderRef temp_builder{};
     LLVMBuilderRef builder{};
-    LLVMBasicBlockRef entry_block;
+    LLVMBuilderRef temp_builder{};
+    LLVMValueRef function{};
+    LLVMBasicBlockRef entry_block{};
     bool need_terminating_return = true;
+
+    Emitter(EmitOutcome outcome): outcome(outcome) {
+        if (outcome != EmitOutcome::TYPE) {
+            builder = LLVMCreateBuilder();
+        }
+        if (outcome == EmitOutcome::IR) {
+            temp_builder = LLVMCreateBuilder();
+        }
+    }
 
     ~Emitter() {
         if (builder) LLVMDisposeBuilder(builder);
@@ -129,8 +138,9 @@ struct Emitter: Visitor {
     virtual VisitDeclaratorOutput visit(Declarator* declarator, Entity* entity, const VisitDeclaratorInput& input) override {
         if (entity->is_function()) {
             if (entity->body) {
-                assert(!function);
-                emit_function_definition(declarator, entity);
+                Emitter function_emitter(EmitOutcome::IR);
+                function_emitter.module = module;
+                function_emitter.emit_function_definition(declarator, entity);
             }
         } else {
             emit_variable(declarator, entity);
@@ -480,8 +490,7 @@ struct Emitter: Visitor {
 };
 
 const Type* get_expr_type(const Expr* expr) {
-    Emitter emitter;
-    emitter.outcome = EmitOutcome::TYPE;
+    Emitter emitter(EmitOutcome::TYPE);
     try {
         return emitter.emit(const_cast<Expr*>(expr)).type;
     } catch (EmitError&) {
@@ -490,9 +499,7 @@ const Type* get_expr_type(const Expr* expr) {
 }
 
 Value fold_expr(const Expr* expr, unsigned long long error_value) {
-    Emitter emitter;
-    emitter.outcome = EmitOutcome::FOLD;
-    emitter.builder = LLVMCreateBuilder();
+    Emitter emitter(EmitOutcome::FOLD);
 
     try {
         return emitter.emit(const_cast<Expr*>(expr));
@@ -502,11 +509,8 @@ Value fold_expr(const Expr* expr, unsigned long long error_value) {
 }
 
 LLVMModuleRef emit_pass(const ASTNodeVector& nodes) {
-    Emitter emitter;
-    emitter.outcome = EmitOutcome::IR;
+    Emitter emitter(EmitOutcome::IR);
     emitter.module = LLVMModuleCreateWithName("my_module");
-    emitter.builder = LLVMCreateBuilder();
-    emitter.temp_builder = LLVMCreateBuilder();
 
     for (auto node: nodes) {
         emitter.emit(node);
