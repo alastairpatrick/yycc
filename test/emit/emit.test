@@ -83,6 +83,84 @@ merge:                                            ; preds = %else, %then
 END
 
 
+BEGIN Subscript operator on pointer (1)
+int f(int* p) {
+    return p[1];
+}
+EXPECT_IR
+define i32 @f(ptr %0) {
+  %p = alloca ptr, align 8
+  store ptr %0, ptr %p, align 8
+  %2 = load ptr, ptr %p, align 8
+  %3 = getelementptr i32, ptr %2, i32 1
+  %4 = load i32, ptr %3, align 4
+  ret i32 %4
+}
+END
+
+
+BEGIN Subscript operator on pointer (2)
+int f(int* p) {
+    return 1[p];
+}
+EXPECT_IR
+define i32 @f(ptr %0) {
+  %p = alloca ptr, align 8
+  store ptr %0, ptr %p, align 8
+  %2 = load ptr, ptr %p, align 8
+  %3 = getelementptr i32, ptr %2, i32 1
+  %4 = load i32, ptr %3, align 4
+  ret i32 %4
+}
+END
+
+
+BEGIN Subscripted pointer is lvalue
+int f(int* p) {
+    p[1] = 2;
+}
+EXPECT_IR
+define i32 @f(ptr %0) {
+  %p = alloca ptr, align 8
+  store ptr %0, ptr %p, align 8
+  %2 = load ptr, ptr %p, align 8
+  %3 = getelementptr i32, ptr %2, i32 1
+  store i32 2, ptr %3, align 4
+  ret i32 0
+}
+END
+
+
+BEGIN Subscript operator on array
+int a[10];
+int f() {
+    return a[1];
+}
+EXPECT_IR
+@a = global [10 x i32] zeroinitializer
+
+define i32 @f() {
+  %1 = load i32, ptr getelementptr inbounds ([10 x i32], ptr @a, i64 0, i32 1), align 4
+  ret i32 %1
+}
+END
+
+
+BEGIN Subscripted array is lvalue
+int a[10];
+int f() {
+    a[1] = 2;
+}
+EXPECT_IR
+@a = global [10 x i32] zeroinitializer
+
+define i32 @f() {
+  store i32 2, ptr getelementptr inbounds ([10 x i32], ptr @a, i64 0, i32 1), align 4
+  ret i32 0
+}
+END
+
+
 BEGIN Volatile store
 void f() {
     volatile int x;
@@ -110,5 +188,35 @@ define void @f() {
   %1 = load volatile i32, ptr %x, align 4
   %2 = add i32 %1, 1
   ret void
+}
+END
+
+
+BEGIN Volatile store array element
+volatile int a[10];
+void f() {
+    a[1] = 2;
+}
+EXPECT_IR
+@a = global [10 x i32] zeroinitializer
+
+define void @f() {
+  store volatile i32 2, ptr getelementptr inbounds ([10 x i32], ptr @a, i64 0, i32 1), align 4
+  ret void
+}
+END
+
+
+BEGIN Volatile load array element
+volatile int a[10];
+int f() {
+    return a[1];
+}
+EXPECT_IR
+@a = global [10 x i32] zeroinitializer
+
+define i32 @f() {
+  %1 = load volatile i32, ptr getelementptr inbounds ([10 x i32], ptr @a, i64 0, i32 1), align 4
+  ret i32 %1
 }
 END

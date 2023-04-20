@@ -541,6 +541,36 @@ struct Emitter: Visitor {
     }
 
     virtual VisitStatementOutput visit(SubscriptExpr* expr, const VisitStatementInput& input) override {
+        auto left_value = emit(expr->left).unqualified();
+        auto index_value = emit(expr->right).unqualified();
+
+        if (dynamic_cast<const IntegerType*>(left_value.type)) {
+            swap(left_value, index_value);
+        }
+
+        if (auto pointer_type = dynamic_cast<const PointerType*>(left_value.type)) {
+            auto result_type = pointer_type->base_type;
+            if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+
+            LLVMValueRef index = index_value.llvm_rvalue(builder);
+            return VisitStatementOutput(Value(
+                ValueKind::LVALUE,
+                result_type,
+                LLVMBuildGEP2(builder, result_type->llvm_type(), left_value.llvm_rvalue(builder), &index, 1, "")));
+        }
+
+        if (auto array_type = dynamic_cast<const ArrayType*>(left_value.type)) {
+            auto result_type = array_type->element_type;
+            if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+
+            auto zero = LLVMConstInt(IntegerType::of_size(IntegerSignedness::UNSIGNED)->llvm_type(), 0, false);
+            LLVMValueRef indices[2] = { zero, index_value.llvm_rvalue(builder) };
+            return VisitStatementOutput(Value(
+                ValueKind::LVALUE,
+                result_type,
+                LLVMBuildGEP2(builder, array_type->llvm_type(), left_value.llvm_lvalue(), indices, 2, "")));
+        }
+
         assert(false);
         return VisitStatementOutput();
     }

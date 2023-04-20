@@ -144,8 +144,8 @@ void SizeOfExpr::print(ostream& stream) const {
 }
 
 
-SubscriptExpr::SubscriptExpr(Expr* left, Expr* index, const Location& location)
-    : Expr(location), left(left), index(index) {
+SubscriptExpr::SubscriptExpr(Expr* left, Expr* right, const Location& location)
+    : Expr(location), left(left), right(right) {
 }
 
 VisitStatementOutput SubscriptExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
@@ -153,6 +153,6 @@ VisitStatementOutput SubscriptExpr::accept(Visitor& visitor, const VisitStatemen
 }
 
 void SubscriptExpr::print(ostream& stream) const {
-    stream << "[\"subs\", " << left << ", " << index << "]";
+    stream << "[\"subs\", " << left << ", " << right << "]";
 }
 

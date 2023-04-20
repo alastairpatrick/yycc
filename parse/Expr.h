@@ -62,9 +62,9 @@ struct SizeOfExpr: Expr {
 
 struct SubscriptExpr: Expr {
     Expr* left;
-    Expr* index;
+    Expr* right;
 
-    SubscriptExpr(Expr* left, Expr* index, const Location& location);
+    SubscriptExpr(Expr* left, Expr* right, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
     virtual void print(ostream& stream) const override;
 };
