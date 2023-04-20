@@ -430,11 +430,27 @@ struct Emitter: Visitor {
         }
     }
 
+    Value convert_array_to_pointer(Value value) {
+        if (auto array_type = dynamic_cast<const ArrayType*>(value.type)) {
+            auto result_type = QualifiedType::of(array_type->element_type->pointer_to(), value.qualifiers);
+            if (outcome == EmitOutcome::TYPE) return Value(result_type);
+
+            auto zero = LLVMConstInt(IntegerType::of_size(IntegerSignedness::UNSIGNED)->llvm_type(), 0, false);
+            LLVMValueRef indices[2] = {zero, zero};
+            return Value(result_type,
+                         LLVMBuildGEP2(builder, array_type->llvm_type(), value.llvm_lvalue(), indices, 2, ""));
+        }
+
+        return value;
+    }
+
     virtual VisitStatementOutput visit(BinaryExpr* expr, const VisitStatementInput& input) override {
         auto left_value = emit(expr->left).unqualified();
-        auto right_value = emit(expr->right).unqualified();
-
+        left_value = convert_array_to_pointer(left_value);
         auto left_pointer_type = dynamic_cast<const PointerType*>(left_value.type);
+
+        auto right_value = emit(expr->right).unqualified();
+        right_value = convert_array_to_pointer(right_value);
         auto right_pointer_type = dynamic_cast<const PointerType*>(right_value.type);
 
         Value intermediate;

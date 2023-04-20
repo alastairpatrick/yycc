@@ -197,3 +197,51 @@ define i64 @f(ptr %0, ptr %1) {
   ret i64 %8
 }
 END
+
+
+BEGIN Array pointer addition (1)
+int* f() {
+    int a[10];
+    return a + 1;
+}
+EXPECT_IR
+define ptr @f() {
+  %a = alloca [10 x i32], align 4
+  store [10 x i32] zeroinitializer, ptr %a, align 4
+  %1 = getelementptr [10 x i32], ptr %a, i64 0, i64 0
+  %2 = getelementptr i32, ptr %1, i32 1
+  ret ptr %2
+}
+END
+
+
+BEGIN Array pointer addition (2)
+int* f() {
+    int a[10];
+    return 1 + a;
+}
+EXPECT_IR
+define ptr @f() {
+  %a = alloca [10 x i32], align 4
+  store [10 x i32] zeroinitializer, ptr %a, align 4
+  %1 = getelementptr [10 x i32], ptr %a, i64 0, i64 0
+  %2 = getelementptr i32, ptr %1, i32 1
+  ret ptr %2
+}
+END
+
+
+BEGIN Array pointer addition (3)
+const int* f() {
+    const int a[10];
+    return a + 1;
+}
+EXPECT_IR
+define ptr @f() {
+  %a = alloca [10 x i32], align 4
+  store [10 x i32] zeroinitializer, ptr %a, align 4
+  %1 = getelementptr [10 x i32], ptr %a, i64 0, i64 0
+  %2 = getelementptr i32, ptr %1, i32 1
+  ret ptr %2
+}
+END
