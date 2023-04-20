@@ -108,6 +108,10 @@ VisitStatementOutput Visitor::visit_default(Expr* expr, const VisitStatementInpu
     return visit_default((Statement*) expr, input);
 }
 
+VisitStatementOutput Visitor::visit(AddressExpr* expr, const VisitStatementInput& input) {
+    return visit_default(expr, input);
+}
+
 VisitStatementOutput Visitor::visit(BinaryExpr* expr, const VisitStatementInput& input) {
     return visit_default(expr, input);
 }

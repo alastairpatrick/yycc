@@ -326,7 +326,10 @@ Expr* Parser::parse_unary_expr() {
     Location loc;
     Expr* result{};
 
-    if (consume(TOK_SIZEOF, &loc)) {
+    if (consume('&', &loc)) {
+        auto expr = parse_unary_expr();
+        result = new AddressExpr(expr, loc);
+    } else if (consume(TOK_SIZEOF, &loc)) {
         auto consumed_paren = consume('(');
             
         const Type* type{};

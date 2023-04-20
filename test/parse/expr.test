@@ -243,6 +243,13 @@ EXPECT_AST
 ["cast",["P","Si"],0]
 
 
+BEGIN Address operator
+&1
+EXPECT_AST
+["address", 1]
+END
+
+
 BEGIN Subscript expression
 1[2]
 EXPECT_AST

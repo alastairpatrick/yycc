@@ -7,6 +7,14 @@
 
 struct Decl;
 
+struct AddressExpr: Expr {
+    Expr* expr;
+    
+    AddressExpr(Expr* expr, const Location& location);
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual void print(ostream& stream) const override;
+};
+
 struct BinaryExpr: Expr {
     Expr* left{};
     Expr* right{};

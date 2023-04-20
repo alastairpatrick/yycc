@@ -8,6 +8,19 @@ Expr::Expr(const Location& location): Statement(location) {
 }
 
 
+AddressExpr::AddressExpr(Expr* expr, const Location& location)
+    : Expr(location), expr(expr) {
+}
+
+VisitStatementOutput AddressExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
+}
+
+void AddressExpr::print(ostream& stream) const {
+    stream << "[\"address\", " << expr << ']';
+}
+
+
 BinaryExpr::BinaryExpr(Expr* left, Expr* right, TokenKind op, const Location& location)
     : Expr(location), left(left), right(right), op(op) {
     assert(this->left);
