@@ -490,6 +490,11 @@ struct Emitter: Visitor {
         return VisitStatementOutput(result_type, LLVMConstInt(result_type->llvm_type(), size_int, false));
     }
 
+    virtual VisitStatementOutput visit(SubscriptExpr* expr, const VisitStatementInput& input) override {
+        assert(false);
+        return VisitStatementOutput();
+    }
+
     virtual VisitStatementOutput visit(IntegerConstant* constant, const VisitStatementInput& input) override {
         return VisitStatementOutput(constant->type, constant->value);
     }

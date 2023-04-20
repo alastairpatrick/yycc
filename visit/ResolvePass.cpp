@@ -160,6 +160,14 @@ struct ResolvePass: Visitor {
     virtual VisitDeclaratorOutput visit(Declarator* primary, Entity* primary_entity, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
         if (!secondary) {
+            for (auto param: primary_entity->params) {
+                resolve(param);
+            }
+
+            if (primary_entity->bit_field_size) resolve(primary_entity->bit_field_size);
+            if (primary_entity->initializer) resolve(primary_entity->initializer);
+            if (primary_entity->body) resolve(primary_entity->body);
+
             return VisitDeclaratorOutput();
         }
 
@@ -466,7 +474,7 @@ struct ResolvePass: Visitor {
     }
 
     virtual VisitStatementOutput visit(ReturnStatement* statement, const VisitStatementInput& input) override {
-        resolve(statement->expr);
+        if (statement->expr) resolve(statement->expr);
         return VisitStatementOutput();
     }
 

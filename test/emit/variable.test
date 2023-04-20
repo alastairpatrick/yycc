@@ -130,3 +130,23 @@ define i32 @f() {
   ret i32 %1
 }
 END
+
+
+BEGIN Global array
+int a[10];
+EXPECT_IR
+@a = global [10 x i32] zeroinitializer
+END
+
+
+BEGIN Local array
+void f() {
+    int a[10];
+}
+EXPECT_IR
+define void @f() {
+  %a = alloca [10 x i32], align 4
+  store [10 x i32] zeroinitializer, ptr %a, align 4
+  ret void
+}
+END

@@ -2,5 +2,5 @@ BEGIN Resolves cast expression
 int v = (int[1+1]) 0;
 RESOLVE
 EXPECT_AST
-[["var","ES","Si","v",["cast",["A","Si",["+",1,1]],0]]]
+[["var","ES","Si","v",["cast",["A","Si",2],0]]]
 
