@@ -444,6 +444,14 @@ struct Emitter: Visitor {
         return value;
     }
 
+    virtual VisitStatementOutput visit(AddressExpr* expr, const VisitStatementInput& input) override {
+        auto value = emit(expr->expr);
+        auto result_type = value.type->pointer_to();
+        if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+
+        return VisitStatementOutput(result_type, value.llvm_lvalue());
+    }
+
     virtual VisitStatementOutput visit(BinaryExpr* expr, const VisitStatementInput& input) override {
         auto left_value = emit(expr->left).unqualified();
         left_value = convert_array_to_pointer(left_value);

@@ -83,6 +83,57 @@ merge:                                            ; preds = %else, %then
 END
 
 
+BEGIN Function returning address of global int
+int v;
+int* f() {
+    return &v;
+}
+EXPECT_IR
+@v = global i32 0
+
+define ptr @f() {
+  ret ptr @v
+}
+END
+
+
+BEGIN Function returning address of global array
+int v[2];
+int* f() {
+    return &v;
+}
+EXPECT_IR
+@v = global [2 x i32] zeroinitializer
+
+define ptr @f() {
+  ret ptr @v
+}
+END
+
+
+BEGIN Function returning address of array element
+int v[2];
+int* f() {
+    return &v[1];
+}
+EXPECT_IR
+@v = global [2 x i32] zeroinitializer
+
+define ptr @f() {
+  ret ptr getelementptr inbounds ([2 x i32], ptr @v, i64 0, i32 1)
+}
+END
+
+
+BEGIN Global initialized with address of other global
+int a;
+int* b = &a;
+EXPECT_IR
+@a = global i32 0
+@b = global ptr @a
+END
+
+
 BEGIN Subscript operator on pointer (1)
 int f(int* p) {
     return p[1];
