@@ -51,6 +51,38 @@ define { i32 } @f() {
 END
 
 
+BEGIN Condition operator
+int f(_Bool c, int a, int b) {
+    return c ? (a+1) : (b-1);
+}
+EXPECT_IR
+define i32 @f(i1 %0, i32 %1, i32 %2) {
+  %c = alloca i1, align 1
+  store i1 %0, ptr %c, align 1
+  %a = alloca i32, align 4
+  store i32 %1, ptr %a, align 4
+  %b = alloca i32, align 4
+  store i32 %2, ptr %b, align 4
+  %4 = load i1, ptr %c, align 1
+  br i1 %4, label %then, label %else
+
+then:                                             ; preds = %3
+  %5 = load i32, ptr %a, align 4
+  %6 = add i32 %5, 1
+  br label %merge
+
+else:                                             ; preds = %3
+  %7 = load i32, ptr %b, align 4
+  %8 = sub i32 %7, 1
+  br label %merge
+
+merge:                                            ; preds = %else, %then
+  %cond = phi i32 [ %6, %then ], [ %8, %else ]
+  ret i32 %cond
+}
+END
+
+
 BEGIN Volatile store
 void f() {
     volatile int x;

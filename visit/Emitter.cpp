@@ -457,12 +457,10 @@ struct Emitter: Visitor {
     }
 
     virtual VisitStatementOutput visit(ConditionExpr* expr, const VisitStatementInput& input) override {
-        Value condition_value = emit(expr->condition).unqualified();
-        Value then_value = emit(expr->then_expr).unqualified();
-        Value else_value = emit(expr->else_expr).unqualified();
+        auto then_type = get_expr_type(expr->then_expr);
+        auto else_type = get_expr_type(expr->else_expr);
 
-        auto result_type = usual_arithmetic_conversions(then_value.type, else_value.type);
-    
+        auto result_type = usual_arithmetic_conversions(then_type, else_type);    
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
         LLVMBasicBlockRef alt_blocks[2] = {
@@ -471,16 +469,19 @@ struct Emitter: Visitor {
         };
         auto merge_block = LLVMAppendBasicBlock(function, "merge");
 
+        auto condition_value = emit(expr->condition).unqualified();
         condition_value = convert_to_type(condition_value, IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL));
         LLVMBuildCondBr(builder, condition_value.llvm_rvalue(builder), alt_blocks[0], alt_blocks[1]);
 
         LLVMValueRef 
             alt_values[2];
         LLVMPositionBuilderAtEnd(builder, alt_blocks[0]);
+        Value then_value = emit(expr->then_expr).unqualified();
         alt_values[0] = convert_to_type(then_value, result_type).llvm_rvalue(builder);
         LLVMBuildBr(builder, merge_block);
 
         LLVMPositionBuilderAtEnd(builder, alt_blocks[1]);
+        Value else_value = emit(expr->else_expr).unqualified();
         alt_values[1] = convert_to_type(else_value, result_type).llvm_rvalue(builder);
         LLVMBuildBr(builder, merge_block);
 
