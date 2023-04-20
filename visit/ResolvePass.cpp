@@ -477,10 +477,38 @@ struct ResolvePass: Visitor {
         if (statement->expr) resolve(statement->expr);
         return VisitStatementOutput();
     }
+    
+    virtual VisitStatementOutput visit_default(Expr* expr, const VisitStatementInput& input) override {
+        assert(false);
+        return VisitStatementOutput();
+    }
+
+    virtual VisitStatementOutput visit(AddressExpr* address_expr, const VisitStatementInput& input) override {
+        resolve(address_expr->expr);
+        return VisitStatementOutput();
+    }
+
+    virtual VisitStatementOutput visit(BinaryExpr* binary_expr, const VisitStatementInput& input) override {
+        resolve(binary_expr->left);
+        resolve(binary_expr->right);
+        return VisitStatementOutput();
+    }
 
     virtual VisitStatementOutput visit(CastExpr* cast_expr, const VisitStatementInput& input) override {
         cast_expr->type = resolve(cast_expr->type);
         resolve(cast_expr->expr);
+        return VisitStatementOutput();
+    }
+
+    virtual VisitStatementOutput visit(ConditionExpr* condition_expr, const VisitStatementInput& input) override {
+        resolve(condition_expr->condition);
+        resolve(condition_expr->then_expr);
+        resolve(condition_expr->else_expr);
+        return VisitStatementOutput();
+    }
+
+    virtual VisitStatementOutput visit(DereferenceExpr* dereference_expr, const VisitStatementInput& input) override {
+        resolve(dereference_expr->expr);
         return VisitStatementOutput();
     }
 
@@ -492,6 +520,24 @@ struct ResolvePass: Visitor {
 
     virtual VisitStatementOutput visit(SizeOfExpr* size_of_expr, const VisitStatementInput& input) override {
         size_of_expr->type = resolve(size_of_expr->type);
+        return VisitStatementOutput();
+    }
+
+    virtual VisitStatementOutput visit(SubscriptExpr* subscript_expr, const VisitStatementInput& input) override {
+        resolve(subscript_expr->left);
+        resolve(subscript_expr->right);
+        return VisitStatementOutput();
+    }
+
+    virtual VisitStatementOutput visit(FloatingPointConstant* constant, const VisitStatementInput& input) override {
+        return VisitStatementOutput();
+    }
+
+    virtual VisitStatementOutput visit(IntegerConstant* constant, const VisitStatementInput& input) override {
+        return VisitStatementOutput();
+    }
+
+    virtual VisitStatementOutput visit(StringConstant* constant, const VisitStatementInput& input) override {
         return VisitStatementOutput();
     }
 };
