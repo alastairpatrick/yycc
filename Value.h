@@ -12,6 +12,7 @@ enum class ValueKind {
 struct Value {
     ValueKind kind = ValueKind::TYPE_ONLY;
     const Type* type{};
+    unsigned qualifiers{};
 
     Value() = default;
     Value(const Type* type, LLVMValueRef llvm = nullptr);
@@ -21,6 +22,7 @@ struct Value {
     LLVMValueRef llvm_const_rvalue() const;
     LLVMValueRef llvm_lvalue() const;
     LLVMValueRef llvm_rvalue(LLVMBuilderRef builder) const;
+    Value unqualified() const;
     Value bit_cast(const Type* type) const;
 
 private:

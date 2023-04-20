@@ -55,7 +55,10 @@ struct Emitter: Visitor {
     void emit(Declarator* declarator) {
         declarator = declarator->primary;
         if (declarator->status >= DeclaratorStatus::EMITTED) return;
+        assert(declarator->status == DeclaratorStatus::RESOLVED);
+
         declarator->accept(*this, VisitDeclaratorInput());
+
         declarator->status = DeclaratorStatus::EMITTED;
     }
 
@@ -399,6 +402,9 @@ struct Emitter: Visitor {
                 return Value(result_type, LLVMBuildFDiv(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), ""));
             }
         }
+
+        assert(false);
+        return Value();
     }
 
     Value emit_pointer_arithmetic_operation(BinaryExpr* expr, const PointerType* pointer_type, Value left_value, Value right_value) {
@@ -420,15 +426,16 @@ struct Emitter: Visitor {
             return Value(result_type, result);
         } else {
             assert(false); // TODO
+            return Value();
         }
     }
 
     virtual VisitStatementOutput visit(BinaryExpr* expr, const VisitStatementInput& input) override {
-        auto left_value = emit(expr->left);
-        auto right_value = emit(expr->right);
+        auto left_value = emit(expr->left).unqualified();
+        auto right_value = emit(expr->right).unqualified();
 
-        auto left_pointer_type = dynamic_cast<const PointerType*>(left_value.type);  // TODO unqualified
-        auto right_pointer_type = dynamic_cast<const PointerType*>(right_value.type);  // TODO unqualified
+        auto left_pointer_type = dynamic_cast<const PointerType*>(left_value.type);
+        auto right_pointer_type = dynamic_cast<const PointerType*>(right_value.type);
 
         Value intermediate;
         if (left_pointer_type) {
@@ -442,16 +449,17 @@ struct Emitter: Visitor {
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(intermediate);
 
         if (is_assignment(expr->op)) {
-            LLVMBuildStore(builder, intermediate.llvm_rvalue(builder), left_value.llvm_lvalue());
+            LLVMSetVolatile(LLVMBuildStore(builder, intermediate.llvm_rvalue(builder), left_value.llvm_lvalue()),
+                            left_value.qualifiers & QUAL_VOLATILE);
         }
 
         return VisitStatementOutput(intermediate);
     }
 
     virtual VisitStatementOutput visit(ConditionExpr* expr, const VisitStatementInput& input) override {
-        Value condition_value = emit(expr->condition);
-        Value then_value = emit(expr->then_expr);
-        Value else_value = emit(expr->else_expr);
+        Value condition_value = emit(expr->condition).unqualified();
+        Value then_value = emit(expr->then_expr).unqualified();
+        Value else_value = emit(expr->else_expr).unqualified();
 
         auto result_type = usual_arithmetic_conversions(then_value.type, else_value.type);
     
