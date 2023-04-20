@@ -1,6 +1,8 @@
 #ifndef PARSE_ASSOC_PREC_H
 #define PARSE_ASSOC_PREC_H
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -30,9 +32,12 @@ typedef enum {
 typedef struct {
     OperatorAssoc assoc;
     OperatorPrec prec;
+    bool is_assignment;
 } AssocPrec;
 
 extern const AssocPrec g_assoc_prec[];
+
+bool is_assignment_token(int token);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -18,6 +18,13 @@ struct DeclaratorTransform {
     const Type* apply(const Type* type);
 };
 
+enum class SubExpressionKind {
+    PRIMARY,
+    POSTFIX,
+    UNARY,
+    CAST,
+};
+
 struct Parser {
     Parser(Preprocessor& preprocessor, IdentifierMap& identifiers);
     void operator=(const Parser&) = delete;
@@ -52,7 +59,7 @@ private:
     OperatorPrec prec();
 
     Expr* parse_expr(OperatorPrec min_prec);
-    Expr* parse_unary_expr();
+    Expr* parse_sub_expr(SubExpressionKind kind);
     Expr* parse_initializer();
     Declaration* parse_declaration_specifiers(IdentifierScope scope, const Type*& type, uint32_t& specifiers);
     ASTNode* parse_declaration_or_statement(IdentifierScope scope);

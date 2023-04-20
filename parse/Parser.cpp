@@ -239,7 +239,7 @@ Expr* Parser::parse_expr(OperatorPrec min_prec) {
         return result;
     }
 
-    result = parse_unary_expr();
+    result = parse_sub_expr(SubExpressionKind::CAST);
 
     while (prec() >= min_prec) {
         auto next_min_prec = assoc() == ASSOC_LEFT ? OperatorPrec(prec() + 1) : prec();
@@ -322,28 +322,11 @@ void Parser::skip_expr(OperatorPrec min_prec) {
     }
 }
 
-Expr* Parser::parse_unary_expr() {
+Expr* Parser::parse_sub_expr(SubExpressionKind kind) {
     Location loc;
     Expr* result{};
 
-    if (consume('&', &loc)) {
-        auto expr = parse_unary_expr();
-        result = new AddressExpr(expr, loc);
-    } else if (consume(TOK_SIZEOF, &loc)) {
-        auto consumed_paren = consume('(');
-            
-        const Type* type{};
-        if (consumed_paren) type = parse_type();
-
-        if (type) {
-            result = new SizeOfExpr(type, loc);
-        } else {
-            auto expr = parse_unary_expr();
-            result = new SizeOfExpr(new TypeOfType(expr, loc), loc);
-        }
-
-        if (consumed_paren) require(')');
-    } else if (token == TOK_BIN_INT_LITERAL || token == TOK_OCT_INT_LITERAL || token == TOK_DEC_INT_LITERAL || token == TOK_HEX_INT_LITERAL || token == TOK_CHAR_LITERAL) {
+    if (token == TOK_BIN_INT_LITERAL || token == TOK_OCT_INT_LITERAL || token == TOK_DEC_INT_LITERAL || token == TOK_HEX_INT_LITERAL || token == TOK_CHAR_LITERAL) {
         result = IntegerConstant::of(preprocessor.text(), token, preprocessor.location());
         consume();
     }
@@ -364,16 +347,39 @@ Expr* Parser::parse_unary_expr() {
             result = IntegerConstant::default_expr(preprocessor.location());
         }
         consume();
-    } else if (consume('(', &loc)) {
-        auto type = parse_type();
+    } else if (kind >= SubExpressionKind::UNARY && consume('&', &loc)) {
+        auto expr = parse_sub_expr(SubExpressionKind::CAST);
+        result = new AddressExpr(expr, loc);
+    } else if (kind >= SubExpressionKind::UNARY && consume(TOK_SIZEOF, &loc)) {
+        auto consumed_paren = consume('(');
+            
+        const Type* type{};
+        if (consumed_paren) type = parse_type();
+
         if (type) {
-            require(')');
-            auto expr = parse_unary_expr();
-            return new CastExpr(type, expr, loc);
+            result = new SizeOfExpr(type, loc);
         } else {
-            result = parse_expr(SEQUENCE_PREC);
-            require(')');
+            auto expr = parse_sub_expr(SubExpressionKind::UNARY);
+            result = new SizeOfExpr(new TypeOfType(expr, loc), loc);
         }
+
+        if (consumed_paren) require(')');
+    } else if (consume('(', &loc)) {
+        if (kind >= SubExpressionKind::CAST) {
+            if (auto type = parse_type()) {
+                require(')');
+                auto expr = parse_sub_expr(SubExpressionKind::CAST);
+
+                if (is_assignment_token(token)) {
+                    message(Severity::ERROR, preprocessor.location()) << "cannot assign to cast expression\n";
+                }
+
+                return new CastExpr(type, expr, loc);
+            }
+        }
+
+        result = parse_expr(SEQUENCE_PREC);
+        require(')');
     }
 
     if (!result) {

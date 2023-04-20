@@ -162,6 +162,14 @@ EXPECT_AST
 ["=", 1, ["=", 2, 3]]
 
 
+BEGIN Left hand side of assignment cannot be cast expression
+(int) 1 = 2
+EXPECT_MESSAGE
+:1:9: error cannot assign to cast expression
+EXPECT_AST
+["=",["cast","Si",1],2]
+
+
 BEGIN Multiply assignment expression
 1 *= 2
 EXPECT_AST

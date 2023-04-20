@@ -14,17 +14,17 @@ const AssocPrec g_assoc_prec[TOK_NUM] = {
 
     // <assignment-expression> ::= <conditional-expression>
     //                           / <unary-expression> <assignment-operator> <assignment-expression>
-    ['=']               = { ASSOC_RIGHT, ASSIGN_PREC },
-    [TOK_ADD_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC },
-    [TOK_AND_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC },
-    [TOK_DIV_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC },
-    [TOK_LEFT_ASSIGN]   = { ASSOC_RIGHT, ASSIGN_PREC },
-    [TOK_MOD_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC },
-    [TOK_MUL_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC },
-    [TOK_OR_ASSIGN]     = { ASSOC_RIGHT, ASSIGN_PREC },
-    [TOK_RIGHT_ASSIGN]  = { ASSOC_RIGHT, ASSIGN_PREC },
-    [TOK_SUB_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC },
-    [TOK_XOR_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC },
+    ['=']               = { ASSOC_RIGHT, ASSIGN_PREC, true },
+    [TOK_ADD_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC, true },
+    [TOK_AND_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC, true },
+    [TOK_DIV_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC, true },
+    [TOK_LEFT_ASSIGN]   = { ASSOC_RIGHT, ASSIGN_PREC, true },
+    [TOK_MOD_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC, true },
+    [TOK_MUL_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC, true },
+    [TOK_OR_ASSIGN]     = { ASSOC_RIGHT, ASSIGN_PREC, true },
+    [TOK_RIGHT_ASSIGN]  = { ASSOC_RIGHT, ASSIGN_PREC, true },
+    [TOK_SUB_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC, true },
+    [TOK_XOR_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC, true },
 
     // <conditional-expression> ::= <logical-or-expression>
     //                            | <logical-or-expression> ? <expression> : <conditional-expression>
@@ -87,3 +87,8 @@ const AssocPrec g_assoc_prec[TOK_NUM] = {
     ['/']               = { ASSOC_LEFT, MULTIPLICATIVE_PREC },
     ['%']               = { ASSOC_LEFT, MULTIPLICATIVE_PREC },
 };
+
+bool is_assignment_token(int token) {
+  return token < TOK_NUM && g_assoc_prec[token].is_assignment;
+}
+
