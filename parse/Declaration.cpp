@@ -263,7 +263,7 @@ VisitDeclaratorOutput EnumConstant::accept(Visitor& visitor, const VisitDeclarat
 
 void EnumConstant::print(ostream& stream) const {
     stream << "[\"ec\", \"" << declarator->identifier << '"';
-    if (declarator->status == ResolutionStatus::RESOLVED) {
+    if (declarator->status >= DeclaratorStatus::RESOLVED) {
         stream << ", " << constant_int;
     } else {
         if (constant_expr) {

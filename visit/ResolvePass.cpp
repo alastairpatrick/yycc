@@ -33,10 +33,10 @@ struct ResolvePass: Visitor {
         struct ResolutionCycle {};
 
         primary = primary->primary;
-        if (primary->status == ResolutionStatus::RESOLVED) return primary->type;
-        if (primary->status == ResolutionStatus::RESOLVING) throw ResolutionCycle();
+        if (primary->status >= DeclaratorStatus::RESOLVED) return primary->type;
+        if (primary->status == DeclaratorStatus::RESOLVING) throw ResolutionCycle();
 
-        primary->status = ResolutionStatus::RESOLVING;
+        primary->status = DeclaratorStatus::RESOLVING;
 
         Declarator* acyclic_declarator{};
         for (auto declarator = primary; declarator; declarator = declarator->next) {
@@ -44,7 +44,7 @@ struct ResolvePass: Visitor {
                 if (declarator->type->has_tag(declarator) && declarator->type->is_complete()) {
                     swap(declarator->type, primary->type);
                     acyclic_declarator = primary;
-                    primary->status = ResolutionStatus::RESOLVED;
+                    primary->status = DeclaratorStatus::RESOLVED;
                     auto resolved_type = resolve(primary->type);
                     assert(resolved_type == primary->type);  // must be because declarator was already marked resolved
                     break;
@@ -62,7 +62,7 @@ struct ResolvePass: Visitor {
             }
         }
 
-        if (primary->type_def()) primary->status = ResolutionStatus::RESOLVED;
+        if (primary->type_def()) primary->status = DeclaratorStatus::RESOLVED;
 
         if (acyclic_declarator) {
             swap(acyclic_declarator->type, primary->type);
@@ -88,7 +88,7 @@ struct ResolvePass: Visitor {
 
         primary->next = nullptr;
         primary->accept(*this, VisitDeclaratorInput());
-        primary->status = ResolutionStatus::RESOLVED;
+        primary->status = DeclaratorStatus::RESOLVED;
 
         return primary->type;
     }

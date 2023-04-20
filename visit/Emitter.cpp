@@ -13,6 +13,7 @@ enum class EmitOutcome {
 struct Emitter: Visitor {
     EmitOutcome outcome;
 
+    Emitter* parent{};
     LLVMModuleRef module{};
 
     Declarator* function_declarator{};
@@ -52,7 +53,10 @@ struct Emitter: Visitor {
     }
 
     void emit(Declarator* declarator) {
+        declarator = declarator->primary;
+        if (declarator->status >= DeclaratorStatus::EMITTED) return;
         declarator->accept(*this, VisitDeclaratorInput());
+        declarator->status = DeclaratorStatus::EMITTED;
     }
 
     Value emit(Statement* statement) {
@@ -122,13 +126,16 @@ struct Emitter: Visitor {
             entity->value = Value(ValueKind::LVALUE, declarator->type, storage);
 
         } else if (entity->storage_duration() == StorageDuration::STATIC) {
-            string name(*function_declarator->identifier.name);
-            name += '.';
-            name += *declarator->identifier.name;
+            string name(*declarator->identifier.name);
+            for (auto emitter = this; emitter->function_declarator; emitter = emitter->parent) {
+                name = string(*emitter->function_declarator->identifier.name) + '.' + name;
+            }
 
             auto global = LLVMAddGlobal(module, llvm_type, name.c_str());
             LLVMSetInitializer(global, initial_value);
-            LLVMSetLinkage(global, LLVMInternalLinkage);
+            if (entity->linkage() != Linkage::EXTERNAL) {
+                LLVMSetLinkage(global, LLVMInternalLinkage);
+            }
             LLVMSetGlobalConstant(global, declarator->type->qualifiers() & QUAL_CONST);
 
             entity->value = Value(ValueKind::LVALUE, declarator->type, global);
@@ -136,10 +143,13 @@ struct Emitter: Visitor {
     }
 
     virtual VisitDeclaratorOutput visit(Declarator* declarator, Entity* entity, const VisitDeclaratorInput& input) override {
+        assert(declarator == declarator->primary);
+          
         if (entity->is_function()) {
             if (entity->body) {
                 Emitter function_emitter(EmitOutcome::IR);
                 function_emitter.module = module;
+                function_emitter.parent = this;
                 function_emitter.emit_function_definition(declarator, entity);
             }
         } else {

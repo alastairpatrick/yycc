@@ -38,10 +38,11 @@ typedef vector<ASTNode*> ASTNodeVector;
 
 ostream& operator<<(ostream& stream, const ASTNodeVector& items);
 
-enum class ResolutionStatus {
+enum class DeclaratorStatus {
     UNRESOLVED,
     RESOLVING,
     RESOLVED,
+    EMITTED,
 };
 
 struct Declarator: ASTNode {
@@ -57,8 +58,8 @@ struct Declarator: ASTNode {
     DeclaratorDelegate* delegate{};
 
     Declarator* next{};
-    ResolutionStatus status = ResolutionStatus::UNRESOLVED;
-
+    DeclaratorStatus status = DeclaratorStatus::UNRESOLVED;
+    
     EnumConstant* enum_constant();
     Entity* entity();
     TypeDef* type_def();

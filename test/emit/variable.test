@@ -1,3 +1,47 @@
+BEGIN Global null initialized internal variable
+static int x;
+EXPECT_IR
+@x = internal global i32 0
+END
+
+
+BEGIN Global initialized internal variable
+static int x = 1+1;
+EXPECT_IR
+@x = internal global i32 2
+END
+
+
+BEGIN Global initialized external variable
+int x = 1+1;
+EXPECT_IR
+@x = global i32 2
+END
+
+
+BEGIN Global constant
+const int x = 1+1;
+EXPECT_IR
+@x = constant i32 2
+END
+
+
+BEGIN Variable with linkage only emitted once (1)
+static int x;
+static int x = 1+1;
+EXPECT_IR
+@x = internal global i32 2
+END
+
+
+BEGIN Variable with linkage only emitted once (1)
+static int x = 1+1;
+static int x;
+EXPECT_IR
+@x = internal global i32 2
+END
+
+
 BEGIN Load parameter value
 int f(int x, int y) {
     return y;
