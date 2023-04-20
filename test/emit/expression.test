@@ -85,6 +85,86 @@ EXPECT_IR
 END
 
 
+// CallExpr
+
+BEGIN Call function
+void f() {}
+void g() {
+    f();
+}
+EXPECT_IR
+define void @f() {
+  ret void
+}
+
+define void @g() {
+  call void @f()
+  ret void
+}
+END
+
+
+BEGIN Pass parameter in function call
+void f(short) {}
+void g() {
+    f(7);
+}
+EXPECT_IR
+define void @f(i16 %0) {
+  %2 = alloca i16, align 2
+  store i16 %0, ptr %2, align 2
+  ret void
+}
+
+define void @g() {
+  call void @f(i16 7)
+  ret void
+}
+END
+
+
+BEGIN Function call returns result
+int f() {
+    return 7;
+}
+void g() {
+    int x = f();
+}
+EXPECT_IR
+define i32 @f() {
+  ret i32 7
+}
+
+define void @g() {
+  %x = alloca i32, align 4
+  %1 = call i32 @f()
+  store i32 %1, ptr %x, align 4
+  ret void
+}
+END
+
+
+BEGIN Call function via pointer
+void f() {}
+void (*fp)() = f;
+void g() {
+    fp();
+}
+EXPECT_IR
+@fp = global ptr @f
+
+define void @f() {
+  ret void
+}
+
+define void @g() {
+  %1 = load ptr, ptr @fp, align 8
+  call void %1()
+  ret void
+}
+END
+
+
 // DereferenceExpr
 
 BEGIN Dereference global pointer

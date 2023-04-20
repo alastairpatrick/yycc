@@ -494,6 +494,14 @@ struct ResolvePass: Visitor {
         return VisitStatementOutput();
     }
 
+    virtual VisitStatementOutput visit(CallExpr* call_expr, const VisitStatementInput& input) override {
+        resolve(call_expr->function);
+        for (auto param: call_expr->parameters) {
+            resolve(param);
+        }
+        return VisitStatementOutput();
+    }
+
     virtual VisitStatementOutput visit(CastExpr* cast_expr, const VisitStatementInput& input) override {
         cast_expr->type = resolve(cast_expr->type);
         resolve(cast_expr->expr);

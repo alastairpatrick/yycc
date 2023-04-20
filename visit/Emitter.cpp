@@ -10,6 +10,13 @@ enum class EmitOutcome {
     IR,
 };
 
+const char* identifier_name(const Identifier& identifier) {
+    auto name = identifier.name;
+    if (name->empty()) return "";
+
+    return name->data();
+}
+
 struct Emitter: Visitor {
     EmitOutcome outcome;
 
@@ -79,7 +86,7 @@ struct Emitter: Visitor {
     void emit_function_definition(Declarator* declarator, Entity* entity) {
         function_declarator = declarator;
         function_type = dynamic_cast<const FunctionType*>(declarator->primary->type);
-        function = LLVMAddFunction(module, declarator->identifier.name->data(), declarator->primary->type->llvm_type());
+        function = LLVMAddFunction(module, identifier_name(declarator->identifier), declarator->primary->type->llvm_type());
 
         entity->value = Value(ValueKind::LVALUE, function_type, function);
 
@@ -90,7 +97,7 @@ struct Emitter: Visitor {
             auto param = entity->params[i];
             auto param_entity = param->entity();
 
-            auto storage = LLVMBuildAlloca(builder, param->type->llvm_type(), param->identifier.name->data());
+            auto storage = LLVMBuildAlloca(builder, param->type->llvm_type(), identifier_name(param->identifier));
             param_entity->value = Value(ValueKind::LVALUE, param->type, storage);
             LLVMBuildStore(builder, LLVMGetParam(function, i), storage);
         }
@@ -125,7 +132,7 @@ struct Emitter: Visitor {
             } else {
                 LLVMPositionBuilderAtEnd(temp_builder, entry_block);
             }
-            auto storage = LLVMBuildAlloca(temp_builder, llvm_type, declarator->identifier.name->data());
+            auto storage = LLVMBuildAlloca(temp_builder, llvm_type, identifier_name(declarator->identifier));
 
             LLVMBuildStore(builder, initial_value, storage);
             entity->value = Value(ValueKind::LVALUE, declarator->type, storage);
@@ -494,6 +501,33 @@ struct Emitter: Visitor {
         }
 
         return VisitStatementOutput(intermediate);
+    }
+
+    virtual VisitStatementOutput visit(CallExpr* expr, const VisitStatementInput& input) override {
+        auto function_value = emit(expr->function).unqualified();
+
+        if (auto pointer_type = dynamic_cast<const PointerType*>(function_value.type)) {
+            function_value = Value(ValueKind::LVALUE, pointer_type->base_type, function_value.llvm_rvalue(builder));
+        }
+
+        if (auto function_type = dynamic_cast<const FunctionType*>(function_value.type)) {
+            auto result_type = function_type->return_type;
+            if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+
+            vector<LLVMValueRef> llvm_params(function_type->parameter_types.size());
+            for (size_t i = 0; i < llvm_params.size(); ++i) {
+                auto param_expr = expr->parameters[i];
+                auto expected_type = function_type->parameter_types[i];
+                auto param_value = convert_to_type(emit(param_expr).unqualified(), expected_type);
+                llvm_params[i] = param_value.llvm_rvalue(builder);
+            }
+
+            auto result = LLVMBuildCall2(builder, function_type->llvm_type(), function_value.llvm_lvalue(), llvm_params.data(), llvm_params.size(), "");
+            return VisitStatementOutput(result_type, result);
+        }
+
+        assert(false);
+        return VisitStatementOutput();
     }
 
     virtual VisitStatementOutput visit(ConditionExpr* expr, const VisitStatementInput& input) override {
