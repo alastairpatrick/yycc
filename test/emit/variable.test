@@ -150,3 +150,80 @@ define void @f() {
   ret void
 }
 END
+
+
+BEGIN Global initialized function pointer variable (1)
+void f() {
+}
+void (*fp)() = &f;
+EXPECT_IR
+@fp = global ptr @f
+
+define void @f() {
+  ret void
+}
+END
+
+
+BEGIN Global initialized function pointer variable (2)
+void f() {
+}
+void (*fp)() = f;
+EXPECT_IR
+@fp = global ptr @f
+
+define void @f() {
+  ret void
+}
+END
+
+
+BEGIN Global initialized function pointer variable (3)
+void f() {
+}
+void *fp = f;
+EXPECT_IR
+@fp = global ptr @f
+
+define void @f() {
+  ret void
+}
+END
+
+
+BEGIN Local variable initialized function pointer variable (1)
+void f() {
+}
+void g() {
+    void (*fp)() = &f;
+}
+EXPECT_IR
+define void @f() {
+  ret void
+}
+
+define void @g() {
+  %fp = alloca ptr, align 8
+  store ptr @f, ptr %fp, align 8
+  ret void
+}
+END
+
+
+BEGIN Local variable initialized function pointer variable (2)
+void f() {
+}
+void g() {
+    void (*fp)() = f;
+}
+EXPECT_IR
+define void @f() {
+  ret void
+}
+
+define void @g() {
+  %fp = alloca ptr, align 8
+  store ptr @f, ptr %fp, align 8
+  ret void
+}
+END
