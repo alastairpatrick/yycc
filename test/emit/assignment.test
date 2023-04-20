@@ -168,3 +168,19 @@ define void @f(float %0) {
   ret void
 }
 END
+
+
+BEGIN += pointer parameter value
+void f(int* x) {
+    x += 1;
+}
+EXPECT_IR
+define void @f(ptr %0) {
+  %x = alloca ptr, align 8
+  store ptr %0, ptr %x, align 8
+  %2 = load ptr, ptr %x, align 8
+  %3 = getelementptr i32, ptr %2, i32 1
+  store ptr %3, ptr %x, align 8
+  ret void
+}
+END

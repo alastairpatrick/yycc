@@ -294,7 +294,7 @@ struct Emitter: Visitor {
     }
 
     // This is applied to binary expressions and to the second and third operands of a conditional expression.
-    const Type* convert_arithmetic(const Type* left, const Type* right) {
+    const Type* usual_arithmetic_conversions(const Type* left, const Type* right) {
         left = promote_integer(left);
         right = promote_integer(right);
 
@@ -345,18 +345,13 @@ struct Emitter: Visitor {
         return nullptr;
     }
 
-    virtual VisitStatementOutput visit(BinaryExpr* expr, const VisitStatementInput& input) override {
+    Value emit_regular_binary_operation(BinaryExpr* expr, Value left_value, Value right_value) {
         bool is_assign = is_assignment(expr->op);
-
-        auto left_value = emit(expr->left);
-        auto right_value = emit(expr->right);
-        auto result_type = is_assign ? left_value.type : convert_arithmetic(left_value.type, right_value.type);
-
-        if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+        auto result_type = is_assign ? left_value.type : usual_arithmetic_conversions(left_value.type, right_value.type);
+        if (outcome == EmitOutcome::TYPE) return Value(result_type);
 
         left_value = convert_to_type(left_value, result_type);
         right_value = convert_to_type(right_value, result_type);
-        LLVMValueRef intermediate{};
 
         if (auto result_as_int = dynamic_cast<const IntegerType*>(result_type)) {
             switch (expr->op) {
@@ -364,28 +359,23 @@ struct Emitter: Visitor {
                 assert(false); // TODO
                 break;
               case '=':
-                intermediate = right_value.llvm_rvalue(builder);
-                break;
+                return right_value;
               case '+':
               case TOK_ADD_ASSIGN:
-                intermediate = LLVMBuildAdd(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), "");
-                break;
+                return Value(result_type, LLVMBuildAdd(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), ""));
               case '-':
               case TOK_SUB_ASSIGN:
-                intermediate = LLVMBuildSub(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), "");
-                break;
+                return Value(result_type, LLVMBuildSub(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), ""));
               case '*':
               case TOK_MUL_ASSIGN:
-                intermediate = LLVMBuildMul(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), "");
-                break;
+                return Value(result_type, LLVMBuildMul(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), ""));
               case '/':
               case TOK_DIV_ASSIGN:
                 if (result_as_int->is_signed()) {
-                    intermediate = LLVMBuildSDiv(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), "");
+                    return Value(result_type, LLVMBuildSDiv(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), ""));
                 } else {
-                    intermediate = LLVMBuildUDiv(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), "");
+                    return Value(result_type, LLVMBuildUDiv(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), ""));
                 }
-                break;
             }
         }
 
@@ -393,34 +383,58 @@ struct Emitter: Visitor {
             switch (expr->op) {
               default:
                 assert(false); // TODO
-                break;
               case '=':
-                intermediate = right_value.llvm_rvalue(builder);
-                break;
+                return right_value;
               case '+':
               case TOK_ADD_ASSIGN:
-                intermediate = LLVMBuildFAdd(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), "");
-                break;
+                return Value(result_type, LLVMBuildFAdd(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), ""));
               case '-':
               case TOK_SUB_ASSIGN:
-                intermediate = LLVMBuildFSub(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), "");
-                break;
+                return Value(result_type, LLVMBuildFSub(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), ""));
               case '*':
               case TOK_MUL_ASSIGN:
-                intermediate = LLVMBuildFMul(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), "");
-                break;
+                return Value(result_type, LLVMBuildFMul(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), ""));
               case '/':
               case TOK_DIV_ASSIGN:
-                intermediate = LLVMBuildFDiv(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), "");
-                break;
+                return Value(result_type, LLVMBuildFDiv(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), ""));
             }
         }
+    }
 
-        if (is_assign) {
-            LLVMBuildStore(builder, intermediate, left_value.llvm_lvalue());
+    Value emit_pointer_arithmetic_operation(BinaryExpr* expr, const PointerType* pointer_type, Value left_value, Value right_value) {
+        if (expr->op == '+' || expr->op == TOK_ADD_ASSIGN) {
+            if (outcome == EmitOutcome::TYPE) return Value(pointer_type);
+
+            LLVMValueRef index = right_value.llvm_rvalue(builder);
+            return Value(pointer_type, LLVMBuildGEP2(builder, pointer_type->base_type->llvm_type(), left_value.llvm_rvalue(builder), &index, 1, ""));
+        } else {
+            assert(false); // TODO
+        }
+    }
+
+    virtual VisitStatementOutput visit(BinaryExpr* expr, const VisitStatementInput& input) override {
+        auto left_value = emit(expr->left);
+        auto right_value = emit(expr->right);
+
+        auto left_pointer_type = dynamic_cast<const PointerType*>(left_value.type);  // TODO unqualified
+        auto right_pointer_type = dynamic_cast<const PointerType*>(right_value.type);  // TODO unqualified
+
+        Value intermediate;
+        if (left_pointer_type) {
+            intermediate = emit_pointer_arithmetic_operation(expr, left_pointer_type, left_value, right_value);
+        } else if (right_pointer_type) {
+            intermediate = emit_pointer_arithmetic_operation(expr, right_pointer_type, right_value, left_value);
+        } else {
+            intermediate = emit_regular_binary_operation(expr, left_value, right_value);
         }
 
-        return VisitStatementOutput(result_type, intermediate);
+        if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(intermediate);
+
+        if (is_assignment(expr->op)) {
+            LLVMBuildStore(builder, intermediate.llvm_rvalue(builder), left_value.llvm_lvalue());
+        }
+
+        return VisitStatementOutput(intermediate);
     }
 
     virtual VisitStatementOutput visit(ConditionExpr* expr, const VisitStatementInput& input) override {
@@ -428,7 +442,7 @@ struct Emitter: Visitor {
         Value then_value = emit(expr->then_expr);
         Value else_value = emit(expr->else_expr);
 
-        auto result_type = convert_arithmetic(then_value.type, else_value.type);
+        auto result_type = usual_arithmetic_conversions(then_value.type, else_value.type);
     
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
