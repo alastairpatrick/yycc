@@ -176,3 +176,24 @@ define ptr @f(ptr %0) {
   ret ptr %3
 }
 END
+
+
+BEGIN Pointer subtraction
+long long f(int* p, int* q) {
+    return p - q;
+}
+EXPECT_IR
+define i64 @f(ptr %0, ptr %1) {
+  %p = alloca ptr, align 8
+  store ptr %0, ptr %p, align 8
+  %q = alloca ptr, align 8
+  store ptr %1, ptr %q, align 8
+  %3 = load ptr, ptr %p, align 8
+  %4 = ptrtoint ptr %3 to i64
+  %5 = load ptr, ptr %q, align 8
+  %6 = ptrtoint ptr %5 to i64
+  %7 = sub i64 %4, %6
+  %8 = sdiv i64 %7, 4
+  ret i64 %8
+}
+END

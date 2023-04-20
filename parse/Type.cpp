@@ -107,6 +107,10 @@ const IntegerType* IntegerType::of_char(bool is_wide) {
                    : IntegerType::of(IntegerSignedness::DEFAULT, IntegerSize::CHAR);
 }
 
+const IntegerType* IntegerType::of_size(IntegerSignedness signedness) {
+    return IntegerType::of(signedness, IntegerSize::LONG_LONG);
+}
+
 const IntegerType* IntegerType::of(IntegerSignedness signedness, IntegerSize size) {
     static const IntegerType types[int(IntegerSignedness::NUM)][int(IntegerSize::NUM)] = {
         {

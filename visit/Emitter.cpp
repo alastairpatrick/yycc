@@ -407,6 +407,17 @@ struct Emitter: Visitor {
 
             LLVMValueRef index = right_value.llvm_rvalue(builder);
             return Value(pointer_type, LLVMBuildGEP2(builder, pointer_type->base_type->llvm_type(), left_value.llvm_rvalue(builder), &index, 1, ""));
+
+        } else if (expr->op == '-') {
+            auto result_type = IntegerType::of_size(IntegerSignedness::SIGNED);
+            if (outcome == EmitOutcome::TYPE) return Value(result_type);
+            
+            auto left_int = LLVMBuildPtrToInt(builder, left_value.llvm_rvalue(builder), result_type->llvm_type(), "");
+            auto right_int = LLVMBuildPtrToInt(builder, right_value.llvm_rvalue(builder), result_type->llvm_type(), "");
+            auto byte_diff = LLVMBuildSub(builder, left_int, right_int, "");
+            auto size_of_base_type = LLVMStoreSizeOfType(g_llvm_target_data, pointer_type->base_type->llvm_type());
+            auto result = LLVMBuildSDiv(builder, byte_diff, LLVMConstInt(result_type->llvm_type(), size_of_base_type, true), "");
+            return Value(result_type, result);
         } else {
             assert(false); // TODO
         }
