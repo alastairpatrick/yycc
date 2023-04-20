@@ -386,6 +386,17 @@ Expr* Parser::parse_unary_expr() {
     if (!result) {
         unexpected_token();
         result = IntegerConstant::default_expr(preprocessor.location());
+        return result;
+    }
+
+    while (token && token != '}' && token != ')' && token != ']' && token != ';') {
+        if (consume('[', &loc)) {
+            auto index = parse_expr(SEQUENCE_PREC);
+            result = new SubscriptExpr(result, index, loc);
+            require(']');
+        } else {
+            break;
+        }
     }
 
     return result;

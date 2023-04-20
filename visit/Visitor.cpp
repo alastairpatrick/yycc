@@ -132,6 +132,10 @@ VisitStatementOutput Visitor::visit(SizeOfExpr* expr, const VisitStatementInput&
     return visit_default(expr, input);
 }
 
+VisitStatementOutput Visitor::visit(SubscriptExpr* expr, const VisitStatementInput& input) {
+    return visit_default(expr, input);
+}
+
 /* Constants */
 
 VisitStatementOutput Visitor::visit(IntegerConstant* constant, const VisitStatementInput& input) {

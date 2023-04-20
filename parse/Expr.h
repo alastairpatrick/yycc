@@ -60,4 +60,13 @@ struct SizeOfExpr: Expr {
     virtual void print(ostream& stream) const override;
 };
 
+struct SubscriptExpr: Expr {
+    Expr* left;
+    Expr* index;
+
+    SubscriptExpr(Expr* left, Expr* index, const Location& location);
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual void print(ostream& stream) const override;
+};
+
 #endif

@@ -142,3 +142,17 @@ VisitStatementOutput SizeOfExpr::accept(Visitor& visitor, const VisitStatementIn
 void SizeOfExpr::print(ostream& stream) const {
     stream << "[\"sizeof\", " << type << "]";
 }
+
+
+SubscriptExpr::SubscriptExpr(Expr* left, Expr* index, const Location& location)
+    : Expr(location), left(left), index(index) {
+}
+
+VisitStatementOutput SubscriptExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
+}
+
+void SubscriptExpr::print(ostream& stream) const {
+    stream << "[\"subs\", " << left << ", " << index << "]";
+}
+

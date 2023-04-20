@@ -237,6 +237,18 @@ EXPECT_AST
 ["cast",["P","Si"],0]
 
 
+BEGIN Subscript expression
+1[2]
+EXPECT_AST
+["subs", 1, 2]
+
+
+BEGIN Subscript expression is left associative
+1[2][3]
+EXPECT_AST
+["subs", ["subs", 1, 2], 3]
+
+
 BEGIN Sizeof int type
 sizeof(int)
 EXPECT_AST
