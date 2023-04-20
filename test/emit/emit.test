@@ -134,6 +134,38 @@ EXPECT_IR
 END
 
 
+BEGIN Dereference global pointer
+int* p;
+int f() {
+    return *p;
+}
+EXPECT_IR
+@p = global ptr null
+
+define i32 @f() {
+  %1 = load ptr, ptr @p, align 8
+  %2 = load i32, ptr %1, align 4
+  ret i32 %2
+}
+END
+
+
+BEGIN Dereference operator yields an lvalue
+int* p;
+void f() {
+    *p = 2;
+}
+EXPECT_IR
+@p = global ptr null
+
+define void @f() {
+  %1 = load ptr, ptr @p, align 8
+  store i32 2, ptr %1, align 4
+  ret void
+}
+END
+
+
 BEGIN Subscript operator on pointer (1)
 int f(int* p) {
     return p[1];
@@ -239,6 +271,38 @@ define void @f() {
   %1 = load volatile i32, ptr %x, align 4
   %2 = add i32 %1, 1
   ret void
+}
+END
+
+
+BEGIN Volatile store through dereference operator
+volatile int* p;
+void f() {
+    *p = 2;
+}
+EXPECT_IR
+@p = global ptr null
+
+define void @f() {
+  %1 = load ptr, ptr @p, align 8
+  store volatile i32 2, ptr %1, align 4
+  ret void
+}
+END
+
+
+BEGIN Volatile load through dereference operator
+volatile int* p;
+int f() {
+    return *p;
+}
+EXPECT_IR
+@p = global ptr null
+
+define i32 @f() {
+  %1 = load ptr, ptr @p, align 8
+  %2 = load volatile i32, ptr %1, align 4
+  ret i32 %2
 }
 END
 

@@ -516,6 +516,15 @@ struct Emitter: Visitor {
         return VisitStatementOutput(result_type, phi_value);
     }
 
+    virtual VisitStatementOutput visit(DereferenceExpr* expr, const VisitStatementInput& input) override {
+        auto value = emit(expr->expr).unqualified();
+        auto pointer_type = dynamic_cast<const PointerType*>(value.type);
+        auto result_type = pointer_type->base_type;
+        if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+
+        return VisitStatementOutput(Value(ValueKind::LVALUE, result_type, value.llvm_rvalue(builder)));
+    }
+
     virtual VisitStatementOutput visit(EntityExpr* expr, const VisitStatementInput& input) override {
         const Type* result_type = expr->declarator->type;
 
