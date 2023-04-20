@@ -81,6 +81,25 @@ void BinaryExpr::print(ostream& stream) const {
 }
 
 
+CallExpr::CallExpr(Expr* function, vector<Expr*>&& parameters, const Location& location)
+    : Expr(location), function(function), parameters(move(parameters)) {
+}
+
+VisitStatementOutput CallExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
+}
+
+void CallExpr::print(ostream& stream) const {
+    stream << "[\"call\", " << function;
+
+    for (auto param: parameters) {
+        stream  << ", " << param;
+    }
+
+    stream << ']';
+}
+
+
 CastExpr::CastExpr(const Type* type, Expr* expr, const Location& location)
     : Expr(location), type(type), expr(expr) {
     assert(type);

@@ -8,7 +8,7 @@
 struct Decl;
 
 struct AddressExpr: Expr {
-    Expr* expr;
+    Expr* expr{};
     
     AddressExpr(Expr* expr, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
@@ -18,9 +18,18 @@ struct AddressExpr: Expr {
 struct BinaryExpr: Expr {
     Expr* left{};
     Expr* right{};
-    TokenKind op;
+    TokenKind op{};
     
     BinaryExpr(Expr* left, Expr* right, TokenKind op, const Location& location);
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual void print(ostream& stream) const override;
+};
+
+struct CallExpr: Expr {
+    Expr* function{};
+    vector<Expr*> parameters;
+
+    CallExpr(Expr* function, vector<Expr*>&& parameters, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
     virtual void print(ostream& stream) const override;
 };
@@ -45,7 +54,7 @@ struct ConditionExpr: Expr {
 };
 
 struct DereferenceExpr: Expr {
-    Expr* expr;
+    Expr* expr{};
     
     DereferenceExpr(Expr* expr, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
@@ -69,7 +78,7 @@ struct InitializerExpr: Expr {
 };
 
 struct SizeOfExpr: Expr {
-    const Type* type;
+    const Type* type{};
 
     SizeOfExpr(const Type* type, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
@@ -77,8 +86,8 @@ struct SizeOfExpr: Expr {
 };
 
 struct SubscriptExpr: Expr {
-    Expr* left;
-    Expr* right;
+    Expr* left{};
+    Expr* right{};
 
     SubscriptExpr(Expr* left, Expr* right, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;

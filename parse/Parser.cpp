@@ -396,6 +396,16 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind) {
             auto index = parse_expr(SEQUENCE_PREC);
             result = new SubscriptExpr(result, index, loc);
             require(']');
+        } else if (consume('(', &loc)) {
+            vector<Expr*> parameters;
+            if (token != ')') {
+                while (token) {
+                    parameters.push_back(parse_expr(ASSIGN_PREC));
+                    if (!consume(',')) break;
+                }
+            }
+            result = new CallExpr(result, move(parameters), loc);
+            require(')');
         } else {
             break;
         }

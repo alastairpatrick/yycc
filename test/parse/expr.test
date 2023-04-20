@@ -315,3 +315,29 @@ BEGIN Sizeof double value
 sizeof 1.0
 EXPECT_AST
 ["sizeof",["typeof",["Fd",1]]]
+
+
+BEGIN Call expression (1)
+1()
+EXPECT_AST
+["call", 1]
+
+
+BEGIN Call expression (2)
+1(2)
+EXPECT_AST
+["call", 1, 2]
+
+
+BEGIN Call expression (3)
+1(2, 3)
+EXPECT_AST
+["call", 1, 2, 3]
+
+
+BEGIN Call expression error on trailing comma
+1(2, 3,)
+EXPECT_MESSAGE
+:1:8: error unexpected token ')'
+EXPECT_AST
+["call", 1, 2, 3, 0]
