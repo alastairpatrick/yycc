@@ -71,7 +71,7 @@ struct Declarator: ASTNode {
 };
 
 enum class LabelKind {
-    IDENTIFIER,
+    GOTO,
     CASE,
     DEFAULT,
 };

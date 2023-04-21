@@ -885,7 +885,7 @@ Statement* Parser::parse_statement() {
 
             statement = parse_statement();
 
-            label.kind = LabelKind::IDENTIFIER;
+            label.kind = LabelKind::GOTO;
             statement->labels.push_back(label);
             return statement;
         }

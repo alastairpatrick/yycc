@@ -10,7 +10,7 @@ void Statement::print(ostream& stream) const {
 
     for (auto& label: labels) {
         switch (label.kind) {
-          case LabelKind::IDENTIFIER:
+          case LabelKind::GOTO:
             stream << "[\"label\", \"" << label.identifier << "\"], ";
             break;
           case LabelKind::CASE:

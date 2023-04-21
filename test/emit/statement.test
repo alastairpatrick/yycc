@@ -179,3 +179,35 @@ define { i32 } @f() {
 END
 
 
+// GoToStatement
+
+BEGIN Goto prior label
+void f() {
+target:
+    goto target;
+}
+EXPECT_IR
+define void @f() {
+  br label %target
+
+target:                                           ; preds = %target, %0
+  br label %target
+}
+END
+
+
+
+BEGIN Goto following label
+void f() {
+    goto target;
+target:
+    return;
+}
+EXPECT_IR
+define void @f() {
+  br label %target
+
+target:                                           ; preds = %0
+  ret void
+}
+END

@@ -10,6 +10,8 @@ enum class EmitOutcome {
     IR,
 };
 
+const char* UNREACHABLE_NAME = "!unreachable";
+
 const char* identifier_name(const Identifier& identifier) {
     auto name = identifier.name;
     if (name->empty()) return "";
@@ -29,7 +31,7 @@ struct Emitter: Visitor {
     LLVMBuilderRef temp_builder{};
     LLVMValueRef function{};
     LLVMBasicBlockRef entry_block{};
-    bool need_terminating_return = true;
+    unordered_map<InternedString, LLVMBasicBlockRef> goto_labels;
 
     Emitter(EmitOutcome outcome): outcome(outcome) {
         if (outcome != EmitOutcome::TYPE) {
@@ -69,7 +71,37 @@ struct Emitter: Visitor {
         declarator->status = DeclaratorStatus::EMITTED;
     }
 
+    void begin_unreachable_block() {
+        auto unreachable_block = LLVMAppendBasicBlock(function, UNREACHABLE_NAME);
+        LLVMPositionBuilderAtEnd(builder, unreachable_block);
+    }
+
+    bool is_block_unreachable(LLVMBasicBlockRef block) {
+        return strcmp(LLVMGetBasicBlockName(block), UNREACHABLE_NAME) == 0;
+    }
+
+    LLVMBasicBlockRef lookup_label(const Identifier& identifier) {
+        auto& block = goto_labels[identifier.name];
+        if (!block) {
+            block = LLVMAppendBasicBlock(function, identifier.name->data());
+        }
+        return block;
+    }
+
     Value emit(Statement* statement) {
+        if (statement->labels.size()) {
+            for (auto& label: statement->labels) {
+                auto current_block = LLVMGetInsertBlock(builder);
+                LLVMBasicBlockRef labelled_block = lookup_label(label.identifier);
+                LLVMBuildBr(builder, labelled_block);
+                LLVMMoveBasicBlockAfter(labelled_block, current_block);
+                LLVMPositionBuilderAtEnd(builder, labelled_block);
+                if (is_block_unreachable(current_block)) {
+                    LLVMDeleteBasicBlock(current_block);
+                }
+            }
+        }
+
         return statement->accept(*this, VisitStatementInput()).value;
     }
 
@@ -111,9 +143,12 @@ struct Emitter: Visitor {
             LLVMBuildStore(builder, LLVMGetParam(function, i), storage);
         }
 
-        need_terminating_return = true;
         emit(entity->body);
-        if (need_terminating_return) {
+
+        auto current_block = LLVMGetInsertBlock(builder);
+        if (is_block_unreachable(current_block)) {
+            LLVMDeleteBasicBlock(current_block);
+        } else {
             if (function_type->return_type == &VoidType::it) {
                 LLVMBuildRetVoid(builder);
             } else {
@@ -282,7 +317,6 @@ struct Emitter: Visitor {
 
     virtual VisitStatementOutput visit(CompoundStatement* statement, const VisitStatementInput& input) override {
         for (auto node: statement->nodes) {
-            need_terminating_return = true;
             emit(node);
         }
         return VisitStatementOutput();
@@ -321,6 +355,15 @@ struct Emitter: Visitor {
         return VisitStatementOutput();
     }
 
+    VisitStatementOutput visit(GoToStatement* statement, const VisitStatementInput& input) {
+        auto target_block = lookup_label(statement->identifier);
+        LLVMBuildBr(builder, target_block);
+
+        begin_unreachable_block();
+
+        return VisitStatementOutput();
+    }
+
     VisitStatementOutput visit(IfElseStatement* statement, const VisitStatementInput& input) {
         auto then_block = LLVMAppendBasicBlock(function, "if_c");
         LLVMBasicBlockRef else_block;
@@ -355,7 +398,9 @@ struct Emitter: Visitor {
         } else {
             LLVMBuildRetVoid(builder);
         }
-        need_terminating_return = false;
+
+        begin_unreachable_block();
+
         return VisitStatementOutput();
     }
 

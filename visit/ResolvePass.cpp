@@ -14,6 +14,7 @@ struct ResolvePass: Visitor {
     }
 
     void resolve(Statement* statement) {
+        if (!statement) return;
         statement->accept(*this, VisitStatementInput());
     }
 
@@ -466,6 +467,36 @@ struct ResolvePass: Visitor {
         } else {
             return VisitTypeOutput(ResolvedArrayType::of(ArrayKind::INCOMPLETE, resolved_element_type, 0));
         }
+    }
+
+    VisitStatementOutput visit_default(Statement* statement, const VisitStatementInput& input) {
+        assert(false);
+        return VisitStatementOutput();
+    }
+
+    virtual VisitStatementOutput visit(ForStatement* statement, const VisitStatementInput& input) override {
+        if (statement->declaration) {
+            for (auto declarator: statement->declaration->declarators) {
+                resolve(declarator);
+            }
+        }
+
+        resolve(statement->initialize);
+        resolve(statement->condition);
+        resolve(statement->iterate);
+
+        return VisitStatementOutput();
+    }
+
+    virtual VisitStatementOutput visit(GoToStatement* statement, const VisitStatementInput& input) override {
+        return VisitStatementOutput();
+    }
+
+    virtual VisitStatementOutput visit(IfElseStatement* statement, const VisitStatementInput& input) override {
+        resolve(statement->condition);
+        resolve(statement->then_statement);
+        resolve(statement->else_statement);
+        return VisitStatementOutput();
     }
 
     virtual VisitStatementOutput visit(CompoundStatement* statement, const VisitStatementInput& input) override {
