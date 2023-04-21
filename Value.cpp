@@ -51,3 +51,13 @@ Value Value::bit_cast(const Type* type) const {
     result.type = type;
     return result;
 }
+
+Value Value::load(LLVMBuilderRef builder) const {
+    return Value(type, llvm_rvalue(builder));
+}
+
+void Value::store(LLVMBuilderRef builder, const Value& new_value) {
+    LLVMSetVolatile(LLVMBuildStore(builder, new_value.llvm_rvalue(builder), llvm_lvalue()),
+                    qualifiers & QUAL_VOLATILE);
+}
+

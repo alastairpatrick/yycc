@@ -72,9 +72,9 @@ struct EntityExpr: Expr {
 struct IncDecExpr: Expr {
     TokenKind op{};
     Expr* expr{};
-    bool post{};
+    bool postfix{};
 
-    IncDecExpr(TokenKind op, Expr* expr, bool post, const Location& location);
+    IncDecExpr(TokenKind op, Expr* expr, bool postfix, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
     virtual void print(ostream& stream) const override;
 };

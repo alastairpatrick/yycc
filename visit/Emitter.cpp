@@ -553,8 +553,7 @@ struct Emitter: Visitor {
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(intermediate);
 
         if (is_assignment(expr->op)) {
-            LLVMSetVolatile(LLVMBuildStore(builder, intermediate.llvm_rvalue(builder), left_value.llvm_lvalue()),
-                            left_value.qualifiers & QUAL_VOLATILE);
+            left_value.store(builder, intermediate);
         }
 
         return VisitStatementOutput(intermediate);
@@ -648,6 +647,29 @@ struct Emitter: Visitor {
         }
 
         return VisitStatementOutput();
+    }
+
+    virtual VisitStatementOutput visit(IncDecExpr* expr, const VisitStatementInput& input) override {
+        auto store_value = emit(expr->expr).unqualified();
+        auto before_value = store_value.load(builder);
+
+        const Type* result_type = before_value.type;
+        if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+
+        LLVMValueRef one = LLVMConstInt(result_type->llvm_type(), 1, false);
+
+        Value after_value;
+        switch (expr->op) {
+          case TOK_INC_OP:
+            after_value = Value(result_type, LLVMBuildAdd(builder, before_value.llvm_rvalue(builder), one, ""));
+            break;
+          case TOK_DEC_OP:
+            after_value = Value(result_type, LLVMBuildSub(builder, before_value.llvm_rvalue(builder), one, ""));
+            break;
+        }
+
+        store_value.store(builder, after_value);
+        return VisitStatementOutput(expr->postfix ? before_value : after_value);
     }
 
     virtual VisitStatementOutput visit(SizeOfExpr* expr, const VisitStatementInput& input) override {

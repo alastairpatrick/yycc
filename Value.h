@@ -24,6 +24,8 @@ struct Value {
     LLVMValueRef llvm_rvalue(LLVMBuilderRef builder) const;
     Value unqualified() const;
     Value bit_cast(const Type* type) const;
+    Value load(LLVMBuilderRef builder) const;
+    void store(LLVMBuilderRef builder, const Value& new_value);
 
 private:
     LLVMValueRef llvm{};

@@ -526,6 +526,11 @@ struct ResolvePass: Visitor {
         return VisitStatementOutput();
     }
 
+    virtual VisitStatementOutput visit(IncDecExpr* expr, const VisitStatementInput& input) override {
+        resolve(expr->expr);
+        return VisitStatementOutput();
+    }
+
     virtual VisitStatementOutput visit(SizeOfExpr* size_of_expr, const VisitStatementInput& input) override {
         size_of_expr->type = resolve(size_of_expr->type);
         return VisitStatementOutput();

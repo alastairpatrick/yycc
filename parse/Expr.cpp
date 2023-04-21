@@ -175,8 +175,8 @@ void EntityExpr::print(ostream& stream) const {
 }
 
 
-IncDecExpr::IncDecExpr(TokenKind op, Expr* expr, bool post, const Location& location)
-    : Expr(location), op(op), expr(expr), post(post) {
+IncDecExpr::IncDecExpr(TokenKind op, Expr* expr, bool postfix, const Location& location)
+    : Expr(location), op(op), expr(expr), postfix(postfix) {
 }
 
 VisitStatementOutput IncDecExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
@@ -186,7 +186,7 @@ VisitStatementOutput IncDecExpr::accept(Visitor& visitor, const VisitStatementIn
 void IncDecExpr::print(ostream& stream) const {
     stream << "[\"";
 
-    if (post) stream << 'x';
+    if (postfix) stream << 'x';
 
     switch (op) {
       case TOK_INC_OP:
@@ -197,7 +197,7 @@ void IncDecExpr::print(ostream& stream) const {
         break;
     }
 
-    if (!post) stream << 'x';
+    if (!postfix) stream << 'x';
 
     stream << "\", " << expr << ']';
 }
