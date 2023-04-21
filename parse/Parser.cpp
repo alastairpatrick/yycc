@@ -777,10 +777,13 @@ Declaration* Parser::parse_declaration(IdentifierScope scope) {
 }
 
 Statement* Parser::parse_statement() {
-    Location location;
-    if (token == '{') {
-        return parse_compound_statement();
-    } else if (consume(TOK_FOR, &location)) {
+    Location location = preprocessor.location();
+
+    switch (token) {
+        case '{': {
+          return parse_compound_statement();
+      } case TOK_FOR: {
+        consume();
         require('(');
 
         identifiers.push_scope();
@@ -819,7 +822,9 @@ Statement* Parser::parse_statement() {
 
         return statement;
 
-    } else if (consume(TOK_IF, &location)) {
+      } case TOK_IF: {
+        consume();
+
         require('(');
         auto condition = parse_expr(SEQUENCE_PREC);
         require(')');
@@ -833,7 +838,9 @@ Statement* Parser::parse_statement() {
 
         return new IfElseStatement(condition, then_statement, else_statement, location);
 
-    } else if (consume(TOK_RETURN, &location)) {
+      } case TOK_RETURN: {
+        consume();
+
         Expr* expr{};
         if (token != ';') {
             expr = parse_expr(SEQUENCE_PREC);
@@ -841,7 +848,7 @@ Statement* Parser::parse_statement() {
         require(';');
         return new ReturnStatement(expr, location);
 
-    } else {
+      } default : {
         Label label;
         Statement* statement = parse_expr(SEQUENCE_PREC, &label.identifier);
 
@@ -857,6 +864,7 @@ Statement* Parser::parse_statement() {
 
         require(';');
         return statement;
+      }
     }
 }
 
