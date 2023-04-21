@@ -18,6 +18,27 @@ EXPECT_AST
 [["block", []]]
 
 
+BEGIN Parses empty for statement
+for (;;) {}
+EXPECT_AST
+[["for",null,null,null,null,["block",[]]]]
+
+
+BEGIN Parses for statement with initialize expression
+for (1; 2; 3) {}
+EXPECT_AST
+[["for",null,1,2,3,["block",[]]]]
+
+
+BEGIN Parses for statement with declaration
+for (int i = 1; 2; 3) { i; }
+PARSE
+EXPECT_AST
+[["block",[
+    ["for",["var","","Si","i",1],null,2,3,["block",["Ni"]]]
+]]]
+
+
 BEGIN Parses void return statement
 return;
 EXPECT_AST

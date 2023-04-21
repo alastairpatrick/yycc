@@ -1,4 +1,5 @@
 #include "Statement.h"
+#include "Declaration.h"
 #include "visit/Visitor.h"
 
 Statement::Statement(const Location& location): location(location) {
@@ -15,6 +16,22 @@ VisitStatementOutput CompoundStatement::accept(Visitor& visitor, const VisitStat
 void CompoundStatement::print(ostream& stream) const {
     stream << "[\"block\", " << nodes << ']';
 }
+
+
+
+ForStatement::ForStatement(Declaration* declaration,  Expr* initialize, Expr* condition, Expr* iterate, Statement* body, const Location& location)
+    : Statement(location), declaration(declaration), initialize(initialize), condition(condition), iterate(iterate), body(body) {
+}
+
+VisitStatementOutput ForStatement::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
+}
+
+void ForStatement::print(ostream& stream) const {
+    stream << "[\"for\", " << declaration << ", " << initialize << ", " << condition << ", " << iterate << ", " << body << ']';
+}
+
+
 
 ReturnStatement::ReturnStatement(Expr* expr, const Location& location)
     : Statement(location), expr(expr) {

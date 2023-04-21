@@ -62,6 +62,8 @@ private:
     Expr* parse_sub_expr(SubExpressionKind kind);
     Expr* parse_initializer();
     Declaration* parse_declaration_specifiers(IdentifierScope scope, const Type*& type, uint32_t& specifiers);
+    Declaration* parse_declaration(IdentifierScope scope);
+    Statement* parse_statement();
     ASTNode* parse_declaration_or_statement(IdentifierScope scope);
     CompoundStatement* parse_compound_statement();
     Declarator* parse_parameter_declarator();

@@ -675,9 +675,7 @@ ASTNodeVector Parser::parse() {
     return declarations;
 }
 
-ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
-    resume_messages();
-
+Declaration* Parser::parse_declaration(IdentifierScope scope) {
     auto location = preprocessor.location();
     auto begin = position();
 
@@ -711,24 +709,77 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
 
         declaration->fragment = end_fragment(begin);
         return declaration;
-    } else {
-        ASTNode* statement{};
-        if (token == '{') {
-            statement = parse_compound_statement();
-        } else if (consume(TOK_RETURN)) {
-            Expr* expr{};
-            if (token != ';') {
-                expr = parse_expr(SEQUENCE_PREC);
+    }
+
+    return nullptr;
+}
+
+Statement* Parser::parse_statement() {
+    Location location;
+    Statement* statement{};
+    if (token == '{') {
+        statement = parse_compound_statement();
+    } else if (consume(TOK_FOR, &location)) {
+        require('(');
+
+        identifiers.push_scope();
+
+        Declaration* declaration{};
+        Expr* initialize{};
+        Expr* condition{};
+        Expr* iterate{};
+        if (!consume(';')) {
+            declaration = parse_declaration(IdentifierScope::BLOCK);
+            if (!declaration) {
+                initialize = parse_expr(SEQUENCE_PREC);
+                require(';');
             }
-            statement = new ReturnStatement(expr, location);
+        }
+        if (!consume(';')) {
+            condition = parse_expr(SEQUENCE_PREC);
             require(';');
-        } else {
-            statement = parse_expr(SEQUENCE_PREC);
-            require(';');
+        }
+        if (!consume(')')) {
+            iterate = parse_expr(SEQUENCE_PREC);
+            require(')');
+        }
+
+        auto body = parse_statement();
+        statement = new ForStatement(declaration, initialize, condition, iterate, body, location);
+
+        auto scope = identifiers.pop_scope();
+
+        if (declaration) {
+            ASTNodeVector nodes;
+            nodes.push_back(statement);
+            auto outer = new CompoundStatement(move(scope), move(nodes), location);
+            return outer;
         }
 
         return statement;
+    } else if (consume(TOK_RETURN, &location)) {
+        Expr* expr{};
+        if (token != ';') {
+            expr = parse_expr(SEQUENCE_PREC);
+        }
+        statement = new ReturnStatement(expr, location);
+        require(';');
+    } else {
+        statement = parse_expr(SEQUENCE_PREC);
+        require(';');
     }
+
+    return statement;
+}
+
+ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
+    resume_messages();
+
+    ASTNode* node = parse_declaration(scope);
+    if (node) return node;
+
+    node = parse_statement();
+    return node;
 }
 
 CompoundStatement* Parser::parse_compound_statement() {
