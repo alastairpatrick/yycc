@@ -17,6 +17,11 @@ const char* identifier_name(const Identifier& identifier) {
     return name->data();
 }
 
+struct SwitchConstruct {
+    unordered_map<Expr*, LLVMBasicBlockRef> case_labels;
+    LLVMBasicBlockRef default_label;
+};
+
 struct Emitter: Visitor {
     EmitOutcome outcome;
 
@@ -31,6 +36,7 @@ struct Emitter: Visitor {
     LLVMBasicBlockRef entry_block{};
     LLVMBasicBlockRef current_unreachable_block{};
     unordered_map<InternedString, LLVMBasicBlockRef> goto_labels;
+    SwitchConstruct* innermost_switch{};
 
     Emitter(EmitOutcome outcome): outcome(outcome) {
         if (outcome != EmitOutcome::TYPE) {
@@ -87,7 +93,7 @@ struct Emitter: Visitor {
     LLVMBasicBlockRef lookup_label(const Identifier& identifier) {
         auto& block = goto_labels[identifier.name];
         if (!block) {
-            block = LLVMAppendBasicBlock(function, identifier.name->data());
+            block = LLVMAppendBasicBlock(function, identifier_name(identifier));
         }
         return block;
     }
@@ -95,8 +101,16 @@ struct Emitter: Visitor {
     Value emit(Statement* statement) {
         if (statement->labels.size()) {
             for (auto& label: statement->labels) {
+                LLVMBasicBlockRef labelled_block{};
+                if (label.kind == LabelKind::GOTO) {
+                    labelled_block = lookup_label(label.identifier);
+                } else if (label.kind == LabelKind::CASE) {
+                    labelled_block = innermost_switch->case_labels[label.case_expr];
+                } else if (label.kind == LabelKind::DEFAULT) {
+                    labelled_block = innermost_switch->default_label;
+                }
+
                 auto current_block = LLVMGetInsertBlock(builder);
-                LLVMBasicBlockRef labelled_block = lookup_label(label.identifier);
                 LLVMBuildBr(builder, labelled_block);
                 LLVMMoveBasicBlockAfter(labelled_block, current_block);
                 LLVMPositionBuilderAtEnd(builder, labelled_block);
@@ -400,6 +414,33 @@ struct Emitter: Visitor {
 
         begin_unreachable_block();
 
+        return VisitStatementOutput();
+    }
+
+    virtual VisitStatementOutput visit(SwitchStatement* statement, const VisitStatementInput& input) override {
+        auto parent_construct = innermost_switch;
+        SwitchConstruct construct;
+        innermost_switch = &construct;
+
+        auto expr_value = emit(statement->expr).unqualified();
+        construct.default_label = LLVMAppendBasicBlock(function, "");
+        auto switch_value = LLVMBuildSwitch(builder, expr_value.llvm_rvalue(builder), construct.default_label, statement->cases.size());
+
+        for (auto case_expr: statement->cases) {
+            auto case_label = LLVMAppendBasicBlock(function, "");
+            innermost_switch->case_labels[case_expr] = case_label;
+
+            auto case_value = fold_expr(case_expr);
+            if(!case_value.is_const_integer()) {
+                // TODO: error
+            }
+            LLVMAddCase(switch_value, case_value.llvm_const_rvalue(), case_label);
+        }
+
+        begin_unreachable_block();
+        emit(statement->body);
+
+        innermost_switch = parent_construct;
         return VisitStatementOutput();
     }
 

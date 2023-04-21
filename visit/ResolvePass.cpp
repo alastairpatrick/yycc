@@ -15,6 +15,11 @@ struct ResolvePass: Visitor {
 
     void resolve(Statement* statement) {
         if (!statement) return;
+
+        for (auto& label: statement->labels) {
+            resolve(label.case_expr);
+        }
+
         statement->accept(*this, VisitStatementInput());
     }
 
@@ -506,6 +511,17 @@ struct ResolvePass: Visitor {
 
     virtual VisitStatementOutput visit(ReturnStatement* statement, const VisitStatementInput& input) override {
         if (statement->expr) resolve(statement->expr);
+        return VisitStatementOutput();
+    }
+    
+    virtual VisitStatementOutput visit(SwitchStatement* statement, const VisitStatementInput& input) override {
+        resolve(statement->expr);
+        resolve(statement->body);
+
+        for (auto case_expr: statement->cases) {
+            resolve(case_expr);
+        }
+
         return VisitStatementOutput();
     }
     

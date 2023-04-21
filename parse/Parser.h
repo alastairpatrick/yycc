@@ -8,6 +8,7 @@
 struct CompoundStatement;
 struct Declarator;
 struct Expr;
+struct SwitchStatement;
 
 struct DeclaratorTransform {
     function<const Type*(const Type*)> type_transform;
@@ -40,6 +41,7 @@ private:
     IdentifierMap& identifiers;
     TokenKind token = TOK_NUM;
     const bool preparse;
+    SwitchStatement* innermost_switch{};
 
     void consume();
     bool consume(int t, Location* location = nullptr);

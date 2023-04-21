@@ -75,6 +75,40 @@ for_e:                                            ; preds = %for_l
 END
 
 
+// GoToStatement
+
+BEGIN Goto prior label
+void f() {
+target:
+    goto target;
+}
+EXPECT_IR
+define void @f() {
+  br label %target
+
+target:                                           ; preds = %target, %0
+  br label %target
+}
+END
+
+
+
+BEGIN Goto following label
+void f() {
+    goto target;
+target:
+    return;
+}
+EXPECT_IR
+define void @f() {
+  br label %target
+
+target:                                           ; preds = %0
+  ret void
+}
+END
+
+
 // IfElseStatement
 
 BEGIN If statement
@@ -179,35 +213,30 @@ define { i32 } @f() {
 END
 
 
-// GoToStatement
+// SwitchStatement
 
-BEGIN Goto prior label
-void f() {
-target:
-    goto target;
+BEGIN
+int f(int x) {
+    switch (x) {
+        case 1+1:
+            return 1;
+        default:
+            return 0;
+    }
 }
 EXPECT_IR
-define void @f() {
-  br label %target
+define i32 @f(i32 %0) {
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %2 = load i32, ptr %x, align 4
+  switch i32 %2, label %4 [
+    i32 2, label %3
+  ]
 
-target:                                           ; preds = %target, %0
-  br label %target
-}
-END
+3:                                                ; preds = %1
+  ret i32 1
 
-
-
-BEGIN Goto following label
-void f() {
-    goto target;
-target:
-    return;
-}
-EXPECT_IR
-define void @f() {
-  br label %target
-
-target:                                           ; preds = %0
-  ret void
+4:                                                ; preds = %1
+  ret i32 0
 }
 END

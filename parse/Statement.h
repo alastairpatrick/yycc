@@ -55,6 +55,7 @@ struct ReturnStatement: Statement {
 struct SwitchStatement: Statement {
     Expr* expr{};
     CompoundStatement* body{};
+    vector<Expr*> cases;
 
     SwitchStatement(Expr* expr, CompoundStatement* body, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;

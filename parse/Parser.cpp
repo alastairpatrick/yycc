@@ -855,9 +855,14 @@ Statement* Parser::parse_statement() {
           auto expr = parse_expr(SEQUENCE_PREC);
           require(')');
 
-          auto body = parse_compound_statement();
+          auto statement = new SwitchStatement(expr, nullptr, location);
+          auto parent_switch = innermost_switch;
+          innermost_switch = statement;
 
-          return new SwitchStatement(expr, body, location);
+          statement->body = parse_compound_statement();
+
+          innermost_switch = parent_switch;
+          return statement;
 
       } case TOK_CASE:
         case TOK_DEFAULT: {
@@ -866,6 +871,11 @@ Statement* Parser::parse_statement() {
           if (consume(TOK_CASE)) {
               label.kind = LabelKind::CASE;
               label.case_expr = parse_expr(CONDITIONAL_PREC);
+              if (innermost_switch) {
+                  innermost_switch->cases.push_back(label.case_expr);
+              } else {
+                  // TODO error
+              }
           } else {
               consume();
               label.kind = LabelKind::DEFAULT;
