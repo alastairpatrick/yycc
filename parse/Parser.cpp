@@ -806,6 +806,21 @@ Statement* Parser::parse_statement() {
         }
 
         return statement;
+
+    } else if (consume(TOK_IF, &location)) {
+        require('(');
+        auto condition = parse_expr(SEQUENCE_PREC);
+        require(')');
+
+        auto then_statement = parse_statement();
+
+        Statement* else_statement{};
+        if (consume(TOK_ELSE)) {
+            else_statement = parse_statement();
+        }
+
+        return new IfElseStatement(condition, then_statement, else_statement, location);
+
     } else if (consume(TOK_RETURN, &location)) {
         Expr* expr{};
         if (token != ';') {
@@ -813,6 +828,7 @@ Statement* Parser::parse_statement() {
         }
         statement = new ReturnStatement(expr, location);
         require(';');
+
     } else {
         statement = parse_expr(SEQUENCE_PREC);
         require(';');

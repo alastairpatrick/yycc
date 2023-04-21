@@ -32,6 +32,18 @@ void ForStatement::print(ostream& stream) const {
 }
 
 
+IfElseStatement::IfElseStatement(Expr* condition, Statement* then_statement, Statement* else_statement, const Location& location)
+    : Statement(location), condition(condition), then_statement(then_statement), else_statement(else_statement) {
+}
+
+VisitStatementOutput IfElseStatement::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
+}
+
+void IfElseStatement::print(ostream& stream) const {
+    stream << "[\"if\", " << condition << ", " << then_statement << ", " << else_statement << ']';
+}
+
 
 ReturnStatement::ReturnStatement(Expr* expr, const Location& location)
     : Statement(location), expr(expr) {

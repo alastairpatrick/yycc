@@ -39,6 +39,24 @@ EXPECT_AST
 ]]]
 
 
+BEGIN Parse if statement
+if (1) 2;
+EXPECT_AST
+[["if", 1, 2, null]]
+
+
+BEGIN Parse if-else statement
+if (1) 2; else 3;
+EXPECT_AST
+[["if", 1, 2, 3]]
+
+
+BEGIN Parse dangling else
+if (1) if (2) 3; else 4;
+EXPECT_AST
+[["if", 1, ["if", 2, 3, 4], null]]
+
+
 BEGIN Parses void return statement
 return;
 EXPECT_AST

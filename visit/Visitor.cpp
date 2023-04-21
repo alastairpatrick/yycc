@@ -98,6 +98,10 @@ VisitStatementOutput Visitor::visit(ForStatement* statement, const VisitStatemen
     return visit_default(statement, input);
 }
 
+VisitStatementOutput Visitor::visit(IfElseStatement* statement, const VisitStatementInput& input) {
+    return visit_default(statement, input);
+}
+
 VisitStatementOutput Visitor::visit(CompoundStatement* statement, const VisitStatementInput& input) {
     return visit_default(statement, input);
 }
