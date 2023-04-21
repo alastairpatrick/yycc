@@ -97,6 +97,10 @@ void UniversalType::print(std::ostream& stream) const {
 
 #pragma region IntegerType
 
+const IntegerType* IntegerType::of_bool() {
+    return IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL);
+}
+
 const IntegerType* IntegerType::of_char(bool is_wide) {
     // As with C and C++, and for the same reasons, there are three distinct character
     // types: char, signed char and unsigned char.

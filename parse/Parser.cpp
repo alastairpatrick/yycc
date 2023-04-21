@@ -256,6 +256,24 @@ Expr* Parser::parse_expr(OperatorPrec min_prec) {
             switch (token) {
               default:
                 return result;
+              case '*':
+              case '/':
+              case '%':
+              case '+':
+              case '-':
+              case TOK_LEFT_OP:
+              case TOK_RIGHT_OP:
+              case '<':
+              case '>':
+              case TOK_LE_OP:
+              case TOK_GE_OP:
+              case TOK_EQ_OP:
+              case TOK_NE_OP:
+              case '&':
+              case '^':
+              case '|':
+              case TOK_AND_OP:
+              case TOK_OR_OP:
               case '=':
               case TOK_MUL_ASSIGN:
               case TOK_DIV_ASSIGN:
@@ -267,13 +285,6 @@ Expr* Parser::parse_expr(OperatorPrec min_prec) {
               case TOK_AND_ASSIGN:
               case TOK_OR_ASSIGN:
               case TOK_XOR_ASSIGN:
-              case TOK_OR_OP:
-              case TOK_AND_OP:
-              case '+':
-              case '-':
-              case '*':
-              case '/':
-              case '%':
                 loc = preprocessor.location();
                 op = token;
                 consume();

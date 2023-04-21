@@ -150,6 +150,54 @@ EXPECT_AST
       , ["%", 2, 3]]
 
 
+BEGIN Left shift
+1 << 2
+EXPECT_AST
+["<<", 1, 2]
+
+
+BEGIN Right shift
+1 >> 2
+EXPECT_AST
+[">>", 1, 2]
+
+
+BEGIN Less than
+1 < 2
+EXPECT_AST
+["<", 1, 2]
+
+
+BEGIN Greater than
+1 > 2
+EXPECT_AST
+[">", 1, 2]
+
+
+BEGIN Less equal
+1 <= 2
+EXPECT_AST
+["<=", 1, 2]
+
+
+BEGIN Greater equal
+1 >= 2
+EXPECT_AST
+[">=", 1, 2]
+
+
+BEGIN Equal to
+1 == 2
+EXPECT_AST
+["==", 1, 2]
+
+
+BEGIN Not equal to
+1 != 2
+EXPECT_AST
+["!=", 1, 2]
+
+
 BEGIN Assignment expression
 1 = 2
 EXPECT_AST

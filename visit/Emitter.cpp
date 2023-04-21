@@ -370,16 +370,45 @@ struct Emitter: Visitor {
         assert(false); // TODO
         return nullptr;
     }
+    
+    LLVMIntPredicate llvm_int_predicate(bool is_signed, TokenKind op) {
+        switch (op) {
+            case '<':       return is_signed ? LLVMIntSLT : LLVMIntULT;
+            case '>':       return is_signed ? LLVMIntSGT : LLVMIntUGT;
+            case TOK_LE_OP: return is_signed ? LLVMIntSLE : LLVMIntULE;
+            case TOK_GE_OP: return is_signed ? LLVMIntSGE : LLVMIntUGE;
+            case TOK_EQ_OP: return LLVMIntEQ;
+            case TOK_NE_OP: return LLVMIntNE;
+        }
+        return LLVMIntPredicate(0);
+    }
+
+    LLVMRealPredicate llvm_float_predicate(TokenKind op) {
+        switch (op) {
+            case '<':       return LLVMRealOLT;
+            case '>':       return LLVMRealOGT;
+            case TOK_LE_OP: return LLVMRealOLE;
+            case TOK_GE_OP: return LLVMRealOGE;
+            case TOK_EQ_OP: return LLVMRealOEQ;
+            case TOK_NE_OP: return LLVMRealONE;
+        }
+        return LLVMRealPredicate(0);
+    }
 
     Value emit_regular_binary_operation(BinaryExpr* expr, Value left_value, Value right_value) {
         bool is_assign = is_assignment(expr->op);
-        auto result_type = is_assign ? left_value.type : usual_arithmetic_conversions(left_value.type, right_value.type);
+        auto convert_type = is_assign ? left_value.type : usual_arithmetic_conversions(left_value.type, right_value.type);
+        auto result_type = convert_type;
+        if (llvm_float_predicate(expr->op)) {
+            result_type = IntegerType::of_bool();
+        }
+
         if (outcome == EmitOutcome::TYPE) return Value(result_type);
 
-        left_value = convert_to_type(left_value, result_type);
-        right_value = convert_to_type(right_value, result_type);
+        left_value = convert_to_type(left_value, convert_type);
+        right_value = convert_to_type(right_value, convert_type);
 
-        if (auto result_as_int = dynamic_cast<const IntegerType*>(result_type)) {
+        if (auto as_int = dynamic_cast<const IntegerType*>(convert_type)) {
             switch (expr->op) {
               default:
                 assert(false); // TODO
@@ -397,15 +426,33 @@ struct Emitter: Visitor {
                 return Value(result_type, LLVMBuildMul(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), ""));
               case '/':
               case TOK_DIV_ASSIGN:
-                if (result_as_int->is_signed()) {
+                if (as_int->is_signed()) {
                     return Value(result_type, LLVMBuildSDiv(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), ""));
                 } else {
                     return Value(result_type, LLVMBuildUDiv(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), ""));
                 }
+              case TOK_LEFT_OP:
+                return Value(result_type, LLVMBuildShl(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), ""));
+              case TOK_RIGHT_OP:
+                if (as_int->is_signed()) {
+                  return Value(result_type, LLVMBuildAShr(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), ""));
+                } else {
+                  return Value(result_type, LLVMBuildLShr(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), ""));
+                }
+              case '<':       
+              case '>':       
+              case TOK_LE_OP: 
+              case TOK_GE_OP: 
+              case TOK_EQ_OP: 
+              case TOK_NE_OP:
+                return Value(result_type, LLVMBuildICmp(builder,
+                                                        llvm_int_predicate(as_int->is_signed(), expr->op),
+                                                        left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder),
+                                                        ""));
             }
         }
 
-        if (auto result_as_float = dynamic_cast<const FloatingPointType*>(result_type)) {
+        if (auto as_float = dynamic_cast<const FloatingPointType*>(convert_type)) {
             switch (expr->op) {
               default:
                 assert(false); // TODO
@@ -423,6 +470,16 @@ struct Emitter: Visitor {
               case '/':
               case TOK_DIV_ASSIGN:
                 return Value(result_type, LLVMBuildFDiv(builder, left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder), ""));
+              case '<':       
+              case '>':       
+              case TOK_LE_OP: 
+              case TOK_GE_OP: 
+              case TOK_EQ_OP: 
+              case TOK_NE_OP:
+                return Value(result_type, LLVMBuildFCmp(builder,
+                                                        llvm_float_predicate(expr->op),
+                                                        left_value.llvm_rvalue(builder), right_value.llvm_rvalue(builder),
+                                                        ""));
             }
         }
 

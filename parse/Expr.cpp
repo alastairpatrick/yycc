@@ -35,6 +35,30 @@ void BinaryExpr::print(ostream& stream) const {
     stream << "[\"";
 
     switch (op) {
+      case TOK_LEFT_OP:
+        stream << "<<";
+        break;
+      case TOK_RIGHT_OP:
+        stream << ">>";
+        break;
+      case TOK_LE_OP:
+        stream << "<=";
+        break;
+      case TOK_GE_OP:
+        stream << ">=";
+        break;
+      case TOK_EQ_OP:
+        stream << "==";
+        break;
+      case TOK_NE_OP:
+        stream << "!=";
+        break;
+      case TOK_AND_OP:
+        stream << "&&";
+        break;
+      case TOK_OR_OP:
+        stream << "||";
+        break;
       case TOK_MUL_ASSIGN:
         stream << "*=";
         break;
@@ -64,12 +88,6 @@ void BinaryExpr::print(ostream& stream) const {
         break;
       case TOK_XOR_ASSIGN:
         stream << "^=";
-        break;
-      case TOK_OR_OP:
-        stream << "||";
-        break;
-      case TOK_AND_OP:
-        stream << "&&";
         break;
       default:
         assert(op > 32 && op < 128);

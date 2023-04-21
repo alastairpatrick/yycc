@@ -78,6 +78,7 @@ enum class IntegerSignedness {
 };
 
 struct IntegerType: Type {
+    static const IntegerType* of_bool();
     static const IntegerType* of_char(bool is_wide);
     static const IntegerType* of_size(IntegerSignedness signedness);
     static const IntegerType* of(IntegerSignedness signedness, IntegerSize size);

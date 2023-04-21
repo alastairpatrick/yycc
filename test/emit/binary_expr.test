@@ -1,3 +1,5 @@
+// Integer
+
 BEGIN Integer addition
 int f(int x) {
     return x + 1;
@@ -57,6 +59,83 @@ define i32 @f(i32 %0) {
 }
 END
 
+
+BEGIN Integer left shift
+int f(int x) {
+    return x << 1;
+}
+EXPECT_IR
+define i32 @f(i32 %0) {
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %2 = load i32, ptr %x, align 4
+  %3 = shl i32 %2, 1
+  ret i32 %3
+}
+END
+
+
+BEGIN Integer logical right shift
+unsigned f(unsigned x) {
+    return x >> 1;
+}
+EXPECT_IR
+define i32 @f(i32 %0) {
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %2 = load i32, ptr %x, align 4
+  %3 = lshr i32 %2, 1
+  ret i32 %3
+}
+END
+
+
+BEGIN Integer arithmwetic right shift
+int f(int x) {
+    return x >> 1;
+}
+EXPECT_IR
+define i32 @f(i32 %0) {
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %2 = load i32, ptr %x, align 4
+  %3 = ashr i32 %2, 1
+  ret i32 %3
+}
+END
+
+
+BEGIN Integer signed less than
+_Bool f(int x) {
+    return x < 1;
+}
+EXPECT_IR
+define i1 @f(i32 %0) {
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %2 = load i32, ptr %x, align 4
+  %3 = icmp slt i32 %2, 1
+  ret i1 %3
+}
+END
+
+
+BEGIN Integer unsigned less than
+_Bool f(unsigned x) {
+    return x < 1u;
+}
+EXPECT_IR
+define i1 @f(i32 %0) {
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %2 = load i32, ptr %x, align 4
+  %3 = icmp ult i32 %2, 1
+  ret i1 %3
+}
+END
+
+
+// Floating point
 
 BEGIN Unsigned integer multiplication
 unsigned f(unsigned x) {
@@ -132,6 +211,24 @@ define float @f(float %0) {
 }
 END
 
+
+BEGIN Floating point signed less than
+_Bool f(float x) {
+    return x < 1.0f;
+}
+EXPECT_IR
+define i1 @f(float %0) {
+  %x = alloca float, align 4
+  store float %0, ptr %x, align 4
+  %2 = load float, ptr %x, align 4
+  %3 = fcmp olt float %2, 1.000000e+00
+  ret i1 %3
+}
+END
+
+
+
+// Pointer arithmetic
 
 BEGIN Pointer addition (1)
 int* f(int* p) {
