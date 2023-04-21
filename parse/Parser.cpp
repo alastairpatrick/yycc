@@ -848,6 +848,17 @@ Statement* Parser::parse_statement() {
         require(';');
         return new ReturnStatement(expr, location);
 
+      } case TOK_GOTO: {
+        consume();
+
+        Identifier identifier;
+        if (!consume_identifier(identifier)) {
+            require(TOK_IDENTIFIER);
+        }
+        require(';');
+
+        return new GoToStatement(identifier, location);
+
       } case TOK_CASE:
         case TOK_DEFAULT: {
         

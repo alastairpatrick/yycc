@@ -54,6 +54,19 @@ void ForStatement::print(ostream& stream) const {
 }
 
 
+GoToStatement::GoToStatement(const Identifier& identifier, const Location& location)
+    : Statement(location), identifier(identifier) {
+}
+
+VisitStatementOutput GoToStatement::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
+}
+
+void GoToStatement::print(ostream& stream) const {
+    stream << "[\"goto\", \"" << identifier << "\"]";
+}
+
+
 IfElseStatement::IfElseStatement(Expr* condition, Statement* then_statement, Statement* else_statement, const Location& location)
     : Statement(location), condition(condition), then_statement(then_statement), else_statement(else_statement) {
 }

@@ -88,3 +88,9 @@ default:
     return 7;
 EXPECT_AST
 [["default"], "return", 7]
+
+
+BEGIN Goto statement
+goto label;
+EXPECT_AST
+["goto", "label"]
