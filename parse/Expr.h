@@ -69,6 +69,16 @@ struct EntityExpr: Expr {
     virtual void print(ostream& stream) const override;
 };
 
+struct IncDecExpr: Expr {
+    TokenKind op{};
+    Expr* expr{};
+    bool post{};
+
+    IncDecExpr(TokenKind op, Expr* expr, bool post, const Location& location);
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual void print(ostream& stream) const override;
+};
+
 struct InitializerExpr: Expr {
     vector<Expr*> elements;
 

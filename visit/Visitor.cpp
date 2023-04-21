@@ -140,6 +140,10 @@ VisitStatementOutput Visitor::visit(EntityExpr* expr, const VisitStatementInput&
     return visit_default(expr, input);
 }
 
+VisitStatementOutput Visitor::visit(IncDecExpr* expr, const VisitStatementInput& input) {
+    return visit_default(expr, input);
+}
+
 VisitStatementOutput Visitor::visit(InitializerExpr* expr, const VisitStatementInput& input) {
     return visit_default(expr, input);
 }

@@ -6,6 +6,30 @@ EXPECT_AST
 0
 
 
+BEGIN Pre-decrement
+--1
+EXPECT_AST
+["--x", 1]
+
+
+BEGIN Post-decrement
+1--
+EXPECT_AST
+["x--", 1]
+
+
+BEGIN Pre-increment
+++1
+EXPECT_AST
+["++x", 1]
+
+
+BEGIN Post-increment
+1++
+EXPECT_AST
+["x++", 1]
+
+
 BEGIN Condition expression
 1 ? 2 : 3
 EXPECT_AST

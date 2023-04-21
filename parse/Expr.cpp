@@ -175,6 +175,34 @@ void EntityExpr::print(ostream& stream) const {
 }
 
 
+IncDecExpr::IncDecExpr(TokenKind op, Expr* expr, bool post, const Location& location)
+    : Expr(location), op(op), expr(expr), post(post) {
+}
+
+VisitStatementOutput IncDecExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
+}
+
+void IncDecExpr::print(ostream& stream) const {
+    stream << "[\"";
+
+    if (post) stream << 'x';
+
+    switch (op) {
+      case TOK_INC_OP:
+        stream << "++";
+        break;
+      case TOK_DEC_OP:
+        stream << "--";
+        break;
+    }
+
+    if (!post) stream << 'x';
+
+    stream << "\", " << expr << ']';
+}
+
+
 InitializerExpr::InitializerExpr(const Location& location): Expr(location) {
 }
 

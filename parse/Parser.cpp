@@ -334,51 +334,86 @@ void Parser::skip_expr(OperatorPrec min_prec) {
 }
 
 Expr* Parser::parse_sub_expr(SubExpressionKind kind) {
-    Location loc;
+    Location location = preprocessor.location();
     Expr* result{};
 
-    if (token == TOK_BIN_INT_LITERAL || token == TOK_OCT_INT_LITERAL || token == TOK_DEC_INT_LITERAL || token == TOK_HEX_INT_LITERAL || token == TOK_CHAR_LITERAL) {
-        result = IntegerConstant::of(preprocessor.text(), token, preprocessor.location());
-        consume();
+    switch (token) {
+        case TOK_BIN_INT_LITERAL:
+        case TOK_OCT_INT_LITERAL:
+        case TOK_DEC_INT_LITERAL:
+        case TOK_HEX_INT_LITERAL:
+        case TOK_CHAR_LITERAL: {
+          result = IntegerConstant::of(preprocessor.text(), token, preprocessor.location());
+          consume();
+          break;
+
+      } case TOK_DEC_FLOAT_LITERAL:
+        case TOK_HEX_FLOAT_LITERAL: {
+          result = FloatingPointConstant::of(preprocessor.text(), token, preprocessor.location());
+          consume();
+          break;
+
+      } case TOK_STRING_LITERAL: {
+          result = StringConstant::of(preprocessor.text(), preprocessor.location());
+          consume();
+          break;
+
+      } case TOK_IDENTIFIER: {
+          Declarator* declarator = identifiers.lookup_declarator(preprocessor.identifier());
+          if (declarator) {
+              result = new EntityExpr(declarator, preprocessor.location());
+          } else {
+              message(Severity::ERROR, preprocessor.location()) << '\'' << preprocessor.identifier() << "' undeclared\n";
+              result = IntegerConstant::default_expr(preprocessor.location());
+          }
+          consume();
+          break;
+      }
     }
-    else if (token == TOK_DEC_FLOAT_LITERAL || token == TOK_HEX_FLOAT_LITERAL) {
-        result = FloatingPointConstant::of(preprocessor.text(), token, preprocessor.location());
-        consume();
-    }
-    else if (token == TOK_STRING_LITERAL) {
-        result = StringConstant::of(preprocessor.text(), preprocessor.location());
-        consume();
-    }
-    else if (token == TOK_IDENTIFIER) {
-        Declarator* declarator = identifiers.lookup_declarator(preprocessor.identifier());
-        if (declarator) {
-            result = new EntityExpr(declarator, preprocessor.location());
-        } else {
-            message(Severity::ERROR, preprocessor.location()) << '\'' << preprocessor.identifier() << "' undeclared\n";
-            result = IntegerConstant::default_expr(preprocessor.location());
-        }
-        consume();
-    } else if (kind >= SubExpressionKind::UNARY && consume('&', &loc)) {
-        auto expr = parse_sub_expr(SubExpressionKind::CAST);
-        result = new AddressExpr(expr, loc);
-    } else if (kind >= SubExpressionKind::UNARY && consume('*', &loc)) {
-        auto expr = parse_sub_expr(SubExpressionKind::CAST);
-        result = new DereferenceExpr(expr, loc);
-    } else if (kind >= SubExpressionKind::UNARY && consume(TOK_SIZEOF, &loc)) {
-        auto consumed_paren = consume('(');
+
+    if (!result && kind >= SubExpressionKind::UNARY) {
+        switch (token) {
+            case '&': {
+              consume();
+              auto expr = parse_sub_expr(SubExpressionKind::CAST);
+              result = new AddressExpr(expr, location);
+              break;
             
-        const Type* type{};
-        if (consumed_paren) type = parse_type();
+          } case '*': {
+              consume();
+              auto expr = parse_sub_expr(SubExpressionKind::CAST);
+              result = new DereferenceExpr(expr, location);
+              break;
 
-        if (type) {
-            result = new SizeOfExpr(type, loc);
-        } else {
-            auto expr = parse_sub_expr(SubExpressionKind::UNARY);
-            result = new SizeOfExpr(new TypeOfType(expr, loc), loc);
+          } case TOK_INC_OP:
+            case TOK_DEC_OP: {
+              auto op = token;
+              consume();
+              auto expr = parse_sub_expr(SubExpressionKind::UNARY);
+              result = new IncDecExpr(op, expr, false, location);
+              break;
+
+          } case TOK_SIZEOF: {
+              consume();
+              auto consumed_paren = consume('(');
+            
+              const Type* type{};
+              if (consumed_paren) type = parse_type();
+
+              if (type) {
+                  result = new SizeOfExpr(type, location);
+              } else {
+                  auto expr = parse_sub_expr(SubExpressionKind::UNARY);
+                  result = new SizeOfExpr(new TypeOfType(expr, location), location);
+              }
+
+              if (consumed_paren) require(')');
+              break;
+          }
         }
+    }
 
-        if (consumed_paren) require(')');
-    } else if (consume('(', &loc)) {
+    if (!result && consume('(', &location)) {
         if (kind >= SubExpressionKind::CAST) {
             if (auto type = parse_type()) {
                 require(')');
@@ -388,7 +423,7 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind) {
                     message(Severity::ERROR, preprocessor.location()) << "cannot assign to cast expression\n";
                 }
 
-                return new CastExpr(type, expr, loc);
+                return new CastExpr(type, expr, location);
             }
         }
 
@@ -403,11 +438,11 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind) {
     }
 
     while (token) {
-        if (consume('[', &loc)) {
+        if (consume('[')) {
             auto index = parse_expr(SEQUENCE_PREC);
-            result = new SubscriptExpr(result, index, loc);
+            result = new SubscriptExpr(result, index, location);
             require(']');
-        } else if (consume('(', &loc)) {
+        } else if (consume('(')) {
             vector<Expr*> parameters;
             if (token != ')') {
                 while (token) {
@@ -415,8 +450,11 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind) {
                     if (!consume(',')) break;
                 }
             }
-            result = new CallExpr(result, move(parameters), loc);
+            result = new CallExpr(result, move(parameters), location);
             require(')');
+        } else if (token == TOK_INC_OP || token == TOK_DEC_OP) {
+            result = new IncDecExpr(token, result, true, location);
+            consume();
         } else {
             break;
         }
