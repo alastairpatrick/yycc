@@ -74,3 +74,17 @@ a: b:
     return 7;
 EXPECT_AST
 [["label", "b"], ["label", "a"], "return", 7]
+
+
+BEGIN Parses case labelled statement
+case 3:
+    return 7;
+EXPECT_AST
+[["case", 3], "return", 7]
+
+
+BEGIN Parses default labelled statement
+default:
+    return 7;
+EXPECT_AST
+[["default"], "return", 7]

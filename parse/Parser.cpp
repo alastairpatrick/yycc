@@ -848,6 +848,23 @@ Statement* Parser::parse_statement() {
         require(';');
         return new ReturnStatement(expr, location);
 
+      } case TOK_CASE:
+        case TOK_DEFAULT: {
+        
+        Label label;
+        if (consume(TOK_CASE)) {
+            label.kind = LabelKind::CASE;
+            label.case_expr = parse_expr(CONDITIONAL_PREC);
+        } else {
+            consume();
+            label.kind = LabelKind::DEFAULT;
+        }
+        require(':');
+
+        auto statement = parse_statement();
+        statement->labels.push_back(label);
+        return statement;
+
       } default : {
         Label label;
         Statement* statement = parse_expr(SEQUENCE_PREC, &label.identifier);

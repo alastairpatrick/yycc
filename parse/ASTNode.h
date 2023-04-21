@@ -10,6 +10,7 @@ struct Declaration;
 struct DeclaratorDelegate;
 struct Entity;
 struct EnumConstant;
+struct Expr;
 enum class IdentifierScope;
 enum class StorageClass;
 enum class Linkage;
@@ -78,7 +79,7 @@ enum class LabelKind {
 struct Label {
     LabelKind kind{};
     Identifier identifier;
-    long long case_idx{};
+    Expr* case_expr{};
 };
 
 struct Statement: ASTNode {

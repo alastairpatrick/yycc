@@ -14,7 +14,7 @@ void Statement::print(ostream& stream) const {
             stream << "[\"label\", \"" << label.identifier << "\"], ";
             break;
           case LabelKind::CASE:
-            stream << "[\"case\", \"" << label.case_idx << "], ";
+            stream << "[\"case\", " << label.case_expr << "], ";
             break;
           case LabelKind::DEFAULT:
             stream << "[\"default\"], ";
