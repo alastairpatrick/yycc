@@ -2,6 +2,7 @@
 #define PARSE_STATEMENT_H
 
 #include "ASTNode.h"
+#include "lex/Token.h"
 #include "Scope.h"
 
 struct CompoundStatement: Statement {
@@ -27,9 +28,10 @@ struct ForStatement: Statement {
 };
 
 struct GoToStatement: Statement {
+    TokenKind kind;
     Identifier identifier;
 
-    GoToStatement(const Identifier& identifier, const Location& location);
+    GoToStatement(TokenKind kind, const Identifier& identifier, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
     virtual void print(ostream& stream) const override;
 };

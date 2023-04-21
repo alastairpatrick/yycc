@@ -54,8 +54,8 @@ void ForStatement::print(ostream& stream) const {
 }
 
 
-GoToStatement::GoToStatement(const Identifier& identifier, const Location& location)
-    : Statement(location), identifier(identifier) {
+GoToStatement::GoToStatement(TokenKind kind, const Identifier& identifier, const Location& location)
+    : Statement(location), kind(kind), identifier(identifier) {
 }
 
 VisitStatementOutput GoToStatement::accept(Visitor& visitor, const VisitStatementInput& input) {
@@ -63,7 +63,22 @@ VisitStatementOutput GoToStatement::accept(Visitor& visitor, const VisitStatemen
 }
 
 void GoToStatement::print(ostream& stream) const {
-    stream << "[\"goto\", \"" << identifier << "\"]";
+    stream << '[';
+    Statement::print(stream);
+
+    switch (kind) {
+      case TOK_GOTO:
+        stream << "\"goto\"";
+        break;
+      case TOK_BREAK:
+        stream << "\"break\"";
+        break;
+      case TOK_CONTINUE:
+        stream << "\"continue\"";
+        break;
+    }
+
+    stream << ", \"" << identifier << "\"]";
 }
 
 

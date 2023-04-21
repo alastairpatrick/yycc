@@ -91,6 +91,18 @@ EXPECT_AST
 [["default"], "return", 7]
 
 
+BEGIN Break statement
+break;
+EXPECT_AST
+["break", ""]
+
+
+BEGIN Continue statement
+continue;
+EXPECT_AST
+["continue", ""]
+
+
 BEGIN Goto statement
 goto label;
 EXPECT_AST

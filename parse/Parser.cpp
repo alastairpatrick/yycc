@@ -886,16 +886,17 @@ Statement* Parser::parse_statement() {
           statement->labels.push_back(label);
           return statement;
 
-      } case TOK_GOTO: {
+      } case TOK_BREAK:
+        case TOK_CONTINUE:
+        case TOK_GOTO: {
+          auto kind = token;
           consume();
 
           Identifier identifier;
-          if (!consume_identifier(identifier)) {
-              require(TOK_IDENTIFIER);
-          }
+          consume_identifier(identifier);
           require(';');
 
-          return new GoToStatement(identifier, location);
+          return new GoToStatement(kind, identifier, location);
 
       } default : {
           Label label;
