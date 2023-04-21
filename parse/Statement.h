@@ -52,4 +52,13 @@ struct ReturnStatement: Statement {
     virtual void print(ostream& stream) const override;
 };
 
+struct SwitchStatement: Statement {
+    Expr* expr{};
+    CompoundStatement* body{};
+
+    SwitchStatement(Expr* expr, CompoundStatement* body, const Location& location);
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual void print(ostream& stream) const override;
+};
+
 #endif

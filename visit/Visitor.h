@@ -72,6 +72,7 @@ struct Visitor {
     virtual VisitStatementOutput visit(GoToStatement* statement, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(IfElseStatement* statement, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(ReturnStatement* statement, const VisitStatementInput& input);
+    virtual VisitStatementOutput visit(SwitchStatement* statement, const VisitStatementInput& input);
 
     virtual VisitStatementOutput visit_default(Expr* expr, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(AddressExpr* expr, const VisitStatementInput& input);

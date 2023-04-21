@@ -114,6 +114,10 @@ VisitStatementOutput Visitor::visit(ReturnStatement* statement, const VisitState
     return visit_default(statement, input);
 }
 
+VisitStatementOutput Visitor::visit(SwitchStatement* statement, const VisitStatementInput& input) {
+    return visit_default(statement, input);
+}
+
 /* Expressions */
 
 VisitStatementOutput Visitor::visit_default(Expr* expr, const VisitStatementInput& input) {

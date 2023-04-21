@@ -783,115 +783,126 @@ Statement* Parser::parse_statement() {
         case '{': {
           return parse_compound_statement();
       } case TOK_FOR: {
-        consume();
-        require('(');
+          consume();
+          require('(');
 
-        identifiers.push_scope();
+          identifiers.push_scope();
 
-        Declaration* declaration{};
-        Expr* initialize{};
-        Expr* condition{};
-        Expr* iterate{};
-        if (!consume(';')) {
-            declaration = parse_declaration(IdentifierScope::BLOCK);
-            if (!declaration) {
-                initialize = parse_expr(SEQUENCE_PREC);
-                require(';');
-            }
-        }
-        if (!consume(';')) {
-            condition = parse_expr(SEQUENCE_PREC);
-            require(';');
-        }
-        if (!consume(')')) {
-            iterate = parse_expr(SEQUENCE_PREC);
-            require(')');
-        }
+          Declaration* declaration{};
+          Expr* initialize{};
+          Expr* condition{};
+          Expr* iterate{};
+          if (!consume(';')) {
+              declaration = parse_declaration(IdentifierScope::BLOCK);
+              if (!declaration) {
+                  initialize = parse_expr(SEQUENCE_PREC);
+                  require(';');
+              }
+          }
+          if (!consume(';')) {
+              condition = parse_expr(SEQUENCE_PREC);
+              require(';');
+          }
+          if (!consume(')')) {
+              iterate = parse_expr(SEQUENCE_PREC);
+              require(')');
+          }
 
-        auto body = parse_statement();
-        auto statement = new ForStatement(declaration, initialize, condition, iterate, body, location);
+          auto body = parse_statement();
+          auto statement = new ForStatement(declaration, initialize, condition, iterate, body, location);
 
-        auto scope = identifiers.pop_scope();
+          auto scope = identifiers.pop_scope();
 
-        if (declaration) {
-            ASTNodeVector nodes;
-            nodes.push_back(statement);
-            auto outer = new CompoundStatement(move(scope), move(nodes), location);
-            return outer;
-        }
+          if (declaration) {
+              ASTNodeVector nodes;
+              nodes.push_back(statement);
+              auto outer = new CompoundStatement(move(scope), move(nodes), location);
+              return outer;
+          }
 
-        return statement;
+          return statement;
 
       } case TOK_IF: {
-        consume();
+          consume();
 
-        require('(');
-        auto condition = parse_expr(SEQUENCE_PREC);
-        require(')');
+          require('(');
+          auto condition = parse_expr(SEQUENCE_PREC);
+          require(')');
 
-        auto then_statement = parse_statement();
+          auto then_statement = parse_statement();
 
-        Statement* else_statement{};
-        if (consume(TOK_ELSE)) {
-            else_statement = parse_statement();
-        }
+          Statement* else_statement{};
+          if (consume(TOK_ELSE)) {
+              else_statement = parse_statement();
+          }
 
-        return new IfElseStatement(condition, then_statement, else_statement, location);
+          return new IfElseStatement(condition, then_statement, else_statement, location);
 
       } case TOK_RETURN: {
-        consume();
+          consume();
 
-        Expr* expr{};
-        if (token != ';') {
-            expr = parse_expr(SEQUENCE_PREC);
-        }
-        require(';');
-        return new ReturnStatement(expr, location);
+          Expr* expr{};
+          if (token != ';') {
+              expr = parse_expr(SEQUENCE_PREC);
+          }
+          require(';');
+          return new ReturnStatement(expr, location);
 
-      } case TOK_GOTO: {
-        consume();
+      } case TOK_SWITCH: {
+          consume();
 
-        Identifier identifier;
-        if (!consume_identifier(identifier)) {
-            require(TOK_IDENTIFIER);
-        }
-        require(';');
+          require('(');
+          auto expr = parse_expr(SEQUENCE_PREC);
+          require(')');
 
-        return new GoToStatement(identifier, location);
+          auto body = parse_compound_statement();
+
+          return new SwitchStatement(expr, body, location);
 
       } case TOK_CASE:
         case TOK_DEFAULT: {
         
-        Label label;
-        if (consume(TOK_CASE)) {
-            label.kind = LabelKind::CASE;
-            label.case_expr = parse_expr(CONDITIONAL_PREC);
-        } else {
-            consume();
-            label.kind = LabelKind::DEFAULT;
-        }
-        require(':');
+          Label label;
+          if (consume(TOK_CASE)) {
+              label.kind = LabelKind::CASE;
+              label.case_expr = parse_expr(CONDITIONAL_PREC);
+          } else {
+              consume();
+              label.kind = LabelKind::DEFAULT;
+          }
+          require(':');
 
-        auto statement = parse_statement();
-        statement->labels.push_back(label);
-        return statement;
+          auto statement = parse_statement();
+          statement->labels.push_back(label);
+          return statement;
+
+      } case TOK_GOTO: {
+          consume();
+
+          Identifier identifier;
+          if (!consume_identifier(identifier)) {
+              require(TOK_IDENTIFIER);
+          }
+          require(';');
+
+          return new GoToStatement(identifier, location);
 
       } default : {
-        Label label;
-        Statement* statement = parse_expr(SEQUENCE_PREC, &label.identifier);
+          Label label;
+          Statement* statement = parse_expr(SEQUENCE_PREC, &label.identifier);
 
-        if (!label.identifier.name->empty()) {
-            require(':');
+          if (!label.identifier.name->empty()) {
+              require(':');
 
-            statement = parse_statement();
+              statement = parse_statement();
 
-            label.kind = LabelKind::GOTO;
-            statement->labels.push_back(label);
-            return statement;
-        }
+              label.kind = LabelKind::GOTO;
+              statement->labels.push_back(label);
+              return statement;
+          }
 
-        require(';');
-        return statement;
+          require(';');
+          return statement;
       }
     }
 }

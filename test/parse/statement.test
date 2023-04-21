@@ -69,6 +69,7 @@ EXPECT_AST
 ["return", 7]
 
 
+
 BEGIN Parses identifier labelled statement
 a: b:
     return 7;
@@ -94,3 +95,11 @@ BEGIN Goto statement
 goto label;
 EXPECT_AST
 ["goto", "label"]
+
+
+BEGIN Switch statement
+switch (1) {}
+EXPECT_AST
+["switch",1,["block",[]]]
+
+

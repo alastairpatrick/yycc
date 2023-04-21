@@ -100,3 +100,20 @@ void ReturnStatement::print(ostream& stream) const {
     }
     stream << ']';
 }
+
+
+SwitchStatement::SwitchStatement(Expr* expr, CompoundStatement* body, const Location& location)
+    : Statement(location), expr(expr), body(body) {
+}
+
+VisitStatementOutput SwitchStatement::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
+}
+
+void SwitchStatement::print(ostream& stream) const {
+    stream << '[';
+    Statement::print(stream);
+
+    stream << "\"switch\", " << expr << ", " << body << ']';
+}
+
