@@ -74,18 +74,27 @@ struct Emitter: Visitor {
     }
 
     Value convert_to_type(Value value, const Type* target_type) {
+        assert(value.type->qualifiers() == 0);
+        
+        target_type = target_type->unqualified();
+
         VisitTypeInput input;
         input.value = value;
-        input.target_type = target_type->unqualified();
+        input.target_type = target_type;
         auto result = value.type->accept(*this, input).value;
-        result = result.bit_cast(QualifiedType::of(result.type, target_type->qualifiers()));
         assert(result.type == target_type);
         return result;
     }
 
+    template <typename T, typename U>
+    const T* type_cast(const U* type) {
+        assert(type->qualifiers() == 0);
+        return dynamic_cast<const T*>(type);
+    }
+
     void emit_function_definition(Declarator* declarator, Entity* entity) {
         function_declarator = declarator;
-        function_type = dynamic_cast<const FunctionType*>(declarator->primary->type);
+        function_type = type_cast<FunctionType>(declarator->primary->type);
         function = LLVMAddFunction(module, identifier_name(declarator->identifier), declarator->primary->type->llvm_type());
 
         entity->value = Value(ValueKind::LVALUE, function_type, function);
@@ -184,11 +193,11 @@ struct Emitter: Visitor {
 
         if (target_type == type) return VisitTypeOutput(value);
 
-        if (auto float_target = dynamic_cast<const FloatingPointType*>(target_type)) {
+        if (auto float_target = type_cast<FloatingPointType>(target_type)) {
             return VisitTypeOutput(target_type, LLVMBuildFPCast(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), ""));
         }
 
-        if (auto int_target = dynamic_cast<const IntegerType*>(target_type)) {
+        if (auto int_target = type_cast<IntegerType>(target_type)) {
             if (int_target->is_signed()) {
                 return VisitTypeOutput(target_type, LLVMBuildFPToSI(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), ""));
             } else {
@@ -206,7 +215,7 @@ struct Emitter: Visitor {
 
         if (target_type == type) return VisitTypeOutput(value);
 
-        if (auto pointer_type = dynamic_cast<const PointerType*>(target_type)) {
+        if (auto pointer_type = type_cast<PointerType>(target_type)) {
             return VisitTypeOutput(target_type, value.llvm_lvalue());
         }
 
@@ -220,12 +229,12 @@ struct Emitter: Visitor {
 
         if (target_type == type) return VisitTypeOutput(value);
 
-        if (auto int_target = dynamic_cast<const IntegerType*>(target_type)) {
+        if (auto int_target = type_cast<IntegerType>(target_type)) {
             if (int_target->size == type->size) return VisitTypeOutput(value.bit_cast(target_type));
             return VisitTypeOutput(target_type, LLVMBuildIntCast2(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), type->is_signed(), ""));
         }
 
-        if (dynamic_cast<const FloatingPointType*>(target_type)) {
+        if (type_cast<FloatingPointType>(target_type)) {
             if (type->is_signed()) {
                 return VisitTypeOutput(target_type, LLVMBuildSIToFP(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), ""));
             } else {
@@ -233,7 +242,7 @@ struct Emitter: Visitor {
             }
         }
 
-        if (dynamic_cast<const PointerType*>(target_type)) {
+        if (type_cast<PointerType>(target_type)) {
             return VisitTypeOutput(target_type, LLVMBuildIntToPtr(builder, value.llvm_rvalue(builder), target_type->llvm_type(), ""));
         }
 
@@ -245,11 +254,11 @@ struct Emitter: Visitor {
         auto target_type = input.target_type;
         auto value = input.value;
 
-        if (dynamic_cast<const PointerType*>(input.target_type)) {
+        if (type_cast<PointerType>(input.target_type)) {
             return VisitTypeOutput(value.bit_cast(input.target_type));
         }
 
-        if (dynamic_cast<const IntegerType*>(input.target_type)) {
+        if (type_cast<IntegerType>(input.target_type)) {
             return VisitTypeOutput(target_type, LLVMBuildPtrToInt(builder, value.llvm_rvalue(builder), target_type->llvm_type(), ""));
         }
 
@@ -276,8 +285,8 @@ struct Emitter: Visitor {
 
     virtual VisitStatementOutput visit(ReturnStatement* statement, const VisitStatementInput& input) override {
         if (statement->expr) {
-            auto value = emit(statement->expr);
-            value = convert_to_type(value, function_type->return_type);
+            auto value = emit(statement->expr).unqualified();
+            value = convert_to_type(value, function_type->return_type->unqualified());
             LLVMBuildRet(builder, value.llvm_rvalue(builder));
         } else {
             LLVMBuildRetVoid(builder);
@@ -308,7 +317,7 @@ struct Emitter: Visitor {
     const Type* promote_integer(const Type* type) {
         auto int_type = IntegerType::default_type();
 
-        if (auto type_as_int = dynamic_cast<const IntegerType*>(type)) {
+        if (auto type_as_int = type_cast<IntegerType>(type)) {
             // Integer types smaller than int are promoted when an operation is performed on them.
             if (type_as_int->size < int_type->size || (type_as_int->signedness == IntegerSignedness::SIGNED && type_as_int->size == int_type->size)) {
                 // If all values of the original type can be represented as an int, the value of the smaller type is converted to an int; otherwise, it is converted to an unsigned int.
@@ -327,8 +336,8 @@ struct Emitter: Visitor {
         // If both operands have the same type, no further conversion is needed.
         if (left == right) return left;
 
-        auto left_as_float = dynamic_cast<const FloatingPointType*>(left);
-        auto right_as_float = dynamic_cast<const FloatingPointType*>(right);
+        auto left_as_float = type_cast<FloatingPointType>(left);
+        auto right_as_float = type_cast<FloatingPointType>(right);
         if (left_as_float) {
             if (right_as_float) {
                 return FloatingPointType::of(max(left_as_float->size, right_as_float->size));
@@ -337,8 +346,8 @@ struct Emitter: Visitor {
         }
         if (right_as_float) return right_as_float;
 
-        auto left_as_int = dynamic_cast<const IntegerType*>(left);
-        auto right_as_int = dynamic_cast<const IntegerType*>(right);
+        auto left_as_int = type_cast<IntegerType>(left);
+        auto right_as_int = type_cast<IntegerType>(right);
 
         if (left_as_int && right_as_int) {
             // char was promoted to signed int so DEFAULT is impossible.
@@ -408,7 +417,7 @@ struct Emitter: Visitor {
         left_value = convert_to_type(left_value, convert_type);
         right_value = convert_to_type(right_value, convert_type);
 
-        if (auto as_int = dynamic_cast<const IntegerType*>(convert_type)) {
+        if (auto as_int = type_cast<IntegerType>(convert_type)) {
             switch (expr->op) {
               default:
                 assert(false); // TODO
@@ -452,7 +461,7 @@ struct Emitter: Visitor {
             }
         }
 
-        if (auto as_float = dynamic_cast<const FloatingPointType*>(convert_type)) {
+        if (auto as_float = type_cast<FloatingPointType>(convert_type)) {
             switch (expr->op) {
               default:
                 assert(false); // TODO
@@ -511,8 +520,8 @@ struct Emitter: Visitor {
     }
 
     Value convert_array_to_pointer(Value value) {
-        if (auto array_type = dynamic_cast<const ArrayType*>(value.type)) {
-            auto result_type = QualifiedType::of(array_type->element_type->pointer_to(), value.qualifiers);
+        if (auto array_type = type_cast<ArrayType>(value.type)) {
+            auto result_type = array_type->element_type->pointer_to();
             if (outcome == EmitOutcome::TYPE) return Value(result_type);
 
             auto zero = LLVMConstInt(IntegerType::of_size(IntegerSignedness::UNSIGNED)->llvm_type(), 0, false);
@@ -535,11 +544,11 @@ struct Emitter: Visitor {
     virtual VisitStatementOutput visit(BinaryExpr* expr, const VisitStatementInput& input) override {
         auto left_value = emit(expr->left).unqualified();
         left_value = convert_array_to_pointer(left_value);
-        auto left_pointer_type = dynamic_cast<const PointerType*>(left_value.type);
+        auto left_pointer_type = type_cast<PointerType>(left_value.type);
 
         auto right_value = emit(expr->right).unqualified();
         right_value = convert_array_to_pointer(right_value);
-        auto right_pointer_type = dynamic_cast<const PointerType*>(right_value.type);
+        auto right_pointer_type = type_cast<PointerType>(right_value.type);
 
         Value intermediate;
         if (left_pointer_type) {
@@ -562,11 +571,11 @@ struct Emitter: Visitor {
     virtual VisitStatementOutput visit(CallExpr* expr, const VisitStatementInput& input) override {
         auto function_value = emit(expr->function).unqualified();
 
-        if (auto pointer_type = dynamic_cast<const PointerType*>(function_value.type)) {
+        if (auto pointer_type = type_cast<PointerType>(function_value.type)) {
             function_value = Value(ValueKind::LVALUE, pointer_type->base_type, function_value.llvm_rvalue(builder));
         }
 
-        if (auto function_type = dynamic_cast<const FunctionType*>(function_value.type)) {
+        if (auto function_type = type_cast<FunctionType>(function_value.type)) {
             auto result_type = function_type->return_type;
             if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
@@ -587,8 +596,8 @@ struct Emitter: Visitor {
     }
 
     virtual VisitStatementOutput visit(ConditionExpr* expr, const VisitStatementInput& input) override {
-        auto then_type = get_expr_type(expr->then_expr);
-        auto else_type = get_expr_type(expr->else_expr);
+        auto then_type = get_expr_type(expr->then_expr)->unqualified();
+        auto else_type = get_expr_type(expr->else_expr)->unqualified();
 
         auto result_type = usual_arithmetic_conversions(then_type, else_type);    
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
@@ -624,7 +633,7 @@ struct Emitter: Visitor {
 
     virtual VisitStatementOutput visit(DereferenceExpr* expr, const VisitStatementInput& input) override {
         auto value = emit(expr->expr).unqualified();
-        auto pointer_type = dynamic_cast<const PointerType*>(value.type);
+        auto pointer_type = type_cast<PointerType>(value.type);
         auto result_type = pointer_type->base_type;
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
@@ -690,11 +699,11 @@ struct Emitter: Visitor {
         auto left_value = emit(expr->left).unqualified();
         auto index_value = emit(expr->right).unqualified();
 
-        if (dynamic_cast<const IntegerType*>(left_value.type)) {
+        if (type_cast<IntegerType>(left_value.type)) {
             swap(left_value, index_value);
         }
 
-        if (auto pointer_type = dynamic_cast<const PointerType*>(left_value.type)) {
+        if (auto pointer_type = type_cast<PointerType>(left_value.type)) {
             auto result_type = pointer_type->base_type;
             if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
@@ -705,7 +714,7 @@ struct Emitter: Visitor {
                 LLVMBuildGEP2(builder, result_type->llvm_type(), left_value.llvm_rvalue(builder), &index, 1, "")));
         }
 
-        if (auto array_type = dynamic_cast<const ArrayType*>(left_value.type)) {
+        if (auto array_type = type_cast<ArrayType>(left_value.type)) {
             auto result_type = array_type->element_type;
             if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
