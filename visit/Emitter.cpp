@@ -10,8 +10,6 @@ enum class EmitOutcome {
     IR,
 };
 
-const char* UNREACHABLE_NAME = "!unreachable";
-
 const char* identifier_name(const Identifier& identifier) {
     auto name = identifier.name;
     if (name->empty()) return "";
@@ -31,6 +29,7 @@ struct Emitter: Visitor {
     LLVMBuilderRef temp_builder{};
     LLVMValueRef function{};
     LLVMBasicBlockRef entry_block{};
+    LLVMBasicBlockRef current_unreachable_block{};
     unordered_map<InternedString, LLVMBasicBlockRef> goto_labels;
 
     Emitter(EmitOutcome outcome): outcome(outcome) {
@@ -71,13 +70,18 @@ struct Emitter: Visitor {
         declarator->status = DeclaratorStatus::EMITTED;
     }
 
-    void begin_unreachable_block() {
-        auto unreachable_block = LLVMAppendBasicBlock(function, UNREACHABLE_NAME);
-        LLVMPositionBuilderAtEnd(builder, unreachable_block);
+    bool delete_unreachable_block(LLVMBasicBlockRef block) {
+        if (block != current_unreachable_block) return false;
+
+        LLVMDeleteBasicBlock(current_unreachable_block);
+        current_unreachable_block = nullptr;
+        return true;
     }
 
-    bool is_block_unreachable(LLVMBasicBlockRef block) {
-        return strcmp(LLVMGetBasicBlockName(block), UNREACHABLE_NAME) == 0;
+    void begin_unreachable_block() {
+        delete_unreachable_block(LLVMGetInsertBlock(builder));
+        current_unreachable_block = LLVMAppendBasicBlock(function, "unreachable");
+        LLVMPositionBuilderAtEnd(builder, current_unreachable_block);
     }
 
     LLVMBasicBlockRef lookup_label(const Identifier& identifier) {
@@ -96,9 +100,7 @@ struct Emitter: Visitor {
                 LLVMBuildBr(builder, labelled_block);
                 LLVMMoveBasicBlockAfter(labelled_block, current_block);
                 LLVMPositionBuilderAtEnd(builder, labelled_block);
-                if (is_block_unreachable(current_block)) {
-                    LLVMDeleteBasicBlock(current_block);
-                }
+                delete_unreachable_block(current_block);
             }
         }
 
@@ -145,10 +147,7 @@ struct Emitter: Visitor {
 
         emit(entity->body);
 
-        auto current_block = LLVMGetInsertBlock(builder);
-        if (is_block_unreachable(current_block)) {
-            LLVMDeleteBasicBlock(current_block);
-        } else {
+        if (!delete_unreachable_block(LLVMGetInsertBlock(builder))) {
             if (function_type->return_type == &VoidType::it) {
                 LLVMBuildRetVoid(builder);
             } else {
