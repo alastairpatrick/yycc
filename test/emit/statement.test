@@ -75,6 +75,55 @@ for_e:                                            ; preds = %for_l
 END
 
 
+// IfElseStatement
+
+BEGIN If statement
+void f(int c) {
+    if (c) {}
+}
+EXPECT_IR
+define void @f(i32 %0) {
+  %c = alloca i32, align 4
+  store i32 %0, ptr %c, align 4
+  %2 = load i32, ptr %c, align 4
+  %3 = trunc i32 %2 to i1
+  br i1 %3, label %if_c, label %if_e
+
+if_c:                                             ; preds = %1
+  br label %if_e
+
+if_e:                                             ; preds = %if_c, %1
+  ret void
+}
+END
+
+
+BEGIN If-else statement
+void f(int c) {
+    if (c) {}
+    else {}
+}
+EXPECT_IR
+define void @f(i32 %0) {
+  %c = alloca i32, align 4
+  store i32 %0, ptr %c, align 4
+  %2 = load i32, ptr %c, align 4
+  %3 = trunc i32 %2 to i1
+  br i1 %3, label %if_c, label %if_a
+
+if_c:                                             ; preds = %1
+  br label %if_e
+
+if_a:                                             ; preds = %1
+  br label %if_e
+
+if_e:                                             ; preds = %if_a, %if_c
+  ret void
+}
+END
+
+
+
 // ReturnStatement
 
 BEGIN Emit explicit return void

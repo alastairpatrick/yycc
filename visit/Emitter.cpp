@@ -303,6 +303,7 @@ struct Emitter: Visitor {
 
         if (statement->condition) {
             auto condition_value = emit(statement->condition).unqualified();
+            condition_value = convert_to_type(condition_value, IntegerType::of_bool());
             LLVMBuildCondBr(builder, condition_value.llvm_rvalue(builder), body_block, end_block);
         } else {
             LLVMBuildBr(builder, body_block);
@@ -314,6 +315,32 @@ struct Emitter: Visitor {
             emit(statement->iterate);
         }
         LLVMBuildBr(builder, loop_block);
+
+        LLVMPositionBuilderAtEnd(builder, end_block);
+
+        return VisitStatementOutput();
+    }
+
+    VisitStatementOutput visit(IfElseStatement* statement, const VisitStatementInput& input) {
+        auto then_block = LLVMAppendBasicBlock(function, "if_c");
+        LLVMBasicBlockRef else_block;
+        if (statement->else_statement) else_block = LLVMAppendBasicBlock(function, "if_a");
+        auto end_block = LLVMAppendBasicBlock(function, "if_e");
+        if (!statement->else_statement) else_block = end_block;
+
+        auto condition_value = emit(statement->condition).unqualified();
+        condition_value = convert_to_type(condition_value, IntegerType::of_bool());
+        LLVMBuildCondBr(builder, condition_value.llvm_rvalue(builder), then_block, else_block);
+
+        LLVMPositionBuilderAtEnd(builder, then_block);
+        emit(statement->then_statement);
+        LLVMBuildBr(builder, end_block);
+
+        if (statement->else_statement) {
+            LLVMPositionBuilderAtEnd(builder, else_block);
+            emit(statement->else_statement);
+            LLVMBuildBr(builder, end_block);
+        }
 
         LLVMPositionBuilderAtEnd(builder, end_block);
 
