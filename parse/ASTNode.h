@@ -69,11 +69,26 @@ struct Declarator: ASTNode {
     void print(ostream& stream) const;
 };
 
+enum class LabelKind {
+    IDENTIFIER,
+    CASE,
+    DEFAULT,
+};
+
+struct Label {
+    LabelKind kind{};
+    Identifier identifier;
+    long long case_idx{};
+};
+
 struct Statement: ASTNode {
     Location location;
 
+    vector<Label> labels;
+
     explicit Statement(const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) = 0;
+    virtual void print(ostream& stream) const override;
 };
 
 struct Expr: Statement {

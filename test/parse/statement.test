@@ -1,69 +1,76 @@
 BEGIN Parses expression statement
 7;
 EXPECT_AST
-[7]
+7
 
 
 BEGIN Parses compound statement
 {7; 8;}
 PARSE
 EXPECT_AST
-[["block", [7, 8]]]
+["block", [7, 8]]
 
 
 BEGIN Preparse skips content of compound statement
 {7; 8;}
 PREPARSE
 EXPECT_AST
-[["block", []]]
+["block", []]
 
 
 BEGIN Parses empty for statement
 for (;;) {}
 EXPECT_AST
-[["for",null,null,null,null,["block",[]]]]
+["for",null,null,null,null,["block",[]]]
 
 
 BEGIN Parses for statement with initialize expression
 for (1; 2; 3) {}
 EXPECT_AST
-[["for",null,1,2,3,["block",[]]]]
+["for",null,1,2,3,["block",[]]]
 
 
 BEGIN Parses for statement with declaration
 for (int i = 1; 2; 3) { i; }
 PARSE
 EXPECT_AST
-[["block",[
+["block",[
     ["for",["var","","Si","i",1],null,2,3,["block",["Ni"]]]
-]]]
+]]
 
 
 BEGIN Parse if statement
 if (1) 2;
 EXPECT_AST
-[["if", 1, 2, null]]
+["if", 1, 2, null]
 
 
 BEGIN Parse if-else statement
 if (1) 2; else 3;
 EXPECT_AST
-[["if", 1, 2, 3]]
+["if", 1, 2, 3]
 
 
 BEGIN Parse dangling else
 if (1) if (2) 3; else 4;
 EXPECT_AST
-[["if", 1, ["if", 2, 3, 4], null]]
+["if", 1, ["if", 2, 3, 4], null]
 
 
 BEGIN Parses void return statement
 return;
 EXPECT_AST
-[["return"]]
+["return"]
 
 
 BEGIN Parses return statement
 return 7;
 EXPECT_AST
-[["return", 7]]
+["return", 7]
+
+
+BEGIN Parses identifier labelled statement
+a: b:
+    return 7;
+EXPECT_AST
+[["label", "b"], ["label", "a"], "return", 7]

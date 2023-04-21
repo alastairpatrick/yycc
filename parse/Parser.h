@@ -31,6 +31,7 @@ struct Parser {
 
     Declaration* parse_initial_directives();
     Expr* parse_standalone_expr();  // for testing
+    Statement* parse_standalone_statement();  // for testing
     ASTNodeVector parse();
     bool check_eof();
 
@@ -58,8 +59,8 @@ private:
     OperatorAssoc assoc();
     OperatorPrec prec();
 
-    Expr* parse_expr(OperatorPrec min_prec);
-    Expr* parse_sub_expr(SubExpressionKind kind);
+    Expr* parse_expr(OperatorPrec min_prec, Identifier* or_label = nullptr);
+    Expr* parse_sub_expr(SubExpressionKind kind, Identifier* or_label = nullptr);
     Expr* parse_initializer();
     Declaration* parse_declaration_specifiers(IdentifierScope scope, const Type*& type, uint32_t& specifiers);
     Declaration* parse_declaration(IdentifierScope scope);

@@ -16,6 +16,7 @@ enum class TestType {
     PREPROCESS,
     SWEEP,
     EXPRESSION,
+    STATEMENT,
     PREPARSE,
     PARSE,
     RESOLVE,
@@ -69,8 +70,7 @@ static const Test tests[] = {
     { "parse/function",             TestType::PARSE },
     { "resolve/function",           TestType::RESOLVE },
 
-    { "parse/statement",            TestType::PREPARSE },
-    { "parse/statement",            TestType::PARSE },
+    { "parse/statement",            TestType::STATEMENT },
     { "resolve/statement",          TestType::RESOLVE },
 
     { "parse/struct",               TestType::PREPARSE },
@@ -116,6 +116,17 @@ Expr* parse_expr(IdentifierMap& identifiers, const Input& input) {
     return result;
 }
 
+Statement* parse_statement(IdentifierMap& identifiers, const Input& input) {
+    Preprocessor preprocessor(false);
+    preprocessor.in(input);
+
+    Parser parser(preprocessor, identifiers);
+    auto result = parser.parse_standalone_statement();
+    if (!parser.check_eof()) return nullptr;
+
+    return result;
+}
+
 ASTNodeVector parse_declarations(IdentifierMap& identifiers, const Input& input) {
     Preprocessor preprocessor(identifiers.preparse);
     preprocessor.in(input);
@@ -145,6 +156,9 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
                 type = get_expr_type(expr);
             }
             output_stream << expr;
+        } else if (test_type == TestType::STATEMENT) {
+            auto statement = parse_statement(identifiers, sections[INPUT]);
+            output_stream << statement;
         } else if (test_type == TestType::PREPROCESS) {
             Preprocessor preprocessor(sections[INPUT], true);
             while (preprocessor.next_token() != TOK_EOF) {
@@ -332,6 +346,9 @@ bool run_parser_tests() {
                 ++num_enabled_types;
             } else if (line == "PREPROCESS") {
                 enabled_types[unsigned(TestType::PREPROCESS)] = true;
+                ++num_enabled_types;
+            } else if (line == "STATEMENT") {
+                enabled_types[unsigned(TestType::STATEMENT)] = true;
                 ++num_enabled_types;
             } else if (line == "SWEEP") {
                 enabled_types[unsigned(TestType::SWEEP)] = true;

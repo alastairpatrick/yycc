@@ -5,6 +5,24 @@
 Statement::Statement(const Location& location): location(location) {
 }
 
+void Statement::print(ostream& stream) const {
+    if (labels.empty()) return;
+
+    for (auto& label: labels) {
+        switch (label.kind) {
+          case LabelKind::IDENTIFIER:
+            stream << "[\"label\", \"" << label.identifier << "\"], ";
+            break;
+          case LabelKind::CASE:
+            stream << "[\"case\", \"" << label.case_idx << "], ";
+            break;
+          case LabelKind::DEFAULT:
+            stream << "[\"default\"], ";
+            break;
+        }
+    }
+}
+
 CompoundStatement::CompoundStatement(Scope&& scope, ASTNodeVector&& nodes, const Location& location)
     : Statement(location), scope(scope), nodes(move(nodes)) {
 }
@@ -14,7 +32,9 @@ VisitStatementOutput CompoundStatement::accept(Visitor& visitor, const VisitStat
 }
 
 void CompoundStatement::print(ostream& stream) const {
-    stream << "[\"block\", " << nodes << ']';
+    stream << '[';
+    Statement::print(stream);
+    stream << "\"block\", " << nodes << ']';
 }
 
 
@@ -28,7 +48,9 @@ VisitStatementOutput ForStatement::accept(Visitor& visitor, const VisitStatement
 }
 
 void ForStatement::print(ostream& stream) const {
-    stream << "[\"for\", " << declaration << ", " << initialize << ", " << condition << ", " << iterate << ", " << body << ']';
+    stream << '[';
+    Statement::print(stream);
+    stream << "\"for\", " << declaration << ", " << initialize << ", " << condition << ", " << iterate << ", " << body << ']';
 }
 
 
@@ -41,7 +63,9 @@ VisitStatementOutput IfElseStatement::accept(Visitor& visitor, const VisitStatem
 }
 
 void IfElseStatement::print(ostream& stream) const {
-    stream << "[\"if\", " << condition << ", " << then_statement << ", " << else_statement << ']';
+    stream << '[';
+    Statement::print(stream);
+    stream << "\"if\", " << condition << ", " << then_statement << ", " << else_statement << ']';
 }
 
 
@@ -54,7 +78,10 @@ VisitStatementOutput ReturnStatement::accept(Visitor& visitor, const VisitStatem
 }
 
 void ReturnStatement::print(ostream& stream) const {
-    stream << "[\"return\"";
+    stream << '[';
+    Statement::print(stream);
+
+    stream << "\"return\"";
     if (expr) {
         stream << ", " << expr;
     }

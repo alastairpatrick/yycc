@@ -29,6 +29,10 @@ Expr* Parser::parse_standalone_expr() {
     return parse_expr(SEQUENCE_PREC);
 }
 
+Statement* Parser::parse_standalone_statement() {
+    return parse_statement();
+}
+
 void Parser::consume() {
     while (token) {
         token = preprocessor.next_token();
@@ -223,7 +227,7 @@ bool Parser::check_eof() {
     return false;
 }
 
-Expr* Parser::parse_expr(OperatorPrec min_prec) {
+Expr* Parser::parse_expr(OperatorPrec min_prec, Identifier* or_label) {
     Location loc = preprocessor.location();
     Expr* result{};
 
@@ -239,7 +243,8 @@ Expr* Parser::parse_expr(OperatorPrec min_prec) {
         return result;
     }
 
-    result = parse_sub_expr(SubExpressionKind::CAST);
+    result = parse_sub_expr(SubExpressionKind::CAST, or_label);
+    if (!result) return result;
 
     while (prec() >= min_prec) {
         auto next_min_prec = assoc() == ASSOC_LEFT ? OperatorPrec(prec() + 1) : prec();
@@ -333,7 +338,7 @@ void Parser::skip_expr(OperatorPrec min_prec) {
     }
 }
 
-Expr* Parser::parse_sub_expr(SubExpressionKind kind) {
+Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
     Location location = preprocessor.location();
     Expr* result{};
 
@@ -359,14 +364,22 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind) {
           break;
 
       } case TOK_IDENTIFIER: {
-          Declarator* declarator = identifiers.lookup_declarator(preprocessor.identifier());
-          if (declarator) {
-              result = new EntityExpr(declarator, preprocessor.location());
-          } else {
-              message(Severity::ERROR, preprocessor.location()) << '\'' << preprocessor.identifier() << "' undeclared\n";
-              result = IntegerConstant::default_expr(preprocessor.location());
-          }
+          Identifier identifier = preprocessor.identifier();
           consume();
+
+          // This is a hack to parse labels without adding an additional token of lookahead.
+          if (or_label && token == ':') {
+              *or_label = identifier;
+              return nullptr;
+          }
+
+          Declarator* declarator = identifiers.lookup_declarator(identifier);
+          if (declarator) {
+              result = new EntityExpr(declarator, location);
+          } else {
+              message(Severity::ERROR, location) << '\'' << identifier << "' undeclared\n";
+              result = IntegerConstant::default_expr(location);
+          }
           break;
       }
     }
@@ -765,9 +778,8 @@ Declaration* Parser::parse_declaration(IdentifierScope scope) {
 
 Statement* Parser::parse_statement() {
     Location location;
-    Statement* statement{};
     if (token == '{') {
-        statement = parse_compound_statement();
+        return parse_compound_statement();
     } else if (consume(TOK_FOR, &location)) {
         require('(');
 
@@ -794,7 +806,7 @@ Statement* Parser::parse_statement() {
         }
 
         auto body = parse_statement();
-        statement = new ForStatement(declaration, initialize, condition, iterate, body, location);
+        auto statement = new ForStatement(declaration, initialize, condition, iterate, body, location);
 
         auto scope = identifiers.pop_scope();
 
@@ -826,15 +838,26 @@ Statement* Parser::parse_statement() {
         if (token != ';') {
             expr = parse_expr(SEQUENCE_PREC);
         }
-        statement = new ReturnStatement(expr, location);
         require(';');
+        return new ReturnStatement(expr, location);
 
     } else {
-        statement = parse_expr(SEQUENCE_PREC);
-        require(';');
-    }
+        Label label;
+        Statement* statement = parse_expr(SEQUENCE_PREC, &label.identifier);
 
-    return statement;
+        if (!label.identifier.name->empty()) {
+            require(':');
+
+            statement = parse_statement();
+
+            label.kind = LabelKind::IDENTIFIER;
+            statement->labels.push_back(label);
+            return statement;
+        }
+
+        require(';');
+        return statement;
+    }
 }
 
 ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
