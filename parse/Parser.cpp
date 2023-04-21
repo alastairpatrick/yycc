@@ -879,6 +879,9 @@ Statement* Parser::parse_statement() {
           } else {
               consume();
               label.kind = LabelKind::DEFAULT;
+              if (innermost_switch) {
+                  ++innermost_switch->num_defaults;
+              }
           }
           require(':');
 

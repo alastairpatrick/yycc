@@ -58,6 +58,7 @@ struct SwitchStatement: Statement {
     Expr* expr{};
     CompoundStatement* body{};
     vector<Expr*> cases;
+    int num_defaults{};
 
     SwitchStatement(Expr* expr, CompoundStatement* body, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;

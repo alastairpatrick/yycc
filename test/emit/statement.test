@@ -8,10 +8,13 @@ EXPECT_IR
 define void @f() {
   br label %for_l
 
-for_l:                                            ; preds = %for_b, %0
+for_l:                                            ; preds = %for_i, %0
   br label %for_b
 
 for_b:                                            ; preds = %for_l
+  br label %for_i
+
+for_i:                                            ; preds = %for_b
   br label %for_l
 
 for_e:                                            ; No predecessors!
@@ -31,12 +34,15 @@ define void @f() {
   store i32 0, ptr %i, align 4
   br label %for_l
 
-for_l:                                            ; preds = %for_b, %0
+for_l:                                            ; preds = %for_i, %0
   %1 = load i32, ptr %i, align 4
   %2 = icmp ult i32 %1, 10
   br i1 %2, label %for_b, label %for_e
 
 for_b:                                            ; preds = %for_l
+  br label %for_i
+
+for_i:                                            ; preds = %for_b
   %3 = load i32, ptr %i, align 4
   %4 = add i32 %3, 1
   store i32 %4, ptr %i, align 4
@@ -58,12 +64,79 @@ define void @f() {
   store i32 0, ptr %i, align 4
   br label %for_l
 
-for_l:                                            ; preds = %for_b, %0
+for_l:                                            ; preds = %for_i, %0
   %1 = load i32, ptr %i, align 4
   %2 = icmp ult i32 %1, 10
   br i1 %2, label %for_b, label %for_e
 
 for_b:                                            ; preds = %for_l
+  br label %for_i
+
+for_i:                                            ; preds = %for_b
+  %3 = load i32, ptr %i, align 4
+  %4 = add i32 %3, 1
+  store i32 %4, ptr %i, align 4
+  br label %for_l
+
+for_e:                                            ; preds = %for_l
+  ret void
+}
+END
+
+
+BEGIN Break for loop
+void f() {
+    for (int i = 0; i < 10; ++i) {
+        break;
+    }
+}
+EXPECT_IR
+define void @f() {
+  %i = alloca i32, align 4
+  store i32 0, ptr %i, align 4
+  br label %for_l
+
+for_l:                                            ; preds = %for_i, %0
+  %1 = load i32, ptr %i, align 4
+  %2 = icmp slt i32 %1, 10
+  br i1 %2, label %for_b, label %for_e
+
+for_b:                                            ; preds = %for_l
+  br label %for_e
+
+for_i:                                            ; No predecessors!
+  %3 = load i32, ptr %i, align 4
+  %4 = add i32 %3, 1
+  store i32 %4, ptr %i, align 4
+  br label %for_l
+
+for_e:                                            ; preds = %for_b, %for_l
+  ret void
+}
+END
+
+
+BEGIN Continue for loop
+void f() {
+    for (int i = 0; i < 10; ++i) {
+        continue;
+    }
+}
+EXPECT_IR
+define void @f() {
+  %i = alloca i32, align 4
+  store i32 0, ptr %i, align 4
+  br label %for_l
+
+for_l:                                            ; preds = %for_i, %0
+  %1 = load i32, ptr %i, align 4
+  %2 = icmp slt i32 %1, 10
+  br i1 %2, label %for_b, label %for_e
+
+for_b:                                            ; preds = %for_l
+  br label %for_i
+
+for_i:                                            ; preds = %for_b
   %3 = load i32, ptr %i, align 4
   %4 = add i32 %3, 1
   store i32 %4, ptr %i, align 4
@@ -215,16 +288,18 @@ END
 
 // SwitchStatement
 
-BEGIN
+BEGIN Switch with default
 int f(int x) {
     switch (x) {
+        default:
+            return 21;
         case 7:
             x = 3;
             // falls through
         case 1+1:
-            return 1;
-        default:
-            return 0;
+            return 2;
+        case 3:
+            break;
     }
 }
 EXPECT_IR
@@ -232,19 +307,64 @@ define i32 @f(i32 %0) {
   %x = alloca i32, align 4
   store i32 %0, ptr %x, align 4
   %2 = load i32, ptr %x, align 4
-  switch i32 %2, label %5 [
-    i32 7, label %3
-    i32 2, label %4
+  switch i32 %2, label %6 [
+    i32 7, label %4
+    i32 2, label %5
+    i32 3, label %3
   ]
 
 3:                                                ; preds = %1
+  br label %7
+
+4:                                                ; preds = %1
   store i32 3, ptr %x, align 4
-  br label %4
+  br label %5
 
-4:                                                ; preds = %3, %1
-  ret i32 1
+5:                                                ; preds = %4, %1
+  ret i32 2
 
-5:                                                ; preds = %1
+6:                                                ; preds = %1
+  ret i32 21
+
+7:                                                ; preds = %3
+  ret i32 0
+}
+END
+
+BEGIN Switch without default
+int f(int x) {
+    switch (x) {
+        case 7:
+            x = 3;
+            // falls through
+        case 1+1:
+            return 2;
+        case 3:
+            break;
+    }
+}
+EXPECT_IR
+define i32 @f(i32 %0) {
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %2 = load i32, ptr %x, align 4
+  switch i32 %2, label %6 [
+    i32 7, label %4
+    i32 2, label %5
+    i32 3, label %3
+  ]
+
+3:                                                ; preds = %1
+  br label %6
+
+4:                                                ; preds = %1
+  store i32 3, ptr %x, align 4
+  br label %5
+
+5:                                                ; preds = %4, %1
+  ret i32 2
+
+6:                                                ; preds = %3, %1
   ret i32 0
 }
 END
