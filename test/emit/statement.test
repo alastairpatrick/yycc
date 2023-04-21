@@ -1,3 +1,80 @@
+// ForStatement
+
+BEGIN Infinite for loop
+void f() {
+    for (;;) {}
+}
+EXPECT_IR
+define void @f() {
+  br label %for_l
+
+for_l:                                            ; preds = %for_b, %0
+  br label %for_b
+
+for_b:                                            ; preds = %for_l
+  br label %for_l
+
+for_e:                                            ; No predecessors!
+  ret void
+}
+END
+
+
+BEGIN For integer range
+void f() {
+    unsigned i;
+    for (i = 0; i < 10; ++i) {}
+}
+EXPECT_IR
+define void @f() {
+  %i = alloca i32, align 4
+  store i32 0, ptr %i, align 4
+  br label %for_l
+
+for_l:                                            ; preds = %for_b, %0
+  %1 = load i32, ptr %i, align 4
+  %2 = icmp ult i32 %1, 10
+  br i1 %2, label %for_b, label %for_e
+
+for_b:                                            ; preds = %for_l
+  %3 = load i32, ptr %i, align 4
+  %4 = add i32 %3, 1
+  store i32 %4, ptr %i, align 4
+  br label %for_l
+
+for_e:                                            ; preds = %for_l
+  ret void
+}
+END
+
+
+BEGIN For integer range with internal declaration
+void f() {
+    for (unsigned i = 0; i < 10; ++i) {}
+}
+EXPECT_IR
+define void @f() {
+  %i = alloca i32, align 4
+  store i32 0, ptr %i, align 4
+  br label %for_l
+
+for_l:                                            ; preds = %for_b, %0
+  %1 = load i32, ptr %i, align 4
+  %2 = icmp ult i32 %1, 10
+  br i1 %2, label %for_b, label %for_e
+
+for_b:                                            ; preds = %for_l
+  %3 = load i32, ptr %i, align 4
+  %4 = add i32 %3, 1
+  store i32 %4, ptr %i, align 4
+  br label %for_l
+
+for_e:                                            ; preds = %for_l
+  ret void
+}
+END
+
+
 // ReturnStatement
 
 BEGIN Emit explicit return void

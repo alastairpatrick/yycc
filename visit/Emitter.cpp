@@ -275,6 +275,11 @@ struct Emitter: Visitor {
         return VisitStatementOutput();
     }
 
+    VisitStatementOutput visit_default(Statement* statement, const VisitStatementInput& input) {
+        assert(false);
+        return VisitStatementOutput();
+    }
+
     virtual VisitStatementOutput visit(CompoundStatement* statement, const VisitStatementInput& input) override {
         for (auto node: statement->nodes) {
             need_terminating_return = true;
@@ -282,6 +287,38 @@ struct Emitter: Visitor {
         }
         return VisitStatementOutput();
     };
+
+    VisitStatementOutput visit(ForStatement* statement, const VisitStatementInput& input) {
+        if (statement->declaration) {
+            emit(statement->declaration);
+        }
+
+        // TODO initialize
+
+        auto loop_block = LLVMAppendBasicBlock(function, "for_l");
+        auto body_block = LLVMAppendBasicBlock(function, "for_b");
+        auto end_block = LLVMAppendBasicBlock(function, "for_e");
+        LLVMBuildBr(builder, loop_block);
+        LLVMPositionBuilderAtEnd(builder, loop_block);
+
+        if (statement->condition) {
+            auto condition_value = emit(statement->condition).unqualified();
+            LLVMBuildCondBr(builder, condition_value.llvm_rvalue(builder), body_block, end_block);
+        } else {
+            LLVMBuildBr(builder, body_block);
+        }
+
+        LLVMPositionBuilderAtEnd(builder, body_block);
+        emit(statement->body);
+        if (statement->iterate) {
+            emit(statement->iterate);
+        }
+        LLVMBuildBr(builder, loop_block);
+
+        LLVMPositionBuilderAtEnd(builder, end_block);
+
+        return VisitStatementOutput();
+    }
 
     virtual VisitStatementOutput visit(ReturnStatement* statement, const VisitStatementInput& input) override {
         if (statement->expr) {
