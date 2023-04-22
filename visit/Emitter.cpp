@@ -354,8 +354,8 @@ struct Emitter: Visitor {
         }
 
         auto loop_block = LLVMAppendBasicBlock(function, "for_l");
-        auto body_block = LLVMAppendBasicBlock(function, "for_b");
-        auto iterate_block = construct.continue_block = LLVMAppendBasicBlock(function, "for_i");
+        auto body_block = statement->condition ? LLVMAppendBasicBlock(function, "for_b") : loop_block;
+        auto iterate_block = statement->iterate ? construct.continue_block = LLVMAppendBasicBlock(function, "for_i") : nullptr;
         auto end_block = construct.break_block = LLVMAppendBasicBlock(function, "for_e");
         LLVMBuildBr(builder, loop_block);
         LLVMPositionBuilderAtEnd(builder, loop_block);
@@ -364,20 +364,19 @@ struct Emitter: Visitor {
             auto condition_value = emit(statement->condition).unqualified();
             condition_value = convert_to_type(condition_value, IntegerType::of_bool());
             LLVMBuildCondBr(builder, condition_value.llvm_rvalue(builder), body_block, end_block);
-        } else {
-            LLVMBuildBr(builder, body_block);
         }
 
         LLVMPositionBuilderAtEnd(builder, body_block);
         emit(statement->body);
-        LLVMBuildBr(builder, iterate_block);
 
-        LLVMPositionBuilderAtEnd(builder, iterate_block);
         if (statement->iterate) {
+            LLVMBuildBr(builder, iterate_block);
+
+            LLVMPositionBuilderAtEnd(builder, iterate_block);
             emit(statement->iterate);
         }
-        LLVMBuildBr(builder, loop_block);
 
+        LLVMBuildBr(builder, loop_block);
         LLVMPositionBuilderAtEnd(builder, end_block);
 
         return VisitStatementOutput();

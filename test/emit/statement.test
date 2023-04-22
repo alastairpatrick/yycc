@@ -1,5 +1,25 @@
 // ForStatement
 
+BEGIN Infinite while loop
+void f() {
+    while (1) {}
+}
+EXPECT_IR
+define void @f() {
+  br label %for_l
+
+for_l:                                            ; preds = %for_b, %0
+  br i1 true, label %for_b, label %for_e
+
+for_b:                                            ; preds = %for_l
+  br label %for_l
+
+for_e:                                            ; preds = %for_l
+  ret void
+}
+END
+
+
 BEGIN Infinite for loop
 void f() {
     for (;;) {}
@@ -8,13 +28,7 @@ EXPECT_IR
 define void @f() {
   br label %for_l
 
-for_l:                                            ; preds = %for_i, %0
-  br label %for_b
-
-for_b:                                            ; preds = %for_l
-  br label %for_i
-
-for_i:                                            ; preds = %for_b
+for_l:                                            ; preds = %for_l, %0
   br label %for_l
 
 for_e:                                            ; No predecessors!
