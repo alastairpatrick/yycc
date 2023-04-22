@@ -32,11 +32,17 @@ EXPECT_AST
 
 BEGIN Parses for statement with declaration
 for (int i = 1; 2; 3) { i; }
-PARSE
 EXPECT_AST
 ["block",[
     ["for",["var","","Si","i",1],null,2,3,["block",["Ni"]]]
 ]]
+
+
+BEGIN Parses while statement with declaration
+while (1) { 2; }
+EXPECT_AST
+["for",null,null,1,null,["block",[2]]]
+
 
 
 BEGIN Parse if statement

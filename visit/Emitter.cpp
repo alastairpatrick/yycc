@@ -346,7 +346,9 @@ struct Emitter: Visitor {
             emit(statement->declaration);
         }
 
-        // TODO initialize
+        if (statement->initialize) {
+            emit(statement->initialize);
+        }
 
         auto loop_block = LLVMAppendBasicBlock(function, "for_l");
         auto body_block = LLVMAppendBasicBlock(function, "for_b");

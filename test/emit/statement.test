@@ -26,12 +26,13 @@ END
 BEGIN For integer range
 void f() {
     unsigned i;
-    for (i = 0; i < 10; ++i) {}
+    for (i = 1; i < 10; ++i) {}
 }
 EXPECT_IR
 define void @f() {
   %i = alloca i32, align 4
   store i32 0, ptr %i, align 4
+  store i32 1, ptr %i, align 4
   br label %for_l
 
 for_l:                                            ; preds = %for_i, %0
@@ -56,12 +57,12 @@ END
 
 BEGIN For integer range with internal declaration
 void f() {
-    for (unsigned i = 0; i < 10; ++i) {}
+    for (unsigned i = 1; i < 10; ++i) {}
 }
 EXPECT_IR
 define void @f() {
   %i = alloca i32, align 4
-  store i32 0, ptr %i, align 4
+  store i32 1, ptr %i, align 4
   br label %for_l
 
 for_l:                                            ; preds = %for_i, %0

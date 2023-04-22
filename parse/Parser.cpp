@@ -782,7 +782,9 @@ Statement* Parser::parse_statement() {
     switch (token) {
         case '{': {
           return parse_compound_statement();
-      } case TOK_FOR: {
+      } case TOK_FOR:
+        case TOK_WHILE: {
+          auto kind = token;
           consume();
           require('(');
 
@@ -792,19 +794,24 @@ Statement* Parser::parse_statement() {
           Expr* initialize{};
           Expr* condition{};
           Expr* iterate{};
-          if (!consume(';')) {
-              declaration = parse_declaration(IdentifierScope::BLOCK);
-              if (!declaration) {
-                  initialize = parse_expr(SEQUENCE_PREC);
+          if (kind == TOK_FOR) {
+              if (!consume(';')) {
+                  declaration = parse_declaration(IdentifierScope::BLOCK);
+                  if (!declaration) {
+                      initialize = parse_expr(SEQUENCE_PREC);
+                      require(';');
+                  }
+              }
+              if (!consume(';')) {
+                  condition = parse_expr(SEQUENCE_PREC);
                   require(';');
               }
-          }
-          if (!consume(';')) {
+              if (!consume(')')) {
+                  iterate = parse_expr(SEQUENCE_PREC);
+                  require(')');
+              }
+          } else {
               condition = parse_expr(SEQUENCE_PREC);
-              require(';');
-          }
-          if (!consume(')')) {
-              iterate = parse_expr(SEQUENCE_PREC);
               require(')');
           }
 
