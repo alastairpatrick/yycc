@@ -137,6 +137,8 @@ struct Emitter: Visitor {
         
         target_type = target_type->unqualified();
 
+        if (value.type == target_type) return value;
+
         VisitTypeInput input;
         input.value = value;
         input.target_type = target_type;
@@ -248,11 +250,21 @@ struct Emitter: Visitor {
         return VisitTypeOutput(input.value);
     }
 
-    virtual VisitTypeOutput visit(const FloatingPointType* type, const VisitTypeInput& input) override {
+    VisitTypeOutput visit(const ResolvedArrayType* type, const VisitTypeInput& input) {
         auto target_type = input.target_type;
         auto value = input.value;
 
-        if (target_type == type) return VisitTypeOutput(value);
+        if (auto pointer_type = type_cast<PointerType>(target_type)) {
+            return VisitTypeOutput(target_type, value.llvm_lvalue());
+        }
+
+        assert(false);  // TODO
+        return VisitTypeOutput(value);
+    }
+
+    virtual VisitTypeOutput visit(const FloatingPointType* type, const VisitTypeInput& input) override {
+        auto target_type = input.target_type;
+        auto value = input.value;
 
         if (auto float_target = type_cast<FloatingPointType>(target_type)) {
             return VisitTypeOutput(target_type, LLVMBuildFPCast(builder, value.llvm_rvalue(builder), input.target_type->llvm_type(), ""));
@@ -274,8 +286,6 @@ struct Emitter: Visitor {
         auto target_type = input.target_type;
         auto value = input.value;
 
-        if (target_type == type) return VisitTypeOutput(value);
-
         if (auto pointer_type = type_cast<PointerType>(target_type)) {
             return VisitTypeOutput(target_type, value.llvm_lvalue());
         }
@@ -287,8 +297,6 @@ struct Emitter: Visitor {
     virtual VisitTypeOutput visit(const IntegerType* type, const VisitTypeInput& input) override {
         auto target_type = input.target_type;
         auto value = input.value;
-
-        if (target_type == type) return VisitTypeOutput(value);
 
         if (auto int_target = type_cast<IntegerType>(target_type)) {
             if (int_target->size == type->size) return VisitTypeOutput(value.bit_cast(target_type));
@@ -930,6 +938,22 @@ struct Emitter: Visitor {
 
     virtual VisitStatementOutput visit(FloatingPointConstant* constant, const VisitStatementInput& input) override {
         return VisitStatementOutput(constant->type, constant->value);
+    }
+
+    virtual VisitStatementOutput visit(StringConstant* constant, const VisitStatementInput& input) override {
+        auto result_type = ResolvedArrayType::of(ArrayKind::COMPLETE,
+                                                 QualifiedType::of(constant->character_type, QUAL_CONST),
+                                                 constant->value.size() + 1);
+        if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+
+        auto global = LLVMAddGlobal(module, result_type->llvm_type(), "str");
+        LLVMSetGlobalConstant(global, true);
+        LLVMSetLinkage(global, LLVMPrivateLinkage);
+
+        auto llvm_context = TranslationUnitContext::it->llvm_context;
+        LLVMSetInitializer(global, LLVMConstStringInContext(llvm_context, constant->value.data(), constant->value.size(), false));
+
+        return VisitStatementOutput(Value(ValueKind::LVALUE, result_type, global));
     }
 };
 

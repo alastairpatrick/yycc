@@ -224,3 +224,11 @@ define void @g() {
   ret void
 }
 END
+
+
+BEGIN Global pointer variable initialized with string literal
+const char* c = "\000\000f";
+EXPECT_IR
+@str = private constant [4 x i8] c"\00\00f\00"
+@c = global ptr @str
+END
