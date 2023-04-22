@@ -155,6 +155,16 @@ EXPECT_MESSAGE
 :1:1: error truncated character escape code
 END
 
+BEGIN Smash together multi-byte characters in regular
+"\317\200"
+EXPECT_AST
+["S", "C", "π"]
+
+BEGIN Cannot smash together multi-byte characters in wide string
+L"\xC0\xC0"
+EXPECT_AST
+["S", "Us", "ÀÀ"]
+
 BEGIN UTF-8 2-byte string literal
 L"π"
 EXPECT_AST

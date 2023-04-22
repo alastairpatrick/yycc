@@ -45,7 +45,7 @@ static IntegerConstant* parse_char_literal(string_view text, const Location& loc
     if (text[0] == '\'') {
         message(Severity::ERROR, location) << "character literal may only have one character\n";
     } else {
-        c = unescape_char(text, location);
+        c = unescape_char(text, true, location).code;
         if (text[0] != '\'') {
             message(Severity::ERROR, location) << "character literal may only have one character\n";
         }
@@ -138,13 +138,13 @@ StringConstant* StringConstant::of(string_view text, const Location& location) {
         text.remove_prefix(1);
     }
 
-    auto value = unescape_string(text, location);
+    auto value = unescape_string(text, is_wide, location);
 
     return new StringConstant(move(value), IntegerType::of_char(is_wide), location);
 }
 
-StringConstant::StringConstant(string&& utf8_literal, const IntegerType* char_type, const Location& location)
-    : Constant(location), char_type(char_type), utf8_literal(move(utf8_literal)) {
+StringConstant::StringConstant(string&& value, const IntegerType* character_type, const Location& location)
+    : Constant(location), character_type(character_type), value(move(value)) {
 }
 
 VisitStatementOutput StringConstant::accept(Visitor& visitor, const VisitStatementInput& input) {
@@ -152,6 +152,6 @@ VisitStatementOutput StringConstant::accept(Visitor& visitor, const VisitStateme
 }
 
 void StringConstant::print(ostream& stream) const {
-    string t(utf8_literal);
-    stream << "[\"S\", " << char_type << ", " << json(t) << ']';
+    string t(value);
+    stream << "[\"S\", " << character_type << ", " << json(t) << ']';
 }

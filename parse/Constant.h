@@ -37,17 +37,18 @@ struct FloatingPointConstant: Constant {
 };
 
 struct StringConstant: Constant {
-    const IntegerType* char_type{};
-    string utf8_literal;
+    // If character type is "char", the character encoding is unknown. It might or might not be multi-byte.
+    // The encoding doesn't matter because this is an image of the string constant to add to the module.
+    // If the character type is other than "char" then the character encoding is UTF-8.
+    const IntegerType* character_type{};
+    string value;
 
     static StringConstant* of(string_view text, const Location& location);
 
-    StringConstant(string&& utf8_literal, const IntegerType* char_type, const Location& location);
+    StringConstant(string&& value, const IntegerType* character_type, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
 
     virtual void print(ostream& stream) const override;
 };
-
-
 
 #endif
