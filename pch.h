@@ -18,6 +18,7 @@
 #include <iostream>
 #include <list>
 #include <map>
+#include <optional>
 #include <set>
 #include <strstream>
 #include <stack>
@@ -50,6 +51,7 @@ using std::map;
 using std::max;
 using std::min;
 using std::move;
+using std::optional;
 using std::ostream;
 using std::set;
 using std::strstream;

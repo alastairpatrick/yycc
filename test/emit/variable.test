@@ -229,6 +229,13 @@ END
 BEGIN Global pointer variable initialized with string literal
 const char* c = "\000\000f";
 EXPECT_IR
-@str = private constant [4 x i8] c"\00\00f\00"
-@c = global ptr @str
+@const = private constant [4 x i8] c"\00\00f\00"
+@c = global ptr @const
+END
+
+
+BEGIN Global array variable initialized with string literal (1)
+const char c[4] = "\000\000f";
+EXPECT_IR
+@c = global [4 x i8] c"\00\00f\00"
 END

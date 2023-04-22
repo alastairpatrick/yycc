@@ -189,11 +189,12 @@ struct Emitter: Visitor {
         auto llvm_type = declarator->type->llvm_type();
 
         auto null_value = LLVMConstNull(llvm_type);
-        LLVMValueRef initial_value{};
+
+        optional<Value> initial;
         if (entity->initializer) {
-            initial_value = convert_to_type(emit(entity->initializer), declarator->type).llvm_rvalue(builder);
+            initial = convert_to_type(emit(entity->initializer), declarator->type);
         } else if (options.initialize_variables || entity->storage_duration() == StorageDuration::STATIC) {
-            initial_value = null_value;
+            initial = Value(declarator->type, null_value);
         }
 
         if (entity->storage_duration() == StorageDuration::AUTO) {
@@ -206,7 +207,8 @@ struct Emitter: Visitor {
             auto storage = LLVMBuildAlloca(temp_builder, llvm_type, identifier_name(declarator->identifier));
             if (options.initialize_variables) LLVMBuildStore(temp_builder, null_value, storage);
 
-            if (initial_value) LLVMBuildStore(builder, initial_value, storage);
+            if (initial.has_value()) LLVMBuildStore(builder, initial.value().llvm_rvalue(builder), storage);
+
             entity->value = Value(ValueKind::LVALUE, declarator->type, storage);
 
         } else if (entity->storage_duration() == StorageDuration::STATIC) {
@@ -216,11 +218,14 @@ struct Emitter: Visitor {
             }
 
             auto global = LLVMAddGlobal(module, llvm_type, name.c_str());
-            if (initial_value) LLVMSetInitializer(global, initial_value);
+
+            LLVMSetGlobalConstant(global, declarator->type->qualifiers() & QUAL_CONST);
+
+            if (initial.has_value()) LLVMSetInitializer(global, initial.value().llvm_const_rvalue());
+
             if (entity->linkage() != Linkage::EXTERNAL) {
                 LLVMSetLinkage(global, LLVMInternalLinkage);
             }
-            LLVMSetGlobalConstant(global, declarator->type->qualifiers() & QUAL_CONST);
 
             entity->value = Value(ValueKind::LVALUE, declarator->type, global);
         }
@@ -255,11 +260,21 @@ struct Emitter: Visitor {
         auto value = input.value;
 
         if (auto pointer_type = type_cast<PointerType>(target_type)) {
-            return VisitTypeOutput(target_type, value.llvm_lvalue());
+            if (value.kind == ValueKind::LVALUE) {
+                return VisitTypeOutput(target_type, value.llvm_lvalue());
+            }
+
+            if (value.is_const()) {
+                auto global = LLVMAddGlobal(module, value.type->llvm_type(), "const");
+                LLVMSetGlobalConstant(global, true);
+                LLVMSetLinkage(global, LLVMPrivateLinkage);
+                LLVMSetInitializer(global, value.llvm_const_rvalue());
+                return VisitTypeOutput(target_type, global);
+            }
         }
 
         assert(false);  // TODO
-        return VisitTypeOutput(value);
+        return VisitTypeOutput(value); 
     }
 
     virtual VisitTypeOutput visit(const FloatingPointType* type, const VisitTypeInput& input) override {
@@ -946,14 +961,10 @@ struct Emitter: Visitor {
                                                  constant->value.size() + 1);
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
-        auto global = LLVMAddGlobal(module, result_type->llvm_type(), "str");
-        LLVMSetGlobalConstant(global, true);
-        LLVMSetLinkage(global, LLVMPrivateLinkage);
-
         auto llvm_context = TranslationUnitContext::it->llvm_context;
-        LLVMSetInitializer(global, LLVMConstStringInContext(llvm_context, constant->value.data(), constant->value.size(), false));
+        auto llvm_constant = LLVMConstStringInContext(llvm_context, constant->value.data(), constant->value.size(), false);
 
-        return VisitStatementOutput(Value(ValueKind::LVALUE, result_type, global));
+        return VisitStatementOutput(result_type, llvm_constant);
     }
 };
 
