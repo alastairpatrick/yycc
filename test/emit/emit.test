@@ -7,7 +7,6 @@ void f() {
 EXPECT_IR
 define void @f() {
   %x = alloca i32, align 4
-  store i32 0, ptr %x, align 4
   store volatile i32 1, ptr %x, align 4
   ret void
 }
@@ -22,7 +21,6 @@ void f() {
 EXPECT_IR
 define void @f() {
   %x = alloca i32, align 4
-  store i32 0, ptr %x, align 4
   %1 = load volatile i32, ptr %x, align 4
   %2 = add i32 %1, 1
   ret void

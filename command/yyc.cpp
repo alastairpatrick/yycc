@@ -46,7 +46,8 @@ int main(int argc, const char* argv[]) {
 
     resolve_pass(identifiers.scopes.front(), nodes);
 
-    auto module = emit_pass(nodes);
+    EmitOptions options;
+    auto module = emit_pass(nodes, options);
     
     char* error{};
     LLVMTargetMachineEmitToFile(g_llvm_target_machine, module, "generated.asm", LLVMAssemblyFile, &error);

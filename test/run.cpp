@@ -174,7 +174,10 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
             if (test_type >= TestType::RESOLVE) resolve_pass(identifiers.scopes.front(), declarations);
 
             if (test_type >= TestType::EMIT) {
-                auto module = emit_pass(declarations);
+                EmitOptions options;
+                options.initialize_variables = false;
+
+                auto module = emit_pass(declarations, options);
                 char* module_string = LLVMPrintModuleToString(module);
                 module_ir = module_string;
                 LLVMDisposeMessage(module_string);

@@ -304,7 +304,6 @@ int* f() {
 EXPECT_IR
 define ptr @f() {
   %a = alloca [10 x i32], align 4
-  store [10 x i32] zeroinitializer, ptr %a, align 4
   %1 = getelementptr [10 x i32], ptr %a, i64 0, i64 0
   %2 = getelementptr i32, ptr %1, i32 1
   ret ptr %2
@@ -320,7 +319,6 @@ int* f() {
 EXPECT_IR
 define ptr @f() {
   %a = alloca [10 x i32], align 4
-  store [10 x i32] zeroinitializer, ptr %a, align 4
   %1 = getelementptr [10 x i32], ptr %a, i64 0, i64 0
   %2 = getelementptr i32, ptr %1, i32 1
   ret ptr %2
@@ -336,7 +334,6 @@ const int* f() {
 EXPECT_IR
 define ptr @f() {
   %a = alloca [10 x i32], align 4
-  store [10 x i32] zeroinitializer, ptr %a, align 4
   %1 = getelementptr [10 x i32], ptr %a, i64 0, i64 0
   %2 = getelementptr i32, ptr %1, i32 1
   ret ptr %2

@@ -42,6 +42,7 @@ struct SwitchConstruct: Construct {
 
 struct Emitter: Visitor {
     EmitOutcome outcome;
+    const EmitOptions& options;
 
     Emitter* parent{};
     LLVMModuleRef module{};
@@ -57,7 +58,7 @@ struct Emitter: Visitor {
     Construct* innermost_construct{};
     SwitchConstruct* innermost_switch{};
 
-    Emitter(EmitOutcome outcome): outcome(outcome) {
+    Emitter(EmitOutcome outcome, const EmitOptions& options): outcome(outcome), options(options) {
         if (outcome != EmitOutcome::TYPE) {
             builder = LLVMCreateBuilder();
         }
@@ -179,11 +180,12 @@ struct Emitter: Visitor {
     void emit_variable(Declarator* declarator, Entity* entity) {
         auto llvm_type = declarator->type->llvm_type();
 
+        auto null_value = LLVMConstNull(llvm_type);
         LLVMValueRef initial_value{};
         if (entity->initializer) {
             initial_value = convert_to_type(emit(entity->initializer), declarator->type).llvm_rvalue(builder);
-        } else {
-            initial_value = LLVMConstNull(llvm_type);
+        } else if (options.initialize_variables || entity->storage_duration() == StorageDuration::STATIC) {
+            initial_value = null_value;
         }
 
         if (entity->storage_duration() == StorageDuration::AUTO) {
@@ -194,8 +196,9 @@ struct Emitter: Visitor {
                 LLVMPositionBuilderAtEnd(temp_builder, entry_block);
             }
             auto storage = LLVMBuildAlloca(temp_builder, llvm_type, identifier_name(declarator->identifier));
+            if (options.initialize_variables) LLVMBuildStore(temp_builder, null_value, storage);
 
-            LLVMBuildStore(builder, initial_value, storage);
+            if (initial_value) LLVMBuildStore(builder, initial_value, storage);
             entity->value = Value(ValueKind::LVALUE, declarator->type, storage);
 
         } else if (entity->storage_duration() == StorageDuration::STATIC) {
@@ -205,7 +208,7 @@ struct Emitter: Visitor {
             }
 
             auto global = LLVMAddGlobal(module, llvm_type, name.c_str());
-            LLVMSetInitializer(global, initial_value);
+            if (initial_value) LLVMSetInitializer(global, initial_value);
             if (entity->linkage() != Linkage::EXTERNAL) {
                 LLVMSetLinkage(global, LLVMInternalLinkage);
             }
@@ -220,7 +223,7 @@ struct Emitter: Visitor {
           
         if (entity->is_function()) {
             if (entity->body) {
-                Emitter function_emitter(EmitOutcome::IR);
+                Emitter function_emitter(EmitOutcome::IR, options);
                 function_emitter.module = module;
                 function_emitter.parent = this;
                 function_emitter.emit_function_definition(declarator, entity);
@@ -942,7 +945,9 @@ SwitchConstruct::~SwitchConstruct() {
 
 
 const Type* get_expr_type(const Expr* expr) {
-    Emitter emitter(EmitOutcome::TYPE);
+    static const EmitOptions options;
+    Emitter emitter(EmitOutcome::TYPE, options);
+
     try {
         return emitter.emit(const_cast<Expr*>(expr)).type;
     } catch (EmitError&) {
@@ -951,7 +956,8 @@ const Type* get_expr_type(const Expr* expr) {
 }
 
 Value fold_expr(const Expr* expr, unsigned long long error_value) {
-    Emitter emitter(EmitOutcome::FOLD);
+    static const EmitOptions options;
+    Emitter emitter(EmitOutcome::FOLD, options);
 
     try {
         return emitter.emit(const_cast<Expr*>(expr));
@@ -960,8 +966,8 @@ Value fold_expr(const Expr* expr, unsigned long long error_value) {
     }
 }
 
-LLVMModuleRef emit_pass(const ASTNodeVector& nodes) {
-    Emitter emitter(EmitOutcome::IR);
+LLVMModuleRef emit_pass(const ASTNodeVector& nodes, const EmitOptions& options) {
+    Emitter emitter(EmitOutcome::IR, options);
     emitter.module = LLVMModuleCreateWithName("my_module");
 
     for (auto node: nodes) {
