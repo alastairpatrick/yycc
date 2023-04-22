@@ -67,7 +67,8 @@ VisitTypeOutput VoidType::accept(Visitor& visitor, const VisitTypeInput& input) 
 }
 
 LLVMTypeRef VoidType::llvm_type() const {
-    return LLVMVoidType();
+    auto llvm_context = TranslationUnitContext::it->llvm_context;
+    return LLVMVoidTypeInContext(llvm_context);
 }
 
 void VoidType::print(std::ostream& stream) const {
@@ -86,7 +87,8 @@ VisitTypeOutput UniversalType::accept(Visitor& visitor, const VisitTypeInput& in
 
 LLVMTypeRef UniversalType::llvm_type() const {
     assert(false);
-    return LLVMVoidType();
+    auto llvm_context = TranslationUnitContext::it->llvm_context;
+    return LLVMVoidTypeInContext(llvm_context);
 }
 
 void UniversalType::print(std::ostream& stream) const {
@@ -160,15 +162,24 @@ VisitTypeOutput IntegerType::accept(Visitor& visitor, const VisitTypeInput& inpu
 }
 
 LLVMTypeRef IntegerType::llvm_type() const {
-    static const LLVMTypeRef types[unsigned(IntegerSize::NUM)] = {
-        LLVMInt1Type(), 
-        LLVMInt8Type(), 
-        LLVMInt16Type(),
-        LLVMInt32Type(),
-        LLVMInt32Type(),
-        LLVMInt64Type(),
+    auto llvm_context = TranslationUnitContext::it->llvm_context;
+    switch (size) {
+      default:
+        assert(false);
+        return nullptr;
+      case IntegerSize::BOOL:
+        return LLVMInt1TypeInContext(llvm_context);
+      case IntegerSize::CHAR:
+        return LLVMInt8TypeInContext(llvm_context);
+      case IntegerSize::SHORT:
+        return LLVMInt16TypeInContext(llvm_context);
+      case IntegerSize::INT:
+        return LLVMInt32TypeInContext(llvm_context);
+      case IntegerSize::LONG:
+        return LLVMInt32TypeInContext(llvm_context);
+      case IntegerSize::LONG_LONG:
+        return LLVMInt64TypeInContext(llvm_context);
     };
-    return types[unsigned(size)];
 }
 
 void IntegerType::print(ostream& stream) const {
@@ -219,12 +230,18 @@ VisitTypeOutput FloatingPointType::accept(Visitor& visitor, const VisitTypeInput
 }
 
 LLVMTypeRef FloatingPointType::llvm_type() const {
-    static const LLVMTypeRef types[unsigned(FloatingPointSize::NUM)] = {
-        LLVMFloatType(), 
-        LLVMDoubleType(),
-        LLVMX86FP80Type(),
+    auto llvm_context = TranslationUnitContext::it->llvm_context;
+    switch (size) {
+      default:
+        assert(false);
+        return nullptr;
+      case FloatingPointSize::FLOAT:
+        return LLVMFloatTypeInContext(llvm_context);
+      case FloatingPointSize::DOUBLE:
+        return LLVMDoubleTypeInContext(llvm_context);
+      case FloatingPointSize::LONG_DOUBLE:
+        return LLVMX86FP80TypeInContext(llvm_context);
     };
-    return types[unsigned(size)];
 }
 
 void FloatingPointType::print(ostream& stream) const {
@@ -241,7 +258,8 @@ VisitTypeOutput PointerType::accept(Visitor& visitor, const VisitTypeInput& inpu
 }
 
 LLVMTypeRef PointerType::cache_llvm_type() const {
-    return LLVMPointerType(LLVMInt32Type(), 0);
+    auto llvm_context = TranslationUnitContext::it->llvm_context;
+    return LLVMPointerTypeInContext(llvm_context, 0);
 }
 
 void PointerType::print(std::ostream& stream) const {
@@ -422,6 +440,8 @@ VisitTypeOutput StructType::accept(Visitor& visitor, const VisitTypeInput& input
 }
 
 LLVMTypeRef StructType::cache_llvm_type() const {
+    auto llvm_context = TranslationUnitContext::it->llvm_context;
+
     vector<LLVMTypeRef> member_types;
     member_types.reserve(members.size());
     for (auto member: members) {
@@ -429,7 +449,7 @@ LLVMTypeRef StructType::cache_llvm_type() const {
             member_types.push_back(member->type->llvm_type());
         }
     }
-    return LLVMStructType(member_types.data(), member_types.size(), false);
+    return LLVMStructTypeInContext(llvm_context, member_types.data(), member_types.size(), false);
 }
 
 void StructType::print(std::ostream& stream) const {

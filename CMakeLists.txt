@@ -95,12 +95,6 @@ target_link_libraries(lang_lib PRIVATE
     ${lang_llvm_libs}
 )
 
-add_executable(lang
-    main.cpp
-)
-
-target_link_libraries(lang PRIVATE lang_lib)
-
 add_subdirectory(command)
 add_subdirectory(test)
 add_subdirectory(third_party)

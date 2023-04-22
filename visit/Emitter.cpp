@@ -59,11 +59,12 @@ struct Emitter: Visitor {
     SwitchConstruct* innermost_switch{};
 
     Emitter(EmitOutcome outcome, const EmitOptions& options): outcome(outcome), options(options) {
+        auto llvm_context = TranslationUnitContext::it->llvm_context;
         if (outcome != EmitOutcome::TYPE) {
-            builder = LLVMCreateBuilder();
+            builder = LLVMCreateBuilderInContext(llvm_context);
         }
         if (outcome == EmitOutcome::IR) {
-            temp_builder = LLVMCreateBuilder();
+            temp_builder = LLVMCreateBuilderInContext(llvm_context);
         }
     }
 
@@ -96,10 +97,15 @@ struct Emitter: Visitor {
         declarator->status = DeclaratorStatus::EMITTED;
     }
 
+    LLVMBasicBlockRef append_block(const char* name) {
+        auto llvm_context = TranslationUnitContext::it->llvm_context;
+        return LLVMAppendBasicBlockInContext(llvm_context, function, name);
+    }
+
     LLVMBasicBlockRef lookup_label(const Identifier& identifier) {
         auto& block = goto_labels[identifier.name];
         if (!block) {
-            block = LLVMAppendBasicBlock(function, identifier_name(identifier));
+            block = append_block(identifier_name(identifier));
         }
         return block;
     }
@@ -152,8 +158,8 @@ struct Emitter: Visitor {
 
         entity->value = Value(ValueKind::LVALUE, function_type, function);
 
-        entry_block = LLVMAppendBasicBlock(function, "");
-        unreachable_block = LLVMAppendBasicBlock(function, "");
+        entry_block = append_block("");
+        unreachable_block = append_block("");
         LLVMPositionBuilderAtEnd(builder, entry_block);
 
         for (size_t i = 0; i < entity->params.size(); ++i) {
@@ -353,10 +359,10 @@ struct Emitter: Visitor {
             emit(statement->initialize);
         }
 
-        auto loop_block = LLVMAppendBasicBlock(function, "for_l");
-        auto body_block = statement->condition ? LLVMAppendBasicBlock(function, "for_b") : loop_block;
-        auto iterate_block = statement->iterate ? construct.continue_block = LLVMAppendBasicBlock(function, "for_i") : nullptr;
-        auto end_block = construct.break_block = LLVMAppendBasicBlock(function, "for_e");
+        auto loop_block = append_block("for_l");
+        auto body_block = statement->condition ? append_block("for_b") : loop_block;
+        auto iterate_block = statement->iterate ? construct.continue_block = append_block("for_i") : nullptr;
+        auto end_block = construct.break_block = append_block("for_e");
         LLVMBuildBr(builder, loop_block);
         LLVMPositionBuilderAtEnd(builder, loop_block);
 
@@ -404,10 +410,10 @@ struct Emitter: Visitor {
     }
 
     VisitStatementOutput visit(IfElseStatement* statement, const VisitStatementInput& input) {
-        auto then_block = LLVMAppendBasicBlock(function, "if_c");
+        auto then_block = append_block("if_c");
         LLVMBasicBlockRef else_block;
-        if (statement->else_statement) else_block = LLVMAppendBasicBlock(function, "if_a");
-        auto end_block = LLVMAppendBasicBlock(function, "if_e");
+        if (statement->else_statement) else_block = append_block("if_a");
+        auto end_block = append_block("if_e");
         if (!statement->else_statement) else_block = end_block;
 
         auto condition_value = emit(statement->condition).unqualified();
@@ -446,11 +452,11 @@ struct Emitter: Visitor {
     virtual VisitStatementOutput visit(SwitchStatement* statement, const VisitStatementInput& input) override {
         SwitchConstruct construct(this);
 
-        construct.break_block = LLVMAppendBasicBlock(function, "");
+        construct.break_block = append_block("");
 
         LLVMBasicBlockRef default_block{};
         if (statement->num_defaults) {
-            construct.default_label = default_block = LLVMAppendBasicBlock(function, "");
+            construct.default_label = default_block = append_block("");
         } else {
             default_block = construct.break_block;
         }
@@ -459,7 +465,7 @@ struct Emitter: Visitor {
         auto switch_value = LLVMBuildSwitch(builder, expr_value.llvm_rvalue(builder), default_block, statement->cases.size());
 
         for (auto case_expr: statement->cases) {
-            auto case_label = LLVMAppendBasicBlock(function, "");
+            auto case_label = append_block("");
             innermost_switch->case_labels[case_expr] = case_label;
 
             auto case_value = fold_expr(case_expr);
@@ -681,6 +687,8 @@ struct Emitter: Visitor {
     }
 
     Value emit_pointer_arithmetic_operation(BinaryExpr* expr, const PointerType* pointer_type, Value left_value, Value right_value) {
+        auto llvm_target_data = TranslationUnitContext::it->llvm_target_data;
+
         if (expr->op == '+' || expr->op == TOK_ADD_ASSIGN) {
             if (outcome == EmitOutcome::TYPE) return Value(pointer_type);
 
@@ -694,7 +702,7 @@ struct Emitter: Visitor {
             auto left_int = LLVMBuildPtrToInt(builder, left_value.llvm_rvalue(builder), result_type->llvm_type(), "");
             auto right_int = LLVMBuildPtrToInt(builder, right_value.llvm_rvalue(builder), result_type->llvm_type(), "");
             auto byte_diff = LLVMBuildSub(builder, left_int, right_int, "");
-            auto size_of_base_type = LLVMStoreSizeOfType(g_llvm_target_data, pointer_type->base_type->llvm_type());
+            auto size_of_base_type = LLVMStoreSizeOfType(llvm_target_data, pointer_type->base_type->llvm_type());
             auto result = LLVMBuildSDiv(builder, byte_diff, LLVMConstInt(result_type->llvm_type(), size_of_base_type, true), "");
             return Value(result_type, result);
         } else {
@@ -787,10 +795,10 @@ struct Emitter: Visitor {
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
         LLVMBasicBlockRef alt_blocks[2] = {
-            LLVMAppendBasicBlock(function, "then"),
-            LLVMAppendBasicBlock(function, "else"),
+            append_block("then"),
+            append_block("else"),
         };
-        auto merge_block = LLVMAppendBasicBlock(function, "merge");
+        auto merge_block = append_block("merge");
 
         auto condition_value = emit(expr->condition).unqualified();
         condition_value = convert_to_type(condition_value, IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL));
@@ -866,6 +874,8 @@ struct Emitter: Visitor {
     }
 
     virtual VisitStatementOutput visit(SizeOfExpr* expr, const VisitStatementInput& input) override {
+        auto llvm_target_data = TranslationUnitContext::it->llvm_target_data;
+
         auto result_type = IntegerType::uintptr_type();
 
         if (!expr->type->is_complete()) {
@@ -875,7 +885,7 @@ struct Emitter: Visitor {
 
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
-        auto size_int = LLVMStoreSizeOfType(g_llvm_target_data, expr->type->llvm_type());
+        auto size_int = LLVMStoreSizeOfType(llvm_target_data, expr->type->llvm_type());
         return VisitStatementOutput(result_type, LLVMConstInt(result_type->llvm_type(), size_int, false));
     }
 
@@ -966,8 +976,10 @@ Value fold_expr(const Expr* expr, unsigned long long error_value) {
 }
 
 LLVMModuleRef emit_pass(const ASTNodeVector& nodes, const EmitOptions& options) {
+    auto llvm_context = TranslationUnitContext::it->llvm_context;
+
     Emitter emitter(EmitOutcome::IR, options);
-    emitter.module = LLVMModuleCreateWithName("my_module");
+    emitter.module = LLVMModuleCreateWithNameInContext("my_module", llvm_context);
 
     for (auto node: nodes) {
         emitter.emit(node);

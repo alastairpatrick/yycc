@@ -27,6 +27,9 @@ struct TranslationUnitContext {
     unordered_set<string_view> interned_views;
 
     ASTNode* ast_nodes{};
+
+    LLVMContextRef llvm_context{};
+    LLVMTargetDataRef llvm_target_data{};
 };
 
 #endif
