@@ -163,6 +163,10 @@ struct ResolvePass: Visitor {
         return nullptr;
     }
 
+    const Type* compose_array_type_with_initializer_size(const ResolvedArrayType* type, size_t size) {
+        return composite_type(type, ResolvedArrayType::of(ArrayKind::COMPLETE, type->element_type, size));
+    }
+
     virtual VisitDeclaratorOutput visit(Declarator* primary, Entity* primary_entity, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
         if (!secondary) {
@@ -176,13 +180,21 @@ struct ResolvePass: Visitor {
             if (primary_entity->initializer) {
                 resolve(primary_entity->initializer);
                 if (auto array_type = dynamic_cast<const ResolvedArrayType*>(primary->type)) {
+
                     if (auto string_constant = dynamic_cast<StringConstant*>(primary_entity->initializer)) {
                         auto string_size = string_constant->value.length + 1;
-                        auto resolved = composite_type(primary->type, ResolvedArrayType::of(ArrayKind::COMPLETE, string_constant->character_type, string_size));
-                        if (resolved) {
+                        if (auto resolved = compose_array_type_with_initializer_size(array_type, string_size)) {
                             primary->type = resolved;
                         } else if (array_type->kind == ArrayKind::COMPLETE && string_size > array_type->size) {
                             message(Severity::ERROR, string_constant->location) << "size of string literal (" << string_size << ") exceeds declared array size (" << array_type->size << ")\n";
+                        }
+                    }
+
+                    if (auto init_expr = dynamic_cast<InitializerExpr*>(primary_entity->initializer)) {
+                        if (auto resolved = compose_array_type_with_initializer_size(array_type, init_expr->elements.size())) {
+                            primary->type = resolved;
+                        } else if (array_type->kind == ArrayKind::COMPLETE && init_expr->elements.size() > array_type->size) {
+                            message(Severity::ERROR, init_expr->elements[array_type->size]->location) << "excess elements in array initializer\n";
                         }
                     }
                 }
@@ -589,6 +601,13 @@ struct ResolvePass: Visitor {
 
     virtual VisitStatementOutput visit(IncDecExpr* expr, const VisitStatementInput& input) override {
         resolve(expr->expr);
+        return VisitStatementOutput();
+    }
+
+    virtual VisitStatementOutput visit(InitializerExpr* init_expr, const VisitStatementInput& input) override {
+        for (auto element: init_expr->elements) {
+            resolve(element);
+        }
         return VisitStatementOutput();
     }
 

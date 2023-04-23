@@ -168,3 +168,23 @@ char a[] = "abc";
 EXPECT_MESSAGE
 :2:12: error size of string literal (4) exceeds declared array size (1)
 END
+
+
+BEGIN Initializer expression gives array size
+int a[] = { 1, 2 };
+EXPECT_GLOBALS
+[["var","ES",["A","Si",2],"a",["Init",1,2]]]
+
+
+BEGIN Initializer expression size can be shorter than declared array size
+int a[10] = { 1, 2 };
+EXPECT_GLOBALS
+[["var","ES",["A","Si",10],"a",["Init",1,2]]]
+
+
+BEGIN Error if initializer expression size exceeds array size
+int a[1];
+int a[] = { 1, 2, 3 };
+EXPECT_MESSAGE
+:2:16: error excess elements in array initializer
+END
