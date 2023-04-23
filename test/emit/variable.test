@@ -149,6 +149,33 @@ define void @f() {
 END
 
 
+BEGIN Local array variable with initializer expression
+void f(int x) {
+    int a[] = {x, x};
+}
+EXPECT_IR
+define void @f(i32 %0) {
+  %a = alloca [2 x i32], align 4
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %2 = getelementptr [2 x i32], ptr %a, i32 0, i64 0
+  %3 = load i32, ptr %x, align 4
+  store i32 %3, ptr %2, align 4
+  %4 = getelementptr [2 x i32], ptr %a, i32 0, i64 1
+  %5 = load i32, ptr %x, align 4
+  store i32 %5, ptr %4, align 4
+  ret void
+}
+END
+
+
+BEGIN Global array variable with initializer expression
+int a[] = {1, 1+1};
+EXPECT_IR
+@a = global [2 x i32] [i32 1, i32 2]
+END
+
+
 BEGIN Global initialized function pointer variable (1)
 void f() {
 }
@@ -229,8 +256,8 @@ END
 BEGIN Global pointer variable initialized with string literal
 const char* c = "\000\000f";
 EXPECT_IR
-@const = private constant [4 x i8] c"\00\00f\00"
 @c = global ptr @const
+@const = private constant [4 x i8] c"\00\00f\00"
 END
 
 
@@ -251,8 +278,8 @@ END
 BEGIN Global pointer variable initialized with wide string literal
 const unsigned short* c = L"\000\000f";
 EXPECT_IR
-@const = private constant [4 x i16] [i16 0, i16 0, i16 102, i16 0]
 @c = global ptr @const
+@const = private constant [4 x i16] [i16 0, i16 0, i16 102, i16 0]
 END
 
 

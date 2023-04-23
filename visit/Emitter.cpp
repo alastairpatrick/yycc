@@ -195,17 +195,47 @@ struct Emitter: Visitor {
         function = nullptr;
     }
 
+    void emit_auto_initializer(Value dest, Expr* expr) {
+        auto llvm_context = TranslationUnitContext::it->llvm_context;
+
+        if (auto initializer = dynamic_cast<InitializerExpr*>(expr)) {
+            if (auto array_type = type_cast<ResolvedArrayType>(dest.type)) {
+                LLVMValueRef zero = LLVMConstInt(LLVMInt32TypeInContext(llvm_context), 0, false);
+                for (size_t i = 0; i < array_type->size; ++i) {
+                    LLVMValueRef indices[] = { zero, LLVMConstInt(LLVMInt64TypeInContext(llvm_context), i, false) };
+                    LLVMValueRef dest_element = LLVMBuildGEP2(builder, array_type->llvm_type(), dest.llvm_lvalue(), indices, 2, "");
+                    emit_auto_initializer(Value(ValueKind::LVALUE, array_type->element_type, dest_element), initializer->elements[i]);
+                }
+                return;
+            }
+        }
+
+        auto value = convert_to_type(emit(expr), dest.type);
+        if (dest.kind == ValueKind::LVALUE) {
+            LLVMBuildStore(builder, value.llvm_rvalue(builder), dest.llvm_lvalue());
+        }
+    }
+    
+    Value emit_static_initializer(Value dest, Expr* expr) {
+        if (auto initializer = dynamic_cast<InitializerExpr*>(expr)) {
+            if (auto array_type = type_cast<ResolvedArrayType>(dest.type)) {
+                vector<LLVMValueRef> values(array_type->size);
+                for (size_t i = 0; i < array_type->size; ++i) {
+                    values[i] = emit_static_initializer(array_type->element_type, initializer->elements[i]).llvm_const_rvalue();
+                }
+
+                return Value(array_type, LLVMConstArray(array_type->element_type->llvm_type(), values.data(), values.size()));
+            }
+        }
+
+        return convert_to_type(emit(expr), dest.type);
+    }
+
     void emit_variable(Declarator* declarator, Entity* entity) {
-        auto llvm_type = declarator->type->llvm_type();
+        auto type = declarator->primary->type;
+        auto llvm_type = type->llvm_type();
 
         auto null_value = LLVMConstNull(llvm_type);
-
-        optional<Value> initial;
-        if (entity->initializer) {
-            initial = convert_to_type(emit(entity->initializer), declarator->type);
-        } else if (options.initialize_variables || entity->storage_duration() == StorageDuration::STATIC) {
-            initial = Value(declarator->type, null_value);
-        }
 
         if (entity->storage_duration() == StorageDuration::AUTO) {
             auto first_insn = LLVMGetFirstInstruction(entry_block);
@@ -217,9 +247,14 @@ struct Emitter: Visitor {
             auto storage = LLVMBuildAlloca(temp_builder, llvm_type, identifier_name(declarator->identifier));
             if (options.initialize_variables) LLVMBuildStore(temp_builder, null_value, storage);
 
-            if (initial.has_value()) LLVMBuildStore(builder, initial.value().llvm_rvalue(builder), storage);
+            entity->value = Value(ValueKind::LVALUE, type, storage);
 
-            entity->value = Value(ValueKind::LVALUE, declarator->type, storage);
+            if (entity->initializer) {
+                emit_auto_initializer(entity->value, entity->initializer);
+            } else if (options.initialize_variables) {
+                LLVMBuildStore(builder, null_value, storage);
+            }
+
 
         } else if (entity->storage_duration() == StorageDuration::STATIC) {
             string name(*declarator->identifier.name);
@@ -229,15 +264,20 @@ struct Emitter: Visitor {
 
             auto global = LLVMAddGlobal(module->llvm_module, llvm_type, name.c_str());
 
-            LLVMSetGlobalConstant(global, declarator->type->qualifiers() & QUAL_CONST);
+            LLVMSetGlobalConstant(global, type->qualifiers() & QUAL_CONST);
 
-            if (initial.has_value()) LLVMSetInitializer(global, initial.value().llvm_const_rvalue());
+
+            LLVMValueRef initial = null_value;
+            if (entity->initializer) {
+                initial = emit_static_initializer(Value(type), entity->initializer).llvm_const_rvalue();
+            }
+            LLVMSetInitializer(global, initial);
 
             if (entity->linkage() != Linkage::EXTERNAL) {
                 LLVMSetLinkage(global, LLVMInternalLinkage);
             }
 
-            entity->value = Value(ValueKind::LVALUE, declarator->type, global);
+            entity->value = Value(ValueKind::LVALUE, type, global);
         }
     }
 
