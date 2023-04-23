@@ -1,4 +1,5 @@
 #include "Emitter.h"
+#include "lex/Unescape.h"
 #include "LLVM.h"
 #include "Message.h"
 #include "parse/Declaration.h"
@@ -962,7 +963,22 @@ struct Emitter: Visitor {
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
         auto llvm_context = TranslationUnitContext::it->llvm_context;
-        auto llvm_constant = LLVMConstStringInContext(llvm_context, constant->value.data(), constant->value.size(), false);
+
+        LLVMValueRef llvm_constant{};
+        if (constant->character_type == IntegerType::of_char(false)) {
+            llvm_constant = LLVMConstStringInContext(llvm_context, constant->value.data(), constant->value.size(), false);
+        } else {
+            LLVMTypeRef llvm_char_type = constant->character_type->llvm_type();
+            vector<LLVMValueRef> llvm_char_values;
+            string_view source(constant->value);
+            llvm_char_values.reserve(source.size());
+            while (source.size()) {
+                auto c = decode_char(source);
+                llvm_char_values.push_back(LLVMConstInt(llvm_char_type, c.code, false));
+            }
+            llvm_char_values.push_back(LLVMConstInt(llvm_char_type, 0, false));
+            llvm_constant = LLVMConstArray(llvm_char_type, llvm_char_values.data(), llvm_char_values.size());
+        }
 
         return VisitStatementOutput(result_type, llvm_constant);
     }

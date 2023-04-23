@@ -35,6 +35,18 @@ static uint32_t decode_utf8(uint32_t c, string_view& rest) {
     return ((c & 0b111) << 18) | ((b1 & 0x3F) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F);;
 }
 
+CharValue decode_char(string_view& source) {
+    CharValue result{};
+    uint32_t c = source[0];
+    source.remove_prefix(1);
+    if ((c & 0x80) != 0) {
+        c = decode_utf8(c, source);
+        result.multi_byte = true;
+    }
+    result.code = c;
+    return result;
+}
+
 CharValue unescape_char(string_view& source, bool decode_multi_byte, const Location& location) {
     CharValue result;
     uint32_t c = source[0];
