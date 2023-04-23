@@ -923,14 +923,11 @@ Statement* Parser::parse_statement() {
 
           auto scope = identifiers.pop_scope();
 
-          if (declaration) {
-              ASTNodeVector nodes;
-              nodes.push_back(statement);
-              auto outer = new CompoundStatement(move(scope), move(nodes), location);
-              return outer;
-          }
+          if (!declaration) return statement;
 
-          return statement;
+          ASTNodeVector nodes;
+          nodes.push_back(statement);
+          return new CompoundStatement(move(scope), move(nodes), location);
 
       } case TOK_IF: {
           consume();
