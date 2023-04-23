@@ -178,8 +178,17 @@ void Parser::unexpected_token() {
     pause_messages();
 }
 
-void Parser::balance_until(int t) {
-    while (token && token != t) {
+void Parser::skip_expr(OperatorPrec min_prec) {
+    // The precedence returned by prec() is wrt the use of the token as closing parenthesis,
+    // as a binary operator or as the '?' in the conditional operator. The token might instead
+    // be, e.g., a unary operator. The highest precedence token for which there is ambiguity
+    // is '&'. Therefore we require that min_prec be such that a misinterpreted '&' would not
+    // cause skip_expr to return early.
+    assert(min_prec < AND_PREC);
+
+    while (token) {
+        if (prec() != 0 && prec() <= min_prec) return;
+
         switch (token) {
           default:
             consume();
@@ -203,17 +212,8 @@ void Parser::balance_until(int t) {
     }
 }
 
-void Parser::skip_expr(OperatorPrec min_prec) {
-    // The precedence returned by prec() is wrt the use of the token as closing parenthesis,
-    // as a binary operator or as the '?' in the conditional operator. The token might instead
-    // be, e.g., a unary operator. The highest precedence token for which there is ambiguity
-    // is '&'. Therefore we require that min_prec be such that a misinterpreted '&' would not
-    // cause skip_expr to return early.
-    assert(min_prec < AND_PREC);
-
-    while (token) {
-        if (prec() != 0 && prec() <= min_prec) return;
-
+void Parser::balance_until(int t) {
+    while (token && token != t) {
         switch (token) {
           default:
             consume();

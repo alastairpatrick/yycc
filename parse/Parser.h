@@ -50,8 +50,9 @@ private:
     void skip_unexpected();
     void unexpected_token();
 
-    void balance_until(int t);
+    // During preparse, these skip parenthesis surrounded lexical elements instead of actually parsing.
     void skip_expr(OperatorPrec min_prec);
+    void balance_until(int t);
 
     size_t position() const;
     Fragment end_fragment(size_t begin_position) const;
