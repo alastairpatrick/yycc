@@ -165,8 +165,8 @@ struct Emitter: Visitor {
         unreachable_block = append_block("");
         LLVMPositionBuilderAtEnd(builder, entry_block);
 
-        for (size_t i = 0; i < entity->params.size(); ++i) {
-            auto param = entity->params[i];
+        for (size_t i = 0; i < entity->parameters.size(); ++i) {
+            auto param = entity->parameters[i];
             auto param_entity = param->entity();
 
             auto storage = LLVMBuildAlloca(builder, param->type->llvm_type(), identifier_name(param->identifier));
@@ -847,8 +847,8 @@ struct Emitter: Visitor {
         condition_value = convert_to_type(condition_value, IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL));
         LLVMBuildCondBr(builder, condition_value.llvm_rvalue(builder), alt_blocks[0], alt_blocks[1]);
 
-        LLVMValueRef 
-            alt_values[2];
+        LLVMValueRef alt_values[2];
+
         LLVMPositionBuilderAtEnd(builder, alt_blocks[0]);
         Value then_value = emit(expr->then_expr).unqualified();
         alt_values[0] = convert_to_type(then_value, result_type).llvm_rvalue(builder);

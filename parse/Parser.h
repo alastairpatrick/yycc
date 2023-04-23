@@ -13,7 +13,7 @@ struct SwitchStatement;
 struct DeclaratorTransform {
     function<const Type*(const Type*)> type_transform;
     Identifier identifier;
-    vector<Declarator*> params;
+    vector<Declarator*> parameters;
     CompoundStatement* body{};
 
     const Type* apply(const Type* type);

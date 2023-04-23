@@ -83,13 +83,13 @@ struct Entity: DeclaratorDelegate {
     Expr* bit_field_size{};
 
     // Function related
-    vector<Declarator*> params;
+    vector<Declarator*> parameters;
     Statement* body{};
     bool inline_definition{};
     Value value;
 
     Entity(Declarator* declarator, Expr* initializer, Expr* bit_field_size);
-    Entity(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&& params, Statement* body);
+    Entity(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&& parameters, Statement* body);
     explicit Entity(Declarator* declarator);
 
     bool is_function() const;

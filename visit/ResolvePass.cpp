@@ -166,7 +166,7 @@ struct ResolvePass: Visitor {
     virtual VisitDeclaratorOutput visit(Declarator* primary, Entity* primary_entity, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
         if (!secondary) {
-            for (auto param: primary_entity->params) {
+            for (auto param: primary_entity->parameters) {
                 resolve(param);
             }
 
@@ -223,7 +223,7 @@ struct ResolvePass: Visitor {
                 redeclaration_error(secondary, primary->location, nullptr);
             } else {
                 primary_entity->body = secondary_entity->body;
-                primary_entity->params = move(secondary_entity->params);
+                primary_entity->parameters = move(secondary_entity->parameters);
             }
         }
   

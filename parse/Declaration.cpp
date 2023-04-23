@@ -104,8 +104,8 @@ Entity::Entity(Declarator* declarator, Expr* initializer, Expr* bit_field_size)
     : DeclaratorDelegate(declarator), initializer(initializer), bit_field_size(bit_field_size) {
 }
 
-Entity::Entity(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&& params, Statement* body)
-    : DeclaratorDelegate(declarator), params(move(params)), body(body) {
+Entity::Entity(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&& parameters, Statement* body)
+    : DeclaratorDelegate(declarator), parameters(move(parameters)), body(body) {
     auto scope = declarator->declaration->scope;
     auto storage_class = declarator->declaration->storage_class;
 
@@ -114,8 +114,6 @@ Entity::Entity(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&
         message(Severity::ERROR, declarator->location) << "invalid storage class\n";
     }
 
-    // It's very valuable to determine which functions with external linkage are inline definitions, because they don't need to be
-    // written to the AST file; another translation unit is guaranteed to have an external definition.
     inline_definition = (linkage() == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
 }
 
@@ -182,9 +180,9 @@ void Entity::print(ostream& stream) const {
         stream << "\", " << declarator->type << ", \"" << declarator->identifier << '"';
         if (body) {
             stream << ", [";
-            for (auto i = 0; i < params.size(); ++i) {
+            for (auto i = 0; i < parameters.size(); ++i) {
                 if (i != 0) stream << ", ";
-                auto identifier = params[i]->identifier;
+                auto identifier = parameters[i]->identifier;
                 stream << '"' << identifier << '"';
             }
             stream << "], " << body;

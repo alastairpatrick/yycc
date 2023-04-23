@@ -1061,7 +1061,7 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, in
                         message(Severity::ERROR, preprocessor.location()) << "expected parameter declaration\n";
                         skip_expr(ASSIGN_PREC);
                     } else {
-                        declarator.params.push_back(param_declarator);
+                        declarator.parameters.push_back(param_declarator);
 
                         if (param_declarator->type == &VoidType::it) {
                             if (seen_void || !param_types.empty()) {
@@ -1137,7 +1137,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     if (is_function && declaration->storage_class != StorageClass::TYPEDEF) {
         declarator->delegate = new Entity(declarator,
                                           specifiers,
-                                          move(declarator_transform.params),
+                                          move(declarator_transform.parameters),
                                           declarator_transform.body);
     } else {
         if (specifiers & (1 << TOK_INLINE)) {
