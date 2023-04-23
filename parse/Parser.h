@@ -30,7 +30,6 @@ struct Parser {
     Parser(Preprocessor& preprocessor, IdentifierMap& identifiers);
     void operator=(const Parser&) = delete;
 
-    Declaration* parse_initial_directives();
     Expr* parse_standalone_expr();  // for testing
     Statement* parse_standalone_statement();  // for testing
     ASTNodeVector parse();
