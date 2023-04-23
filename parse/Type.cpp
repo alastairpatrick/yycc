@@ -449,7 +449,10 @@ LLVMTypeRef StructType::cache_llvm_type() const {
             member_types.push_back(member->type->llvm_type());
         }
     }
-    return LLVMStructTypeInContext(llvm_context, member_types.data(), member_types.size(), false);
+    const char* name = tag->identifier.name->empty() ? "struct" : tag->identifier.name->data();
+    auto llvm_type = LLVMStructCreateNamed(llvm_context, name);
+    LLVMStructSetBody(llvm_type, member_types.data(), member_types.size(), false);
+    return llvm_type;
 }
 
 void StructType::print(std::ostream& stream) const {

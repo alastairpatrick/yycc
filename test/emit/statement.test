@@ -294,8 +294,10 @@ struct S { int x; };
 S f() {
 }
 EXPECT_IR
-define { i32 } @f() {
-  ret { i32 } zeroinitializer
+%S = type { i32 }
+
+define %S @f() {
+  ret %S zeroinitializer
 }
 END
 

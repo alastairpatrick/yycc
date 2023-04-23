@@ -208,6 +208,15 @@ struct Emitter: Visitor {
                 }
                 return;
             }
+
+            if (auto struct_type = type_cast<StructType>(dest.type)) {
+                for (size_t i = 0; i < struct_type->members.size(); ++i) {
+                    LLVMValueRef dest_element = LLVMBuildStructGEP2(builder, struct_type->llvm_type(), dest.llvm_lvalue(), i, "");
+                    emit_auto_initializer(Value(ValueKind::LVALUE, struct_type->members[i]->type, dest_element), initializer->elements[i]);
+                }
+
+                return;
+            }
         }
 
         auto value = convert_to_type(emit(expr), dest.type);
@@ -225,6 +234,15 @@ struct Emitter: Visitor {
                 }
 
                 return Value(array_type, LLVMConstArray(array_type->element_type->llvm_type(), values.data(), values.size()));
+            }
+
+            if (auto struct_type = type_cast<StructType>(dest.type)) {
+                vector<LLVMValueRef> values(struct_type->members.size());
+                for (size_t i = 0; i < struct_type->members.size(); ++i) {
+                    values[i] = emit_static_initializer(struct_type->members[i]->type, initializer->elements[i]).llvm_const_rvalue();
+                }
+
+                return Value(struct_type, LLVMConstNamedStruct(struct_type->llvm_type(), values.data(), values.size()));
             }
         }
 
