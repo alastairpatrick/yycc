@@ -32,8 +32,9 @@ struct Parser {
 
     Expr* parse_standalone_expr();  // for testing
     Statement* parse_standalone_statement();  // for testing
+    bool check_eof(); // for testing
+
     ASTNodeVector parse();
-    bool check_eof();
 
 private:
     Preprocessor& preprocessor;
@@ -45,36 +46,35 @@ private:
     void consume();
     bool consume(int t, Location* location = nullptr);
     bool consume_identifier(Identifier& identifier);
-    void balance_until(int t);
     bool require(int t, Location* location = nullptr);
-
     void skip_unexpected();
     void unexpected_token();
+
+    void balance_until(int t);
+    void skip_expr(OperatorPrec min_prec);
+
     size_t position() const;
     Fragment end_fragment(size_t begin_position) const;
 
     void handle_declaration_directive();
 
-    void skip_expr(OperatorPrec min_prec);
-
-    OperatorAssoc assoc();
-    OperatorPrec prec();
-
+    ASTNode* parse_declaration_or_statement(IdentifierScope scope);
+    Declaration* parse_declaration(IdentifierScope scope);
+    Declaration* parse_declaration_specifiers(IdentifierScope scope, const Type*& type, uint32_t& specifiers);
+    const Type* parse_structured_type(Declaration* declaration);
+    Declarator* declare_tag_type(Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location);
+    const Type* parse_typeof();
+    Declarator* parse_enum_constant(Declaration* declaration, const EnumType* type, Declarator* tag);
+    Declarator* parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, int flags, bool* last);
+    DeclaratorTransform parse_declarator_transform(IdentifierScope scope, int flags);
+    Declarator* parse_parameter_declarator();
+    Statement* parse_statement();
+    CompoundStatement* parse_compound_statement();
     Expr* parse_expr(OperatorPrec min_prec, Identifier* or_label = nullptr);
     Expr* parse_sub_expr(SubExpressionKind kind, Identifier* or_label = nullptr);
     Expr* parse_initializer();
-    Declaration* parse_declaration_specifiers(IdentifierScope scope, const Type*& type, uint32_t& specifiers);
-    Declaration* parse_declaration(IdentifierScope scope);
-    Statement* parse_statement();
-    ASTNode* parse_declaration_or_statement(IdentifierScope scope);
-    CompoundStatement* parse_compound_statement();
-    Declarator* parse_parameter_declarator();
-    Declarator* parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, int flags, bool* last);
-    DeclaratorTransform parse_declarator_transform(IdentifierScope scope, int flags);
-    Declarator* declare_tag_type(Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location);
-    const Type* parse_structured_type(Declaration* declaration);
-    Declarator* parse_enum_constant(Declaration* declaration, const EnumType* type, Declarator* tag);
-    const Type* parse_typeof();
+    OperatorAssoc assoc();
+    OperatorPrec prec();
     const Type* parse_type();
 };
 
