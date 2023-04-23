@@ -241,7 +241,7 @@ EXPECT_IR
 END
 
 
-BEGIN Global array variable initialized with smalled string literal
+BEGIN Global array variable initialized with smaller string literal
 const char c[10] = "abc";
 EXPECT_IR
 @c = global [10 x i8] c"abc\00\00\00\00\00\00\00"
@@ -260,4 +260,32 @@ BEGIN Global array variable initialized with wide string literal
 const unsigned short c[4] = L"\000\000f";
 EXPECT_IR
 @c = global [4 x i16] [i16 0, i16 0, i16 102, i16 0]
+END
+
+
+BEGIN Local pointer variable initialized with string literal
+void f() {
+    const char* c = "\000\000f";
+}
+EXPECT_IR
+@const = private constant [4 x i8] c"\00\00f\00"
+
+define void @f() {
+  %c = alloca ptr, align 8
+  store ptr @const, ptr %c, align 8
+  ret void
+}
+END
+
+
+BEGIN Local array variable initialized with string literal
+void f() {
+    const char c[] = "\000\000f";
+}
+EXPECT_IR
+define void @f() {
+  %c = alloca [4 x i8], align 1
+  store [4 x i8] c"\00\00f\00", ptr %c, align 1
+  ret void
+}
 END
