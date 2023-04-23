@@ -42,6 +42,53 @@ EXPECT_IR
 END
 
 
+BEGIN Scalar global variable initialized with initializer expression (1)
+int x = {1};
+EXPECT_IR
+@x = global i32 1
+END
+
+
+BEGIN Scalar global variable initialized with initializer expression (2)
+int x = {};
+EXPECT_IR
+@x = global i32 0
+END
+
+
+BEGIN Scalar global variable initialized with initializer expression (3)
+int x = {1, 2};
+EXPECT_MESSAGE
+:1:13: error excess elements in scalar initializer
+END
+
+
+BEGIN Scalar local variable initialized with initializer expression (1)
+void f() {
+    int x = {1};
+}
+EXPECT_IR
+define void @f() {
+  %x = alloca i32, align 4
+  store i32 1, ptr %x, align 4
+  ret void
+}
+END
+
+
+BEGIN Scalar local variable initialized with initializer expression (2)
+void f() {
+    int x = {};
+}
+EXPECT_IR
+define void @f() {
+  %x = alloca i32, align 4
+  store i32 0, ptr %x, align 4
+  ret void
+}
+END
+
+
 BEGIN Load parameter value
 int f(int x, int y) {
     return y;

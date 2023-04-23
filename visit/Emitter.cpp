@@ -195,9 +195,24 @@ struct Emitter: Visitor {
         function = nullptr;
     }
 
+    Value emit_scalar_initializer(const Type* dest_type, InitializerExpr* initializer) {
+        if (initializer->elements.empty()) {
+            // C23 6.7.10p12
+            return Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
+        } else {
+            if (initializer->elements.size() != 1) {
+                message(Severity::ERROR, initializer->elements[1]->location) << "excess elements in scalar initializer\n";
+            }
+
+            // C99 6.7.8p11
+            return convert_to_type(emit(initializer->elements[0]), dest_type);
+        }
+    }
+
     void emit_auto_initializer(Value dest, Expr* expr) {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
 
+        Value scalar_value;
         if (auto initializer = dynamic_cast<InitializerExpr*>(expr)) {
             if (auto array_type = type_cast<ResolvedArrayType>(dest.type)) {
                 LLVMValueRef zero = LLVMConstInt(LLVMInt32TypeInContext(llvm_context), 0, false);
@@ -217,12 +232,13 @@ struct Emitter: Visitor {
 
                 return;
             }
+
+            scalar_value = emit_scalar_initializer(dest.type, initializer);
+        } else {
+            scalar_value = convert_to_type(emit(expr), dest.type);
         }
 
-        auto value = convert_to_type(emit(expr), dest.type);
-        if (dest.kind == ValueKind::LVALUE) {
-            LLVMBuildStore(builder, value.llvm_rvalue(builder), dest.llvm_lvalue());
-        }
+        LLVMBuildStore(builder, scalar_value.llvm_rvalue(builder), dest.llvm_lvalue());
     }
     
     Value emit_static_initializer(Value dest, Expr* expr) {
@@ -244,6 +260,8 @@ struct Emitter: Visitor {
 
                 return Value(struct_type, LLVMConstNamedStruct(struct_type->llvm_type(), values.data(), values.size()));
             }
+
+            return emit_scalar_initializer(dest.type, initializer);
         }
 
         return convert_to_type(emit(expr), dest.type);
