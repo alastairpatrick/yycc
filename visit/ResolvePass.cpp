@@ -171,8 +171,22 @@ struct ResolvePass: Visitor {
             }
 
             if (primary_entity->bit_field_size) resolve(primary_entity->bit_field_size);
-            if (primary_entity->initializer) resolve(primary_entity->initializer);
             if (primary_entity->body) resolve(primary_entity->body);
+
+            if (primary_entity->initializer) {
+                resolve(primary_entity->initializer);
+                if (auto array_type = dynamic_cast<const ResolvedArrayType*>(primary->type)) {
+                    if (auto string_constant = dynamic_cast<StringConstant*>(primary_entity->initializer)) {
+                        auto string_size = string_constant->value.length + 1;
+                        auto resolved = composite_type(primary->type, ResolvedArrayType::of(ArrayKind::COMPLETE, string_constant->character_type, string_size));
+                        if (resolved) {
+                            primary->type = resolved;
+                        } else if (array_type->kind == ArrayKind::COMPLETE && string_size > array_type->size) {
+                            message(Severity::ERROR, string_constant->location) << "size of string literal (" << string_size << ") exceeds declared array size (" << array_type->size << ")\n";
+                        }
+                    }
+                }
+            }
 
             return VisitDeclaratorOutput();
         }

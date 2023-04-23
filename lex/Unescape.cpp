@@ -122,9 +122,9 @@ CharValue unescape_char(string_view& source, bool decode_multi_byte, const Locat
     return result;
 }
 
-string unescape_string(string_view source, bool wide, const Location& location) {
-    std::string dest;
-    dest.reserve(source.size());
+StringLiteral unescape_string(string_view source, bool wide, const Location& location) {
+    StringLiteral result;
+    result.chars.reserve(source.size());
 
     assert(source[0] == '"');
     source.remove_prefix(1);
@@ -136,24 +136,25 @@ string unescape_string(string_view source, bool wide, const Location& location) 
         if (wide || value.multi_byte) {
             auto c = value.code;
             if (c < 0x80) {
-                dest += c;
+                result.chars += c;
             } else if (c < 0x800) {
-                dest += 0xC0 | (c >> 6);
-                dest += 0x80 | (c & 0x3F);
+                result.chars += 0xC0 | (c >> 6);
+                result.chars += 0x80 | (c & 0x3F);
             } else if (c < 0x10000) {
-                dest += 0xE0 | (c >> 12);
-                dest += 0x80 | ((c >> 6) & 0x3F);
-                dest += 0x80 | (c & 0x3F);
+                result.chars += 0xE0 | (c >> 12);
+                result.chars += 0x80 | ((c >> 6) & 0x3F);
+                result.chars += 0x80 | (c & 0x3F);
             } else {
-                dest += 0xF0 | (c >> 18);
-                dest += 0x80 | ((c >> 12) & 0x3F);
-                dest += 0x80 | ((c >> 6) & 0x3F);
-                dest += 0x80 | (c & 0x3F);
+                result.chars += 0xF0 | (c >> 18);
+                result.chars += 0x80 | ((c >> 12) & 0x3F);
+                result.chars += 0x80 | ((c >> 6) & 0x3F);
+                result.chars += 0x80 | (c & 0x3F);
             }
         } else {
-            dest += value.code;
+            result.chars += value.code;
         }
+        ++result.length;
     }
 
-    return dest;
+    return result;
 }

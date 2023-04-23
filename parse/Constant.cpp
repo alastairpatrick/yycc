@@ -143,7 +143,7 @@ StringConstant* StringConstant::of(string_view text, const Location& location) {
     return new StringConstant(move(value), IntegerType::of_char(is_wide), location);
 }
 
-StringConstant::StringConstant(string&& value, const IntegerType* character_type, const Location& location)
+StringConstant::StringConstant(StringLiteral&& value, const IntegerType* character_type, const Location& location)
     : Constant(location), character_type(character_type), value(move(value)) {
 }
 
@@ -152,6 +152,6 @@ VisitStatementOutput StringConstant::accept(Visitor& visitor, const VisitStateme
 }
 
 void StringConstant::print(ostream& stream) const {
-    string t(value);
+    string t(value.chars);
     stream << "[\"S\", " << character_type << ", " << json(t) << ']';
 }

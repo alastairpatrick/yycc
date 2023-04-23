@@ -148,3 +148,23 @@ EXPECT_MESSAGE
 :2:6: error recursive definition of 'a'
 EXPECT_GLOBALS
 [["var","ES",["A","C"],"a"]]
+
+
+BEGIN Initializer string gives array size
+char a[] = "abc";
+EXPECT_GLOBALS
+[["var","ES",["A","C",4],"a",["S","C","abc"]]]
+
+
+BEGIN Initializer string size can be shorter than declared array size
+char a[10] = "abc";
+EXPECT_GLOBALS
+[["var","ES",["A","C",10],"a",["S","C","abc"]]]
+
+
+BEGIN Error if initializer string size exceeds array size
+char a[1];
+char a[] = "abc";
+EXPECT_MESSAGE
+:2:12: error size of string literal (4) exceeds declared array size (1)
+END

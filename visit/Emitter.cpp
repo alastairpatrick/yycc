@@ -260,6 +260,25 @@ struct Emitter: Visitor {
         auto target_type = input.target_type;
         auto value = input.value;
 
+        if (auto array_type = type_cast<ResolvedArrayType>(target_type)) {
+            if (value.is_const() && type->element_type == array_type->element_type && type->size <= array_type->size) {
+                LLVMValueRef source_array = value.llvm_const_rvalue();
+                vector<LLVMValueRef> resized_array_values(array_type->size);
+                size_t i;
+                for (i = 0; i < type->size; ++i) {
+                    resized_array_values[i] = LLVMGetAggregateElement(source_array, i);
+                }
+                LLVMValueRef null_value = LLVMConstNull(type->element_type->llvm_type());
+                for (; i < array_type->size; ++i) {
+                    resized_array_values[i] = null_value;
+                }
+
+                // TODO: LLVMConstArray2
+                LLVMValueRef resized_array = LLVMConstArray(type->element_type->llvm_type(), resized_array_values.data(), resized_array_values.size());
+                return VisitTypeOutput(target_type, resized_array);
+            }
+        }
+
         if (auto pointer_type = type_cast<PointerType>(target_type)) {
             if (value.kind == ValueKind::LVALUE) {
                 return VisitTypeOutput(target_type, value.llvm_lvalue());
@@ -959,19 +978,19 @@ struct Emitter: Visitor {
     virtual VisitStatementOutput visit(StringConstant* constant, const VisitStatementInput& input) override {
         auto result_type = ResolvedArrayType::of(ArrayKind::COMPLETE,
                                                  QualifiedType::of(constant->character_type, QUAL_CONST),
-                                                 constant->value.size() + 1);
+                                                 constant->value.length + 1);
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
         auto llvm_context = TranslationUnitContext::it->llvm_context;
 
         LLVMValueRef llvm_constant{};
         if (constant->character_type == IntegerType::of_char(false)) {
-            llvm_constant = LLVMConstStringInContext(llvm_context, constant->value.data(), constant->value.size(), false);
+            llvm_constant = LLVMConstStringInContext(llvm_context, constant->value.chars.data(), constant->value.chars.size(), false);
         } else {
             LLVMTypeRef llvm_char_type = constant->character_type->llvm_type();
             vector<LLVMValueRef> llvm_char_values;
-            string_view source(constant->value);
-            llvm_char_values.reserve(source.size());
+            string_view source(constant->value.chars);
+            llvm_char_values.reserve(constant->value.length + 1);
             while (source.size()) {
                 auto c = decode_char(source);
                 llvm_char_values.push_back(LLVMConstInt(llvm_char_type, c.code, false));

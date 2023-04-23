@@ -170,7 +170,7 @@ void Preprocessor::handle_line_directive() {
 
     InternedString filename{};
     if (token == TOK_STRING_LITERAL) {
-        filename = intern_string(unescape_string(lexer.text(), false, lexer.location()));
+        filename = intern_string(unescape_string(lexer.text(), false, lexer.location()).chars);
         next_pp_token();
     }
 

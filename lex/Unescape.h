@@ -8,9 +8,14 @@ struct CharValue {
     bool multi_byte{};
 };
 
+struct StringLiteral {
+    string chars{};
+    size_t length{};
+};
+
 CharValue decode_char(string_view& source);
 
 CharValue unescape_char(string_view& source, bool decode_multi_byte, const Location& location);
-string unescape_string(string_view source, bool decode_multi_byte, const Location& location);
+StringLiteral unescape_string(string_view source, bool decode_multi_byte, const Location& location);
 
 #endif
