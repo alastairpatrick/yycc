@@ -2,7 +2,7 @@
 
 #include "Constant.h"
 #include "Expr.h"
-#include "lex/Unescape.h"
+#include "lex/StringLiteral.h"
 #include "Message.h"
 #include "visit/Visitor.h"
 

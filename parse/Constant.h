@@ -3,7 +3,7 @@
 
 #include "ASTNode.h"
 #include "lex/Token.h"
-#include "lex/Unescape.h"
+#include "lex/StringLiteral.h"
 #include "Type.h"
 
 struct Constant: Expr {

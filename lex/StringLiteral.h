@@ -1,9 +1,9 @@
-#ifndef LEX_UNESCAPE_H
-#define LEX_UNESCAPE_H
+#ifndef LEX_STRING_LITERAL_H
+#define LEX_STRING_LITERAL_H
 
 struct Location;
 
-struct CharValue {
+struct CharLiteral {
     uint32_t code{};
     bool multi_byte{};
 };
@@ -13,9 +13,9 @@ struct StringLiteral {
     size_t length{};
 };
 
-CharValue decode_char(string_view& source);
+CharLiteral decode_char(string_view& source);
 
-CharValue unescape_char(string_view& source, bool decode_multi_byte, const Location& location);
+CharLiteral unescape_char(string_view& source, bool decode_multi_byte, const Location& location);
 StringLiteral unescape_string(string_view source, bool decode_multi_byte, const Location& location);
 
 #endif

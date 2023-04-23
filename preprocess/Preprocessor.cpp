@@ -2,7 +2,7 @@
 
 #include "FileCache.h"
 #include "lex/Identifier.h"
-#include "lex/Unescape.h"
+#include "lex/StringLiteral.h"
 #include "Message.h"
 
 Preprocessor::Preprocessor(bool preparse): preparse(preparse), text_stream(string_stream) {

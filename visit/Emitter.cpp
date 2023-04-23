@@ -1,5 +1,5 @@
 #include "Emitter.h"
-#include "lex/Unescape.h"
+#include "lex/StringLiteral.h"
 #include "LLVM.h"
 #include "Message.h"
 #include "parse/Declaration.h"

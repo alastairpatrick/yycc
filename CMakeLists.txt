@@ -23,7 +23,7 @@ add_library(yycc_lib STATIC
     "Value.cpp"
 
     "lex/Location.cpp"
-    "lex/Unescape.cpp"
+    "lex/StringLiteral.cpp"
 
     "parse/ASTNode.cpp"
     "parse/Constant.cpp"
