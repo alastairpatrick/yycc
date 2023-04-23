@@ -20,6 +20,10 @@ const char* identifier_name(const Identifier& identifier) {
     return name->data();
 }
 
+struct Module {
+    LLVMModuleRef llvm_module{};
+};
+
 struct Construct {
     Construct* parent{};
     Emitter* emitter{};
@@ -45,8 +49,8 @@ struct Emitter: Visitor {
     EmitOutcome outcome;
     const EmitOptions& options;
 
+    Module* module{};
     Emitter* parent{};
-    LLVMModuleRef module{};
 
     Declarator* function_declarator{};
     const FunctionType* function_type{};
@@ -157,7 +161,7 @@ struct Emitter: Visitor {
     void emit_function_definition(Declarator* declarator, Entity* entity) {
         function_declarator = declarator;
         function_type = type_cast<FunctionType>(declarator->primary->type);
-        function = LLVMAddFunction(module, identifier_name(declarator->identifier), declarator->primary->type->llvm_type());
+        function = LLVMAddFunction(module->llvm_module, identifier_name(declarator->identifier), declarator->primary->type->llvm_type());
 
         entity->value = Value(ValueKind::LVALUE, function_type, function);
 
@@ -218,7 +222,7 @@ struct Emitter: Visitor {
                 name = string(*emitter->function_declarator->identifier.name) + '.' + name;
             }
 
-            auto global = LLVMAddGlobal(module, llvm_type, name.c_str());
+            auto global = LLVMAddGlobal(module->llvm_module, llvm_type, name.c_str());
 
             LLVMSetGlobalConstant(global, declarator->type->qualifiers() & QUAL_CONST);
 
@@ -285,7 +289,7 @@ struct Emitter: Visitor {
             }
 
             if (value.is_const()) {
-                auto global = LLVMAddGlobal(module, value.type->llvm_type(), "const");
+                auto global = LLVMAddGlobal(module->llvm_module, value.type->llvm_type(), "const");
                 LLVMSetGlobalConstant(global, true);
                 LLVMSetLinkage(global, LLVMPrivateLinkage);
                 LLVMSetInitializer(global, value.llvm_const_rvalue());
@@ -1048,14 +1052,17 @@ Value fold_expr(const Expr* expr, unsigned long long error_value) {
 LLVMModuleRef emit_pass(const ASTNodeVector& nodes, const EmitOptions& options) {
     auto llvm_context = TranslationUnitContext::it->llvm_context;
 
+    Module module;
+    module.llvm_module = LLVMModuleCreateWithNameInContext("my_module", llvm_context);
+
     Emitter emitter(EmitOutcome::IR, options);
-    emitter.module = LLVMModuleCreateWithNameInContext("my_module", llvm_context);
+    emitter.module = &module;
 
     for (auto node: nodes) {
         emitter.emit(node);
     }
 
-    LLVMVerifyModule(emitter.module, LLVMPrintMessageAction, nullptr);
+    LLVMVerifyModule(module.llvm_module, LLVMPrintMessageAction, nullptr);
 
-    return emitter.module;
+    return module.llvm_module;
 }
