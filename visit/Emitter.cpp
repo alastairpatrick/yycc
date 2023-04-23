@@ -22,6 +22,11 @@ const char* identifier_name(const Identifier& identifier) {
 
 struct Module {
     LLVMModuleRef llvm_module{};
+
+    // Maps from a constant to a constant global initialized with that constant. Intended only to pool strings.
+    // Note that LLVM internally performs constant uniqueing, ensuring that constants with the same type and
+    // value are the same instance.
+    unordered_map<LLVMValueRef, LLVMValueRef> reified_constants;
 };
 
 struct Construct {
@@ -289,10 +294,13 @@ struct Emitter: Visitor {
             }
 
             if (value.is_const()) {
-                auto global = LLVMAddGlobal(module->llvm_module, value.type->llvm_type(), "const");
-                LLVMSetGlobalConstant(global, true);
-                LLVMSetLinkage(global, LLVMPrivateLinkage);
-                LLVMSetInitializer(global, value.llvm_const_rvalue());
+                auto& global = module->reified_constants[value.llvm_const_rvalue()];
+                if (!global) {
+                    global = LLVMAddGlobal(module->llvm_module, value.type->llvm_type(), "const");
+                    LLVMSetGlobalConstant(global, true);
+                    LLVMSetLinkage(global, LLVMPrivateLinkage);
+                    LLVMSetInitializer(global, value.llvm_const_rvalue());
+                }
                 return VisitTypeOutput(dest_type, global);
             }
         }

@@ -289,3 +289,58 @@ define void @f() {
   ret void
 }
 END
+
+
+BEGIN Identical string literal globals are pooled
+void f() {
+    const char* a = "abc";
+    const char* b = "abc";
+}
+EXPECT_IR
+@const = private constant [4 x i8] c"abc\00"
+
+define void @f() {
+  %b = alloca ptr, align 8
+  %a = alloca ptr, align 8
+  store ptr @const, ptr %a, align 8
+  store ptr @const, ptr %b, align 8
+  ret void
+}
+END
+
+
+BEGIN Identical wide string literal globals are pooled
+void f() {
+    const unsigned short* a = L"abc";
+    const unsigned short* b = L"abc";
+}
+EXPECT_IR
+@const = private constant [4 x i16] [i16 97, i16 98, i16 99, i16 0]
+
+define void @f() {
+  %b = alloca ptr, align 8
+  %a = alloca ptr, align 8
+  store ptr @const, ptr %a, align 8
+  store ptr @const, ptr %b, align 8
+  ret void
+}
+END
+
+
+BEGIN Strings of different types do not share globals
+void f() {
+    const char* a = "abc";
+    const unsigned short* b = L"abc";
+}
+EXPECT_IR
+@const = private constant [4 x i8] c"abc\00"
+@const.1 = private constant [4 x i16] [i16 97, i16 98, i16 99, i16 0]
+
+define void @f() {
+  %b = alloca ptr, align 8
+  %a = alloca ptr, align 8
+  store ptr @const, ptr %a, align 8
+  store ptr @const.1, ptr %b, align 8
+  ret void
+}
+END
