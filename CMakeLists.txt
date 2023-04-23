@@ -9,11 +9,11 @@ message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 
 set(GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
-add_library(lang_lib_c STATIC
+add_library(yycc_lib_c STATIC
     "parse/AssocPrec.c"
 )
 
-add_library(lang_lib STATIC
+add_library(yycc_lib STATIC
     "FileCache.cpp"
     "InternedString.cpp"
     "LLVM.cpp"
@@ -50,7 +50,7 @@ add_library(lang_lib STATIC
     "${GENERATED_DIR}/IdentifierLexer.yy.cpp"
 )
 
-target_precompile_headers(lang_lib PUBLIC "pch.h")
+target_precompile_headers(yycc_lib PUBLIC "pch.h")
 
 add_custom_command(
     DEPENDS reflex lex/PPTokenLexer.l
@@ -73,7 +73,7 @@ add_custom_command(
             ${CMAKE_CURRENT_SOURCE_DIR}/lex/PPNumberLexer.l
 )
 
-target_include_directories(lang_lib
+target_include_directories(yycc_lib
     PUBLIC
         ${CMAKE_CURRENT_BINARY_DIR}
         third_party
@@ -82,14 +82,14 @@ target_include_directories(lang_lib
         ${LLVM_INCLUDE_DIRS}
 )
 
-target_compile_definitions(lang_lib PRIVATE
+target_compile_definitions(yycc_lib PRIVATE
     ${LLVM_DEFINITIONS}
 )
 
 llvm_map_components_to_libnames(lang_llvm_libs core executionengine mcjit interpreter analysis native bitwriter ${LLVM_ALL_TARGETS})
 
-target_link_libraries(lang_lib PRIVATE
-    lang_lib_c
+target_link_libraries(yycc_lib PRIVATE
+    yycc_lib_c
     reflex_lib
     nlohmann_json::nlohmann_json
     ${lang_llvm_libs}

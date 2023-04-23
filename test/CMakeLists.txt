@@ -8,4 +8,4 @@ add_executable(test
     "main.cpp"
  )
 
-target_link_libraries(test PRIVATE lang_lib nlohmann_json::nlohmann_json)
+target_link_libraries(test PRIVATE yycc_lib nlohmann_json::nlohmann_json)
