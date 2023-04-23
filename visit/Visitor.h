@@ -20,7 +20,7 @@ struct VisitDeclaratorOutput {
 
 struct VisitTypeInput {
     Value value;
-    const Type* target_type{};
+    const Type* dest_type{};
 };
 
 struct VisitTypeOutput {
