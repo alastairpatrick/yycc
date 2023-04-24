@@ -289,7 +289,6 @@ struct Emitter: Visitor {
                 LLVMPositionBuilderAtEnd(temp_builder, entry_block);
             }
             auto storage = LLVMBuildAlloca(temp_builder, llvm_type, identifier_name(declarator->identifier));
-            if (options.initialize_variables) LLVMBuildStore(temp_builder, null_value, storage);
 
             entity->value = Value(ValueKind::LVALUE, type, storage);
 
