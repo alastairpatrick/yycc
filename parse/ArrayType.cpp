@@ -12,9 +12,9 @@ UnresolvedArrayType::UnresolvedArrayType(const Type* element_type, Expr* size, c
     : ArrayType(element_type), size(size), location(location) {
 }
 
-bool UnresolvedArrayType::is_complete() const {
+TypePartition UnresolvedArrayType::partition() const {
     assert(false); // should be asked only of ResolvedArrayType
-    return false;
+    return TypePartition::INCOMPLETE;
 }
 
 VisitTypeOutput UnresolvedArrayType::accept(Visitor& visitor, const VisitTypeInput& input) const {
@@ -42,8 +42,8 @@ ResolvedArrayType::ResolvedArrayType(ArrayKind kind, const Type* element_type, u
     : ArrayType(element_type), kind(kind), size(size) {
 }
 
-bool ResolvedArrayType::is_complete() const {
-    return kind != ArrayKind::INCOMPLETE;
+TypePartition ResolvedArrayType::partition() const {
+    return kind == ArrayKind::INCOMPLETE ? TypePartition::INCOMPLETE : TypePartition::OBJECT;
 }
 
 VisitTypeOutput ResolvedArrayType::accept(Visitor& visitor, const VisitTypeInput& input) const {

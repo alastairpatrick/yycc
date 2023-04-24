@@ -20,6 +20,12 @@ struct Visitor;
 struct VisitTypeInput;
 struct VisitTypeOutput;
 
+enum class TypePartition {
+    FUNCTION,
+    OBJECT,
+    INCOMPLETE,
+};
+
 struct Type: virtual Printable {
     Type() = default;
     Type(const Type&) = delete;
@@ -30,7 +36,7 @@ struct Type: virtual Printable {
 
     const PointerType* pointer_to() const;
 
-    virtual bool is_complete() const;
+    virtual TypePartition partition() const;  // C99 6.2.5p1
     virtual bool has_tag(const Declarator* declarator) const;
 
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const = 0;
@@ -146,7 +152,7 @@ struct QualifiedType: Type {
 
     virtual unsigned qualifiers() const override;
     virtual const Type* unqualified() const override;
-    virtual bool is_complete() const override;
+    virtual TypePartition partition() const override;
 
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
 
@@ -177,7 +183,7 @@ struct FunctionType: CachedType {
     const std::vector<const Type*> parameter_types;
     const bool variadic;
 
-    virtual bool is_complete() const override;
+    virtual TypePartition partition() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual void print(std::ostream& stream) const override;
     
@@ -201,7 +207,7 @@ struct StructuredType: TagType {
 
     const Declarator* lookup_member(const Identifier& identifier) const;
 
-    virtual bool is_complete() const override;
+    virtual TypePartition partition() const override;
     virtual bool has_tag(const Declarator* declarator) const override;
     virtual void print(std::ostream& stream) const override;
 };
@@ -232,7 +238,7 @@ struct EnumType: TagType {
     vector<Declarator*> constants;
     mutable bool complete{};
 
-    virtual bool is_complete() const override;
+    virtual TypePartition partition() const override;
     virtual bool has_tag(const Declarator* declarator) const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef cache_llvm_type() const override;
@@ -244,7 +250,7 @@ struct TypeOfType: ASTNode, Type {
     Expr* const expr;
 
     TypeOfType(Expr* expr, const Location& location);
-    virtual bool is_complete() const override;
+    virtual TypePartition partition() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual void print(std::ostream& stream) const override;
 };

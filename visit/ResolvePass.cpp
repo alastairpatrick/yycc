@@ -47,7 +47,7 @@ struct ResolvePass: Visitor {
         Declarator* acyclic_declarator{};
         for (auto declarator = primary; declarator; declarator = declarator->next) {
             try {
-                if (declarator->type->has_tag(declarator) && declarator->type->is_complete()) {
+                if (declarator->type->has_tag(declarator) && declarator->type->partition() != TypePartition::INCOMPLETE) {
                     swap(declarator->type, primary->type);
                     acyclic_declarator = primary;
                     primary->status = DeclaratorStatus::RESOLVED;
@@ -57,7 +57,7 @@ struct ResolvePass: Visitor {
                 }
 
                 declarator->type = resolve(declarator->type);
-                if (!acyclic_declarator || (declarator->type->is_complete() && !acyclic_declarator->type->is_complete())) {
+                if (!acyclic_declarator || (declarator->type->partition() != TypePartition::INCOMPLETE && acyclic_declarator->type->partition() == TypePartition::INCOMPLETE)) {
                     acyclic_declarator = declarator;
                 }
             } catch (ResolutionCycle) {
@@ -203,7 +203,7 @@ struct ResolvePass: Visitor {
                 }
             }
 
-            if (!function_type && !primary->type->is_complete()) {
+            if (primary->type->partition() == TypePartition::INCOMPLETE) {
                 message(Severity::ERROR, primary->location) << "member '" << primary->identifier << "' has incomplete type\n";
             }
 
@@ -368,7 +368,7 @@ struct ResolvePass: Visitor {
             return nullptr;
         }
 
-        return (a->is_complete() || !b->is_complete()) ? a : b;
+        return (a->partition() != TypePartition::INCOMPLETE || b->partition() == TypePartition::INCOMPLETE) ? a : b;
     }
 
     virtual VisitDeclaratorOutput visit(Declarator* primary, TypeDef* primary_type_def, const VisitDeclaratorInput& input) override {
@@ -486,8 +486,12 @@ struct ResolvePass: Visitor {
 
     virtual VisitTypeOutput visit(const UnresolvedArrayType* type, const VisitTypeInput& input) override {
         auto resolved_element_type = resolve(type->element_type);
-        if (!resolved_element_type->is_complete()) {
-            message(Severity::ERROR, type->location) << "incomplete array element type\n";
+        if (resolved_element_type->partition() != TypePartition::OBJECT) {
+            if (resolved_element_type->partition() == TypePartition::INCOMPLETE) {
+                message(Severity::ERROR, type->location) << "incomplete array element type\n";
+            } else {
+                message(Severity::ERROR, type->location) << "array element type may not be function\n";
+            }
             resolved_element_type = IntegerType::default_type();
         }
 
@@ -620,7 +624,7 @@ struct ResolvePass: Visitor {
 
     virtual VisitStatementOutput visit(SizeOfExpr* size_of_expr, const VisitStatementInput& input) override {
         size_of_expr->type = resolve(size_of_expr->type);
-        if (!size_of_expr->type->is_complete()) {
+        if (size_of_expr->type->partition() == TypePartition::INCOMPLETE) {
             message(Severity::ERROR, size_of_expr->location) << "sizeof applied to incomplete type\n";
             pause_messages();
             return VisitStatementOutput();

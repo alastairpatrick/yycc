@@ -1013,7 +1013,7 @@ struct Emitter: Visitor {
 
         auto result_type = IntegerType::uintptr_type();
 
-        if (!expr->type->is_complete()) {
+        if (expr->type->partition() == TypePartition::INCOMPLETE) {
             return VisitStatementOutput(result_type, LLVMConstInt(result_type->llvm_type(), 0, false));;
         }
 

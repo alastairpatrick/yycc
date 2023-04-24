@@ -15,7 +15,7 @@ struct UnresolvedArrayType: ASTNode, ArrayType {
     Expr* size;
 
     UnresolvedArrayType(const Type* element_type, Expr* size, const Location& location);
-    virtual bool is_complete() const override;
+    virtual TypePartition partition() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef cache_llvm_type() const override;
     virtual void print(std::ostream& stream) const override;
@@ -32,7 +32,7 @@ struct ResolvedArrayType: ArrayType {
     unsigned long long size;
 
     static const ResolvedArrayType* of(ArrayKind kind, const Type* element_type, unsigned long long size);
-    virtual bool is_complete() const override;
+    virtual TypePartition partition() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef cache_llvm_type() const override;
     virtual void print(std::ostream& stream) const override;

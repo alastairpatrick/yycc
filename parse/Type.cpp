@@ -48,8 +48,8 @@ const PointerType* Type::pointer_to() const {
     return TranslationUnitContext::it->type.get_pointer_type(this);
 }
 
-bool Type::is_complete() const {
-    return true;
+TypePartition Type::partition() const {
+    return TypePartition::OBJECT;
 }
 
 bool Type::has_tag(const Declarator* declarator) const {
@@ -293,8 +293,8 @@ const Type* QualifiedType::unqualified() const {
     return base_type;
 }
 
-bool QualifiedType::is_complete() const {
-    return base_type->is_complete();
+TypePartition QualifiedType::partition() const {
+    return base_type->partition();
 }
 
 VisitTypeOutput QualifiedType::accept(Visitor& visitor, const VisitTypeInput& input) const {
@@ -349,8 +349,8 @@ const FunctionType* FunctionType::of(const Type* return_type, std::vector<const 
     return TranslationUnitContext::it->type.get_function_type(return_type, parameter_types, variadic);
 }
 
-bool FunctionType::is_complete() const {
-    return false;
+TypePartition FunctionType::partition() const {
+    return TypePartition::FUNCTION;
 }
 
 VisitTypeOutput FunctionType::accept(Visitor& visitor, const VisitTypeInput& input) const {
@@ -395,8 +395,8 @@ const Declarator* StructuredType::lookup_member(const Identifier& identifier) co
     return it->second;
 }
 
-bool StructuredType::is_complete() const {
-    return complete;
+TypePartition StructuredType::partition() const {
+    return complete ? TypePartition::OBJECT : TypePartition::INCOMPLETE;
 }
 
 bool StructuredType::has_tag(const Declarator* declarator) const {
@@ -493,8 +493,8 @@ EnumType::EnumType(const Location& location)
     : location(location) {
 }
 
-bool EnumType::is_complete() const {
-    return complete;
+TypePartition EnumType::partition() const {
+    return complete ? TypePartition::OBJECT : TypePartition::INCOMPLETE;
 }
 
 bool EnumType::has_tag(const Declarator* declarator) const {
@@ -535,9 +535,9 @@ TypeOfType::TypeOfType(Expr* expr, const Location& location)
     : location(location), expr(expr) {
 }
 
-bool TypeOfType::is_complete() const {
+TypePartition TypeOfType::partition() const {
     assert(false);  // should not be called on unresolved type
-    return false;
+    return TypePartition::INCOMPLETE;
 }
 
 VisitTypeOutput TypeOfType::accept(Visitor& visitor, const VisitTypeInput& input) const {

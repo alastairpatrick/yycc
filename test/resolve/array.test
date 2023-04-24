@@ -94,7 +94,7 @@ BEGIN Error on array of function type
 typedef void F(void);
 F x[1];
 EXPECT_MESSAGE
-:2:4: error incomplete array element type
+:2:4: error array element type may not be function
 EXPECT_GLOBALS
 [["typedef",["F","V"],"F"]
 ,["var","ES",["A","Si",1],"x"]]
