@@ -857,8 +857,8 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, in
 Declarator* Parser::parse_parameter_declarator() {
     auto begin_declaration = position();
 
-    const Type* base_type;
-    uint32_t specifiers;
+    const Type* base_type{};
+    uint32_t specifiers{};
     auto declaration = parse_declaration_specifiers(IdentifierScope::PROTOTYPE, base_type, specifiers);
     if (!declaration) {
         return nullptr;
@@ -1058,7 +1058,7 @@ CompoundStatement* Parser::parse_compound_statement() {
 }
 
 Expr* Parser::parse_expr(OperatorPrec min_prec, Identifier* or_label) {
-    Location loc = preprocessor.location();
+    auto loc = preprocessor.location();
     Expr* result{};
 
     if (preparse) {
@@ -1135,7 +1135,7 @@ Expr* Parser::parse_expr(OperatorPrec min_prec, Identifier* or_label) {
 }
 
 Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
-    Location location = preprocessor.location();
+    auto location = preprocessor.location();
     Expr* result{};
 
     switch (token) {
