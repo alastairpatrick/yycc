@@ -110,9 +110,17 @@ EXPECT_GLOBALS
 ,["var","ES",["A","Si",1],"x"]]
 
 
-BEGIN Array size given by sizeof expression
+BEGIN Array size given by sizeof expression (1)
 int x;
 char a[sizeof(x)];
+EXPECT_GLOBALS
+[["var","ES",["A","C",4],"a"]
+,["var","ES","Si","x"]]
+
+
+BEGIN Array size given by sizeof expression (2)
+int x;
+char a[sizeof(1)];
 EXPECT_GLOBALS
 [["var","ES",["A","C",4],"a"]
 ,["var","ES","Si","x"]]
