@@ -53,7 +53,7 @@ EXPECT_GLOBALS
 BEGIN Error on array of incomplete array type
 int x[][];
 EXPECT_MESSAGE
-:1:6: error incomplete array element type
+:1:6: error array element has incomplete type
 :1:5: error variable 'x' has incomplete type
 EXPECT_GLOBALS
 [["var","ES",["A","Si"],"x"]]
@@ -63,7 +63,7 @@ BEGIN Error on array of incomplete struct type
 struct S;
 S x[1];
 EXPECT_MESSAGE
-:2:4: error incomplete array element type
+:2:4: error array element has incomplete type
 EXPECT_GLOBALS
 [["typedef",["STRUCT",["?"]],"S"]
 ,["var","ES",["A","Si",1],"x"]]
@@ -73,7 +73,7 @@ BEGIN Error on array of incomplete union type
 union U;
 U x[1];
 EXPECT_MESSAGE
-:2:4: error incomplete array element type
+:2:4: error array element has incomplete type
 EXPECT_GLOBALS
 [["typedef",["UNION",["?"]],"U"]
 ,["var","ES",["A","Si",1],"x"]]
@@ -83,7 +83,7 @@ BEGIN Error on array of incomplete enum type
 enum E;
 E x[1];
 EXPECT_MESSAGE
-:2:4: error incomplete array element type
+:2:4: error array element has incomplete type
 EXPECT_GLOBALS
 [["typedef",["ENUM",["?"]],"E"]
 ,["var","ES",["A","Si",1],"x"]]
@@ -104,7 +104,7 @@ BEGIN Error on array of qualified incomplete type
 struct S;
 const S x[1];
 EXPECT_MESSAGE
-:2:10: error incomplete array element type
+:2:10: error array element has incomplete type
 EXPECT_GLOBALS
 [["typedef",["STRUCT",["?"]],"S"]
 ,["var","ES",["A","Si",1],"x"]]

@@ -488,7 +488,7 @@ struct ResolvePass: Visitor {
         auto resolved_element_type = resolve(type->element_type);
         if (resolved_element_type->partition() != TypePartition::OBJECT) {
             if (resolved_element_type->partition() == TypePartition::INCOMPLETE) {
-                message(Severity::ERROR, type->location) << "incomplete array element type\n";
+                message(Severity::ERROR, type->location) << "array element has incomplete type\n";
             } else {
                 message(Severity::ERROR, type->location) << "array element type may not be function\n";
             }
