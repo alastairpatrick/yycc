@@ -116,6 +116,12 @@ EXPECT_GLOBALS
 [["ec","A",1],["typedef",["ENUM",[["ec","A",1]]],"E"]]
 
 
+BEGIN Enum declaration without tag or declarators
+enum { A, B };
+EXPECT_GLOBALS
+[["ec","A",0],["ec","B",1]]
+
+
 BEGIN Size of incomplete enum
 enum E;
 char a[sizeof(E)];

@@ -964,13 +964,17 @@ struct Emitter: Visitor {
     }
 
     virtual VisitStatementOutput visit(EntityExpr* expr, const VisitStatementInput& input) override {
-        const Type* result_type = expr->declarator->type;
+        auto declarator = expr->declarator->primary;
+        auto result_type = declarator->type;
 
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
-        if (auto enum_constant = expr->declarator->enum_constant()) {
-            return VisitStatementOutput(result_type, LLVMConstInt(result_type->llvm_type(), enum_constant->constant_int, true));
-        } else if (auto entity = expr->declarator->entity()) {
+        if (auto enum_constant = declarator->enum_constant()) {
+            auto int_type = type_cast<IntegerType>(result_type);
+            return VisitStatementOutput(result_type,
+                                        LLVMConstInt(result_type->llvm_type(), enum_constant->constant_int, int_type->signedness == IntegerSignedness::SIGNED));
+
+        } else if (auto entity = declarator->entity()) {
             return VisitStatementOutput(entity->value);
         } else {
             message(Severity::ERROR, expr->location) << "identifier is not an expression\n";
@@ -1010,7 +1014,6 @@ struct Emitter: Visitor {
         auto result_type = IntegerType::uintptr_type();
 
         if (!expr->type->is_complete()) {
-            message(Severity::ERROR, expr->location) << "sizeof applied to incomplete type\n";
             return VisitStatementOutput(result_type, LLVMConstInt(result_type->llvm_type(), 0, false));;
         }
 

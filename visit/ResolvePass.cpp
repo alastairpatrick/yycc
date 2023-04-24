@@ -170,8 +170,10 @@ struct ResolvePass: Visitor {
     virtual VisitDeclaratorOutput visit(Declarator* primary, Entity* primary_entity, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
         if (!secondary) {
-            for (auto param: primary_entity->parameters) {
-                resolve(param);
+            auto function_type = dynamic_cast<const FunctionType*>(primary->type);
+            for (size_t i = 0; i < primary_entity->parameters.size(); ++i) {
+                primary_entity->parameters[i]->type = function_type->parameter_types[i];
+                resolve(primary_entity->parameters[i]);
             }
 
             if (primary_entity->bit_field_size) resolve(primary_entity->bit_field_size);
@@ -180,7 +182,7 @@ struct ResolvePass: Visitor {
             if (primary_entity->initializer) {
                 resolve(primary_entity->initializer);
                 if (auto array_type = dynamic_cast<const ResolvedArrayType*>(primary->type)) {
-
+                    // C99 6.7.8p22
                     if (auto string_constant = dynamic_cast<StringConstant*>(primary_entity->initializer)) {
                         auto string_size = string_constant->value.length + 1;
                         if (auto resolved = compose_array_type_with_initializer_size(array_type, string_size)) {
@@ -190,6 +192,7 @@ struct ResolvePass: Visitor {
                         }
                     }
 
+                    // C99 6.7.8p22
                     if (auto init_expr = dynamic_cast<InitializerExpr*>(primary_entity->initializer)) {
                         if (auto resolved = compose_array_type_with_initializer_size(array_type, init_expr->elements.size())) {
                             primary->type = resolved;
@@ -198,6 +201,10 @@ struct ResolvePass: Visitor {
                         }
                     }
                 }
+            }
+
+            if (!function_type && !primary->type->is_complete()) {
+                message(Severity::ERROR, primary->location) << "member '" << primary->identifier << "' has incomplete type\n";
             }
 
             return VisitDeclaratorOutput();
@@ -249,6 +256,7 @@ struct ResolvePass: Visitor {
     virtual VisitDeclaratorOutput visit(Declarator* primary, EnumConstant* primary_enum_constant, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
         if (!secondary) {
+            resolve(primary_enum_constant->constant_expr);
             return VisitDeclaratorOutput();
         }
 
@@ -432,11 +440,11 @@ struct ResolvePass: Visitor {
         for (auto member: type->members) {
             auto member_type = resolve(member);
 
-            if (auto member_entity = member->entity()) {
+            /*if (auto member_entity = member->entity()) {
                 if (!member_type->is_complete()) {
                     message(Severity::ERROR, member->location) << "member '" << member->identifier << "' has incomplete type\n";
                 }
-            }
+            }*/
         }
 
         type->complete = want_complete;
@@ -455,7 +463,6 @@ struct ResolvePass: Visitor {
             resolve(declarator);
             auto enum_constant = declarator->enum_constant();
             if (enum_constant->constant_expr) {
-                resolve(enum_constant->constant_expr);
                 auto value = fold_expr(enum_constant->constant_expr);
                 next_int = LLVMConstIntGetSExtValue(value.llvm_const_rvalue());
             }
@@ -613,6 +620,12 @@ struct ResolvePass: Visitor {
 
     virtual VisitStatementOutput visit(SizeOfExpr* size_of_expr, const VisitStatementInput& input) override {
         size_of_expr->type = resolve(size_of_expr->type);
+        if (!size_of_expr->type->is_complete()) {
+            message(Severity::ERROR, size_of_expr->location) << "sizeof applied to incomplete type\n";
+            pause_messages();
+            return VisitStatementOutput();
+        }
+
         return VisitStatementOutput();
     }
 
@@ -653,6 +666,10 @@ void resolve_pass(const Scope& scope, const ASTNodeVector& nodes) {
     }
     
     for (auto node: nodes) {
+        if (auto declaration = dynamic_cast<Declaration*>(node)) {
+            pass.resolve(declaration->type);
+        }
+
         if (auto statement = dynamic_cast<Statement*>(node)) {
             resume_messages();
             pass.resolve(statement);

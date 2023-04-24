@@ -231,6 +231,35 @@ define i32 @f() {
 END
 
 
+// EntityExpr
+
+BEGIN Value of local variable
+int f() {
+    int x = 3;
+    return x;
+}
+EXPECT_IR
+define i32 @f() {
+  %x = alloca i32, align 4
+  store i32 3, ptr %x, align 4
+  %1 = load i32, ptr %x, align 4
+  ret i32 %1
+}
+END
+
+
+BEGIN Value of enum
+enum { RED, GREEN = 7, BLUE };
+int f() {
+    return GREEN;
+}
+EXPECT_IR
+define i32 @f() {
+  ret i32 7
+}
+END
+
+
 // SubscriptExpr
 
 BEGIN Subscript operator on pointer (1)
