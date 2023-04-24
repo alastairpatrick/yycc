@@ -9,7 +9,6 @@
 
 struct Emitter;
 struct Declaration;
-struct Declarator;
 struct EnumConstant;
 struct Expr;
 struct IdentifierMap;

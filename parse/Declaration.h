@@ -33,9 +33,6 @@ enum class StorageDuration {
     STATIC,
 };
 
-struct FunctionType;
-struct ResolvePass;
-
 ostream& operator<<(ostream& stream, Linkage linkage);
 ostream& operator<<(ostream& stream, StorageDuration duration);
 

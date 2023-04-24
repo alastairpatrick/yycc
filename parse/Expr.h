@@ -5,8 +5,6 @@
 #include "lex/Token.h"
 #include "Type.h"
 
-struct Decl;
-
 struct AddressExpr: Expr {
     Expr* expr{};
     
