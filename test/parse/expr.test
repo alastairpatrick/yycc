@@ -234,10 +234,10 @@ EXPECT_AST
 ["=", 1, ["=", 2, 3]]
 
 
-BEGIN Left hand side of assignment cannot be cast expression
+BEGIN Left side of assignment cannot be cast expression
 (int) 1 = 2
 EXPECT_MESSAGE
-:1:9: error cannot assign to cast expression
+:1:9: error cast expression is not assignable
 EXPECT_AST
 ["=",["cast","Si",1],2]
 
