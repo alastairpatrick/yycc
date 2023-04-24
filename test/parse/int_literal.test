@@ -136,4 +136,29 @@ BEGIN Long long unsigned int literal (4)
 EXPECT_AST
 ["Um", 77]
 
+BEGIN Unsuffixed decimal literal exceeding int range extended to long long
+2147483648
+EXPECT_AST
+["Sm", 2147483648]
+
+BEGIN L suffixed decimal literal exceeding int range extended to long long
+2147483648L
+EXPECT_AST
+["Sm", 2147483648]
+
+BEGIN U suffixed decimal literal exceeding unsigned int range extended to unsigned long long
+4294967296U
+EXPECT_AST
+["Um", 4294967296]
+
+BEGIN hexadecimal literal exceeding int range extended to unsigned int
+0x80000000
+EXPECT_AST
+["Ui",2147483648]
+
+BEGIN hexadecimal literal exceeding unsigned int range extended to long long
+0x100000000
+EXPECT_AST
+["Sm",4294967296]
+
 

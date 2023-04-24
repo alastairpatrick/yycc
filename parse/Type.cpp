@@ -157,6 +157,32 @@ const IntegerType* IntegerType::uintptr_type() {
     return of(IntegerSignedness::UNSIGNED, IntegerSize::LONG_LONG);
 }
 
+int IntegerType::num_bits() const {
+    unsigned long long result{};
+    switch (size) {
+      default:
+        assert(false);
+        return 0;
+      case IntegerSize::BOOL:
+        return 1;
+      case IntegerSize::CHAR:
+        return 8;
+      case IntegerSize::SHORT:
+        return 16;
+      case IntegerSize::INT:
+      case IntegerSize::LONG:
+        return 32;
+      case IntegerSize::LONG_LONG:
+        return 64;
+    }
+}
+
+unsigned long long IntegerType::max() const {
+    auto result = ~0ULL >> (num_bits() - 64);
+    if (signedness == IntegerSignedness::SIGNED) result >>= 1;
+    return result;
+}
+
 VisitTypeOutput IntegerType::accept(Visitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }

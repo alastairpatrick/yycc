@@ -84,6 +84,9 @@ enum class IntegerSignedness {
 };
 
 struct IntegerType: Type {
+    const IntegerSignedness signedness;
+    const IntegerSize size;
+
     static const IntegerType* of_bool();
     static const IntegerType* of_char(bool is_wide);
     static const IntegerType* of_size(IntegerSignedness signedness);
@@ -91,8 +94,8 @@ struct IntegerType: Type {
     static const IntegerType* default_type();
     static const IntegerType* uintptr_type();
 
-    const IntegerSignedness signedness;
-    const IntegerSize size;
+    int num_bits() const;
+    unsigned long long max() const;
 
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;

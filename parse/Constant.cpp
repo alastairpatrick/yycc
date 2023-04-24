@@ -4,6 +4,7 @@
 #include "Expr.h"
 #include "lex/StringLiteral.h"
 #include "Message.h"
+#include "TranslationUnitContext.h"
 #include "visit/Visitor.h"
 
 using json = nlohmann::json;
@@ -11,24 +12,61 @@ using json = nlohmann::json;
 Constant::Constant(const Location& location): Expr(location) {
 }
 
+// C99 6.4.4.1p5
+static const IntegerType* smallest_integer_type(IntegerSignedness min_signedness, IntegerSignedness max_signedness, IntegerSize target_size, unsigned long long value, const Location& location) {
+    for (auto check_size = unsigned(target_size); check_size < unsigned(IntegerSize::NUM); ++check_size) {
+        for (auto check_signedness = unsigned(min_signedness); check_signedness <= unsigned(max_signedness); ++check_signedness) {
+            auto type = IntegerType::of(IntegerSignedness(check_signedness), IntegerSize(check_size));
+            if (value <= type->max()) {
+                return type;
+            }
+        }
+    }
+
+    return IntegerType::of(max_signedness, IntegerSize::LONG_LONG);
+}
+
 static IntegerConstant* parse_integer_literal(string_view text, int radix, const Location& location) {
+    auto llvm_context = TranslationUnitContext::it->llvm_context;
+
+    bool sign_suffix{};
     auto signedness = IntegerSignedness::SIGNED;
     int longs = 0;
     for (; text.size(); text.remove_suffix(1)) {
         char c = toupper(text.back());
-        if (c == 'U') signedness = IntegerSignedness::UNSIGNED;
-        else if (c == 'L') ++longs;
-        else break;
+        if (c == 'U') {
+            signedness = IntegerSignedness::UNSIGNED;
+            sign_suffix = true;
+        } else if (c == 'L') {
+            ++longs;
+        } else {
+            break;
+        }
     }
 
     assert(longs <= 2);  // TODO: error
-    auto size = IntegerSize::INT;
-    if (longs >= 2) size = IntegerSize::LONG_LONG;
-    else if (longs == 1) size = IntegerSize::LONG;
+    auto target_size = IntegerSize::INT;
+    if (longs >= 2) {
+        target_size = IntegerSize::LONG_LONG;
+    } else if (longs == 1) {
+        target_size = IntegerSize::LONG;
+    }
 
-    auto type = IntegerType::of(signedness, size);
-    auto value = LLVMConstIntOfStringAndSize(type->llvm_type(), text.data(), text.size(), radix);
-    return new IntegerConstant(value, type, location);
+    auto largest_type = IntegerType::of(signedness, IntegerSize::LONG_LONG);
+    auto value = LLVMConstIntOfStringAndSize(largest_type->llvm_type(), text.data(), text.size(), radix);
+    auto value_int = LLVMConstIntGetZExtValue(value);
+
+    // TODO error if value is too large for any integer type
+    
+    // C99 6.4.4.1p5
+    const IntegerType* type{};
+    if (radix == 10 || sign_suffix) {
+        type = smallest_integer_type(signedness, signedness, target_size, value_int, location);
+    } else {
+        type = smallest_integer_type(IntegerSignedness::SIGNED, IntegerSignedness::UNSIGNED, target_size, value_int, location);
+    }
+
+    return new IntegerConstant(LLVMConstIntCast(value, type->llvm_type(), type->signedness == IntegerSignedness::SIGNED), type, location);
 }
 
 static IntegerConstant* parse_char_literal(string_view text, const Location& location) {
