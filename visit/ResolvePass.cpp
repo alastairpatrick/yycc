@@ -633,6 +633,10 @@ struct ResolvePass: Visitor {
         return VisitStatementOutput();
     }
 
+    virtual VisitStatementOutput visit(UninitializedExpr* expr, const VisitStatementInput& input) override {
+        return VisitStatementOutput();
+    }
+
     virtual VisitStatementOutput visit(FloatingPointConstant* constant, const VisitStatementInput& input) override {
         return VisitStatementOutput();
     }

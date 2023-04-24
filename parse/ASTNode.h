@@ -23,8 +23,6 @@ struct VisitDeclaratorOutput;
 struct VisitStatementInput;
 struct VisitStatementOutput;
 
-struct EmitError {};
-
 struct ASTNode: virtual Printable {
     ASTNode();
     ASTNode(const ASTNode&);

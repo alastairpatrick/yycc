@@ -12,6 +12,14 @@ EXPECT_AST
 [["var","ES",["A","Si",2],"x"]]
 
 
+BEGIN Array size must be constant expression (1)
+int x[1 = 1];
+EXPECT_MESSAGE
+:1:9: error assignment in constant expression
+EXPECT_AST
+[["var","ES",["A","Si",1],"x"]]
+
+
 BEGIN Composite type of incomplete array and complete array (1)
 int x[];
 int x[1];
