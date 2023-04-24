@@ -5,6 +5,12 @@
 #include "Type.h"
 #include "Value.h"
 
+enum class DeclaratorKind {
+    ENTITY,
+    ENUM_CONSTANT,
+    TYPE_DEF,
+};
+
 enum class IdentifierScope {
     FILE,
     BLOCK,
@@ -50,12 +56,6 @@ struct Declaration: ASTNode {
     Declaration(IdentifierScope scope, const Location& location);
 
     virtual void print(ostream& stream) const override;
-};
-
-enum class DeclaratorKind {
-    ENTITY,
-    ENUM_CONSTANT,
-    TYPE_DEF,
 };
 
 struct DeclaratorDelegate: ASTNode {
