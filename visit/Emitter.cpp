@@ -212,6 +212,10 @@ struct Emitter: Visitor {
     void emit_auto_initializer(Value dest, Expr* expr) {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
 
+        if (auto uninitializer = dynamic_cast<UninitializedExpr*>(expr)) {
+            return;
+        }
+
         Value scalar_value;
         if (auto initializer = dynamic_cast<InitializerExpr*>(expr)) {
             if (auto array_type = type_cast<ResolvedArrayType>(dest.type)) {
@@ -242,6 +246,10 @@ struct Emitter: Visitor {
     }
     
     Value emit_static_initializer(Value dest, Expr* expr) {
+        if (auto uninitializer = dynamic_cast<UninitializedExpr*>(expr)) {
+            return Value(dest.type, LLVMGetUndef(dest.type->llvm_type()));
+        }
+
         if (auto initializer = dynamic_cast<InitializerExpr*>(expr)) {
             if (auto array_type = type_cast<ResolvedArrayType>(dest.type)) {
                 vector<LLVMValueRef> values(array_type->size);
