@@ -168,6 +168,10 @@ VisitStatementOutput Visitor::visit(SubscriptExpr* expr, const VisitStatementInp
     return visit_default(expr, input);
 }
 
+VisitStatementOutput Visitor::visit(UninitializedExpr* expr, const VisitStatementInput& input) {
+    return visit_default(expr, input);
+}
+
 /* Constants */
 
 VisitStatementOutput Visitor::visit(IntegerConstant* constant, const VisitStatementInput& input) {

@@ -86,6 +86,7 @@ struct Visitor {
     virtual VisitStatementOutput visit(InitializerExpr* expr, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(SizeOfExpr* expr, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(SubscriptExpr* expr, const VisitStatementInput& input);
+    virtual VisitStatementOutput visit(UninitializedExpr* expr, const VisitStatementInput& input);
 
     virtual VisitStatementOutput visit(IntegerConstant* constant, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(FloatingPointConstant* constant, const VisitStatementInput& input);

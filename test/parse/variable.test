@@ -327,6 +327,12 @@ EXPECT_AST
  ,["var", "ES", "Si", "y", 2]]]
 
 
+BEGIN Parse uninitializer expression
+int x = {void};
+EXPECT_AST
+[["var","ES","Si","x",["uninit"]]]
+
+
 BEGIN Declarators in parentheses
 int ((x)), (*y);
 EXPECT_AST

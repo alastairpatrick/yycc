@@ -1273,19 +1273,26 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
 }
 
 Expr* Parser::parse_initializer() {
+    Expr* result{};
     if (consume('{')) {
-        auto initializer = new InitializerExpr(preprocessor.location());
+        if (consume(TOK_VOID)) {
+            result = new UninitializedExpr(preprocessor.location());
+        } else {
+            auto initializer = new InitializerExpr(preprocessor.location());
 
-        while (token && token != '}') {
-            initializer->elements.push_back(parse_initializer());
-            if (token != '}') require(',');
+            while (token && token != '}') {
+                initializer->elements.push_back(parse_initializer());
+                if (token != '}') require(',');
+            }
+            
+            result = initializer;
         }
-
         require('}');
-        return initializer;
     } else {
-        return parse_expr(ASSIGN_PREC);
+        result = parse_expr(ASSIGN_PREC);
     }
+
+    return result;
 }
 
 ASTNodeVector Parser::parse() {

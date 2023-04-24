@@ -247,3 +247,13 @@ void SubscriptExpr::print(ostream& stream) const {
     stream << "[\"subs\", " << left << ", " << right << "]";
 }
 
+UninitializedExpr::UninitializedExpr(const Location& location): Expr(location) {
+}
+
+VisitStatementOutput UninitializedExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
+}
+
+void UninitializedExpr::print(ostream& stream) const {
+    stream << "[\"uninit\"]";
+}
