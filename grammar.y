@@ -423,6 +423,7 @@ direct_abstract_declarator
 initializer
 	: '{' initializer_list '}'
 	| '{' initializer_list ',' '}'
+    | '{' VOID '}'                                              // ADDITION: uninitializer
 	| assignment_expression
 	;
 
