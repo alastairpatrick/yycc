@@ -438,13 +438,7 @@ struct ResolvePass: Visitor {
         type->complete = false;
 
         for (auto member: type->members) {
-            auto member_type = resolve(member);
-
-            /*if (auto member_entity = member->entity()) {
-                if (!member_type->is_complete()) {
-                    message(Severity::ERROR, member->location) << "member '" << member->identifier << "' has incomplete type\n";
-                }
-            }*/
+            resolve(member);
         }
 
         type->complete = want_complete;
