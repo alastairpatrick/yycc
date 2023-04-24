@@ -5,9 +5,6 @@
 #include "Scope.h"
 #include "Type.h"
 
-struct Declarator;
-struct Mystery;
-
 struct IdentifierMap {
     explicit IdentifierMap(bool preparse);
     void operator=(const IdentifierMap&) = delete;
