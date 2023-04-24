@@ -62,6 +62,10 @@ bool Type::has_tag(const Declarator* declarator) const {
 
 const VoidType VoidType::it;
 
+TypePartition VoidType::partition() const {
+    return TypePartition::INCOMPLETE;
+}
+
 VisitTypeOutput VoidType::accept(Visitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }

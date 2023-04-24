@@ -53,6 +53,7 @@ private:
 
 struct VoidType: Type {
     static const VoidType it;
+    virtual TypePartition partition() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;
     virtual void print(std::ostream& stream) const override;

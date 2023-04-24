@@ -41,6 +41,13 @@ EXPECT_AST
 ,["var","ES","Fd","y"]]
 
 
+BEGIN Error on incomplete variable
+void x;
+EXPECT_MESSAGE
+:1:6: error variable 'x' has incomplete type
+END
+
+
 BEGIN #extern directives composed
 #extern x
 #extern x

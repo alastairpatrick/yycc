@@ -54,7 +54,7 @@ BEGIN Error on array of incomplete array type
 int x[][];
 EXPECT_MESSAGE
 :1:6: error incomplete array element type
-:1:5: error member 'x' has incomplete type
+:1:5: error variable 'x' has incomplete type
 EXPECT_GLOBALS
 [["var","ES",["A","Si"],"x"]]
 
