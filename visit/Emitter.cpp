@@ -884,8 +884,8 @@ struct Emitter: Visitor {
         }
 
         if (!intermediate.is_valid()) {
-            auto& stream = message(Severity::ERROR, expr->location) << "'" << expr->message_kind() << "' operation may not be evaluated with operands of types "
-                                                                           << PrintType(left_value.type) << " and " << PrintType(right_value.type) << '\n';
+            auto& stream = message(Severity::ERROR, expr->location) << "'" << expr->message_kind() << "' operation may not be evaluated with operands of types '"
+                                                                           << PrintType(left_value.type) << "' and '" << PrintType(right_value.type) << "'\n";
             intermediate = Value::default_int();
         }
 
