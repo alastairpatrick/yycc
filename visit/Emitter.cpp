@@ -171,7 +171,7 @@ struct Emitter: Visitor {
         }
     }
 
-    Value convert_to_type(Value value, const Type* dest_type) {
+    Value convert_to_type(Value value, const Type* dest_type, const Location& location) {
         assert(value.type->qualifiers() == 0);
         
         dest_type = dest_type->unqualified();
@@ -182,6 +182,13 @@ struct Emitter: Visitor {
         input.value = value;
         input.dest_type = dest_type;
         auto result = value.type->accept(*this, input).value;
+
+        if (!result.is_valid()) {
+            message(Severity::ERROR, location) << "cannot convert from type '" << PrintType(value.type)
+                                               << "' to type '" << PrintType(dest_type) << "'\n";
+            result = Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
+        }
+
         assert(result.type == dest_type);
         return result;
     }
@@ -232,7 +239,7 @@ struct Emitter: Visitor {
             }
 
             // C99 6.7.8p11
-            return convert_to_type(emit(initializer->elements[0]), dest_type);
+            return convert_to_type(emit(initializer->elements[0]), dest_type, initializer->location);
         }
     }
 
@@ -265,7 +272,7 @@ struct Emitter: Visitor {
 
             scalar_value = emit_scalar_initializer(dest.type, initializer);
         } else {
-            scalar_value = convert_to_type(emit(expr), dest.type);
+            scalar_value = convert_to_type(emit(expr), dest.type, expr->location);
         }
 
         LLVMBuildStore(builder, llvm_rvalue(scalar_value), dest.llvm_lvalue());
@@ -298,7 +305,7 @@ struct Emitter: Visitor {
             return emit_scalar_initializer(dest.type, initializer);
         }
 
-        return convert_to_type(emit(expr), dest.type);
+        return convert_to_type(emit(expr), dest.type, expr->location);
     }
 
     void emit_variable(Declarator* declarator, Entity* entity) {
@@ -394,8 +401,7 @@ struct Emitter: Visitor {
             }
         }
 
-        assert(false);  // TODO
-        return VisitTypeOutput(value); 
+        return VisitTypeOutput(); 
     }
 
     virtual VisitTypeOutput visit(const FloatingPointType* source_type, const VisitTypeInput& input) override {
@@ -414,8 +420,7 @@ struct Emitter: Visitor {
             }
         }
 
-        assert(false);  // TODO
-        return VisitTypeOutput(value);
+        return VisitTypeOutput();
     }
 
     virtual VisitTypeOutput visit(const FunctionType* source_type, const VisitTypeInput& input) override {
@@ -426,8 +431,7 @@ struct Emitter: Visitor {
             return VisitTypeOutput(dest_type, value.llvm_lvalue());
         }
 
-        assert(false);  // TODO
-        return VisitTypeOutput(value);
+        return VisitTypeOutput();
     }
 
     virtual VisitTypeOutput visit(const IntegerType* source_type, const VisitTypeInput& input) override {
@@ -451,8 +455,7 @@ struct Emitter: Visitor {
             return VisitTypeOutput(dest_type, LLVMBuildIntToPtr(builder, llvm_rvalue(value), dest_type->llvm_type(), ""));
         }
 
-        assert(false); // TODO
-        return VisitTypeOutput(value);
+        return VisitTypeOutput();
     }
     
     VisitTypeOutput visit(const PointerType* source_type, const VisitTypeInput& input) {
@@ -467,12 +470,7 @@ struct Emitter: Visitor {
             return VisitTypeOutput(dest_type, LLVMBuildPtrToInt(builder, llvm_rvalue(value), dest_type->llvm_type(), ""));
         }
 
-        assert(false); // TODO
-        return VisitTypeOutput(input.value);
-    }
-
-    VisitTypeOutput visit(const QualifiedType* source_type, const VisitTypeInput& input) {
-        return VisitTypeOutput(convert_to_type(input.value.bit_cast(source_type->base_type), input.dest_type));
+        return VisitTypeOutput();
     }
 
     virtual VisitStatementOutput visit(CompoundStatement* statement, const VisitStatementInput& input) override {
@@ -502,7 +500,7 @@ struct Emitter: Visitor {
 
         if (statement->condition) {
             auto condition_value = emit(statement->condition).unqualified();
-            condition_value = convert_to_type(condition_value, IntegerType::of_bool());
+            condition_value = convert_to_type(condition_value, IntegerType::of_bool(), statement->condition->location);
             LLVMBuildCondBr(builder, llvm_rvalue(condition_value), body_block, end_block);
         }
 
@@ -551,7 +549,7 @@ struct Emitter: Visitor {
         if (!statement->else_statement) else_block = end_block;
 
         auto condition_value = emit(statement->condition).unqualified();
-        condition_value = convert_to_type(condition_value, IntegerType::of_bool());
+        condition_value = convert_to_type(condition_value, IntegerType::of_bool(), statement->condition->location);
         LLVMBuildCondBr(builder, llvm_rvalue(condition_value), then_block, else_block);
 
         LLVMPositionBuilderAtEnd(builder, then_block);
@@ -572,7 +570,7 @@ struct Emitter: Visitor {
     virtual VisitStatementOutput visit(ReturnStatement* statement, const VisitStatementInput& input) override {
         if (statement->expr) {
             auto value = emit(statement->expr).unqualified();
-            value = convert_to_type(value, function_type->return_type->unqualified());
+            value = convert_to_type(value, function_type->return_type->unqualified(), statement->expr->location);
             LLVMBuildRet(builder, llvm_rvalue(value));
         } else {
             LLVMBuildRetVoid(builder);
@@ -737,7 +735,7 @@ struct Emitter: Visitor {
         return LLVMRealPredicate(0);
     }
 
-    Value emit_regular_binary_operation(BinaryExpr* expr, Value left_value, Value right_value) {
+    Value emit_regular_binary_operation(BinaryExpr* expr, Value left_value, Value right_value, const Location& left_location, const Location& right_location) {
         bool is_assign = is_assignment(expr->op);
         auto convert_type = is_assign ? left_value.type : usual_arithmetic_conversions(left_value.type, right_value.type);
         auto result_type = convert_type;
@@ -747,8 +745,8 @@ struct Emitter: Visitor {
 
         if (outcome == EmitOutcome::TYPE) return Value(result_type);
 
-        left_value = convert_to_type(left_value, convert_type);
-        right_value = convert_to_type(right_value, convert_type);
+        left_value = convert_to_type(left_value, convert_type, left_location);
+        right_value = convert_to_type(right_value, convert_type, right_location);
 
         if (auto as_int = type_cast<IntegerType>(convert_type)) {
             switch (expr->op) {
@@ -882,7 +880,7 @@ struct Emitter: Visitor {
         } else if (right_pointer_type) {
             intermediate = emit_pointer_arithmetic_operation(expr, right_pointer_type, right_value, left_value);
         } else {
-            intermediate = emit_regular_binary_operation(expr, left_value, right_value);
+            intermediate = emit_regular_binary_operation(expr, left_value, right_value, expr->left->location, expr->right->location);
         }
 
         if (!intermediate.is_valid()) {
@@ -915,7 +913,7 @@ struct Emitter: Visitor {
             for (size_t i = 0; i < llvm_params.size(); ++i) {
                 auto param_expr = expr->parameters[i];
                 auto expected_type = function_type->parameter_types[i];
-                auto param_value = convert_to_type(emit(param_expr).unqualified(), expected_type);
+                auto param_value = convert_to_type(emit(param_expr).unqualified(), expected_type, param_expr->location);
                 llvm_params[i] = llvm_rvalue(param_value);
             }
 
@@ -941,19 +939,19 @@ struct Emitter: Visitor {
         auto merge_block = append_block("merge");
 
         auto condition_value = emit(expr->condition).unqualified();
-        condition_value = convert_to_type(condition_value, IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL));
+        condition_value = convert_to_type(condition_value, IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL), expr->condition->location);
         LLVMBuildCondBr(builder, llvm_rvalue(condition_value), alt_blocks[0], alt_blocks[1]);
 
         LLVMValueRef alt_values[2];
 
         LLVMPositionBuilderAtEnd(builder, alt_blocks[0]);
         Value then_value = emit(expr->then_expr).unqualified();
-        alt_values[0] = llvm_rvalue(convert_to_type(then_value, result_type));
+        alt_values[0] = llvm_rvalue(convert_to_type(then_value, result_type, expr->then_expr->location));
         LLVMBuildBr(builder, merge_block);
 
         LLVMPositionBuilderAtEnd(builder, alt_blocks[1]);
         Value else_value = emit(expr->else_expr).unqualified();
-        alt_values[1] = llvm_rvalue(convert_to_type(else_value, result_type));
+        alt_values[1] = llvm_rvalue(convert_to_type(else_value, result_type, expr->else_expr->location));
         LLVMBuildBr(builder, merge_block);
 
         LLVMPositionBuilderAtEnd(builder, merge_block);

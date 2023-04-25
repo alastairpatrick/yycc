@@ -260,3 +260,41 @@ define ptr @f(ptr %0) {
   ret ptr %2
 }
 END
+
+
+BEGIN Cannot convert array to integer
+char a[10];
+int x = a;
+EXPECT_MESSAGE
+:2:9: error cannot convert from type 'char[10]' to type 'int'
+END
+
+
+BEGIN Cannot convert integer to array
+char a[10] = 1;
+EXPECT_MESSAGE
+:1:14: error cannot convert from type 'int' to type 'char[10]'
+END
+
+
+BEGIN Cannot convert pointer to float
+float f;
+float g = &f;
+EXPECT_MESSAGE
+:2:11: error cannot convert from type 'float*' to type 'float'
+END
+
+
+BEGIN Cannot convert float to array
+char a[10] = 2.0f;
+EXPECT_MESSAGE
+:1:14: error cannot convert from type 'float' to type 'char[10]'
+END
+
+
+BEGIN Cannot convert function to float
+void f() {}
+float x = f;
+EXPECT_MESSAGE
+:2:11: error cannot convert from type 'void()' to type 'float'
+END
