@@ -395,6 +395,20 @@ define void @f() {
 END
 
 
+BEGIN Global initialized function pointer variable (4)
+#static f
+void (*fp)() = &f;
+void f() {
+}
+EXPECT_IR
+@fp = global ptr @f
+
+define void @f() {
+  ret void
+}
+END
+
+
 BEGIN Local variable initialized function pointer variable (1)
 void f() {
 }

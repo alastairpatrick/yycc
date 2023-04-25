@@ -23,15 +23,18 @@ struct EntityPass: Visitor {
         }
     }
 
-    virtual VisitDeclaratorOutput visit(Declarator* declarator, Entity* entity, const VisitDeclaratorInput& input) override {
-        if (declarator != declarator->primary) return VisitDeclaratorOutput();
-          
-        auto name = identifier_name(declarator->identifier);
+    virtual VisitDeclaratorOutput visit(Declarator* primary, Entity* entity, const VisitDeclaratorInput& input) override {
+        primary = primary->primary;
+        entity = primary->entity();
+        
+        if (entity->value.kind == ValueKind::LVALUE) return VisitDeclaratorOutput();
+
+        auto name = identifier_name(primary->identifier);
         auto prefixed_name = prefix + name;
 
         if (entity->is_function()) {
-            auto function = LLVMAddFunction(llvm_module, prefixed_name.c_str(), declarator->type->llvm_type());
-            entity->value = Value(ValueKind::LVALUE, declarator->type, function);
+            auto function = LLVMAddFunction(llvm_module, prefixed_name.c_str(), primary->type->llvm_type());
+            entity->value = Value(ValueKind::LVALUE, primary->type, function);
 
             EntityPass pass;
             pass.llvm_module = llvm_module;
@@ -40,10 +43,10 @@ struct EntityPass: Visitor {
             pass.accept(entity->body, VisitStatementInput());
 
         } else if (entity->storage_duration() == StorageDuration::STATIC) {
-            auto global = LLVMAddGlobal(llvm_module, declarator->type->llvm_type(), prefixed_name.c_str());
-            entity->value = Value(ValueKind::LVALUE, declarator->type, global);
+            auto global = LLVMAddGlobal(llvm_module, primary->type->llvm_type(), prefixed_name.c_str());
+            entity->value = Value(ValueKind::LVALUE, primary->type, global);
 
-            LLVMSetGlobalConstant(global, declarator->type->qualifiers() & QUAL_CONST);
+            LLVMSetGlobalConstant(global, primary->type->qualifiers() & QUAL_CONST);
 
             if (entity->linkage() != Linkage::EXTERNAL) {
                 LLVMSetLinkage(global, LLVMInternalLinkage);
