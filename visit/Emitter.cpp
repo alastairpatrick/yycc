@@ -224,7 +224,7 @@ struct Emitter: Visitor {
 
         emit(entity->body);
 
-        if (function_type->return_type == &VoidType::it) {
+        if (function_type->return_type->unqualified() == &VoidType::it) {
             LLVMBuildRetVoid(builder);
         } else {
             LLVMBuildRet(builder, LLVMConstNull(function_type->return_type->llvm_type()));
@@ -478,6 +478,10 @@ struct Emitter: Visitor {
         return VisitTypeOutput();
     }
 
+    VisitTypeOutput visit(const VoidType* source_type, const VisitTypeInput& input) {
+        return VisitTypeOutput();
+    }
+
     virtual VisitStatementOutput visit(CompoundStatement* statement, const VisitStatementInput& input) override {
         for (auto node: statement->nodes) {
             emit(node);
@@ -573,9 +577,12 @@ struct Emitter: Visitor {
     }
 
     virtual VisitStatementOutput visit(ReturnStatement* statement, const VisitStatementInput& input) override {
-        if (function_type->return_type == &VoidType::it) {
+        if (function_type->return_type->unqualified() == &VoidType::it) {
             if (statement->expr) {
-                message(Severity::ERROR, statement->expr->location) << "void function '" << *function_declarator->identifier.name << "' should not return a value\n";
+                auto type = get_expr_type(statement->expr);
+                if (type->unqualified() != &VoidType::it) {
+                    message(Severity::ERROR, statement->expr->location) << "void function '" << *function_declarator->identifier.name << "' should not return a value\n";
+                }
             }
             LLVMBuildRetVoid(builder);
         } else {
@@ -720,8 +727,6 @@ struct Emitter: Visitor {
             return IntegerType::of(IntegerSignedness::UNSIGNED, signed_int->size);
         }
 
-        // For class pointer
-        assert(false); // TODO
         return nullptr;
     }
     
@@ -752,6 +757,8 @@ struct Emitter: Visitor {
     Value emit_regular_binary_operation(BinaryExpr* expr, Value left_value, Value right_value, const Location& left_location, const Location& right_location) {
         bool is_assign = is_assignment(expr->op);
         auto convert_type = is_assign ? left_value.type : usual_arithmetic_conversions(left_value.type, right_value.type);
+        if (!convert_type) return Value();
+
         auto result_type = convert_type;
         if (llvm_float_predicate(expr->op)) {
             result_type = IntegerType::of_bool();
@@ -944,7 +951,13 @@ struct Emitter: Visitor {
         auto then_type = get_expr_type(expr->then_expr)->unqualified();
         auto else_type = get_expr_type(expr->else_expr)->unqualified();
 
-        auto result_type = usual_arithmetic_conversions(then_type, else_type);    
+        // TODO: might return null
+        auto result_type = usual_arithmetic_conversions(then_type, else_type);
+        if (!result_type) {
+            message(Severity::ERROR, expr->location) << "incompatible conditional operand types '" << PrintType(then_type) << "' and '" << PrintType(else_type) << "'\n";
+            return VisitStatementOutput(Value::default_int());
+        }
+
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
         LLVMBasicBlockRef alt_blocks[2] = {
@@ -970,10 +983,16 @@ struct Emitter: Visitor {
         LLVMBuildBr(builder, merge_block);
 
         LLVMPositionBuilderAtEnd(builder, merge_block);
-        auto phi_value = LLVMBuildPhi(builder, result_type->llvm_type(), "cond");
-        LLVMAddIncoming(phi_value, alt_values, alt_blocks, 2);
+        Value result;
+        if (result_type->unqualified() != &VoidType::it) {
+            auto phi_value = LLVMBuildPhi(builder, result_type->llvm_type(), "");
+            LLVMAddIncoming(phi_value, alt_values, alt_blocks, 2);
+            result = Value(result_type, phi_value);
+        } else {
+            result = Value(result_type);
+        }
 
-        return VisitStatementOutput(result_type, phi_value);
+        return VisitStatementOutput(result);
     }
 
     virtual VisitStatementOutput visit(DereferenceExpr* expr, const VisitStatementInput& input) override {

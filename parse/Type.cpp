@@ -239,7 +239,7 @@ void IntegerType::message_print(ostream& stream, int section) const {
         return;
     }
 
-    if (signedness == IntegerSignedness::UNSIGNED) {
+    if (signedness == IntegerSignedness::UNSIGNED && size != IntegerSize::BOOL) {
         stream << "unsigned ";
     }
 

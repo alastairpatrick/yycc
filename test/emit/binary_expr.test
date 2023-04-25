@@ -352,11 +352,31 @@ END
 
 // Void
 
-BEGIN Cannot apply binary operation to void
+BEGIN Cannot apply binary operation to void (1)
 void f() {}
 int g() {
     return f() + f();
 }
 EXPECT_MESSAGE
 :3:16: error '+' operation may not be evaluated with operands of types 'void' and 'void'
+END
+
+
+BEGIN Cannot apply binary operation to void (2)
+void f() {}
+int g() {
+    return 1 + f();
+}
+EXPECT_MESSAGE
+:3:14: error '+' operation may not be evaluated with operands of types 'int' and 'void'
+END
+
+
+BEGIN Cannot apply binary operation to void (3)
+void f() {}
+int g() {
+    return f() + 1;
+}
+EXPECT_MESSAGE
+:3:16: error '+' operation may not be evaluated with operands of types 'void' and 'int'
 END

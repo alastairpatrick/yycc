@@ -26,9 +26,67 @@ else:                                             ; preds = %3
   br label %merge
 
 merge:                                            ; preds = %else, %then
-  %cond = phi i32 [ %6, %then ], [ %8, %else ]
-  ret i32 %cond
+  %9 = phi i32 [ %6, %then ], [ %8, %else ]
+  ret i32 %9
 }
+END
+
+
+BEGIN Condition operator with both void operands
+void g();
+int f(_Bool c) {
+    c ? g() : g();
+}
+EXPECT_IR
+declare void @g()
+
+define i32 @f(i1 %0) {
+  %c = alloca i1, align 1
+  store i1 %0, ptr %c, align 1
+  %2 = load i1, ptr %c, align 1
+  br i1 %2, label %then, label %else
+
+then:                                             ; preds = %1
+  call void @g()
+  br label %merge
+
+else:                                             ; preds = %1
+  call void @g()
+  br label %merge
+
+merge:                                            ; preds = %else, %then
+  ret i32 0
+}
+END
+
+
+BEGIN Error if condition is void
+void f() {}
+int g(int a, int b) {
+    return f() ? a : b;
+}
+EXPECT_MESSAGE
+:3:12: error cannot convert from type 'void' to type 'bool'
+END
+
+
+BEGIN Error if consequent or alternate are void (1)
+void f() {}
+int g(_Bool c) {
+    return c ? 1 : f();
+}
+EXPECT_MESSAGE
+:3:14: error incompatible conditional operand types 'int' and 'void'
+END
+
+
+BEGIN Error if consequent or alternate are void (2)
+void f() {}
+int g(_Bool c) {
+    return c ? f() : 1;
+}
+EXPECT_MESSAGE
+:3:14: error incompatible conditional operand types 'void' and 'int'
 END
 
 

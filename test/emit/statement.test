@@ -302,6 +302,14 @@ define %S @f() {
 END
 
 
+BEGIN Return void value from void function
+void g() {}
+void f() {
+    return g();
+}
+END
+
+
 BEGIN Error on return value in void function
 void f() {
     return 1;
