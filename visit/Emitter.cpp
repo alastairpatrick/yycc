@@ -573,12 +573,21 @@ struct Emitter: Visitor {
     }
 
     virtual VisitStatementOutput visit(ReturnStatement* statement, const VisitStatementInput& input) override {
-        if (statement->expr) {
-            auto value = emit(statement->expr).unqualified();
-            value = convert_to_type(value, function_type->return_type->unqualified(), statement->expr->location);
-            LLVMBuildRet(builder, llvm_rvalue(value));
-        } else {
+        if (function_type->return_type == &VoidType::it) {
+            if (statement->expr) {
+                message(Severity::ERROR, statement->expr->location) << "void function '" << *function_declarator->identifier.name << "' should not return a value\n";
+            }
             LLVMBuildRetVoid(builder);
+        } else {
+            Value value;
+            if (statement->expr) {
+                value = emit(statement->expr).unqualified();
+                value = convert_to_type(value, function_type->return_type->unqualified(), statement->expr->location);
+            } else {
+                message(Severity::ERROR, statement->location) << "non-void function '" << *function_declarator->identifier.name << "' should return a value\n";
+                value = Value(function_type->return_type, LLVMConstNull(function_type->return_type->llvm_type()));
+            }
+            LLVMBuildRet(builder, llvm_rvalue(value));
         }
 
         LLVMPositionBuilderAtEnd(builder, unreachable_block);

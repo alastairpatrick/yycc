@@ -302,6 +302,24 @@ define %S @f() {
 END
 
 
+BEGIN Error on return value in void function
+void f() {
+    return 1;
+}
+EXPECT_MESSAGE
+:2:12: error void function 'f' should not return a value
+END
+
+
+BEGIN Error on missing return value in non-void function
+int f() {
+    return;
+}
+EXPECT_MESSAGE
+:2:5: error non-void function 'f' should return a value
+END
+
+
 // SwitchStatement
 
 BEGIN Switch with default
