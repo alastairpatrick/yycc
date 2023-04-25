@@ -150,6 +150,10 @@ struct Emitter: Visitor {
     }
 
     Value emit(Statement* statement) {
+        return accept(statement, VisitStatementInput()).value;
+    }
+
+    virtual void pre_visit(Statement* statement) override {
         if (statement->labels.size()) {
             for (auto& label: statement->labels) {
                 LLVMBasicBlockRef labelled_block{};
@@ -167,8 +171,6 @@ struct Emitter: Visitor {
                 LLVMPositionBuilderAtEnd(builder, labelled_block);
             }
         }
-
-        return statement->accept(*this, VisitStatementInput()).value;
     }
 
     Value convert_to_type(Value value, const Type* dest_type) {

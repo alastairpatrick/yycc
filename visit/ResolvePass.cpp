@@ -15,12 +15,13 @@ struct ResolvePass: Visitor {
 
     void resolve(Statement* statement) {
         if (!statement) return;
+        accept(statement, VisitStatementInput());
+    }
 
+    virtual void pre_visit(Statement* statement) override {
         for (auto& label: statement->labels) {
             resolve(label.case_expr);
         }
-
-        statement->accept(*this, VisitStatementInput());
     }
 
     bool is_trivially_cyclic(Declarator* declarator, const Type* type) {

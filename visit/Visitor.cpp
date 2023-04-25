@@ -90,6 +90,14 @@ VisitTypeOutput Visitor::visit(const TypeDefType* type, const VisitTypeInput& in
 
 /* Statements */
 
+VisitStatementOutput Visitor::accept(Statement* statement, const VisitStatementInput& input) {
+    pre_visit(statement);
+    return statement->accept(*this, input);
+}
+
+void Visitor::pre_visit(Statement* statement) {
+}
+
 VisitStatementOutput Visitor::visit_default(Statement* statement, const VisitStatementInput& input) {
     return VisitStatementOutput();
 }

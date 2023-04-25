@@ -66,6 +66,9 @@ struct Visitor {
     virtual VisitTypeOutput visit(const UnqualifiedType* type, const VisitTypeInput& input);
     virtual VisitTypeOutput visit(const UnresolvedArrayType* type, const VisitTypeInput& input);
 
+    VisitStatementOutput accept(Statement* statement, const VisitStatementInput& input);
+    virtual void pre_visit(Statement* statement);
+
     virtual VisitStatementOutput visit_default(Statement* statement, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(CompoundStatement* statement, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(ForStatement* statement, const VisitStatementInput& input);
