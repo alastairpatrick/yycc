@@ -178,7 +178,7 @@ END
 
 BEGIN Integer to pointer conversion
 int* f(long x) {
-    return x;
+    return (int*) x;
 }
 EXPECT_IR
 define ptr @f(i32 %0) {
@@ -297,4 +297,11 @@ void f() {}
 float x = f;
 EXPECT_MESSAGE
 :2:11: error cannot convert from type 'void()' to type 'float'
+END
+
+
+BEGIN Cannot implicitly convert integer to pointer
+void *p = (int) 0;
+EXPECT_MESSAGE
+:1:11: error conversion from type 'int' to type 'void*' requires explicit cast
 END

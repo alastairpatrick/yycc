@@ -18,6 +18,11 @@ struct VisitDeclaratorInput {
 struct VisitDeclaratorOutput {
 };
 
+enum class ConvKind {
+    IMPLICIT,
+    EXPLICIT,
+};
+
 struct VisitTypeInput {
     Value value;
     const Type* dest_type{};
@@ -25,10 +30,11 @@ struct VisitTypeInput {
 
 struct VisitTypeOutput {
     Value value;
+    ConvKind conv_kind = ConvKind::IMPLICIT;
 
     VisitTypeOutput() = default;
-    explicit VisitTypeOutput(Value value): value(value) {}
-    explicit VisitTypeOutput(const Type* type, LLVMValueRef value = nullptr): value(type, value) {}
+    explicit VisitTypeOutput(Value value, ConvKind kind = ConvKind::IMPLICIT): value(value), conv_kind(kind) {}
+    explicit VisitTypeOutput(const Type* type, LLVMValueRef value = nullptr, ConvKind kind = ConvKind::IMPLICIT): value(type, value), conv_kind(kind) {}
 };
 
 struct VisitStatementInput {
