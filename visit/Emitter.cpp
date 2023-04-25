@@ -129,6 +129,11 @@ struct Emitter: Visitor {
         }
     }
 
+    LLVMValueRef size_const_int(unsigned long long i) {
+        auto llvm_context = TranslationUnitContext::it->llvm_context;
+        return LLVMConstInt(LLVMInt64TypeInContext(llvm_context), i, false);
+    }
+
     LLVMBasicBlockRef append_block(const char* name) {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
         return LLVMAppendBasicBlockInContext(llvm_context, function, name);
@@ -242,7 +247,7 @@ struct Emitter: Visitor {
         if (auto initializer = dynamic_cast<InitializerExpr*>(expr)) {
             if (auto array_type = type_cast<ResolvedArrayType>(dest.type)) {
                 for (size_t i = 0; i < array_type->size; ++i) {
-                    LLVMValueRef indices[] = { context->zero_size, LLVMConstInt(LLVMInt64TypeInContext(context->llvm_context), i, false) };
+                    LLVMValueRef indices[] = { context->zero_size, size_const_int(i) };
                     LLVMValueRef dest_element = LLVMBuildGEP2(builder, array_type->llvm_type(), dest.llvm_lvalue(), indices, 2, "");
                     emit_auto_initializer(Value(ValueKind::LVALUE, array_type->element_type, dest_element), initializer->elements[i]);
                 }
@@ -1010,18 +1015,18 @@ struct Emitter: Visitor {
     }
 
     virtual VisitStatementOutput visit(SizeOfExpr* expr, const VisitStatementInput& input) override {
+        auto zero = TranslationUnitContext::it->zero_size;
         auto llvm_target_data = TranslationUnitContext::it->llvm_target_data;
 
-        auto result_type = IntegerType::uintptr_type();
+        auto result_type = IntegerType::of_size(IntegerSignedness::UNSIGNED);
 
         if (expr->type->partition() == TypePartition::INCOMPLETE) {
-            return VisitStatementOutput(result_type, LLVMConstInt(result_type->llvm_type(), 0, false));;
+            return VisitStatementOutput(result_type, zero);
         }
 
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
-        auto size_int = LLVMStoreSizeOfType(llvm_target_data, expr->type->llvm_type());
-        return VisitStatementOutput(result_type, LLVMConstInt(result_type->llvm_type(), size_int, false));
+        return VisitStatementOutput(result_type, size_const_int(LLVMStoreSizeOfType(llvm_target_data, expr->type->llvm_type())));
     }
 
     virtual VisitStatementOutput visit(SubscriptExpr* expr, const VisitStatementInput& input) override {

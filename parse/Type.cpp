@@ -157,10 +157,6 @@ const IntegerType* IntegerType::default_type() {
     return of(IntegerSignedness::SIGNED, IntegerSize::INT);
 }
 
-const IntegerType* IntegerType::uintptr_type() {
-    return of(IntegerSignedness::UNSIGNED, IntegerSize::LONG_LONG);
-}
-
 int IntegerType::num_bits() const {
     unsigned long long result{};
     switch (size) {

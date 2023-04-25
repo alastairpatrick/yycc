@@ -92,7 +92,6 @@ struct IntegerType: Type {
     static const IntegerType* of_size(IntegerSignedness signedness);
     static const IntegerType* of(IntegerSignedness signedness, IntegerSize size);
     static const IntegerType* default_type();
-    static const IntegerType* uintptr_type();
 
     int num_bits() const;
     unsigned long long max() const;
