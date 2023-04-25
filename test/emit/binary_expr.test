@@ -348,3 +348,15 @@ define ptr @f() {
   ret ptr %2
 }
 END
+
+
+// Void
+
+BEGIN Cannot apply binary operation to void
+void f() {}
+int g() {
+    return f() + f();
+}
+EXPECT_MESSAGE
+:3:16: error '+' operation may not be evaluated with operands of types 'void' and 'void'
+END

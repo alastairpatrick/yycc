@@ -186,7 +186,12 @@ struct Emitter: Visitor {
         if (!result.is_valid()) {
             message(Severity::ERROR, location) << "cannot convert from type '" << PrintType(value.type)
                                                << "' to type '" << PrintType(dest_type) << "'\n";
-            result = Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
+            pause_messages();
+            if (dest_type != &VoidType::it) {
+                result = Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
+            } else {
+                return Value::default_int();
+            }
         }
 
         assert(result.type == dest_type);
@@ -886,6 +891,7 @@ struct Emitter: Visitor {
         if (!intermediate.is_valid()) {
             auto& stream = message(Severity::ERROR, expr->location) << "'" << expr->message_kind() << "' operation may not be evaluated with operands of types '"
                                                                            << PrintType(left_value.type) << "' and '" << PrintType(right_value.type) << "'\n";
+            pause_messages();
             intermediate = Value::default_int();
         }
 
