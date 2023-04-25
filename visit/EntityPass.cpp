@@ -3,7 +3,7 @@
 
 // This pass creates LLVM globals for all variables with static duration and LLVM functions, including those nested within functions.
 struct EntityPass: Visitor {
-    std::string prefix;
+    string prefix;
     LLVMModuleRef llvm_module{};
 
     void emit(const ASTNodeVector& nodes) {
