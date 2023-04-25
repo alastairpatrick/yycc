@@ -197,9 +197,7 @@ struct Emitter: Visitor {
     void emit_function_definition(Declarator* declarator, Entity* entity) {
         function_declarator = declarator;
         function_type = type_cast<FunctionType>(declarator->primary->type);
-        function = LLVMAddFunction(module->llvm_module, identifier_name(declarator->identifier), declarator->primary->type->llvm_type());
-
-        entity->value = Value(ValueKind::LVALUE, function_type, function);
+        function = entity->value.llvm_lvalue();
 
         entry_block = append_block("");
         unreachable_block = append_block("");
@@ -329,27 +327,14 @@ struct Emitter: Visitor {
                 LLVMBuildStore(builder, null_value, storage);
             }
 
-
         } else if (entity->storage_duration() == StorageDuration::STATIC) {
-            string name(*declarator->identifier.name);
-            for (auto emitter = this; emitter->function_declarator; emitter = emitter->parent) {
-                name = string(*emitter->function_declarator->identifier.name) + '.' + name;
-            }
-
-            auto global = LLVMAddGlobal(module->llvm_module, llvm_type, name.c_str());
-
-            LLVMSetGlobalConstant(global, type->qualifiers() & QUAL_CONST);
-
+            auto global = entity->value.llvm_lvalue();
 
             LLVMValueRef initial = null_value;
             if (entity->initializer) {
                 initial = emit_static_initializer(Value(type), entity->initializer).llvm_const_rvalue();
             }
             LLVMSetInitializer(global, initial);
-
-            if (entity->linkage() != Linkage::EXTERNAL) {
-                LLVMSetLinkage(global, LLVMInternalLinkage);
-            }
 
             entity->value = Value(ValueKind::LVALUE, type, global);
         }
@@ -996,6 +981,8 @@ struct Emitter: Visitor {
                                         LLVMConstInt(result_type->llvm_type(), enum_constant->constant_int, int_type->signedness == IntegerSignedness::SIGNED));
 
         } else if (auto entity = declarator->entity()) {
+            // EntityPass ensures that all functions and globals are created before the Emitter pass.
+            assert(entity->value.llvm_lvalue());
             return VisitStatementOutput(entity->value);
         } else {
             message(Severity::ERROR, expr->location) << "identifier is not an expression\n";
@@ -1169,6 +1156,9 @@ LLVMModuleRef emit_pass(const ASTNodeVector& nodes, const EmitOptions& options) 
 
     Module module;
     module.llvm_module = LLVMModuleCreateWithNameInContext("my_module", llvm_context);
+
+    void entity_pass(const ASTNodeVector& nodes, LLVMModuleRef llvm_module);
+    entity_pass(nodes, module.llvm_module);
 
     Emitter emitter(EmitOutcome::IR, options);
     emitter.module = &module;

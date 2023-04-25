@@ -39,6 +39,7 @@ add_library(yycc_lib STATIC
     "preprocess/Preprocessor.cpp"
     
     "visit/Emitter.cpp"
+    "visit/EntityPass.cpp"
     "visit/ResolvePass.cpp"
     "visit/Visitor.cpp"
 
