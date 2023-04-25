@@ -825,7 +825,6 @@ struct Emitter: Visitor {
             }
         }
 
-        assert(false);
         return Value();
     }
 
@@ -848,10 +847,9 @@ struct Emitter: Visitor {
             auto size_of_base_type = LLVMStoreSizeOfType(llvm_target_data, pointer_type->base_type->llvm_type());
             auto result = LLVMBuildSDiv(builder, byte_diff, LLVMConstInt(result_type->llvm_type(), size_of_base_type, true), "");
             return Value(result_type, result);
-        } else {
-            assert(false); // TODO
-            return Value();
         }
+
+        return Value();
     }
 
     Value convert_array_to_pointer(Value value) {
@@ -885,6 +883,12 @@ struct Emitter: Visitor {
             intermediate = emit_pointer_arithmetic_operation(expr, right_pointer_type, right_value, left_value);
         } else {
             intermediate = emit_regular_binary_operation(expr, left_value, right_value);
+        }
+
+        if (!intermediate.is_valid()) {
+            auto& stream = message(Severity::ERROR, expr->location) << "'" << expr->message_kind() << "' operation may not be evaluated with operands of types "
+                                                                           << PrintType(left_value.type) << " and " << PrintType(right_value.type) << '\n';
+            intermediate = Value::default_int();
         }
 
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(intermediate);
@@ -977,7 +981,7 @@ struct Emitter: Visitor {
         if (auto enum_constant = declarator->enum_constant()) {
             auto int_type = type_cast<IntegerType>(result_type);
             return VisitStatementOutput(result_type,
-                                        LLVMConstInt(result_type->llvm_type(), enum_constant->constant_int, int_type->signedness == IntegerSignedness::SIGNED));
+                                        LLVMConstInt(result_type->llvm_type(), enum_constant->constant_int, int_type->is_signed()));
 
         } else if (auto entity = declarator->entity()) {
             // EntityPass ensures that all functions and globals are created before the Emitter pass.
@@ -1144,7 +1148,7 @@ Value fold_expr(const Expr* expr, unsigned long long error_value) {
 
         auto type = get_expr_type(expr)->unqualified();
         if (auto int_type = dynamic_cast<const IntegerType*>(type)) {
-            return Value(type, LLVMConstInt(type->llvm_type(), error_value, int_type->signedness == IntegerSignedness::SIGNED));
+            return Value(type, LLVMConstInt(type->llvm_type(), error_value, int_type->is_signed()));
         } else {
             return Value(type, LLVMConstNull(type->llvm_type()));
         }

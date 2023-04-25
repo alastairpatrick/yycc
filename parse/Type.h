@@ -25,6 +25,13 @@ enum class TypePartition {
     INCOMPLETE,
 };
 
+struct PrintType {
+    explicit PrintType(const Type* type): type(type) {}
+    const Type* type;
+};
+
+ostream& operator<<(ostream& stream, const PrintType& print_type);
+
 struct Type: virtual Printable {
     Type() = default;
     Type(const Type&) = delete;
@@ -40,6 +47,9 @@ struct Type: virtual Printable {
 
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const = 0;
     virtual LLVMTypeRef llvm_type() const;
+
+    void message_print(ostream& stream) const;
+    virtual void message_print(ostream& stream, int section) const = 0;
 };
 
 struct CachedType: Type {
@@ -55,6 +65,7 @@ struct VoidType: Type {
     virtual TypePartition partition() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;
+    virtual void message_print(ostream& stream, int section) const override;
     virtual void print(std::ostream& stream) const override;
 };
 
@@ -63,6 +74,7 @@ struct UniversalType: Type {
     static const UniversalType it;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;
+    virtual void message_print(ostream& stream, int section) const override;
     virtual void print(std::ostream& stream) const override;
 };
 
@@ -99,6 +111,7 @@ struct IntegerType: Type {
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;
 
+    virtual void message_print(ostream& stream, int section) const override;
     virtual void print(std::ostream& stream) const override;
     
     bool is_signed() const;
@@ -122,6 +135,7 @@ struct FloatingPointType: Type {
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;
 
+    virtual void message_print(ostream& stream, int section) const override;
     virtual void print(std::ostream& stream) const override;
 
 private:
@@ -132,6 +146,7 @@ struct PointerType: CachedType {
     const Type* const base_type;
 
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
+    virtual void message_print(ostream& stream, int section) const override;
     virtual void print(std::ostream& stream) const override;
 
 private:
@@ -160,6 +175,7 @@ struct QualifiedType: Type {
 
     virtual LLVMTypeRef llvm_type() const override;
 
+    virtual void message_print(ostream& stream, int section) const override;
     virtual void print(std::ostream& stream) const override;
 
 private:
@@ -175,6 +191,7 @@ struct UnqualifiedType: ASTNode, Type {
     virtual unsigned qualifiers() const override;
     virtual const Type* unqualified() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
+    virtual void message_print(ostream& stream, int section) const override;
     virtual void print(std::ostream& stream) const override;
 };
 
@@ -187,6 +204,7 @@ struct FunctionType: CachedType {
 
     virtual TypePartition partition() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
+    virtual void message_print(ostream& stream, int section) const override;
     virtual void print(std::ostream& stream) const override;
     
 private:
@@ -197,6 +215,7 @@ private:
 
 struct TagType: CachedType {
     Declarator* tag{};
+    virtual void message_print(ostream& stream, int section) const override;
 };
 
 struct StructuredType: TagType {
@@ -217,6 +236,7 @@ struct StructuredType: TagType {
 struct StructType: StructuredType {
     explicit StructType(const Location& location);
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
+    virtual void message_print(ostream& stream, int section) const override;
     virtual void print(std::ostream& stream) const override;
 
 private:
@@ -226,6 +246,7 @@ private:
 struct UnionType: StructuredType {
     explicit UnionType(const Location& location);
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
+    virtual void message_print(ostream& stream, int section) const override;
     virtual void print(std::ostream& stream) const override;
 
 private:
@@ -244,6 +265,7 @@ struct EnumType: TagType {
     virtual bool has_tag(const Declarator* declarator) const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef cache_llvm_type() const override;
+    virtual void message_print(ostream& stream, int section) const override;
     virtual void print(std::ostream& stream) const override;
 };
 
@@ -254,6 +276,7 @@ struct TypeOfType: ASTNode, Type {
     TypeOfType(Expr* expr, const Location& location);
     virtual TypePartition partition() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
+    virtual void message_print(ostream& stream, int section) const override;
     virtual void print(std::ostream& stream) const override;
 };
 
@@ -265,6 +288,7 @@ struct UnboundType: Type {
 
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;
+    virtual void message_print(ostream& stream, int section) const override;
     virtual void print(ostream& stream) const override;
 
 private:
@@ -280,6 +304,7 @@ struct TypeDefType: Type {
     virtual const Type* unqualified() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;
+    virtual void message_print(ostream& stream, int section) const override;
     virtual void print(ostream& stream) const override;
 };
 

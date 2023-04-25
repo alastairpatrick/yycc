@@ -20,6 +20,7 @@ TranslationUnitContext::TranslationUnitContext(ostream& message_stream): message
     llvm_target_data = LLVMCreateTargetDataLayout(g_llvm_target_machine);
 
     zero_size = LLVMConstInt(IntegerType::of_size(IntegerSignedness::UNSIGNED)->llvm_type(), 0, false);
+    zero_int = LLVMConstInt(IntegerType::default_type()->llvm_type(), 0, false);
 
     null_message_stream.setstate(ios_base::badbit);
 

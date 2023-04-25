@@ -24,6 +24,17 @@
 // V void
 // . variadic placeholder
 
+// Prints type in three consecutive sections:
+//  0: all parts that don't relate to a declarator, e.g. int
+//  1: pointer asterisks, opening perentheses and qualifiers
+//  2: array and function parts and closing parentheses
+ostream& operator<<(ostream& stream, const PrintType& print_type) {
+    for (int i = 0; i < 3; ++i) {
+        print_type.type->message_print(stream, i);
+    }
+    return stream;
+}
+
 #pragma region Type
 
 unsigned Type::qualifiers() const {
@@ -75,6 +86,12 @@ LLVMTypeRef VoidType::llvm_type() const {
     return LLVMVoidTypeInContext(llvm_context);
 }
 
+void VoidType::message_print(ostream& stream, int section) const {
+    if (section == 0) {
+        stream << "void";
+    }
+}
+
 void VoidType::print(std::ostream& stream) const {
     stream << "\"V\"";
 }
@@ -93,6 +110,12 @@ LLVMTypeRef UniversalType::llvm_type() const {
     assert(false);
     auto llvm_context = TranslationUnitContext::it->llvm_context;
     return LLVMVoidTypeInContext(llvm_context);
+}
+
+void UniversalType::message_print(ostream& stream, int section) const {
+    if (section == 0) {
+        stream << "universal";
+    }
 }
 
 void UniversalType::print(std::ostream& stream) const {
@@ -208,6 +231,43 @@ LLVMTypeRef IntegerType::llvm_type() const {
     };
 }
 
+void IntegerType::message_print(ostream& stream, int section) const {
+    if (section != 0) return;
+
+    if (signedness == IntegerSignedness::DEFAULT) {
+        stream << "char";
+        return;
+    }
+
+    if (signedness == IntegerSignedness::UNSIGNED) {
+        stream << "unsigned ";
+    }
+
+    switch (size) {
+      case IntegerSize::BOOL:
+        stream << "bool";
+        break;
+      case IntegerSize::CHAR:
+        stream << "char";
+        break;
+      case IntegerSize::SHORT:
+        stream << "short";
+        break;
+      case IntegerSize::INT:
+        stream << "int";
+        break;
+      case IntegerSize::LONG:
+        stream << "long";
+        break;
+      case IntegerSize::LONG_LONG:
+        stream << "long long";
+        break;
+      default:
+        assert(false);
+        break;
+    }
+}
+
 void IntegerType::print(ostream& stream) const {
     if (signedness == IntegerSignedness::DEFAULT) {
         stream << "\"C\"";
@@ -270,6 +330,25 @@ LLVMTypeRef FloatingPointType::llvm_type() const {
     };
 }
 
+void FloatingPointType::message_print(ostream& stream, int section) const {
+    if (section != 0) return;
+
+    switch (size) {
+      case FloatingPointSize::FLOAT:
+        stream << "float";
+        break;
+      case FloatingPointSize::DOUBLE:
+        stream << "double";
+        break;
+      case FloatingPointSize::LONG_DOUBLE:
+        stream << "long double";
+        break;
+      default:
+        assert(false);
+        break;
+    }
+}
+
 void FloatingPointType::print(ostream& stream) const {
     static const char* const types[int(IntegerSize::NUM)] = { "f", "d", "l" };
     stream << "\"F" << types[unsigned(size)] << '"';
@@ -286,6 +365,24 @@ VisitTypeOutput PointerType::accept(Visitor& visitor, const VisitTypeInput& inpu
 LLVMTypeRef PointerType::cache_llvm_type() const {
     auto llvm_context = TranslationUnitContext::it->llvm_context;
     return LLVMPointerTypeInContext(llvm_context, 0);
+}
+
+void PointerType::message_print(ostream& stream, int section) const {
+    bool need_paren = dynamic_cast<const ArrayType*>(base_type) || dynamic_cast<const FunctionType*>(base_type);
+
+    if (section == 2) {
+        if (need_paren) stream << ')';
+    }
+
+    base_type->message_print(stream, section);
+
+    if (section == 1) {
+        if (need_paren) {
+            stream << "(*";
+        } else {
+            stream << '*';
+        }
+    }
 }
 
 void PointerType::print(std::ostream& stream) const {
@@ -331,6 +428,16 @@ LLVMTypeRef QualifiedType::llvm_type() const {
     return base_type->llvm_type();
 }
 
+void QualifiedType::message_print(ostream& stream, int section) const {
+    base_type->message_print(stream, section);
+
+    if (section == 1) {
+        if (qualifier_flags & QUAL_CONST) stream << " const";
+        if (qualifier_flags & QUAL_RESTRICT) stream << " restricted";
+        if (qualifier_flags & QUAL_VOLATILE) stream << " volatile";
+    }
+}
+
 void QualifiedType::print(std::ostream& stream) const {
     stream << "[\"Q";
     if (qualifier_flags & QUAL_CONST) stream << 'c';
@@ -364,6 +471,11 @@ VisitTypeOutput UnqualifiedType::accept(Visitor& visitor, const VisitTypeInput& 
     return visitor.visit(this, input);
 }
 
+void UnqualifiedType::message_print(ostream& stream, int section) const {
+    base_type->message_print(stream, section);
+    if (section == 1) stream << " unqualified";
+}
+
 void UnqualifiedType::print(std::ostream& stream) const {
     stream << "[\"Qx\", " << base_type << ']';
 }
@@ -392,6 +504,21 @@ LLVMTypeRef FunctionType::cache_llvm_type() const {
     return LLVMFunctionType(return_type->llvm_type(), param_llvm.data(), unsigned int(param_llvm.size()), variadic);
 }
 
+void FunctionType::message_print(ostream& stream, int section) const {
+    if (section == 2) {
+        stream << '(';
+        bool separate{};
+        for (auto type: parameter_types) {
+            if (separate) stream << ", ";
+            separate = true;
+            stream << PrintType(type);
+        }
+        stream << ')';
+    }
+
+    return_type->message_print(stream, section);
+}
+
 void FunctionType::print(std::ostream& stream) const {
     stream << "[\"F\", " << return_type;
 
@@ -408,6 +535,16 @@ FunctionType::FunctionType(const Type* return_type, std::vector<const Type*> par
 }
 
 #pragma endregion FunctionType
+
+void TagType::message_print(ostream& stream, int section) const {
+    if (section != 0) return;
+
+    if (tag) {
+        stream << *tag->identifier.name;
+    } else {
+        stream << "anon";
+    }
+}
 
 #pragma region StructuredType
 
@@ -481,6 +618,11 @@ LLVMTypeRef StructType::cache_llvm_type() const {
     return llvm_type;
 }
 
+void StructType::message_print(ostream& stream, int section) const {
+    if (section == 0) stream << "struct ";
+    StructuredType::message_print(stream, section);
+}
+
 void StructType::print(std::ostream& stream) const {
     stream << "[\"STRUCT\", ";
     StructuredType::print(stream);
@@ -502,6 +644,11 @@ VisitTypeOutput UnionType::accept(Visitor& visitor, const VisitTypeInput& input)
 LLVMTypeRef UnionType::cache_llvm_type() const {
     assert(false);
     return nullptr;
+}
+
+void UnionType::message_print(ostream& stream, int section) const {
+    if (section == 0) stream << "union ";
+    StructuredType::message_print(stream, section);
 }
 
 void UnionType::print(std::ostream& stream) const {
@@ -533,6 +680,11 @@ VisitTypeOutput EnumType::accept(Visitor& visitor, const VisitTypeInput& input) 
 
 LLVMTypeRef EnumType::cache_llvm_type() const {
     return base_type->llvm_type();
+}
+
+void EnumType::message_print(ostream& stream, int section) const {
+    if (section == 0) stream << "enum ";
+    TagType::message_print(stream, section);
 }
 
 void EnumType::print(std::ostream& stream) const {
@@ -570,6 +722,10 @@ VisitTypeOutput TypeOfType::accept(Visitor& visitor, const VisitTypeInput& input
     return visitor.visit(this, input);
 }
 
+void TypeOfType::message_print(ostream& stream, int section) const {
+    if (section == 0) stream << "typeof()";
+}
+
 void TypeOfType::print(std::ostream& stream) const {
     stream << "[\"typeof\", " << expr << "]";
 }
@@ -589,6 +745,10 @@ VisitTypeOutput UnboundType::accept(Visitor& visitor, const VisitTypeInput& inpu
 LLVMTypeRef UnboundType::llvm_type() const {
     assert(false);
     return nullptr;
+}
+
+void UnboundType::message_print(ostream& stream, int section) const {
+    if (section == 0) stream << *identifier.name;
 }
 
 void UnboundType::print(ostream& stream) const {
@@ -619,6 +779,10 @@ VisitTypeOutput TypeDefType::accept(Visitor& visitor, const VisitTypeInput& inpu
 LLVMTypeRef TypeDefType::llvm_type() const {
     assert(false);
     return nullptr;
+}
+
+void TypeDefType::message_print(ostream& stream, int section) const {
+    if (section == 0) stream << *declarator->identifier.name;
 }
 
 void TypeDefType::print(ostream& stream) const {

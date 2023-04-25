@@ -27,75 +27,56 @@ BinaryExpr::BinaryExpr(Expr* left, Expr* right, TokenKind op, const Location& lo
     assert(this->right);
 }
 
+string BinaryExpr::message_kind() const {
+    switch (op) {
+      case TOK_LEFT_OP:
+        return "<<";
+      case TOK_RIGHT_OP:
+        return ">>";
+      case TOK_LE_OP:
+        return "<=";
+      case TOK_GE_OP:
+        return ">=";
+      case TOK_EQ_OP:
+        return "==";
+      case TOK_NE_OP:
+        return "!=";
+      case TOK_AND_OP:
+        return "&&";
+      case TOK_OR_OP:
+        return "||";
+      case TOK_MUL_ASSIGN:
+        return "*=";
+      case TOK_DIV_ASSIGN:
+        return "/=";
+      case TOK_MOD_ASSIGN:
+        return "%=";
+      case TOK_ADD_ASSIGN:
+        return "+=";
+      case TOK_SUB_ASSIGN:
+        return "-=";
+      case TOK_LEFT_ASSIGN:
+        return "<<=";
+      case TOK_RIGHT_ASSIGN:
+        return ">>=";
+      case TOK_AND_ASSIGN:
+        return "&=";
+      case TOK_OR_ASSIGN:
+        return "|=";
+      case TOK_XOR_ASSIGN:
+        return "^=";
+      default:
+        assert(op > 32 && op < 128);
+        return string(1, (char) op);
+    }
+}
+
 VisitStatementOutput BinaryExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
     return visitor.visit(this, input);
 }
 
 void BinaryExpr::print(ostream& stream) const {
-    stream << "[\"";
-
-    switch (op) {
-      case TOK_LEFT_OP:
-        stream << "<<";
-        break;
-      case TOK_RIGHT_OP:
-        stream << ">>";
-        break;
-      case TOK_LE_OP:
-        stream << "<=";
-        break;
-      case TOK_GE_OP:
-        stream << ">=";
-        break;
-      case TOK_EQ_OP:
-        stream << "==";
-        break;
-      case TOK_NE_OP:
-        stream << "!=";
-        break;
-      case TOK_AND_OP:
-        stream << "&&";
-        break;
-      case TOK_OR_OP:
-        stream << "||";
-        break;
-      case TOK_MUL_ASSIGN:
-        stream << "*=";
-        break;
-      case TOK_DIV_ASSIGN:
-        stream << "/=";
-        break;
-      case TOK_MOD_ASSIGN:
-        stream << "%=";
-        break;
-      case TOK_ADD_ASSIGN:
-        stream << "+=";
-        break;
-      case TOK_SUB_ASSIGN:
-        stream << "-=";
-        break;
-      case TOK_LEFT_ASSIGN:
-        stream << "<<=";
-        break;
-      case TOK_RIGHT_ASSIGN:
-        stream << ">>=";
-        break;
-      case TOK_AND_ASSIGN:
-        stream << "&=";
-        break;
-      case TOK_OR_ASSIGN:
-        stream << "|=";
-        break;
-      case TOK_XOR_ASSIGN:
-        stream << "^=";
-        break;
-      default:
-        assert(op > 32 && op < 128);
-        stream << (char) op;
-        break;
-    }
-
-    stream << "\", " << left << ", " << right << "]";
+    stream << "[\"" << message_kind() << "\", " << left << ", " << right << "]";
 }
 
 

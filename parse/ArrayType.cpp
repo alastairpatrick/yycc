@@ -26,6 +26,14 @@ LLVMTypeRef UnresolvedArrayType::cache_llvm_type() const {
     return nullptr;
 }
 
+void UnresolvedArrayType::message_print(ostream& stream, int section) const {
+    if (section == 2) {
+        stream << "[]";
+    }
+
+    element_type->message_print(stream, section);
+}
+
 void UnresolvedArrayType::print(std::ostream& stream) const {
     stream << "[\"A\", " << element_type;
     if (size) {
@@ -53,6 +61,22 @@ VisitTypeOutput ResolvedArrayType::accept(Visitor& visitor, const VisitTypeInput
 LLVMTypeRef ResolvedArrayType::cache_llvm_type() const {
     // TODO: use LLVMArrayType2 instead after upgrading LLVM
     return LLVMArrayType(element_type->llvm_type(), size);
+}
+
+void ResolvedArrayType::message_print(ostream& stream, int section) const {
+    if (section == 2) {
+        stream << '[';
+
+        if (kind == ArrayKind::COMPLETE) {
+            stream << size;
+        } else if (kind == ArrayKind::VARIABLE_LENGTH) {
+            stream << '*';
+        }
+
+        stream << ']';
+    }
+
+    element_type->message_print(stream, section);
 }
 
 void ResolvedArrayType::print(std::ostream& stream) const {

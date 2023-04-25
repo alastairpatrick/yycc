@@ -19,6 +19,7 @@ struct BinaryExpr: Expr {
     TokenKind op{};
     
     BinaryExpr(Expr* left, Expr* right, TokenKind op, const Location& location);
+    string message_kind() const;
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
     virtual void print(ostream& stream) const override;
 };

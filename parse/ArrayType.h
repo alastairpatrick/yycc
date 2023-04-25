@@ -18,6 +18,7 @@ struct UnresolvedArrayType: ASTNode, ArrayType {
     virtual TypePartition partition() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef cache_llvm_type() const override;
+    virtual void message_print(ostream& stream, int section) const override;
     virtual void print(std::ostream& stream) const override;
 };
 
@@ -35,6 +36,7 @@ struct ResolvedArrayType: ArrayType {
     virtual TypePartition partition() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef cache_llvm_type() const override;
+    virtual void message_print(ostream& stream, int section) const override;
     virtual void print(std::ostream& stream) const override;
 
 private:

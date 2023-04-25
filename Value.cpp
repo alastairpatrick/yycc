@@ -1,4 +1,10 @@
 #include "Value.h"
+#include "TranslationUnitContext.h"
+
+Value Value::default_int() {
+    auto context = TranslationUnitContext::it;
+    return Value(IntegerType::default_type(), context->zero_int);
+}
 
 LLVMValueRef Value::llvm_rvalue(LLVMBuilderRef builder) const {
     assert(llvm);

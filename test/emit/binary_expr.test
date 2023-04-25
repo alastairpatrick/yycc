@@ -135,6 +135,15 @@ define i1 @f(i32 %0) {
 END
 
 
+BEGIN Pointer divided by integer is an error
+void f(int* (*p)[1][2], int x) {
+    p / x;
+}
+EXPECT_MESSAGE
+:2:7: error '/' operation may not be evaluated with operands of types int*(*)[1][2] and int
+END
+
+
 // Floating point
 
 BEGIN Unsigned integer multiplication

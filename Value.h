@@ -27,6 +27,8 @@ struct Value {
         assert(kind == ValueKind::TYPE_ONLY || llvm);
     }
 
+    static Value default_int();
+
     bool is_valid() const {
         return type;
     }
