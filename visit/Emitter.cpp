@@ -372,13 +372,6 @@ struct Emitter: Visitor {
         return VisitDeclaratorOutput();
     }
 
-    virtual VisitTypeOutput visit_default(const Type* source_type, const VisitTypeInput& input) override {
-        if (input.dest_type == source_type) return VisitTypeOutput(input.value);
-
-        assert(false);  // TODO
-        return VisitTypeOutput(input.value);
-    }
-
     VisitTypeOutput visit(const ResolvedArrayType* source_type, const VisitTypeInput& input) {
         auto dest_type = input.dest_type;
         auto value = input.value;
@@ -498,16 +491,6 @@ struct Emitter: Visitor {
 
     VisitTypeOutput visit(const QualifiedType* source_type, const VisitTypeInput& input) {
         return VisitTypeOutput(convert_to_type(input.value.bit_cast(source_type->base_type), input.dest_type));
-    }
-
-    virtual VisitStatementOutput visit_default(Expr* expr, const VisitStatementInput& input) override {
-        assert(false);
-        return VisitStatementOutput();
-    }
-
-    VisitStatementOutput visit_default(Statement* statement, const VisitStatementInput& input) {
-        assert(false);
-        return VisitStatementOutput();
     }
 
     virtual VisitStatementOutput visit(CompoundStatement* statement, const VisitStatementInput& input) override {

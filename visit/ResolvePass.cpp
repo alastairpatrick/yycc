@@ -14,7 +14,6 @@ struct ResolvePass: Visitor {
     }
 
     void resolve(Statement* statement) {
-        if (!statement) return;
         accept(statement, VisitStatementInput());
     }
 
@@ -389,10 +388,6 @@ struct ResolvePass: Visitor {
         return VisitDeclaratorOutput();
     }
 
-    virtual VisitTypeOutput visit_default(const Type* type, const VisitTypeInput& input) override {
-        return VisitTypeOutput(type);
-    }
-
     virtual VisitTypeOutput visit(const PointerType* type, const VisitTypeInput& input) override {
         return VisitTypeOutput(resolve(type->base_type)->pointer_to());
     }
@@ -511,109 +506,19 @@ struct ResolvePass: Visitor {
         return VisitStatementOutput();
     }
 
-    virtual VisitStatementOutput visit(ForStatement* statement, const VisitStatementInput& input) override {
-        if (statement->declaration) {
-            for (auto declarator: statement->declaration->declarators) {
-                resolve(declarator);
-            }
-        }
-
-        resolve(statement->initialize);
-        resolve(statement->condition);
-        resolve(statement->iterate);
-
-        return VisitStatementOutput();
-    }
-
-    virtual VisitStatementOutput visit(GoToStatement* statement, const VisitStatementInput& input) override {
-        return VisitStatementOutput();
-    }
-
-    virtual VisitStatementOutput visit(IfElseStatement* statement, const VisitStatementInput& input) override {
-        resolve(statement->condition);
-        resolve(statement->then_statement);
-        resolve(statement->else_statement);
-        return VisitStatementOutput();
-    }
-
     virtual VisitStatementOutput visit(CompoundStatement* statement, const VisitStatementInput& input) override {
         resolve_pass(statement->scope, statement->nodes);
         return VisitStatementOutput();
     }
 
-    virtual VisitStatementOutput visit(ReturnStatement* statement, const VisitStatementInput& input) override {
-        if (statement->expr) resolve(statement->expr);
-        return VisitStatementOutput();
-    }
-    
-    virtual VisitStatementOutput visit(SwitchStatement* statement, const VisitStatementInput& input) override {
-        resolve(statement->expr);
-        resolve(statement->body);
-
-        for (auto case_expr: statement->cases) {
-            resolve(case_expr);
-        }
-
-        return VisitStatementOutput();
-    }
-    
-    virtual VisitStatementOutput visit_default(Expr* expr, const VisitStatementInput& input) override {
-        assert(false);
-        return VisitStatementOutput();
-    }
-
-    virtual VisitStatementOutput visit(AddressExpr* address_expr, const VisitStatementInput& input) override {
-        resolve(address_expr->expr);
-        return VisitStatementOutput();
-    }
-
-    virtual VisitStatementOutput visit(BinaryExpr* binary_expr, const VisitStatementInput& input) override {
-        resolve(binary_expr->left);
-        resolve(binary_expr->right);
-        return VisitStatementOutput();
-    }
-
-    virtual VisitStatementOutput visit(CallExpr* call_expr, const VisitStatementInput& input) override {
-        resolve(call_expr->function);
-        for (auto param: call_expr->parameters) {
-            resolve(param);
-        }
-        return VisitStatementOutput();
-    }
-
     virtual VisitStatementOutput visit(CastExpr* cast_expr, const VisitStatementInput& input) override {
         cast_expr->type = resolve(cast_expr->type);
-        resolve(cast_expr->expr);
-        return VisitStatementOutput();
-    }
-
-    virtual VisitStatementOutput visit(ConditionExpr* condition_expr, const VisitStatementInput& input) override {
-        resolve(condition_expr->condition);
-        resolve(condition_expr->then_expr);
-        resolve(condition_expr->else_expr);
-        return VisitStatementOutput();
-    }
-
-    virtual VisitStatementOutput visit(DereferenceExpr* dereference_expr, const VisitStatementInput& input) override {
-        resolve(dereference_expr->expr);
-        return VisitStatementOutput();
+        return Visitor::visit(cast_expr, input);
     }
 
     virtual VisitStatementOutput visit(EntityExpr* entity_expr, const VisitStatementInput& input) override {
         resolve(entity_expr->declarator);
         entity_expr->declarator = entity_expr->declarator->primary;
-        return VisitStatementOutput();
-    }
-
-    virtual VisitStatementOutput visit(IncDecExpr* expr, const VisitStatementInput& input) override {
-        resolve(expr->expr);
-        return VisitStatementOutput();
-    }
-
-    virtual VisitStatementOutput visit(InitializerExpr* init_expr, const VisitStatementInput& input) override {
-        for (auto element: init_expr->elements) {
-            resolve(element);
-        }
         return VisitStatementOutput();
     }
 
@@ -625,28 +530,6 @@ struct ResolvePass: Visitor {
             return VisitStatementOutput();
         }
 
-        return VisitStatementOutput();
-    }
-
-    virtual VisitStatementOutput visit(SubscriptExpr* subscript_expr, const VisitStatementInput& input) override {
-        resolve(subscript_expr->left);
-        resolve(subscript_expr->right);
-        return VisitStatementOutput();
-    }
-
-    virtual VisitStatementOutput visit(UninitializedExpr* expr, const VisitStatementInput& input) override {
-        return VisitStatementOutput();
-    }
-
-    virtual VisitStatementOutput visit(FloatingPointConstant* constant, const VisitStatementInput& input) override {
-        return VisitStatementOutput();
-    }
-
-    virtual VisitStatementOutput visit(IntegerConstant* constant, const VisitStatementInput& input) override {
-        return VisitStatementOutput();
-    }
-
-    virtual VisitStatementOutput visit(StringConstant* constant, const VisitStatementInput& input) override {
         return VisitStatementOutput();
     }
 };
