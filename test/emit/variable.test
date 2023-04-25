@@ -70,6 +70,26 @@ EXPECT_MESSAGE
 END
 
 
+BEGIN Variable initialized with constant expression involving pointer arithmetic (1)
+#static x
+int* y = x + 1;
+int x[2];
+EXPECT_IR
+@y = global ptr getelementptr inbounds (i32, ptr @x, i32 1)
+@x = internal global [2 x i32] zeroinitializer
+END
+
+
+BEGIN Variable initialized with constant expression involving pointer arithmetic (2)
+#static x
+int* y = &x[1];
+int x[2];
+EXPECT_IR
+@y = global ptr getelementptr inbounds ([2 x i32], ptr @x, i64 0, i32 1)
+@x = internal global [2 x i32] zeroinitializer
+END
+
+
 BEGIN Scalar local variable initialized with initializer expression (1)
 void f() {
     int x = {1};
