@@ -3,6 +3,7 @@
 #include "LLVM.h"
 #include "Message.h"
 #include "parse/ASTNode.h"
+#include "parse/Type.h"
 
 thread_local TranslationUnitContext* TranslationUnitContext::it;
 
@@ -17,6 +18,8 @@ TranslationUnitContext::TranslationUnitContext(ostream& message_stream): message
     // same TargetData with multiple Contexts is LLVMStoreSizeOfType starts reporting size of Int32 to be
     // 8 bytes instead of 4 bytes.
     llvm_target_data = LLVMCreateTargetDataLayout(g_llvm_target_machine);
+
+    zero_size = LLVMConstInt(IntegerType::of_size(IntegerSignedness::UNSIGNED)->llvm_type(), 0, false);
 
     null_message_stream.setstate(ios_base::badbit);
 

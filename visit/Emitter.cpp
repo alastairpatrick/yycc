@@ -239,7 +239,7 @@ struct Emitter: Visitor {
     }
 
     void emit_auto_initializer(Value dest, Expr* expr) {
-        auto llvm_context = TranslationUnitContext::it->llvm_context;
+        auto context = TranslationUnitContext::it;
 
         if (auto uninitializer = dynamic_cast<UninitializedExpr*>(expr)) {
             return;
@@ -248,9 +248,8 @@ struct Emitter: Visitor {
         Value scalar_value;
         if (auto initializer = dynamic_cast<InitializerExpr*>(expr)) {
             if (auto array_type = type_cast<ResolvedArrayType>(dest.type)) {
-                LLVMValueRef zero = LLVMConstInt(LLVMInt32TypeInContext(llvm_context), 0, false);
                 for (size_t i = 0; i < array_type->size; ++i) {
-                    LLVMValueRef indices[] = { zero, LLVMConstInt(LLVMInt64TypeInContext(llvm_context), i, false) };
+                    LLVMValueRef indices[] = { context->zero_size, LLVMConstInt(LLVMInt64TypeInContext(context->llvm_context), i, false) };
                     LLVMValueRef dest_element = LLVMBuildGEP2(builder, array_type->llvm_type(), dest.llvm_lvalue(), indices, 2, "");
                     emit_auto_initializer(Value(ValueKind::LVALUE, array_type->element_type, dest_element), initializer->elements[i]);
                 }
@@ -857,11 +856,12 @@ struct Emitter: Visitor {
     }
 
     Value convert_array_to_pointer(Value value) {
+        auto zero = TranslationUnitContext::it->zero_size;
+
         if (auto array_type = type_cast<ArrayType>(value.type)) {
             auto result_type = array_type->element_type->pointer_to();
             if (outcome == EmitOutcome::TYPE) return Value(result_type);
 
-            auto zero = LLVMConstInt(IntegerType::of_size(IntegerSignedness::UNSIGNED)->llvm_type(), 0, false);
             LLVMValueRef indices[2] = {zero, zero};
             return Value(result_type,
                          LLVMBuildGEP2(builder, array_type->llvm_type(), value.llvm_lvalue(), indices, 2, ""));
@@ -1032,6 +1032,8 @@ struct Emitter: Visitor {
     }
 
     virtual VisitStatementOutput visit(SubscriptExpr* expr, const VisitStatementInput& input) override {
+        auto zero = TranslationUnitContext::it->zero_size;
+
         auto left_value = emit(expr->left).unqualified();
         auto index_value = emit(expr->right).unqualified();
 
@@ -1054,7 +1056,6 @@ struct Emitter: Visitor {
             auto result_type = array_type->element_type;
             if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
-            auto zero = LLVMConstInt(IntegerType::of_size(IntegerSignedness::UNSIGNED)->llvm_type(), 0, false);
             LLVMValueRef indices[2] = { zero, llvm_rvalue(index_value) };
             return VisitStatementOutput(Value(
                 ValueKind::LVALUE,
