@@ -18,13 +18,6 @@ struct EmitError {
     bool error_reported;
 };
 
-const char* identifier_name(const Identifier& identifier) {
-    auto name = identifier.name;
-    if (name->empty()) return "";
-
-    return name->data();
-}
-
 struct Module {
     LLVMModuleRef llvm_module{};
 

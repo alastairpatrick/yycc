@@ -1,13 +1,6 @@
 #include "parse/Declaration.h"
 #include "Visitor.h"
 
-static const char* identifier_name(const Identifier& identifier) {
-    auto name = identifier.name;
-    if (name->empty()) return "";
-
-    return name->data();
-}
-
 // This pass creates LLVM globals for all variables with static duration and LLVM functions, including those nested within functions.
 struct EntityPass: Visitor {
     std::string prefix;

@@ -22,6 +22,7 @@ add_library(yycc_lib STATIC
     "TranslationUnitContext.cpp"
     "Value.cpp"
 
+    "lex/Identifier.cpp"
     "lex/Location.cpp"
     "lex/StringLiteral.cpp"
 

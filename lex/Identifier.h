@@ -17,8 +17,8 @@ inline bool operator!=(const Identifier& a, const Identifier& b) {
     return a.name != b.name;
 }
 
-inline ostream& operator<<(ostream& stream, const Identifier& identifier) {
-    return stream << *identifier.name;
-}
+ostream& operator<<(ostream& stream, const Identifier& identifier);
+
+const char* identifier_name(const Identifier& identifier);
 
 #endif
