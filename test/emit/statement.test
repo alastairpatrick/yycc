@@ -384,3 +384,15 @@ define i32 @f(i32 %0) {
   ret i32 0
 }
 END
+
+
+BEGIN Case expressions must be integer
+int f(int x) {
+    switch (x) {
+        case 1.5:
+            break;
+    }
+}
+EXPECT_MESSAGE
+:3:14: error case must have integer constant expression
+END

@@ -603,10 +603,11 @@ struct Emitter: Visitor {
             innermost_switch->case_labels[case_expr] = case_label;
 
             auto case_value = fold_expr(case_expr);
-            if(!case_value.is_const_integer()) {
-                // TODO: error
+            if(case_value.is_const_integer()) {
+                LLVMAddCase(switch_value, case_value.llvm_const_rvalue(), case_label);
+            } else {
+                message(Severity::ERROR, case_expr->location) << "case must have integer constant expression\n";
             }
-            LLVMAddCase(switch_value, case_value.llvm_const_rvalue(), case_label);
         }
 
         LLVMPositionBuilderAtEnd(builder, unreachable_block);
