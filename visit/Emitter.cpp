@@ -296,13 +296,13 @@ struct Emitter: Visitor {
         LLVMBuildStore(builder, llvm_rvalue(scalar_value), dest.llvm_lvalue());
     }
     
-    Value emit_static_initializer(Value dest, Expr* expr) {
+    Value emit_static_initializer(const Type* dest_type, Expr* expr) {
         if (auto uninitializer = dynamic_cast<UninitializedExpr*>(expr)) {
-            return Value(dest.type, LLVMGetUndef(dest.type->llvm_type()));
+            return Value(dest_type, LLVMGetUndef(dest_type->llvm_type()));
         }
 
         if (auto initializer = dynamic_cast<InitializerExpr*>(expr)) {
-            if (auto array_type = type_cast<ResolvedArrayType>(dest.type)) {
+            if (auto array_type = type_cast<ResolvedArrayType>(dest_type)) {
                 vector<LLVMValueRef> values(array_type->size);
                 for (size_t i = 0; i < array_type->size; ++i) {
                     values[i] = emit_static_initializer(array_type->element_type, initializer->elements[i]).llvm_const_rvalue();
@@ -311,7 +311,7 @@ struct Emitter: Visitor {
                 return Value(array_type, LLVMConstArray(array_type->element_type->llvm_type(), values.data(), values.size()));
             }
 
-            if (auto struct_type = type_cast<StructType>(dest.type)) {
+            if (auto struct_type = type_cast<StructType>(dest_type)) {
                 vector<LLVMValueRef> values(struct_type->members.size());
                 for (size_t i = 0; i < struct_type->members.size(); ++i) {
                     values[i] = emit_static_initializer(struct_type->members[i]->type, initializer->elements[i]).llvm_const_rvalue();
@@ -320,10 +320,10 @@ struct Emitter: Visitor {
                 return Value(struct_type, LLVMConstNamedStruct(struct_type->llvm_type(), values.data(), values.size()));
             }
 
-            return emit_scalar_initializer(dest.type, initializer);
+            return emit_scalar_initializer(dest_type, initializer);
         }
 
-        return convert_to_type(expr, dest.type, ConvKind::IMPLICIT);
+        return convert_to_type(expr, dest_type, ConvKind::IMPLICIT);
     }
 
     void emit_variable(Declarator* declarator, Entity* entity) {
@@ -354,7 +354,7 @@ struct Emitter: Visitor {
 
             LLVMValueRef initial = null_value;
             if (entity->initializer) {
-                initial = emit_static_initializer(Value(type), entity->initializer).llvm_const_rvalue();
+                initial = emit_static_initializer(type, entity->initializer).llvm_const_rvalue();
             }
             LLVMSetInitializer(global, initial);
 

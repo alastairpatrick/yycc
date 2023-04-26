@@ -16,7 +16,7 @@ struct Value {
 
     Value() = default;
 
-    Value(const Type* type, LLVMValueRef llvm = nullptr)
+    explicit Value(const Type* type, LLVMValueRef llvm = nullptr)
             : kind(llvm ? ValueKind::RVALUE : ValueKind::TYPE_ONLY), llvm(llvm), type(type), qualifiers(type->qualifiers()) {
         assert(type);
     }
