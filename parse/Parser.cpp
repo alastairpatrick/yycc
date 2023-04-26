@@ -116,16 +116,16 @@ void Parser::handle_declaration_directive() {
     }
 }
 
-bool Parser::consume(int t) {
-    if (token != t) return false;
+bool Parser::consume(int want_token) {
+    if (token != want_token) return false;
     consume();
     return true;
 }
 
-bool Parser::require(int t) {
-    if (token != t) {
-        if (t >= 32 && t < 128) {
-            auto& stream = message(Severity::ERROR, preprocessor.location()) << "expected '" << (char) t << "' but ";
+bool Parser::require(int want_token) {
+    if (token != want_token) {
+        if (want_token >= 32 && want_token < 128) {
+            auto& stream = message(Severity::ERROR, preprocessor.location()) << "expected '" << (char) want_token << "' but ";
             if (token == TOK_EOF) {
                 stream << "reached end of file\n";
             } else {
@@ -137,13 +137,13 @@ bool Parser::require(int t) {
         }
     }
 
-    balance_until(t);
+    balance_until(want_token);
 
-    return token == t;
+    return token == want_token;
 }
 
-bool Parser::consume_required(int t) {
-    if (!require(t)) return false;
+bool Parser::consume_required(int want_token) {
+    if (!require(want_token)) return false;
     consume();
     return true;
 }
@@ -162,8 +162,8 @@ void Parser::unexpected_token() {
     pause_messages();
 }
 
-void Parser::balance_until(int t) {
-    while (token && token != t) {
+void Parser::balance_until(int want_token) {
+    while (token && token != want_token) {
         switch (token) {
           default:
             consume();
