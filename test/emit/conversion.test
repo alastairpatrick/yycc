@@ -147,7 +147,7 @@ define i32 @f(float %0) {
 END
 
 
-BEGIN Pointer conversion
+BEGIN Convert non-void pointer to void pointer (1)
 void* f(int* x) {
     return x;
 }
@@ -158,6 +158,97 @@ define ptr @f(ptr %0) {
   %2 = load ptr, ptr %x, align 8
   ret ptr %2
 }
+END
+
+
+BEGIN Pointer to qualified -> pointer to unqualifed conversion
+int* f(const int* x) {
+    return x;
+}
+EXPECT_IR
+define ptr @f(ptr %0) {
+  %x = alloca ptr, align 8
+  store ptr %0, ptr %x, align 8
+  %2 = load ptr, ptr %x, align 8
+  ret ptr %2
+}
+EXPECT_MESSAGE
+:2:12: contextual error conversion from type 'int const*' to type 'int*' requires explicit cast
+END
+
+
+BEGIN Pointer to unqualified -> pointer to qualifed conversion
+const int* f(int* x) {
+    return x;
+}
+EXPECT_IR
+define ptr @f(ptr %0) {
+  %x = alloca ptr, align 8
+  store ptr %0, ptr %x, align 8
+  %2 = load ptr, ptr %x, align 8
+  ret ptr %2
+}
+END
+
+
+BEGIN Convert non-void pointer to void pointer (2)
+void* f(void** x) {
+    return x;
+}
+END
+
+
+BEGIN Convert void pointer to non-void pointer
+int* f(void* x) {
+    return x;
+}
+EXPECT_MESSAGE
+:2:12: contextual error conversion from type 'void*' to type 'int*' requires explicit cast
+END
+
+
+BEGIN Convert pointers to different base types
+void** f(int** x) {
+    return x;
+}
+EXPECT_MESSAGE
+:2:12: contextual error conversion from type 'int**' to type 'void**' requires explicit cast
+END
+
+
+BEGIN Error on discarding qualifiers during pointer conversion (1)
+int* f(const int* x) {
+    return x;
+}
+EXPECT_MESSAGE
+:2:12: contextual error conversion from type 'int const*' to type 'int*' requires explicit cast
+END
+
+
+BEGIN Error on discarding qualifiers during pointer conversion (2)
+const int** f(volatile int** x) {
+    return x;
+}
+EXPECT_MESSAGE
+:2:12: contextual error conversion from type 'int volatile**' to type 'int const**' requires explicit cast
+END
+
+
+BEGIN Array to pointer conversion
+int a[2];
+int* f() {
+    return a;
+}
+END
+
+
+BEGIN Error on converting array to pointer with different base types
+float a[2];
+int* f() {
+    return a;
+}
+EXPECT_MESSAGE
+:3:12: contextual error conversion from type 'float[2]' to type 'int*' requires explicit cast
 END
 
 
@@ -230,34 +321,6 @@ define i32 @f(i16 %0) {
   %2 = load volatile i16, ptr %x, align 2
   %3 = sext i16 %2 to i32
   ret i32 %3
-}
-END
-
-
-BEGIN Pointer to qualified -> pointer to unqualifed conversion
-int* f(const int* x) {
-    return x;
-}
-EXPECT_IR
-define ptr @f(ptr %0) {
-  %x = alloca ptr, align 8
-  store ptr %0, ptr %x, align 8
-  %2 = load ptr, ptr %x, align 8
-  ret ptr %2
-}
-END
-
-
-BEGIN Pointer to unqualified -> pointer to qualifed conversion
-const int* f(int* x) {
-    return x;
-}
-EXPECT_IR
-define ptr @f(ptr %0) {
-  %x = alloca ptr, align 8
-  store ptr %0, ptr %x, align 8
-  %2 = load ptr, ptr %x, align 8
-  ret ptr %2
 }
 END
 

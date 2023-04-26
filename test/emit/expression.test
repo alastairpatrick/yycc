@@ -152,20 +152,6 @@ define ptr @f() {
 END
 
 
-BEGIN Function returning address of global array
-int v[2];
-int* f() {
-    return &v;
-}
-EXPECT_IR
-@v = global [2 x i32] zeroinitializer
-
-define ptr @f() {
-  ret ptr @v
-}
-END
-
-
 BEGIN Function returning address of array element
 int v[2];
 int* f() {

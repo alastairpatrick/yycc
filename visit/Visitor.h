@@ -20,6 +20,7 @@ struct VisitDeclaratorOutput {
 
 enum class ConvKind {
     IMPLICIT,
+    C_IMPLICIT, // conversions that need not be explicit in C
     EXPLICIT,
 };
 

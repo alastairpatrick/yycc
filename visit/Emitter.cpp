@@ -209,9 +209,10 @@ struct Emitter: Visitor {
             } else {
                 return Value::default_int();
             }
-        } else if (output.conv_kind != kind && output.conv_kind == ConvKind::EXPLICIT) {
-            message(Severity::ERROR, location) << "conversion from type '" << PrintType(value.type)
-                                               << "' to type '" << PrintType(dest_type) << "' requires explicit cast\n";
+        } else if (output.conv_kind != ConvKind::IMPLICIT && kind == ConvKind::IMPLICIT) {
+            auto severity = output.conv_kind == ConvKind::C_IMPLICIT ? Severity::CONTEXTUAL_ERROR : Severity::ERROR;
+            message(severity, location) << "conversion from type '" << PrintType(value.type)
+                                        << "' to type '" << PrintType(dest_type) << "' requires explicit cast\n";
         }
 
         assert(result.type == dest_type);
@@ -380,6 +381,31 @@ struct Emitter: Visitor {
         return VisitDeclaratorOutput();
     }
 
+    ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type) {
+        auto unqualified_source_base_type = source_base_type->unqualified();
+        auto unqualified_dest_base_type = dest_base_type->unqualified();
+
+        ConvKind result = unqualified_source_base_type == unqualified_dest_base_type ? ConvKind::IMPLICIT : ConvKind::C_IMPLICIT;
+
+        if (unqualified_dest_base_type == &VoidType::it) {
+            result = ConvKind::IMPLICIT;
+        }
+
+        if (result == ConvKind::IMPLICIT) {
+            if (auto source_base_pointer_type = type_cast<PointerType>(source_base_type->unqualified())) {
+                if (auto dest_base_pointer_type = type_cast<PointerType>(dest_base_type->unqualified())) {
+                    result = check_pointer_conversion(source_base_pointer_type, dest_base_pointer_type);
+                }
+            }
+        }
+
+        if ((result == ConvKind::IMPLICIT) && (dest_base_type->qualifiers() < source_base_type->qualifiers())) {
+            result = ConvKind::C_IMPLICIT;
+        }
+
+        return result;
+    }
+
     VisitTypeOutput visit(const ResolvedArrayType* source_type, const VisitTypeInput& input) {
         auto dest_type = input.dest_type;
         auto value = input.value;
@@ -405,7 +431,7 @@ struct Emitter: Visitor {
 
         if (auto pointer_type = type_cast<PointerType>(dest_type)) {
             if (value.kind == ValueKind::LVALUE) {
-                return VisitTypeOutput(dest_type, value.llvm_lvalue());
+                return VisitTypeOutput(dest_type, value.llvm_lvalue(), check_pointer_conversion(source_type->element_type, pointer_type->base_type));
             }
 
             if (value.is_const()) {
@@ -481,11 +507,11 @@ struct Emitter: Visitor {
         auto dest_type = input.dest_type;
         auto value = input.value;
 
-        if (type_cast<PointerType>(input.dest_type)) {
-            return VisitTypeOutput(value.bit_cast(input.dest_type));
+        if (auto dest_pointer_type = type_cast<PointerType>(dest_type)) {
+            return VisitTypeOutput(value.bit_cast(dest_type), check_pointer_conversion(source_type->base_type, dest_pointer_type->base_type));
         }
 
-        if (type_cast<IntegerType>(input.dest_type)) {
+        if (type_cast<IntegerType>(dest_type)) {
             return VisitTypeOutput(dest_type, LLVMBuildPtrToInt(builder, llvm_rvalue(value), dest_type->llvm_type(), ""));
         }
 

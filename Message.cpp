@@ -12,6 +12,9 @@ ostream& message(Severity severity, const Location& location, bool filter) {
       case Severity::WARNING:
         stream << "warning ";
         break;
+      case Severity::CONTEXTUAL_ERROR:
+        stream << "contextual error ";
+        break;
       case Severity::ERROR:
         stream << "error ";
         break;

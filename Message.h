@@ -6,6 +6,7 @@
 enum class Severity {
     INFO,
     WARNING,
+    CONTEXTUAL_ERROR,
     ERROR,
 };
 
