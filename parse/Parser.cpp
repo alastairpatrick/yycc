@@ -1063,7 +1063,7 @@ CompoundStatement* Parser::parse_compound_statement() {
 }
 
 Expr* Parser::parse_expr(OperatorPrec min_prec, Identifier* or_label) {
-    auto loc = preprocessor.location();
+    auto location = preprocessor.location();
     Expr* result{};
 
     if (preparse) {
@@ -1071,7 +1071,7 @@ Expr* Parser::parse_expr(OperatorPrec min_prec, Identifier* or_label) {
         if (token == TOK_DEC_INT_LITERAL) {
             result = IntegerConstant::of(preprocessor.text(), token, preprocessor.location());
         } else {
-            result = IntegerConstant::default_expr(loc);
+            result = IntegerConstant::default_expr(location);
         }
 
         skip_expr(min_prec);
@@ -1082,14 +1082,14 @@ Expr* Parser::parse_expr(OperatorPrec min_prec, Identifier* or_label) {
     if (!result) return result;
 
     while (prec() >= min_prec) {
-        loc = preprocessor.location();
+        location = preprocessor.location();
         auto next_min_prec = assoc() == ASSOC_LEFT ? OperatorPrec(prec() + 1) : prec();
 
         if (consume('?')) {
             auto then_expr = parse_expr(next_min_prec);
             if (consume_required(':')) {
                 auto else_expr = parse_expr(CONDITIONAL_PREC);
-                result = new ConditionExpr(result, then_expr, else_expr, loc);
+                result = new ConditionExpr(result, then_expr, else_expr, location);
             }
         }
         else {
@@ -1126,14 +1126,14 @@ Expr* Parser::parse_expr(OperatorPrec min_prec, Identifier* or_label) {
               case TOK_AND_ASSIGN:
               case TOK_OR_ASSIGN:
               case TOK_XOR_ASSIGN:
-                loc = preprocessor.location();
+                location = preprocessor.location();
                 op = token;
                 consume();
                 break;
             }
 
             auto right = parse_expr(next_min_prec);
-            result = new BinaryExpr(result, right, op, loc);
+            result = new BinaryExpr(result, right, op, location);
         }
     }
 
