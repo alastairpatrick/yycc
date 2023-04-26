@@ -65,8 +65,8 @@ Declarator* IdentifierMap::add_declarator_to_scope(Scope& scope, Declarator* dec
     return it->second->primary;
 }
 
-void IdentifierMap::push_scope() {
-    scopes.push_front(Scope());
+void IdentifierMap::push_scope(Scope&& scope) {
+    scopes.push_front(move(scope));
 }
 
 Scope IdentifierMap::pop_scope() {

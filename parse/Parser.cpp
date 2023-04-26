@@ -679,7 +679,6 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     auto begin = position();
 
     auto declarator_transform = parse_declarator_transform(declaration->scope, flags);
-    *last = declarator_transform.body;
     if (declarator_transform.identifier.name->empty()) location = declaration->location;
 
     type = declarator_transform.apply(type);
@@ -699,10 +698,18 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     auto declarator = new Declarator(declaration, type, declarator_transform.identifier, location);
 
     if (is_function && declaration->storage_class != StorageClass::TYPEDEF) {
+        CompoundStatement* body{};
+        if ((flags & PD_ALLOW_FUNCTION_DEFINITION) && token == '{') {
+            identifiers.push_scope(move(declarator_transform.prototype_scope));
+            body = parse_compound_statement();
+            identifiers.pop_scope();
+            *last = true;
+        }
+
         declarator->delegate = new Entity(declarator,
                                           specifiers,
                                           move(declarator_transform.parameters),
-                                          declarator_transform.body);
+                                          body);
     } else {
         if (specifiers & (1 << TOK_INLINE)) {
             message(Severity::ERROR, location) << "'inline' may only appear on function\n";
@@ -822,11 +829,7 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, in
                 return type;
             };
 
-            if ((flags & PD_ALLOW_FUNCTION_DEFINITION) && token == '{') {
-                declarator.body = parse_compound_statement();
-            }
-
-            identifiers.pop_scope();
+            declarator.prototype_scope = identifiers.pop_scope();
         } else {
             break;
         }

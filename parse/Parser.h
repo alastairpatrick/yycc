@@ -14,7 +14,7 @@ struct DeclaratorTransform {
     function<const Type*(const Type*)> type_transform;
     Identifier identifier;
     vector<Declarator*> parameters;
-    CompoundStatement* body{};
+    Scope prototype_scope;
 
     const Type* apply(const Type* type);
 };

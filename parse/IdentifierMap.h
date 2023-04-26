@@ -17,7 +17,7 @@ struct IdentifierMap {
     void add_declarator(Declarator* declarator);
     Declarator* add_declarator_to_scope(Scope& scope, Declarator* declarator);
 
-    void push_scope();
+    void push_scope(Scope&& scope = Scope());
     Scope pop_scope();
 };
 
