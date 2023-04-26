@@ -2,6 +2,7 @@
 #include "lex/StringLiteral.h"
 #include "LLVM.h"
 #include "Message.h"
+#include "parse/AssocPrec.h"
 #include "parse/Declaration.h"
 #include "TranslationUnitContext.h"
 
@@ -657,25 +658,6 @@ struct Emitter: Visitor {
         return VisitStatementOutput(result_type, value.llvm_lvalue());
     }
 
-    bool is_assignment(TokenKind token) {
-        switch (token) {
-          default:
-            return false;
-          case '=':
-          case TOK_MUL_ASSIGN:
-          case TOK_DIV_ASSIGN:
-          case TOK_MOD_ASSIGN:
-          case TOK_ADD_ASSIGN:
-          case TOK_SUB_ASSIGN:
-          case TOK_LEFT_ASSIGN:
-          case TOK_RIGHT_ASSIGN:
-          case TOK_AND_ASSIGN:
-          case TOK_OR_ASSIGN:
-          case TOK_XOR_ASSIGN:
-            return true;
-        }
-    }
-
     const Type* promote_integer(const Type* type) {
         auto int_type = IntegerType::default_type();
 
@@ -765,7 +747,7 @@ struct Emitter: Visitor {
     }
 
     Value emit_regular_binary_operation(BinaryExpr* expr, Value left_value, Value right_value, const Location& left_location, const Location& right_location) {
-        bool is_assign = is_assignment(expr->op);
+        bool is_assign = is_assignment_token(expr->op);
         auto convert_type = is_assign ? left_value.type : usual_arithmetic_conversions(left_value.type, right_value.type);
         if (!convert_type) return Value();
 
@@ -923,7 +905,7 @@ struct Emitter: Visitor {
 
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(intermediate);
 
-        if (is_assignment(expr->op)) {
+        if (is_assignment_token(expr->op)) {
             store_value(left_value, intermediate, expr->location);
         }
 
