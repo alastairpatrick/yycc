@@ -84,17 +84,39 @@ EXPECT_AST
 
 
 BEGIN Parses case labelled statement
-case 3:
-    return 7;
+switch (1) {
+    case 3:
+        return 7;
+}
 EXPECT_AST
-[["case", 3], "return", 7]
+["switch",1,["block",[[["case",3],"return",7]]]]
 
 
 BEGIN Parses default labelled statement
+switch (1) {
+    default:
+        return 7;
+}
+EXPECT_AST
+["switch",1,["block",[[["default"],"return",7]]]]
+
+
+BEGIN Error on case not within switch
+case 3:
+    return 7;
+EXPECT_MESSAGE
+:1:1: error 'case' not within switch statement
+EXPECT_AST
+["return",7]
+
+
+BEGIN Error on case not within switch
 default:
     return 7;
+EXPECT_MESSAGE
+:1:1: error 'default' not within switch statement
 EXPECT_AST
-[["default"], "return", 7]
+["return",7]
 
 
 BEGIN Break statement

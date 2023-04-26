@@ -966,7 +966,8 @@ Statement* Parser::parse_statement() {
 
       } case TOK_CASE:
         case TOK_DEFAULT: {
-        
+
+          bool trouble{};        
           Label label;
           if (consume(TOK_CASE)) {
               label.kind = LabelKind::CASE;
@@ -974,19 +975,23 @@ Statement* Parser::parse_statement() {
               if (innermost_switch) {
                   innermost_switch->cases.push_back(label.case_expr);
               } else {
-                  // TODO error
+                  message(Severity::ERROR, location) << "'case' not within switch statement\n";
+                  trouble = true;
               }
           } else {
               consume();
               label.kind = LabelKind::DEFAULT;
               if (innermost_switch) {
                   ++innermost_switch->num_defaults;
+              } else {
+                  message(Severity::ERROR, location) << "'default' not within switch statement\n";
+                  trouble = true;
               }
           }
           consume_required(':');
 
           auto statement = parse_statement();
-          statement->labels.push_back(label);
+          if (!trouble) statement->labels.push_back(label);
           return statement;
 
       } case TOK_BREAK:
