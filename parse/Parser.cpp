@@ -413,8 +413,8 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
 
     if (!declaration) return declaration;
 
-    // Have single storage class specifier iff storage class set contains only one element.
     uint32_t storage_class_set = specifier_set & storage_class_mask;
+    // Note bit hack that checks only one bit out of many is set.
     if (storage_class_set != 0 && storage_class_set & (storage_class_set-1)) {
         message(Severity::ERROR, storage_class_location) << "too many storage classes\n";
     }
@@ -426,7 +426,6 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
     else if (storage_class_set & (1 << TOK_AUTO))     storage_class = StorageClass::AUTO;
     else if (storage_class_set & (1 << TOK_REGISTER)) storage_class = StorageClass::REGISTER;
     
-    // Check type specifiers are one of the valid combinations.
     switch (specifier_set & type_specifier_mask) {
         default: {
           type = IntegerType::default_type();
