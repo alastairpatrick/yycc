@@ -95,3 +95,11 @@ EXPECT_MESSAGE
 EXPECT_AST
 [["typedef","Ff","T"]
 ,["var","ES","Si","v"]]
+
+
+BEGIN Member function
+struct S {
+    void f();
+};
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["f",["F","V"]]]],"S"]]

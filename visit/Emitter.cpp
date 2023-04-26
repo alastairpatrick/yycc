@@ -1103,11 +1103,14 @@ struct Emitter: Visitor {
                 }
             }
 
-            auto result_type = it->second->type;
+            auto member = it->second;
+            auto member_entity = member->entity();
+
+            auto result_type = member->type;
             if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
             auto llvm_struct_type = struct_type->llvm_type();
-            auto index = it->second->entity()->aggregate_index;
+            auto index = member_entity->aggregate_index;
             return VisitStatementOutput(Value(ValueKind::LVALUE, result_type, LLVMBuildStructGEP2(builder, llvm_struct_type, object.llvm_lvalue(), index, expr->identifier.name->data())));
         }
 

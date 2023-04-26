@@ -355,10 +355,22 @@ EXPECT_AST
 [".", 1, "a"]
 
 
-BEGIN Structure or union member (2)
+BEGIN Struct or union member (2)
 1->a
 EXPECT_AST
 ["->", 1, "a"]
+
+
+BEGIN Call struct or union member (1)
+1 .a()
+EXPECT_AST
+["call",[".",1,"a"]]
+
+
+BEGIN Call struct or union member (2)
+1->a()
+EXPECT_AST
+["call",["->",1,"a"]]
 
 
 BEGIN Sizeof int type
