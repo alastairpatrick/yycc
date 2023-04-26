@@ -269,6 +269,15 @@ define void @g() {
 END
 
 
+BEGIN Integer may not be subject of call
+void f() {
+    1();
+}
+EXPECT_MESSAGE
+:2:6: error called object type 'int' is not a function or function pointer
+END
+
+
 // DereferenceExpr
 
 BEGIN Dereference global pointer
