@@ -26,7 +26,7 @@ Parser::Parser(Preprocessor& preprocessor, IdentifierMap& identifiers): preproce
 }
 
 Expr* Parser::parse_standalone_expr() {
-    return parse_expr(SEQUENCE_PREC);
+    return parse_expr(SEQUENCE_PRECEDENCE);
 }
 
 Statement* Parser::parse_standalone_statement() {
@@ -137,9 +137,7 @@ bool Parser::require(int t) {
         }
     }
 
-    while (token && token != t) {
-        consume();
-    }
+    balance_until(t);
 
     return token == t;
 }
@@ -164,17 +162,8 @@ void Parser::unexpected_token() {
     pause_messages();
 }
 
-void Parser::skip_expr(OperatorPrec min_prec) {
-    // The precedence returned by prec() is wrt the use of the token as closing parenthesis,
-    // as a binary operator or as the '?' in the conditional operator. The token might instead
-    // be, e.g., a unary operator. The highest precedence token for which there is ambiguity
-    // is '&'. Therefore we require that min_prec be such that a misinterpreted '&' would not
-    // cause skip_expr to return early.
-    assert(min_prec < AND_PREC);
-
-    while (token) {
-        if (prec() != 0 && prec() <= min_prec) return;
-
+void Parser::balance_until(int t) {
+    while (token && token != t) {
         switch (token) {
           default:
             consume();
@@ -198,8 +187,17 @@ void Parser::skip_expr(OperatorPrec min_prec) {
     }
 }
 
-void Parser::balance_until(int t) {
-    while (token && token != t) {
+void Parser::skip_expr(OperatorPrec min_prec) {
+    // The precedence returned by prec() is wrt the use of the token as closing parenthesis,
+    // as a binary operator or as the '?' in the conditional operator. The token might instead
+    // be, e.g., a unary operator. The highest precedence token for which there is ambiguity
+    // is '&'. Therefore we require that min_prec be such that a misinterpreted '&' would not
+    // cause skip_expr to return early.
+    assert(min_prec < AND_PRECEDENCE);
+
+    while (token) {
+        if (prec() != 0 && prec() <= min_prec) return;
+
         switch (token) {
           default:
             consume();
@@ -638,7 +636,7 @@ const Type* Parser::parse_typeof() {
 
     auto type = parse_type();
     if (!type) {
-        auto expr = parse_expr(SEQUENCE_PREC);
+        auto expr = parse_expr(SEQUENCE_PRECEDENCE);
         type = new TypeOfType(expr, location);
     }
 
@@ -659,7 +657,7 @@ Declarator* Parser::parse_enum_constant(Declaration* declaration, const EnumType
 
     Expr* constant{};
     if (consume('=')) {
-        constant = parse_expr(CONDITIONAL_PREC);
+        constant = parse_expr(CONDITIONAL_PRECEDENCE);
     }
 
     if (!consume(',')) {
@@ -691,7 +689,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
 
     Expr* bit_field_size{};
     if (declaration->scope == IdentifierScope::STRUCTURED && consume(':')) {
-        bit_field_size = parse_expr(CONDITIONAL_PREC);
+        bit_field_size = parse_expr(CONDITIONAL_PRECEDENCE);
     }
 
     Expr* initializer{};
@@ -778,7 +776,7 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, in
 
             Expr* array_size{};
             if (token != ']') {
-                array_size = parse_expr(ASSIGN_PREC);
+                array_size = parse_expr(ASSIGN_PRECEDENCE);
             }
             consume_required(']');
 
@@ -798,7 +796,7 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, in
                     auto param_declarator = parse_parameter_declarator();
                     if (!param_declarator) {
                         message(Severity::ERROR, preprocessor.location()) << "expected parameter declaration\n";
-                        skip_expr(ASSIGN_PREC);
+                        skip_expr(ASSIGN_PRECEDENCE);
                     } else {
                         declarator.parameters.push_back(param_declarator);
 
@@ -896,20 +894,20 @@ Statement* Parser::parse_statement() {
               if (!consume(';')) {
                   declaration = parse_declaration(IdentifierScope::BLOCK);
                   if (!declaration) {
-                      initialize = parse_expr(SEQUENCE_PREC);
+                      initialize = parse_expr(SEQUENCE_PRECEDENCE);
                       consume_required(';');
                   }
               }
               if (!consume(';')) {
-                  condition = parse_expr(SEQUENCE_PREC);
+                  condition = parse_expr(SEQUENCE_PRECEDENCE);
                   consume_required(';');
               }
               if (!consume(')')) {
-                  iterate = parse_expr(SEQUENCE_PREC);
+                  iterate = parse_expr(SEQUENCE_PRECEDENCE);
                   consume_required(')');
               }
           } else {
-              condition = parse_expr(SEQUENCE_PREC);
+              condition = parse_expr(SEQUENCE_PRECEDENCE);
               consume_required(')');
           }
 
@@ -928,7 +926,7 @@ Statement* Parser::parse_statement() {
           consume();
 
           consume_required('(');
-          auto condition = parse_expr(SEQUENCE_PREC);
+          auto condition = parse_expr(SEQUENCE_PRECEDENCE);
           consume_required(')');
 
           auto then_statement = parse_statement();
@@ -945,7 +943,7 @@ Statement* Parser::parse_statement() {
 
           Expr* expr{};
           if (token != ';') {
-              expr = parse_expr(SEQUENCE_PREC);
+              expr = parse_expr(SEQUENCE_PRECEDENCE);
           }
           consume_required(';');
           return new ReturnStatement(expr, location);
@@ -954,7 +952,7 @@ Statement* Parser::parse_statement() {
           consume();
 
           consume_required('(');
-          auto expr = parse_expr(SEQUENCE_PREC);
+          auto expr = parse_expr(SEQUENCE_PRECEDENCE);
           consume_required(')');
 
           auto statement = new SwitchStatement(expr, nullptr, location);
@@ -972,7 +970,7 @@ Statement* Parser::parse_statement() {
           Label label;
           if (consume(TOK_CASE)) {
               label.kind = LabelKind::CASE;
-              label.case_expr = parse_expr(CONDITIONAL_PREC);
+              label.case_expr = parse_expr(CONDITIONAL_PRECEDENCE);
               if (innermost_switch) {
                   innermost_switch->cases.push_back(label.case_expr);
               } else {
@@ -1011,7 +1009,7 @@ Statement* Parser::parse_statement() {
 
       } default : {
           Label label;
-          Statement* statement = parse_expr(SEQUENCE_PREC, &label.identifier);
+          Statement* statement = parse_expr(SEQUENCE_PRECEDENCE, &label.identifier);
 
           if (!label.identifier.name->empty()) {
               consume_required(':');
@@ -1083,12 +1081,12 @@ Expr* Parser::parse_expr(OperatorPrec min_prec, Identifier* or_label) {
 
     while (prec() >= min_prec) {
         location = preprocessor.location();
-        auto next_min_prec = assoc() == ASSOC_LEFT ? OperatorPrec(prec() + 1) : prec();
+        auto next_min_prec = assoc() == ASSOCIATE_LEFT ? OperatorPrec(prec() + 1) : prec();
 
         if (consume('?')) {
             auto then_expr = parse_expr(next_min_prec);
             if (consume_required(':')) {
-                auto else_expr = parse_expr(CONDITIONAL_PREC);
+                auto else_expr = parse_expr(CONDITIONAL_PRECEDENCE);
                 result = new ConditionExpr(result, then_expr, else_expr, location);
             }
         }
@@ -1243,7 +1241,7 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
             }
         }
 
-        result = parse_expr(SEQUENCE_PREC);
+        result = parse_expr(SEQUENCE_PRECEDENCE);
         consume_required(')');
     }
 
@@ -1257,7 +1255,7 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
         location = preprocessor.location();
 
         if (consume('[')) {
-            auto index = parse_expr(SEQUENCE_PREC);
+            auto index = parse_expr(SEQUENCE_PRECEDENCE);
             result = new SubscriptExpr(result, index, location);
             consume_required(']');
 
@@ -1265,7 +1263,7 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
             vector<Expr*> parameters;
             if (token != ')') {
                 while (token) {
-                    parameters.push_back(parse_expr(ASSIGN_PREC));
+                    parameters.push_back(parse_expr(ASSIGN_PRECEDENCE));
                     if (!consume(',')) break;
                 }
             }
@@ -1308,7 +1306,7 @@ Expr* Parser::parse_initializer() {
         }
         consume_required('}');
     } else {
-        result = parse_expr(ASSIGN_PREC);
+        result = parse_expr(ASSIGN_PRECEDENCE);
     }
 
     return result;

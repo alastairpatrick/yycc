@@ -2,90 +2,90 @@
 #include "../lex/Token.h"
 
 const AssocPrec g_assoc_prec[TOK_NUM] = {
-    [TOK_EOF]           = { ASSOC_RIGHT, END_PREC },
-    [';']               = { ASSOC_RIGHT, END_PREC },
-    [')']               = { ASSOC_RIGHT, END_PREC },
-    ['}']               = { ASSOC_RIGHT, END_PREC },
-    [']']               = { ASSOC_RIGHT, END_PREC },
+    [TOK_EOF]           = { ASSOCIATE_RIGHT, END_PRECEDENCE },
+    [';']               = { ASSOCIATE_RIGHT, END_PRECEDENCE },
+    [')']               = { ASSOCIATE_RIGHT, END_PRECEDENCE },
+    ['}']               = { ASSOCIATE_RIGHT, END_PRECEDENCE },
+    [']']               = { ASSOCIATE_RIGHT, END_PRECEDENCE },
 
     // <expression> ::= <assignment-expression>
     //                | <expression> , <assignment-expression>
-    [',']               = { ASSOC_LEFT, SEQUENCE_PREC },
+    [',']               = { ASSOCIATE_LEFT, SEQUENCE_PRECEDENCE },
 
     // <assignment-expression> ::= <conditional-expression>
     //                           / <unary-expression> <assignment-operator> <assignment-expression>
-    ['=']               = { ASSOC_RIGHT, ASSIGN_PREC, true },
-    [TOK_ADD_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC, true },
-    [TOK_AND_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC, true },
-    [TOK_DIV_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC, true },
-    [TOK_LEFT_ASSIGN]   = { ASSOC_RIGHT, ASSIGN_PREC, true },
-    [TOK_MOD_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC, true },
-    [TOK_MUL_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC, true },
-    [TOK_OR_ASSIGN]     = { ASSOC_RIGHT, ASSIGN_PREC, true },
-    [TOK_RIGHT_ASSIGN]  = { ASSOC_RIGHT, ASSIGN_PREC, true },
-    [TOK_SUB_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC, true },
-    [TOK_XOR_ASSIGN]    = { ASSOC_RIGHT, ASSIGN_PREC, true },
+    ['=']               = { ASSOCIATE_RIGHT, ASSIGN_PRECEDENCE, true },
+    [TOK_ADD_ASSIGN]    = { ASSOCIATE_RIGHT, ASSIGN_PRECEDENCE, true },
+    [TOK_AND_ASSIGN]    = { ASSOCIATE_RIGHT, ASSIGN_PRECEDENCE, true },
+    [TOK_DIV_ASSIGN]    = { ASSOCIATE_RIGHT, ASSIGN_PRECEDENCE, true },
+    [TOK_LEFT_ASSIGN]   = { ASSOCIATE_RIGHT, ASSIGN_PRECEDENCE, true },
+    [TOK_MOD_ASSIGN]    = { ASSOCIATE_RIGHT, ASSIGN_PRECEDENCE, true },
+    [TOK_MUL_ASSIGN]    = { ASSOCIATE_RIGHT, ASSIGN_PRECEDENCE, true },
+    [TOK_OR_ASSIGN]     = { ASSOCIATE_RIGHT, ASSIGN_PRECEDENCE, true },
+    [TOK_RIGHT_ASSIGN]  = { ASSOCIATE_RIGHT, ASSIGN_PRECEDENCE, true },
+    [TOK_SUB_ASSIGN]    = { ASSOCIATE_RIGHT, ASSIGN_PRECEDENCE, true },
+    [TOK_XOR_ASSIGN]    = { ASSOCIATE_RIGHT, ASSIGN_PRECEDENCE, true },
 
     // <conditional-expression> ::= <logical-or-expression>
     //                            | <logical-or-expression> ? <expression> : <conditional-expression>
-    ['?']               = { ASSOC_RIGHT, CONDITIONAL_PREC },
-    [':']               = { ASSOC_RIGHT, CONDITIONAL_PREC },
+    ['?']               = { ASSOCIATE_RIGHT, CONDITIONAL_PRECEDENCE },
+    [':']               = { ASSOCIATE_RIGHT, CONDITIONAL_PRECEDENCE },
 
     // <logical-or-expression> ::= <logical-and-expression>
     //                           | <logical-or-expression> || <logical-and-expression>
-    [TOK_OR_OP]         = { ASSOC_LEFT, LOGICAL_OR_PREC },
+    [TOK_OR_OP]         = { ASSOCIATE_LEFT, LOGICAL_OR_PRECEDENCE },
 
     // <logical-and-expression> ::= <inclusive-or-expression>
     //                            | <logical-and-expression> && <inclusive-or-expression>
-    [TOK_AND_OP]        = { ASSOC_LEFT, LOGICAL_AND_PREC },
+    [TOK_AND_OP]        = { ASSOCIATE_LEFT, LOGICAL_AND_PRECEDENCE },
 
     // <inclusive-or-expression> ::= <exclusive-or-expression>
     //                             | <inclusive-or-expression> | <exclusive-or-expression>
-    ['|']               = { ASSOC_LEFT, OR_PREC },
+    ['|']               = { ASSOCIATE_LEFT, OR_PRECEDENCE },
 
     // <exclusive-or-expression> ::= <and-expression>
     //                             | <exclusive-or-expression> ^ <and-expression>
-    ['^']               = { ASSOC_LEFT, EXCLUSIVE_OR_PREC },
+    ['^']               = { ASSOCIATE_LEFT, EXCLUSIVE_OR_PRECEDENCE },
 
     // <and-expression> ::= <equality-expression>
     //                    | <and-expression> & <equality-expression>
-    ['&']               = { ASSOC_LEFT, AND_PREC },
+    ['&']               = { ASSOCIATE_LEFT, AND_PRECEDENCE },
 
     // <equality-expression> ::= <relational-expression>
     //                         | <equality-expression> == <relational-expression>
     //                         | <equality-expression> != <relational-expression>
-    [TOK_EQ_OP]         = { ASSOC_LEFT, EQUALITY_PREC },
-    [TOK_NE_OP]         = { ASSOC_LEFT, EQUALITY_PREC },
+    [TOK_EQ_OP]         = { ASSOCIATE_LEFT, EQUALITY_PRECEDENCE },
+    [TOK_NE_OP]         = { ASSOCIATE_LEFT, EQUALITY_PRECEDENCE },
 
     // <relational-expression> ::= <shift-expression>
     //                           | <relational-expression> < <shift-expression>
     //                           | <relational-expression> > <shift-expression>
     //                           | <relational-expression> <= <shift-expression>
     //                           | <relational-expression> >= <shift-expression>
-    ['<']               = { ASSOC_LEFT, RELATIONAL_PREC },
-    ['>']               = { ASSOC_LEFT, RELATIONAL_PREC },
-    [TOK_LE_OP]         = { ASSOC_LEFT, RELATIONAL_PREC },
-    [TOK_GE_OP]         = { ASSOC_LEFT, RELATIONAL_PREC },
+    ['<']               = { ASSOCIATE_LEFT, RELATIONAL_PRECEDENCE },
+    ['>']               = { ASSOCIATE_LEFT, RELATIONAL_PRECEDENCE },
+    [TOK_LE_OP]         = { ASSOCIATE_LEFT, RELATIONAL_PRECEDENCE },
+    [TOK_GE_OP]         = { ASSOCIATE_LEFT, RELATIONAL_PRECEDENCE },
 
     // <shift-expression> ::= <additive-expression>
     //                      | <shift-expression> << <additive-expression>
     //                      | <shift-expression> >> <additive-expression>
-    [TOK_LEFT_OP]       = { ASSOC_LEFT, SHIFT_PREC },
-    [TOK_RIGHT_OP]      = { ASSOC_LEFT, SHIFT_PREC },
+    [TOK_LEFT_OP]       = { ASSOCIATE_LEFT, SHIFT_PRECEDENCE },
+    [TOK_RIGHT_OP]      = { ASSOCIATE_LEFT, SHIFT_PRECEDENCE },
 
     // <additive-expression> ::= <multiplicative-expression>
     //                         | <additive-expression> + <multiplicative-expression>
     //                         | <additive-expression> - <multiplicative-expression>
-    ['+']               = { ASSOC_LEFT, ADDITIVE_PREC },
-    ['-']               = { ASSOC_LEFT, ADDITIVE_PREC },
+    ['+']               = { ASSOCIATE_LEFT, ADDITIVE_PRECEDENCE },
+    ['-']               = { ASSOCIATE_LEFT, ADDITIVE_PRECEDENCE },
 
     // <multiplicative-expression> ::= <cast-expression>
     //                               | <multiplicative-expression> * <cast-expression>
     //                               | <multiplicative-expression> / <cast-expression>
     //                               | <multiplicative-expression> % <cast-expression>
-    ['*']               = { ASSOC_LEFT, MULTIPLICATIVE_PREC },
-    ['/']               = { ASSOC_LEFT, MULTIPLICATIVE_PREC },
-    ['%']               = { ASSOC_LEFT, MULTIPLICATIVE_PREC },
+    ['*']               = { ASSOCIATE_LEFT, MULTIPLICATIVE_PRECEDENCE },
+    ['/']               = { ASSOCIATE_LEFT, MULTIPLICATIVE_PRECEDENCE },
+    ['%']               = { ASSOCIATE_LEFT, MULTIPLICATIVE_PRECEDENCE },
 };
 
 bool is_assignment_token(int token) {

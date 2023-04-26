@@ -89,6 +89,9 @@ static const Test tests[] = {
     { "parse/variable",             TestType::PARSE },
     { "resolve/variable",           TestType::RESOLVE },
 
+    { "parse/recovery",             TestType::PREPARSE },
+    { "parse/recovery",             TestType::PARSE },
+
     { "emit/conversion_type",       TestType::EXPRESSION },
 
     { "emit/assignment",            TestType::EMIT },

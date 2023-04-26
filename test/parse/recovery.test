@@ -1,0 +1,16 @@
+BEGIN Missing semicolon at variable declaration
+int x
+int y;
+EXPECT_MESSAGE
+:2:1: error expected ';' but got 'int'
+EXPECT_AST
+[["var","ES","Si","x"]]
+
+
+BEGIN Missing semicolon at end of struct definition
+struct S {}
+struct T {};
+EXPECT_MESSAGE
+:2:1: error invalid declaration specifier or type qualifier combination
+END
+
