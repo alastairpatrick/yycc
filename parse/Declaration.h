@@ -78,6 +78,7 @@ struct Entity: DeclaratorDelegate {
     StorageDuration storage_duration() const;
     Expr* initializer{};
     Expr* bit_field_size{};
+    size_t aggregate_index{};
 
     // Function related
     vector<Declarator*> parameters;

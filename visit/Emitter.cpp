@@ -1049,6 +1049,47 @@ struct Emitter: Visitor {
         return VisitStatementOutput(expr->postfix ? before_value : after_value);
     }
 
+    virtual VisitStatementOutput visit(MemberExpr* expr, const VisitStatementInput& input) override {
+        auto object = emit(expr->object).unqualified();
+        auto message_type = object.type;
+
+        bool dereferenced{};
+        if (auto pointer_type = type_cast<PointerType>(object.type)) {
+            dereferenced = true;
+            object = Value(ValueKind::LVALUE, pointer_type->base_type, llvm_rvalue(object));
+        }
+
+        if (auto struct_type = type_cast<StructType>(object.type)) {
+            auto it = struct_type->member_index.find(expr->identifier.name);
+            if (it == struct_type->member_index.end()) {
+                message(Severity::ERROR, expr->location) << "no member named '" << *expr->identifier.name << "' in '" << PrintType(struct_type) << "'\n";
+                pause_messages();
+                return VisitStatementOutput(Value::default_int());
+            }
+
+            if (dereferenced) {
+                if (expr->op == '.') {
+                    message(Severity::ERROR, expr->location) << "type '" << PrintType(message_type) << "' is a pointer; consider using the '->' operator instead of '.'\n";
+                }
+            } else {
+                if (expr->op == TOK_PTR_OP) {
+                    message(Severity::ERROR, expr->location) << "type '" << PrintType(message_type) << "' is not a pointer; consider using the '.' operator instead of '->'\n";
+                }
+            }
+
+            auto result_type = it->second->type;
+            if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+
+            auto llvm_struct_type = struct_type->llvm_type();
+            auto index = it->second->entity()->aggregate_index;
+            return VisitStatementOutput(Value(ValueKind::LVALUE, result_type, LLVMBuildStructGEP2(builder, llvm_struct_type, object.llvm_lvalue(), index, expr->identifier.name->data())));
+        }
+
+        message(Severity::ERROR, expr->object->location) << "type '" << PrintType(object.type) << "' does not have members\n";
+        pause_messages();
+        return VisitStatementOutput(Value::default_int());
+    }
+
     virtual VisitStatementOutput visit(SizeOfExpr* expr, const VisitStatementInput& input) override {
         auto zero = TranslationUnitContext::it->zero_size;
         auto llvm_target_data = TranslationUnitContext::it->llvm_target_data;

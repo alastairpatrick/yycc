@@ -609,6 +609,7 @@ LLVMTypeRef StructType::cache_llvm_type() const {
     member_types.reserve(members.size());
     for (auto member: members) {
         if (auto member_entity = member->entity()) {
+            member_entity->aggregate_index = member_types.size();
             member_types.push_back(member->type->llvm_type());
         }
     }
