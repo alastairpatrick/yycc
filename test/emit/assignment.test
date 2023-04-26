@@ -7,7 +7,7 @@ EXPECT_MESSAGE
 END
 
 
-// Integer
+REM ******** Integer ********
 
 BEGIN Assign integer parameter value
 void f(int x) {
@@ -167,7 +167,7 @@ define i32 @f(i32 %0) {
 END
 
 
-// Floating point
+REM ******** Floating point ********
 
 BEGIN Assign floating point parameter value
 void f(float x) {

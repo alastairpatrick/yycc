@@ -1,4 +1,4 @@
-// ConditionExpr
+REM ******** ConditionExpr ********
 
 BEGIN Condition operator applies usual arithmetic conversions
 int f(_Bool c, _Bool a, short b) {
@@ -136,7 +136,7 @@ EXPECT_MESSAGE
 END
 
 
-// AddressExpr
+REM ******** AddressExpr ********
 
 BEGIN Function returning address of global int
 int v;
@@ -189,7 +189,7 @@ EXPECT_IR
 END
 
 
-// CallExpr
+REM ******** CallExpr ********
 
 BEGIN Call function
 void f() {}
@@ -278,7 +278,7 @@ EXPECT_MESSAGE
 END
 
 
-// DereferenceExpr
+REM ******** DereferenceExpr ********
 
 BEGIN Dereference global pointer
 int* p;
@@ -344,7 +344,7 @@ define i32 @f() {
 END
 
 
-// EntityExpr
+REM ******** EntityExpr ********
 
 BEGIN Value of local variable
 int f() {
@@ -373,7 +373,7 @@ define i32 @f() {
 END
 
 
-// SubscriptExpr
+REM ******** SubscriptExpr ********
 
 BEGIN Subscript operator on pointer (1)
 int f(int* p) {

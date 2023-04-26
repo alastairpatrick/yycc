@@ -1,4 +1,4 @@
-// Integer
+REM ******** Integer ********
 
 BEGIN Integer addition
 int f(int x) {
@@ -144,7 +144,7 @@ EXPECT_MESSAGE
 END
 
 
-// Floating point
+REM ******** Floating point ********
 
 BEGIN Unsigned integer multiplication
 unsigned f(unsigned x) {
@@ -237,7 +237,7 @@ END
 
 
 
-// Pointer arithmetic
+REM ******** Pointer arithmetic ********
 
 BEGIN Pointer addition (1)
 int* f(int* p) {
@@ -350,7 +350,7 @@ define ptr @f() {
 END
 
 
-// Void
+REM ******** Void ********
 
 BEGIN Cannot apply binary operation to void (1)
 void f() {}

@@ -1,4 +1,4 @@
-// ForStatement
+REM ******** ForStatement ********
 
 BEGIN Infinite while loop
 void f() {
@@ -162,7 +162,7 @@ for_e:                                            ; preds = %for_l
 END
 
 
-// GoToStatement
+REM ******** GoToStatement ********
 
 BEGIN Goto prior label
 void f() {
@@ -196,7 +196,7 @@ target:                                           ; preds = %0
 END
 
 
-// IfElseStatement
+REM ******** IfElseStatement ********
 
 BEGIN If statement
 void f(int c) {
@@ -245,7 +245,7 @@ END
 
 
 
-// ReturnStatement
+REM ******** ReturnStatement ********
 
 BEGIN Emit explicit return void
 void f() {
@@ -328,7 +328,7 @@ EXPECT_MESSAGE
 END
 
 
-// SwitchStatement
+REM ******** SwitchStatement ********
 
 BEGIN Switch with default
 int f(int x) {

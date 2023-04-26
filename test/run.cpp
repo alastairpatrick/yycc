@@ -359,6 +359,7 @@ bool run_parser_tests() {
             } else if (line == "SWEEP") {
                 enabled_types[unsigned(TestType::SWEEP)] = true;
                 ++num_enabled_types;
+            } else if (line.substr(0, 3) == "REM") {
             } else {
                 if (section == EXPECT_TYPE) {
                     if (line.length()) sections[section] += line;
