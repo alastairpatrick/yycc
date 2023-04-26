@@ -15,7 +15,6 @@ struct CompoundStatement: Statement {
 };
 
 struct ForStatement: Statement {
-    // Only one of declatation or initialize may be non-null
     Declaration* declaration{};
     Expr* initialize{};
     Expr* condition{};
