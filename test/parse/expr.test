@@ -349,6 +349,18 @@ EXPECT_AST
 ["subs", ["subs", 1, 2], 3]
 
 
+BEGIN Struct or union member (1)
+1 .a
+EXPECT_AST
+[".", 1, "a"]
+
+
+BEGIN Structure or union member (2)
+1->a
+EXPECT_AST
+["->", 1, "a"]
+
+
 BEGIN Sizeof int type
 sizeof(int)
 EXPECT_AST

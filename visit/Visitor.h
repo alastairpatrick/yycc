@@ -92,6 +92,7 @@ struct Visitor {
     virtual VisitStatementOutput visit(EntityExpr* expr, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(IncDecExpr* expr, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(InitializerExpr* expr, const VisitStatementInput& input);
+    virtual VisitStatementOutput visit(MemberExpr* expr, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(SizeOfExpr* expr, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(SubscriptExpr* expr, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(UninitializedExpr* expr, const VisitStatementInput& input);

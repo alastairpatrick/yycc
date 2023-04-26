@@ -205,6 +205,26 @@ void InitializerExpr::print(ostream& stream) const {
 }
 
 
+MemberExpr::MemberExpr(TokenKind op, Expr* object, const Identifier& identifier, const Location& location)
+    : Expr(location), op(op), object(object), identifier(identifier) {
+}
+
+VisitStatementOutput MemberExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
+}
+
+void MemberExpr::print(ostream& stream) const {
+    stream << "[\"";
+
+    if (op == '.') {
+        stream << '.';
+    } else {
+        stream << "->";
+    }
+
+    stream << "\", " << object << ", \"" << *identifier.name << "\"]";
+}
+
 
 SizeOfExpr::SizeOfExpr(const Type* type, const Location& location)
     : Expr(location), type(type) {

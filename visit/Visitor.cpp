@@ -214,6 +214,11 @@ VisitStatementOutput Visitor::visit(InitializerExpr* expr, const VisitStatementI
     return VisitStatementOutput();
 }
 
+VisitStatementOutput Visitor::visit(MemberExpr* expr, const VisitStatementInput& input) {
+    accept(expr->object, input);
+    return VisitStatementOutput();
+}
+
 VisitStatementOutput Visitor::visit(SizeOfExpr* expr, const VisitStatementInput& input) {
     return VisitStatementOutput();
 }

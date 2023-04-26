@@ -86,6 +86,16 @@ struct InitializerExpr: Expr {
     virtual void print(ostream& stream) const override;
 };
 
+struct MemberExpr: Expr {
+    TokenKind op;
+    Expr* object;
+    Identifier identifier;
+
+    MemberExpr(TokenKind op, Expr* object, const Identifier& identifier, const Location& location);
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual void print(ostream& stream) const override;
+};
+
 struct SizeOfExpr: Expr {
     const Type* type{};
 

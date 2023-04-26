@@ -112,7 +112,7 @@ int g(int a, int b) {
     return f() ? a : b;
 }
 EXPECT_MESSAGE
-:3:12: error cannot convert from type 'void' to type 'bool'
+:3:13: error cannot convert from type 'void' to type 'bool'
 END
 
 

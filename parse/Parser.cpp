@@ -136,7 +136,7 @@ bool Parser::consume_identifier(Identifier& identifier) {
     return true;
 }
 
-bool Parser::require(int t, Location* location) {
+bool Parser::require(int t, Location* location, bool consume_required) {
     if (token != t) {
         if (t >= 32 && t < 128) {
             auto& stream = message(Severity::ERROR, preprocessor.location()) << "expected '" << (char) t << "' but ";
@@ -158,7 +158,7 @@ bool Parser::require(int t, Location* location) {
         if (location) {
             *location = preprocessor.location();
         }
-        consume();
+        if (consume_required) consume();
         return true;
     }
     return false;
@@ -1247,10 +1247,13 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
     }
 
     while (token) {
+        location = preprocessor.location();
+
         if (consume('[')) {
             auto index = parse_expr(SEQUENCE_PREC);
             result = new SubscriptExpr(result, index, location);
             require(']');
+
         } else if (consume('(')) {
             vector<Expr*> parameters;
             if (token != ')') {
@@ -1261,9 +1264,18 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
             }
             result = new CallExpr(result, move(parameters), location);
             require(')');
+
+        } else if (token == '.' || token == TOK_PTR_OP) {
+            auto op = token;
+            consume();
+            if (require(TOK_IDENTIFIER, nullptr, false)) {
+                result = new MemberExpr(op, result, preprocessor.identifier(), location);
+                consume();
+            }
         } else if (token == TOK_INC_OP || token == TOK_DEC_OP) {
             result = new IncDecExpr(token, result, true, location);
             consume();
+
         } else {
             break;
         }
