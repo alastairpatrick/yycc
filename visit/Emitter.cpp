@@ -152,22 +152,22 @@ struct Emitter: Visitor {
     }
 
     virtual void pre_visit(Statement* statement) override {
-        if (statement->labels.size()) {
-            for (auto& label: statement->labels) {
-                LLVMBasicBlockRef labelled_block{};
-                if (label.kind == LabelKind::GOTO) {
-                    labelled_block = lookup_label(label.identifier);
-                } else if (label.kind == LabelKind::CASE) {
-                    labelled_block = innermost_switch->case_labels[label.case_expr];
-                } else if (label.kind == LabelKind::DEFAULT) {
-                    labelled_block = innermost_switch->default_label;
-                }
+        if (!statement->labels.size()) return;
 
-                auto current_block = LLVMGetInsertBlock(builder);
-                LLVMBuildBr(builder, labelled_block);
-                LLVMMoveBasicBlockAfter(labelled_block, current_block);
-                LLVMPositionBuilderAtEnd(builder, labelled_block);
+        for (auto& label: statement->labels) {
+            LLVMBasicBlockRef labelled_block{};
+            if (label.kind == LabelKind::GOTO) {
+                labelled_block = lookup_label(label.identifier);
+            } else if (label.kind == LabelKind::CASE) {
+                labelled_block = innermost_switch->case_labels[label.case_expr];
+            } else if (label.kind == LabelKind::DEFAULT) {
+                labelled_block = innermost_switch->default_label;
             }
+
+            auto current_block = LLVMGetInsertBlock(builder);
+            LLVMBuildBr(builder, labelled_block);
+            LLVMMoveBasicBlockAfter(labelled_block, current_block);
+            LLVMPositionBuilderAtEnd(builder, labelled_block);
         }
     }
 
