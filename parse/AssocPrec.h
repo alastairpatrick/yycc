@@ -8,8 +8,8 @@ extern "C" {
 #endif
 
 typedef enum {
-    ASSOCIATE_LEFT,
-    ASSOCIATE_RIGHT,
+    LEFT_ASSOCIATIVE,
+    RIGHT_ASSOCIATIVE,
 } OperatorAssoc;
 
 typedef enum {

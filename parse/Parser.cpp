@@ -1081,7 +1081,7 @@ Expr* Parser::parse_expr(OperatorPrec min_prec, Identifier* or_label) {
 
     while (prec() >= min_prec) {
         location = preprocessor.location();
-        auto next_min_prec = assoc() == ASSOCIATE_LEFT ? OperatorPrec(prec() + 1) : prec();
+        auto next_min_prec = assoc() == LEFT_ASSOCIATIVE ? OperatorPrec(prec() + 1) : prec();
 
         if (consume('?')) {
             auto then_expr = parse_expr(next_min_prec);
