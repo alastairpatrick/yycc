@@ -116,27 +116,13 @@ void Parser::handle_declaration_directive() {
     }
 }
 
-bool Parser::consume(int t, Location* location) {
+bool Parser::consume(int t) {
     if (token != t) return false;
-    if (location) {
-        *location = preprocessor.location();
-    }
     consume();
     return true;
 }
 
-bool Parser::consume_identifier(Identifier& identifier) {
-    if (token != TOK_IDENTIFIER) {
-        identifier = Identifier();
-        return false;
-    }
-
-    identifier = preprocessor.identifier();
-    consume();
-    return true;
-}
-
-bool Parser::require(int t, Location* location, bool consume_required) {
+bool Parser::require(int t) {
     if (token != t) {
         if (t >= 32 && t < 128) {
             auto& stream = message(Severity::ERROR, preprocessor.location()) << "expected '" << (char) t << "' but ";
@@ -154,14 +140,14 @@ bool Parser::require(int t, Location* location, bool consume_required) {
     while (token && token != t) {
         consume();
     }
-    if (token == t) {
-        if (location) {
-            *location = preprocessor.location();
-        }
-        if (consume_required) consume();
-        return true;
-    }
-    return false;
+
+    return token == t;
+}
+
+bool Parser::consume_required(int t) {
+    if (!require(t)) return false;
+    consume();
+    return true;
 }
 
 void Parser::skip_unexpected() {
@@ -291,7 +277,7 @@ Declaration* Parser::parse_declaration(IdentifierScope scope) {
             if (!consume(',')) break;
         }
 
-        if (!last_declarator) require(';');
+        if (!last_declarator) consume_required(';');
 
         declaration->fragment = end_fragment(begin);
         return declaration;
@@ -543,7 +529,10 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
     consume();
 
     Identifier identifier;
-    consume_identifier(identifier);
+    if (token == TOK_IDENTIFIER) {
+        identifier = preprocessor.identifier();
+        consume();
+    }
 
     // C99 6.7.2.3p9
     Declarator* tag_declarator{};
@@ -595,7 +584,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 structured_type->member_index = identifiers.pop_scope().declarators;
             }
 
-            require('}');
+            consume_required('}');
         }
     } else {
         auto enum_type = new EnumType(specifier_location);
@@ -613,7 +602,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 }
             }
 
-            require('}');
+            consume_required('}');
         }
     }
 
@@ -645,7 +634,7 @@ const Type* Parser::parse_typeof() {
 
     bool keep_qualifiers = token == TOK_TYPEOF;
     consume();
-    require('(');
+    consume_required('(');
 
     auto type = parse_type();
     if (!type) {
@@ -655,7 +644,7 @@ const Type* Parser::parse_typeof() {
 
     if (!keep_qualifiers) type = new UnqualifiedType(type);
 
-    require(')');
+    consume_required(')');
     return type;
 }
 
@@ -663,8 +652,9 @@ Declarator* Parser::parse_enum_constant(Declaration* declaration, const EnumType
     auto location = preprocessor.location();
 
     Identifier identifier;
-    if (!consume_identifier(identifier)) {
-        require(TOK_IDENTIFIER);
+    if (require(TOK_IDENTIFIER)) {
+        identifier = preprocessor.identifier();
+        consume();
     }
 
     Expr* constant{};
@@ -761,9 +751,14 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, in
     DeclaratorTransform declarator;
     if (consume('(')) {
         declarator = parse_declarator_transform(scope, flags);
-        require(')');
+        consume_required(')');
     } else {
-        if (flags & PD_ALLOW_IDENTIFIER) consume_identifier(declarator.identifier);
+        if (flags & PD_ALLOW_IDENTIFIER) {
+            if (token == TOK_IDENTIFIER) {
+                declarator.identifier = preprocessor.identifier();
+                consume();
+            }
+        }
     }
 
     auto location = preprocessor.location();
@@ -785,7 +780,7 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, in
             if (token != ']') {
                 array_size = parse_expr(ASSIGN_PREC);
             }
-            require(']');
+            consume_required(']');
 
             right_transform = [right_transform, array_qualifier_set, array_size, location](const Type* type) {
                 type = QualifiedType::of(new UnresolvedArrayType(type, array_size, location), array_qualifier_set);
@@ -818,7 +813,7 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, in
                     }
 
                     if (!consume(',')) {
-                        require(')');
+                        consume_required(')');
                         break;
                     }
                 }
@@ -889,7 +884,7 @@ Statement* Parser::parse_statement() {
         case TOK_WHILE: {
           auto kind = token;
           consume();
-          require('(');
+          consume_required('(');
 
           identifiers.push_scope();
 
@@ -902,20 +897,20 @@ Statement* Parser::parse_statement() {
                   declaration = parse_declaration(IdentifierScope::BLOCK);
                   if (!declaration) {
                       initialize = parse_expr(SEQUENCE_PREC);
-                      require(';');
+                      consume_required(';');
                   }
               }
               if (!consume(';')) {
                   condition = parse_expr(SEQUENCE_PREC);
-                  require(';');
+                  consume_required(';');
               }
               if (!consume(')')) {
                   iterate = parse_expr(SEQUENCE_PREC);
-                  require(')');
+                  consume_required(')');
               }
           } else {
               condition = parse_expr(SEQUENCE_PREC);
-              require(')');
+              consume_required(')');
           }
 
           auto body = parse_statement();
@@ -932,9 +927,9 @@ Statement* Parser::parse_statement() {
       } case TOK_IF: {
           consume();
 
-          require('(');
+          consume_required('(');
           auto condition = parse_expr(SEQUENCE_PREC);
-          require(')');
+          consume_required(')');
 
           auto then_statement = parse_statement();
 
@@ -952,15 +947,15 @@ Statement* Parser::parse_statement() {
           if (token != ';') {
               expr = parse_expr(SEQUENCE_PREC);
           }
-          require(';');
+          consume_required(';');
           return new ReturnStatement(expr, location);
 
       } case TOK_SWITCH: {
           consume();
 
-          require('(');
+          consume_required('(');
           auto expr = parse_expr(SEQUENCE_PREC);
-          require(')');
+          consume_required(')');
 
           auto statement = new SwitchStatement(expr, nullptr, location);
           auto parent_switch = innermost_switch;
@@ -990,7 +985,7 @@ Statement* Parser::parse_statement() {
                   ++innermost_switch->num_defaults;
               }
           }
-          require(':');
+          consume_required(':');
 
           auto statement = parse_statement();
           statement->labels.push_back(label);
@@ -1003,8 +998,14 @@ Statement* Parser::parse_statement() {
           consume();
 
           Identifier identifier;
-          consume_identifier(identifier);
-          require(';');
+          if (kind == TOK_GOTO) {
+              if (require(TOK_IDENTIFIER)) {
+                  identifier = preprocessor.identifier();
+                  consume();
+              }
+          }
+
+          consume_required(';');
 
           return new GoToStatement(kind, identifier, location);
 
@@ -1013,7 +1014,7 @@ Statement* Parser::parse_statement() {
           Statement* statement = parse_expr(SEQUENCE_PREC, &label.identifier);
 
           if (!label.identifier.name->empty()) {
-              require(':');
+              consume_required(':');
 
               statement = parse_statement();
 
@@ -1022,26 +1023,30 @@ Statement* Parser::parse_statement() {
               return statement;
           }
 
-          require(';');
+          consume_required(';');
           return statement;
       }
     }
 }
 
 CompoundStatement* Parser::parse_compound_statement() {
+    Location location;
     CompoundStatement* statement{};
     if (preparse) {
-        Location loc;
-        require('{', &loc);
-        balance_until('}');
-        require('}');
+        require('{');
+        location = preprocessor.location();
+        consume();
 
-        statement = new CompoundStatement(Scope(), ASTNodeVector(), loc);
+        balance_until('}');
+        consume_required('}');
+
+        statement = new CompoundStatement(Scope(), ASTNodeVector(), location);
     } else {
         identifiers.push_scope();
 
-        Location loc;
-        require('{', &loc);
+        require('{');
+        location = preprocessor.location();
+        consume();
 
         ASTNodeVector nodes;
         while (token && token != '}') {
@@ -1049,9 +1054,9 @@ CompoundStatement* Parser::parse_compound_statement() {
         }
 
         Scope scope = identifiers.pop_scope();
-        statement = new CompoundStatement(move(scope), move(nodes), loc);
+        statement = new CompoundStatement(move(scope), move(nodes), location);
 
-        require('}');
+        consume_required('}');
     }
 
     return statement;
@@ -1077,11 +1082,12 @@ Expr* Parser::parse_expr(OperatorPrec min_prec, Identifier* or_label) {
     if (!result) return result;
 
     while (prec() >= min_prec) {
+        loc = preprocessor.location();
         auto next_min_prec = assoc() == ASSOC_LEFT ? OperatorPrec(prec() + 1) : prec();
 
-        if (consume('?', &loc)) {
+        if (consume('?')) {
             auto then_expr = parse_expr(next_min_prec);
-            if (require(':')) {
+            if (consume_required(':')) {
                 auto else_expr = parse_expr(CONDITIONAL_PREC);
                 result = new ConditionExpr(result, then_expr, else_expr, loc);
             }
@@ -1216,16 +1222,17 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
                   result = new SizeOfExpr(new TypeOfType(expr, location), location);
               }
 
-              if (consumed_paren) require(')');
+              if (consumed_paren) consume_required(')');
               break;
           }
         }
     }
 
-    if (!result && consume('(', &location)) {
+    location = preprocessor.location();
+    if (!result && consume('(')) {
         if (kind >= SubExpressionKind::CAST) {
             if (auto type = parse_type()) {
-                require(')');
+                consume_required(')');
                 auto expr = parse_sub_expr(SubExpressionKind::CAST);
 
                 if (is_assignment_token(token)) {
@@ -1237,7 +1244,7 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
         }
 
         result = parse_expr(SEQUENCE_PREC);
-        require(')');
+        consume_required(')');
     }
 
     if (!result) {
@@ -1252,7 +1259,7 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
         if (consume('[')) {
             auto index = parse_expr(SEQUENCE_PREC);
             result = new SubscriptExpr(result, index, location);
-            require(']');
+            consume_required(']');
 
         } else if (consume('(')) {
             vector<Expr*> parameters;
@@ -1263,12 +1270,12 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
                 }
             }
             result = new CallExpr(result, move(parameters), location);
-            require(')');
+            consume_required(')');
 
         } else if (token == '.' || token == TOK_PTR_OP) {
             auto op = token;
             consume();
-            if (require(TOK_IDENTIFIER, nullptr, false)) {
+            if (require(TOK_IDENTIFIER)) {
                 result = new MemberExpr(op, result, preprocessor.identifier(), location);
                 consume();
             }
@@ -1294,12 +1301,12 @@ Expr* Parser::parse_initializer() {
 
             while (token && token != '}') {
                 initializer->elements.push_back(parse_initializer());
-                if (token != '}') require(',');
+                if (token != '}') consume_required(',');
             }
             
             result = initializer;
         }
-        require('}');
+        consume_required('}');
     } else {
         result = parse_expr(ASSIGN_PREC);
     }

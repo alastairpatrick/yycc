@@ -44,9 +44,9 @@ private:
     SwitchStatement* innermost_switch{};
 
     void consume();
-    bool consume(int t, Location* location = nullptr);
-    bool consume_identifier(Identifier& identifier);
-    bool require(int t, Location* location = nullptr, bool consume_required = true);
+    bool consume(int token);
+    bool require(int token);
+    bool consume_required(int token);
     void skip_unexpected();
     void unexpected_token();
 
