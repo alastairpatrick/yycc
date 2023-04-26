@@ -92,6 +92,7 @@ struct Statement: ASTNode {
 
 struct Expr: Statement {
     explicit Expr(const Location& location);
+    virtual bool is_null_literal() const;
 };
 
 

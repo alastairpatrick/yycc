@@ -129,6 +129,10 @@ VisitStatementOutput IntegerConstant::accept(Visitor& visitor, const VisitStatem
     return visitor.visit(this, input);
 }
 
+bool IntegerConstant::is_null_literal() const {
+    return value == LLVMConstInt(type->llvm_type(), 0, false);
+}
+
 void IntegerConstant::print(ostream& stream) const {
     auto int_value = LLVMConstIntGetZExtValue(value);
     if (type == IntegerType::of(IntegerSignedness::SIGNED, IntegerSize::INT)) {

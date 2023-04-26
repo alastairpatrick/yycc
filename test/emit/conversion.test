@@ -305,3 +305,8 @@ void *p = (int) 0;
 EXPECT_MESSAGE
 :1:11: error conversion from type 'int' to type 'void*' requires explicit cast
 END
+
+
+BEGIN Can implicitly convert literal zero to pointer
+void *p = 0;
+END

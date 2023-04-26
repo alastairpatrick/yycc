@@ -19,7 +19,7 @@ struct IntegerConstant: Constant {
 
     IntegerConstant(LLVMValueRef value, const IntegerType* type, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
-
+    virtual bool is_null_literal() const override;
     virtual void print(ostream& stream) const override;
 };
 

@@ -171,6 +171,21 @@ struct Emitter: Visitor {
         }
     }
 
+    template <typename T, typename U>
+    const T* type_cast(const U* type) {
+        assert(type->qualifiers() == 0);
+        return dynamic_cast<const T*>(type);
+    }
+
+    Value convert_to_type(Expr* expr, const Type* dest_type, ConvKind kind) {
+        if (expr->is_null_literal() && type_cast<PointerType>(dest_type->unqualified())) {
+            return Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
+        }
+
+        auto value = emit(expr).unqualified();
+        return convert_to_type(value, dest_type, kind, expr->location);
+    }
+
     Value convert_to_type(Value value, const Type* dest_type, ConvKind kind, const Location& location) {
         assert(value.type->qualifiers() == 0);
         
@@ -200,12 +215,6 @@ struct Emitter: Visitor {
 
         assert(result.type == dest_type);
         return result;
-    }
-
-    template <typename T, typename U>
-    const T* type_cast(const U* type) {
-        assert(type->qualifiers() == 0);
-        return dynamic_cast<const T*>(type);
     }
 
     void emit_function_definition(Declarator* declarator, Entity* entity) {
@@ -248,7 +257,7 @@ struct Emitter: Visitor {
             }
 
             // C99 6.7.8p11
-            return convert_to_type(emit(initializer->elements[0]), dest_type, ConvKind::IMPLICIT, initializer->location);
+            return convert_to_type(initializer->elements[0], dest_type, ConvKind::IMPLICIT);
         }
     }
 
@@ -281,7 +290,7 @@ struct Emitter: Visitor {
 
             scalar_value = emit_scalar_initializer(dest.type, initializer);
         } else {
-            scalar_value = convert_to_type(emit(expr), dest.type, ConvKind::IMPLICIT, expr->location);
+            scalar_value = convert_to_type(expr, dest.type, ConvKind::IMPLICIT);
         }
 
         LLVMBuildStore(builder, llvm_rvalue(scalar_value), dest.llvm_lvalue());
@@ -314,7 +323,7 @@ struct Emitter: Visitor {
             return emit_scalar_initializer(dest.type, initializer);
         }
 
-        return convert_to_type(emit(expr), dest.type, ConvKind::IMPLICIT, expr->location);
+        return convert_to_type(expr, dest.type, ConvKind::IMPLICIT);
     }
 
     void emit_variable(Declarator* declarator, Entity* entity) {
@@ -512,8 +521,7 @@ struct Emitter: Visitor {
         LLVMPositionBuilderAtEnd(builder, loop_block);
 
         if (statement->condition) {
-            auto condition_value = emit(statement->condition).unqualified();
-            condition_value = convert_to_type(condition_value, IntegerType::of_bool(), ConvKind::IMPLICIT, statement->condition->location);
+            auto condition_value = convert_to_type(statement->condition, IntegerType::of_bool(), ConvKind::IMPLICIT);
             LLVMBuildCondBr(builder, llvm_rvalue(condition_value), body_block, end_block);
         }
 
@@ -561,8 +569,7 @@ struct Emitter: Visitor {
         auto end_block = append_block("if_e");
         if (!statement->else_statement) else_block = end_block;
 
-        auto condition_value = emit(statement->condition).unqualified();
-        condition_value = convert_to_type(condition_value, IntegerType::of_bool(), ConvKind::IMPLICIT, statement->condition->location);
+        auto condition_value = convert_to_type(statement->condition, IntegerType::of_bool(), ConvKind::IMPLICIT);
         LLVMBuildCondBr(builder, llvm_rvalue(condition_value), then_block, else_block);
 
         LLVMPositionBuilderAtEnd(builder, then_block);
@@ -592,8 +599,7 @@ struct Emitter: Visitor {
         } else {
             Value value;
             if (statement->expr) {
-                value = emit(statement->expr).unqualified();
-                value = convert_to_type(value, function_type->return_type->unqualified(), ConvKind::IMPLICIT, statement->expr->location);
+                value = convert_to_type(statement->expr, function_type->return_type->unqualified(), ConvKind::IMPLICIT);
             } else {
                 message(Severity::ERROR, statement->location) << "non-void function '" << *function_declarator->identifier.name << "' should return a value\n";
                 value = Value(function_type->return_type, LLVMConstNull(function_type->return_type->llvm_type()));
@@ -939,7 +945,7 @@ struct Emitter: Visitor {
             for (size_t i = 0; i < llvm_params.size(); ++i) {
                 auto param_expr = expr->parameters[i];
                 auto expected_type = function_type->parameter_types[i];
-                auto param_value = convert_to_type(emit(param_expr).unqualified(), expected_type, ConvKind::IMPLICIT, param_expr->location);
+                auto param_value = convert_to_type(param_expr, expected_type, ConvKind::IMPLICIT);
                 llvm_params[i] = llvm_rvalue(param_value);
             }
 
@@ -954,8 +960,7 @@ struct Emitter: Visitor {
     virtual VisitStatementOutput visit(CastExpr* expr, const VisitStatementInput& input) override {
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(expr->type);
 
-        auto value = emit(expr->expr).unqualified();
-        value = convert_to_type(value, expr->type, ConvKind::EXPLICIT, expr->location);
+        auto value = convert_to_type(expr->expr, expr->type, ConvKind::EXPLICIT);
         return VisitStatementOutput(value);
     }
 
@@ -979,20 +984,17 @@ struct Emitter: Visitor {
         };
         auto merge_block = append_block("merge");
 
-        auto condition_value = emit(expr->condition).unqualified();
-        condition_value = convert_to_type(condition_value, IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL), ConvKind::IMPLICIT, expr->condition->location);
+        auto condition_value = convert_to_type(expr->condition, IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL), ConvKind::IMPLICIT);
         LLVMBuildCondBr(builder, llvm_rvalue(condition_value), alt_blocks[0], alt_blocks[1]);
 
         LLVMValueRef alt_values[2];
 
         LLVMPositionBuilderAtEnd(builder, alt_blocks[0]);
-        Value then_value = emit(expr->then_expr).unqualified();
-        alt_values[0] = llvm_rvalue(convert_to_type(then_value, result_type, ConvKind::IMPLICIT, expr->then_expr->location));
+        alt_values[0] = llvm_rvalue(convert_to_type(expr->then_expr, result_type, ConvKind::IMPLICIT));
         LLVMBuildBr(builder, merge_block);
 
         LLVMPositionBuilderAtEnd(builder, alt_blocks[1]);
-        Value else_value = emit(expr->else_expr).unqualified();
-        alt_values[1] = llvm_rvalue(convert_to_type(else_value, result_type, ConvKind::IMPLICIT, expr->else_expr->location));
+        alt_values[1] = llvm_rvalue(convert_to_type(expr->else_expr, result_type, ConvKind::IMPLICIT));
         LLVMBuildBr(builder, merge_block);
 
         LLVMPositionBuilderAtEnd(builder, merge_block);
