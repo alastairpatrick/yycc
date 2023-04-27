@@ -23,8 +23,8 @@ void Statement::print(ostream& stream) const {
     }
 }
 
-CompoundStatement::CompoundStatement(Scope&& scope, ASTNodeVector&& nodes, const Location& location)
-    : Statement(location), scope(scope), nodes(move(nodes)) {
+CompoundStatement::CompoundStatement(ASTNodeVector&& nodes, const Location& location)
+    : Statement(location), nodes(move(nodes)) {
 }
 
 VisitStatementOutput CompoundStatement::accept(Visitor& visitor, const VisitStatementInput& input) {

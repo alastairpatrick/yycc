@@ -6,10 +6,9 @@
 #include "Scope.h"
 
 struct CompoundStatement: Statement {
-    Scope scope;
     ASTNodeVector nodes;
 
-    CompoundStatement(Scope&& scope, ASTNodeVector&& items, const Location& location);
+    CompoundStatement(ASTNodeVector&& items, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
     virtual void print(ostream& stream) const override;
 };

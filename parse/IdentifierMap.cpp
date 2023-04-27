@@ -47,6 +47,8 @@ void IdentifierMap::add_declarator(Declarator* declarator) {
         declarator->primary = primary;
         declarator->next = primary->next;
         primary->next = declarator;
+    } else {
+        primary_declarators.insert(declarator);
     }
 }
 

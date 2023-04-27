@@ -9,6 +9,6 @@ struct ResolvePassResult {
     vector<const TagType*> tag_types;
 };
 
-ResolvePassResult resolve_pass(const Scope& scope, const ASTNodeVector& nodes);
+ResolvePassResult resolve_pass(const unordered_set<Declarator*>& declarators, const ASTNodeVector& nodes);
 
 #endif

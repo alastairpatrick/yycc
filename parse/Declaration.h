@@ -85,12 +85,11 @@ struct Entity: DeclaratorDelegate {
 
     // Function related
     vector<Declarator*> parameters;
-    Scope prototype_scope;
     Statement* body{};
     bool inline_definition{};
 
     Entity(Declarator* declarator, Expr* initializer, Expr* bit_field_size);
-    Entity(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&& parameters, Scope&& prototype_scope, Statement* body);
+    Entity(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&& parameters, Statement* body);
     explicit Entity(Declarator* declarator);
 
     bool is_function() const;

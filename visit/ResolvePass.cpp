@@ -187,10 +187,6 @@ struct ResolvePass: Visitor {
                 resolve(primary_entity->parameters[i]);
             }
 
-            if (primary_entity->prototype_scope.declarators.size()) {
-                resolve_pass(primary_entity->prototype_scope, ASTNodeVector());
-            }
-
             if (primary_entity->bit_field_size) resolve(primary_entity->bit_field_size);
             if (primary_entity->body) resolve(primary_entity->body);
 
@@ -522,7 +518,7 @@ struct ResolvePass: Visitor {
     }
 
     virtual VisitStatementOutput visit(CompoundStatement* statement, const VisitStatementInput& input) override {
-        resolve_pass(statement->scope, statement->nodes);
+        resolve_pass({}, statement->nodes);
         return VisitStatementOutput();
     }
 
@@ -549,11 +545,11 @@ struct ResolvePass: Visitor {
     }
 };
 
-ResolvePassResult resolve_pass(const Scope& scope, const ASTNodeVector& nodes) {
+ResolvePassResult resolve_pass(const unordered_set<Declarator*>& declarators, const ASTNodeVector& nodes) {
     // Sort declarators so error messages don't vary between runs.
     vector<Declarator*> ordered;
-    for (auto pair: scope.declarators) {
-        ordered.push_back(pair.second);
+    for (auto declarator: declarators) {
+        ordered.push_back(declarator);
     }
 
     sort(ordered.begin(), ordered.end(), [](Declarator* a, Declarator* b) {

@@ -699,18 +699,16 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
 
     if (is_function && declaration->storage_class != StorageClass::TYPEDEF) {
         CompoundStatement* body{};
-        Scope prototype_scope;
         if ((flags & PD_ALLOW_FUNCTION_DEFINITION) && token == '{') {
             identifiers.push_scope(move(declarator_transform.prototype_scope));
             body = parse_compound_statement();
-            prototype_scope = identifiers.pop_scope();
+            identifiers.pop_scope();
             *last = true;
         }
 
         declarator->delegate = new Entity(declarator,
                                           specifiers,
                                           move(declarator_transform.parameters),
-                                          move(prototype_scope),
                                           body);
     } else {
         if (specifiers & (1 << TOK_INLINE)) {
@@ -918,13 +916,13 @@ Statement* Parser::parse_statement() {
           auto body = parse_statement();
           auto statement = new ForStatement(declaration, initialize, condition, iterate, body, location);
 
-          auto scope = identifiers.pop_scope();
+          identifiers.pop_scope();
 
           if (!declaration) return statement;
 
           ASTNodeVector nodes;
           nodes.push_back(statement);
-          return new CompoundStatement(move(scope), move(nodes), location);
+          return new CompoundStatement(move(nodes), location);
 
       } case TOK_IF: {
           consume();
@@ -1047,7 +1045,7 @@ CompoundStatement* Parser::parse_compound_statement() {
         balance_until('}');
         consume_required('}');
 
-        statement = new CompoundStatement(Scope(), ASTNodeVector(), location);
+        statement = new CompoundStatement(ASTNodeVector(), location);
     } else {
         identifiers.push_scope();
 
@@ -1061,7 +1059,7 @@ CompoundStatement* Parser::parse_compound_statement() {
         }
 
         Scope scope = identifiers.pop_scope();
-        statement = new CompoundStatement(move(scope), move(nodes), location);
+        statement = new CompoundStatement(move(nodes), location);
 
         consume_required('}');
     }
