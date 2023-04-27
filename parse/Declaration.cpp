@@ -104,8 +104,8 @@ Entity::Entity(Declarator* declarator, Expr* initializer, Expr* bit_field_size)
     : DeclaratorDelegate(declarator), initializer(initializer), bit_field_size(bit_field_size) {
 }
 
-Entity::Entity(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&& parameters, Statement* body)
-    : DeclaratorDelegate(declarator), parameters(move(parameters)), body(body) {
+Entity::Entity(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&& parameters, Scope&& prototype_scope, Statement* body)
+    : DeclaratorDelegate(declarator), parameters(move(parameters)), prototype_scope(move(prototype_scope)), body(body) {
     auto scope = declarator->declaration->scope;
     auto storage_class = declarator->declaration->storage_class;
 

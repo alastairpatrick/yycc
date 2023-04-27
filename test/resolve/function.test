@@ -145,3 +145,12 @@ EXPECT_AST
         ,["*","Nx","Ny"]]
     ]]
 ]]
+
+
+BEGIN Resolves type declarators declared in function prototype scope
+void f(enum E { A } a, enum E { B } b) {
+}
+EXPECT_MESSAGE
+:1:33: error enum constant 'B'...
+:1:8: ...missing from other definition
+END

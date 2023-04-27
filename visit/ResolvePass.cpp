@@ -176,6 +176,10 @@ struct ResolvePass: Visitor {
                 resolve(primary_entity->parameters[i]);
             }
 
+            if (primary_entity->prototype_scope.declarators.size()) {
+                resolve_pass(primary_entity->prototype_scope, ASTNodeVector());
+            }
+
             if (primary_entity->bit_field_size) resolve(primary_entity->bit_field_size);
             if (primary_entity->body) resolve(primary_entity->body);
 
@@ -544,7 +548,7 @@ void resolve_pass(const Scope& scope, const ASTNodeVector& nodes) {
     sort(ordered.begin(), ordered.end(), [](Declarator* a, Declarator* b) {
         return a->location < b->location || (a->location == b->location && a < b);
     });
-
+    
     ResolvePass pass;
     for (auto declarator: ordered) {
         resume_messages();
@@ -553,7 +557,8 @@ void resolve_pass(const Scope& scope, const ASTNodeVector& nodes) {
     
     for (auto node: nodes) {
         if (auto declaration = dynamic_cast<Declaration*>(node)) {
-            pass.resolve(declaration->type);
+            resume_messages();
+            declaration->type = pass.resolve(declaration->type);
         }
 
         if (auto statement = dynamic_cast<Statement*>(node)) {

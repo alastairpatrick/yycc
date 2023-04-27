@@ -2,6 +2,7 @@
 #define PARSE_DECLARATION_H
 
 #include "ASTNode.h"
+#include "Scope.h"
 #include "Type.h"
 #include "Value.h"
 
@@ -74,6 +75,8 @@ struct DeclaratorDelegate: ASTNode {
 };
 
 struct Entity: DeclaratorDelegate {
+    Value value;
+
     // Variable related
     StorageDuration storage_duration() const;
     Expr* initializer{};
@@ -82,12 +85,12 @@ struct Entity: DeclaratorDelegate {
 
     // Function related
     vector<Declarator*> parameters;
+    Scope prototype_scope;
     Statement* body{};
     bool inline_definition{};
-    Value value;
 
     Entity(Declarator* declarator, Expr* initializer, Expr* bit_field_size);
-    Entity(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&& parameters, Statement* body);
+    Entity(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&& parameters, Scope&& prototype_scope, Statement* body);
     explicit Entity(Declarator* declarator);
 
     bool is_function() const;

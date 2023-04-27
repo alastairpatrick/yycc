@@ -699,16 +699,18 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
 
     if (is_function && declaration->storage_class != StorageClass::TYPEDEF) {
         CompoundStatement* body{};
+        Scope prototype_scope;
         if ((flags & PD_ALLOW_FUNCTION_DEFINITION) && token == '{') {
             identifiers.push_scope(move(declarator_transform.prototype_scope));
             body = parse_compound_statement();
-            identifiers.pop_scope();
+            prototype_scope = identifiers.pop_scope();
             *last = true;
         }
 
         declarator->delegate = new Entity(declarator,
                                           specifiers,
                                           move(declarator_transform.parameters),
+                                          move(prototype_scope),
                                           body);
     } else {
         if (specifiers & (1 << TOK_INLINE)) {
