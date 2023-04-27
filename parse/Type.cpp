@@ -579,8 +579,8 @@ void StructuredType::print(std::ostream& stream) const {
         separator = true;
         stream << "[\"" << member->identifier << "\", " << member->type;
         if (auto member_variable = member->variable()) {
-            if (member_variable->bit_field_size) {
-                stream << ", " << member_variable->bit_field_size;
+            if (member_variable->bit_field) {
+                stream << ", " << member_variable->bit_field;
             }
         }
         stream << ']';

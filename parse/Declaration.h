@@ -81,9 +81,16 @@ struct Entity: DeclaratorDelegate {
     virtual Linkage linkage() const override;
 };
 
+struct BitField: ASTNode {
+    Expr* expr;
+
+    explicit BitField(Expr* expr);
+    virtual void print(ostream& stream) const override;
+};
+
 struct Variable: Entity {
     Expr* initializer{};
-    Expr* bit_field_size{};
+    BitField* bit_field{};
     size_t aggregate_index{};
 
     Variable(Declarator* declarator, Expr* initializer, Expr* bit_field_size);

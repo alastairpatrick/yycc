@@ -121,8 +121,18 @@ Linkage Entity::linkage() const {
     }
 }
 
+BitField::BitField(Expr* expr): expr(expr) {
+}
+
+void BitField::print(ostream& stream) const {
+    stream << expr;
+}
+
 Variable::Variable(Declarator* declarator, Expr* initializer, Expr* bit_field_size)
-    : Entity(declarator), initializer(initializer), bit_field_size(bit_field_size) {
+    : Entity(declarator), initializer(initializer) {
+    if (bit_field_size) {
+        bit_field = new BitField(bit_field_size);
+    }
 }
 
 Variable::Variable(Declarator* declarator): Entity(declarator) {

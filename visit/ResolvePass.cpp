@@ -51,7 +51,7 @@ struct ResolvePass: Visitor {
         if (!variable) return false;
 
         if (variable->initializer) return false;
-        if (variable->bit_field_size) return false;
+        if (variable->bit_field) return false;
 
         return true;
     }
@@ -219,7 +219,7 @@ struct ResolvePass: Visitor {
     virtual VisitDeclaratorOutput visit(Declarator* primary, Variable* primary_entity, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
         if (!secondary) {
-            if (primary_entity->bit_field_size) resolve(primary_entity->bit_field_size);
+            if (primary_entity->bit_field) resolve(primary_entity->bit_field->expr);
 
             if (primary_entity->initializer) {
                 resolve(primary_entity->initializer);
