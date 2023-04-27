@@ -3,7 +3,12 @@
 
 #include "parse/ASTNode.h"
 #include "parse/Scope.h"
+#include "parse/Type.h"
 
-void resolve_pass(const Scope& scope, const ASTNodeVector& nodes);
+struct ResolvePassResult {
+    vector<const TagType*> tag_types;
+};
+
+ResolvePassResult resolve_pass(const Scope& scope, const ASTNodeVector& nodes);
 
 #endif

@@ -9,8 +9,19 @@
 #include "Visitor.h"
 
 struct ResolvePass: Visitor {
+    ResolvePassResult result;
+    unordered_set<const TagType*> tag_types;
+
     const Type* resolve(const Type* type) {
-        return type->accept(*this, VisitTypeInput()).value.type;
+        type = type->accept(*this, VisitTypeInput()).value.type;
+
+        if (auto tag_type = dynamic_cast<const TagType*>(type)) {
+            if (tag_types.insert(tag_type).second) {
+                result.tag_types.push_back(tag_type);
+            }
+        }
+
+        return type;
     }
 
     void resolve(Statement* statement) {
@@ -538,7 +549,7 @@ struct ResolvePass: Visitor {
     }
 };
 
-void resolve_pass(const Scope& scope, const ASTNodeVector& nodes) {
+ResolvePassResult resolve_pass(const Scope& scope, const ASTNodeVector& nodes) {
     // Sort declarators so error messages don't vary between runs.
     vector<Declarator*> ordered;
     for (auto pair: scope.declarators) {
@@ -568,4 +579,6 @@ void resolve_pass(const Scope& scope, const ASTNodeVector& nodes) {
     }
 
     resume_messages();
+
+    return move(pass.result);
 }
