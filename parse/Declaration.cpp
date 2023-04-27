@@ -108,10 +108,6 @@ Entity::Entity(Declarator* declarator)
     : DeclaratorDelegate(declarator) {
 }
 
-bool Entity::is_function() const {
-    return dynamic_cast<const FunctionType*>(declarator->type);
-}
-
 Linkage Entity::linkage() const {
     auto storage_class = declarator->declaration->storage_class;
     auto scope = declarator->declaration->scope;

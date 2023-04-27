@@ -78,7 +78,6 @@ struct Entity: DeclaratorDelegate {
     Value value;
 
     explicit Entity(Declarator* declarator);
-    bool is_function() const;
     virtual Linkage linkage() const override;
 };
 
