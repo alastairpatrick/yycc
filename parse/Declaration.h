@@ -52,7 +52,6 @@ struct Declaration: ASTNode {
     StorageClass storage_class = StorageClass::NONE;
     const Type* type{};
     vector<Declarator*> declarators;
-    bool mark_root{};
 
     Declaration(IdentifierScope scope, StorageClass storage_class, const Type* type, const Location& location);
     Declaration(IdentifierScope scope, const Location& location);

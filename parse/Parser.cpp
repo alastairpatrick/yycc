@@ -251,10 +251,7 @@ Declaration* Parser::parse_declaration(IdentifierScope scope) {
 
     const Type* base_type{};
     uint32_t specifiers;
-    auto mark_root = preprocessor.mark_root();
     if (auto declaration = parse_declaration_specifiers(scope, base_type, specifiers)) {
-        declaration->mark_root = mark_root;
-
         int declarator_count = 0;
         bool last_declarator{};
         while (token && token != ';') {
@@ -1055,7 +1052,8 @@ CompoundStatement* Parser::parse_compound_statement() {
 
         ASTNodeVector nodes;
         while (token && token != '}') {
-            nodes.push_back(parse_declaration_or_statement(IdentifierScope::BLOCK));
+            auto node = parse_declaration_or_statement(IdentifierScope::BLOCK);
+            if (preprocessor.is_marking()) nodes.push_back(node);
         }
 
         Scope scope = identifiers.pop_scope();

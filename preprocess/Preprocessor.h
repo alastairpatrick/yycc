@@ -34,7 +34,7 @@ struct Preprocessor {
     void require_eol();
     void unexpected_directive_token();
 
-    bool mark_root() const;
+    bool is_marking() const;
 
     string_view output();
 

@@ -139,7 +139,7 @@ TokenKind Preprocessor::commit_token(TokenKind token, string_view text) {
     return token;
 }
 
-bool Preprocessor::mark_root() const {
+bool Preprocessor::is_marking() const {
     return include_stack.empty();
 }
 

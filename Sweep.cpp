@@ -6,25 +6,20 @@
 #include "TextStream.h"
 
 struct DeclarationMarker {
-    DeclarationMarker(string_view input, const ASTNodeVector& declarations, const IdentifierMap& identifiers)
-        : input(input), declarations(declarations), identifiers(identifiers) {
+    DeclarationMarker(const IdentifierMap& identifiers): identifiers(identifiers) {
     }
 
-    string_view input;
-    const ASTNodeVector& declarations;
     const IdentifierMap& identifiers;
     unordered_set<const Declaration*> todo;
     unordered_set<const Declaration*> marked;
     unordered_map<string_view, Declarator*> declarator_names;
 
-    void mark() {
+    void mark(string_view input, const ASTNodeVector& declarations) {
         for (auto node : declarations) {
             auto declaration = dynamic_cast<Declaration*>(node);
             assert(declaration);
 
-            if (declaration->mark_root) {
-                todo.insert(declaration);
-            }
+            todo.insert(declaration);
         }
 
         while (todo.size()) {
@@ -117,10 +112,10 @@ void sweep(ostream& stream, const File& file) {
 
     IdentifierMap identifiers(true);
     Parser parser(preprocessor1, identifiers);
-    auto declarations = parser.parse();
+    auto marked_declarations = parser.parse();
 
-    DeclarationMarker marker(preprocessor1.output(), declarations, identifiers);
-    marker.mark();
+    DeclarationMarker marker(identifiers);
+    marker.mark(preprocessor1.output(), marked_declarations);
 
     Preprocessor preprocessor2(preprocessor1.output(), false);
     auto token = preprocessor2.next_token();
