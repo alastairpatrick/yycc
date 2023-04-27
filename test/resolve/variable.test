@@ -51,6 +51,8 @@ END
 BEGIN #extern directives composed
 #extern x
 #extern x
+EXPECT_MESSAGE
+:1:9: error variable 'x' has incomplete type
 EXPECT_GLOBALS
 [["var","ES","?","x"]]
 

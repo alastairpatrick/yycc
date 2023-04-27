@@ -92,7 +92,8 @@ struct DeclarationMarker {
               case DeclaratorKind::ENUM_CONSTANT:
                 stream.write("#enum ");
                 break;
-              case DeclaratorKind::ENTITY:
+              case DeclaratorKind::FUNCTION:
+              case DeclaratorKind::VARIABLE:
                 if (declarator->delegate->linkage() == Linkage::EXTERNAL) {
                     stream.write("#extern ");
                 } else {

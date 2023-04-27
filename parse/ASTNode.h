@@ -11,12 +11,14 @@ struct DeclaratorDelegate;
 struct Entity;
 struct EnumConstant;
 struct Expr;
+struct Function;
 enum class IdentifierScope;
 enum class Linkage;
 enum class StorageClass;
 struct Type;
 struct TypeDef;
 struct Value;
+struct Variable;
 struct Visitor;
 struct VisitDeclaratorInput;
 struct VisitDeclaratorOutput;
@@ -61,6 +63,8 @@ struct Declarator: ASTNode {
     
     EnumConstant* enum_constant();
     Entity* entity();
+    Variable* variable();
+    Function* function();
     TypeDef* type_def();
 
     const Type* to_type() const;

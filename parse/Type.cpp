@@ -102,6 +102,10 @@ void VoidType::print(std::ostream& stream) const {
 
 const UniversalType UniversalType::it;
 
+TypePartition UniversalType::partition() const {
+    return TypePartition::INCOMPLETE;
+}
+
 VisitTypeOutput UniversalType::accept(Visitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
@@ -574,9 +578,9 @@ void StructuredType::print(std::ostream& stream) const {
         if (separator) stream << ", ";
         separator = true;
         stream << "[\"" << member->identifier << "\", " << member->type;
-        if (auto entity = member->entity()) {
-            if (entity->bit_field_size) {
-                stream << ", " << entity->bit_field_size;
+        if (auto member_variable = member->variable()) {
+            if (member_variable->bit_field_size) {
+                stream << ", " << member_variable->bit_field_size;
             }
         }
         stream << ']';
@@ -608,8 +612,8 @@ LLVMTypeRef StructType::cache_llvm_type() const {
     vector<LLVMTypeRef> member_types;
     member_types.reserve(members.size());
     for (auto member: members) {
-        if (auto member_entity = member->entity()) {
-            member_entity->aggregate_index = member_types.size();
+        if (auto member_variable = member->variable()) {
+            member_variable->aggregate_index = member_types.size();
             member_types.push_back(member->type->llvm_type());
         }
     }

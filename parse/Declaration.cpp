@@ -68,6 +68,14 @@ Entity* Declarator::entity() {
     return dynamic_cast<Entity*>(delegate);
 }
 
+Variable* Declarator::variable() {
+    return dynamic_cast<Variable*>(delegate);
+}
+
+Function* Declarator::function() {
+    return dynamic_cast<Function*>(delegate);
+}
+
 TypeDef* Declarator::type_def() {
     return dynamic_cast<TypeDef*>(delegate);
 }
@@ -100,56 +108,8 @@ Entity::Entity(Declarator* declarator)
     : DeclaratorDelegate(declarator) {
 }
 
-Entity::Entity(Declarator* declarator, Expr* initializer, Expr* bit_field_size)
-    : DeclaratorDelegate(declarator), initializer(initializer), bit_field_size(bit_field_size) {
-}
-
-Entity::Entity(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&& parameters, Statement* body)
-    : DeclaratorDelegate(declarator), parameters(move(parameters)), body(body) {
-    auto scope = declarator->declaration->scope;
-    auto storage_class = declarator->declaration->storage_class;
-
-    if ((storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) ||
-        (storage_class == StorageClass::STATIC && scope != IdentifierScope::FILE)) {
-        message(Severity::ERROR, declarator->location) << "invalid storage class\n";
-    }
-
-    inline_definition = (linkage() == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
-}
-
-StorageDuration Entity::storage_duration() const {
-    auto scope = declarator->declaration->scope;
-    auto storage_class = declarator->declaration->storage_class;
-
-    if (storage_class == StorageClass::EXTERN || storage_class == StorageClass::STATIC || scope == IdentifierScope::FILE) {
-        return StorageDuration::STATIC;
-    } else {
-        return StorageDuration::AUTO;
-    }
-}
-
 bool Entity::is_function() const {
     return dynamic_cast<const FunctionType*>(declarator->type);
-}
-
-DeclaratorKind Entity::kind() const {
-    return DeclaratorKind::ENTITY;
-}
-
-const char* Entity::error_kind() const {
-    if (is_function()) {
-        return "function";
-    } else {
-        if (declarator->declaration->scope == IdentifierScope::STRUCTURED) {
-            return "member";
-        } else {
-            return "variable";
-        }
-    }
-}
-
-bool Entity::is_definition() const {
-    return body || initializer;
 }
 
 Linkage Entity::linkage() const {
@@ -165,38 +125,104 @@ Linkage Entity::linkage() const {
     }
 }
 
-VisitDeclaratorOutput Entity::accept(Visitor& visitor, const VisitDeclaratorInput& input) {
+Variable::Variable(Declarator* declarator, Expr* initializer, Expr* bit_field_size)
+    : Entity(declarator), initializer(initializer), bit_field_size(bit_field_size) {
+}
+
+Variable::Variable(Declarator* declarator): Entity(declarator) {
+}
+
+StorageDuration Variable::storage_duration() const {
+    auto scope = declarator->declaration->scope;
+    auto storage_class = declarator->declaration->storage_class;
+
+    if (storage_class == StorageClass::EXTERN || storage_class == StorageClass::STATIC || scope == IdentifierScope::FILE) {
+        return StorageDuration::STATIC;
+    } else {
+        return StorageDuration::AUTO;
+    }
+}
+
+DeclaratorKind Variable::kind() const {
+    return DeclaratorKind::VARIABLE;
+}
+
+const char* Variable::error_kind() const {
+    if (declarator->declaration->scope == IdentifierScope::STRUCTURED) {
+        return "member";
+    } else {
+        return "variable";
+    }
+}
+
+bool Variable::is_definition() const {
+    return initializer;
+}
+
+VisitDeclaratorOutput Variable::accept(Visitor& visitor, const VisitDeclaratorInput& input) {
     return visitor.visit(declarator, this, input);
 }
 
-void Entity::print(ostream& stream) const {
-    if (is_function()) {
-        stream << "[\"fun\", \"" << linkage();
+void Variable::print(ostream& stream) const {
+    stream << "[\"var\", \"" << linkage() << storage_duration();
 
-        if (inline_definition) {
-            stream << 'i';
-        }
-
-        stream << "\", " << declarator->type << ", \"" << declarator->identifier << '"';
-        if (body) {
-            stream << ", [";
-            for (auto i = 0; i < parameters.size(); ++i) {
-                if (i != 0) stream << ", ";
-                auto identifier = parameters[i]->identifier;
-                stream << '"' << identifier << '"';
-            }
-            stream << "], " << body;
-        }
-        stream << ']';
-    } else {
-        stream << "[\"var\", \"" << linkage() << storage_duration();
-
-        stream << "\", " << declarator->type << ", \"" << declarator->identifier  << "\"";
-        if (initializer) {
-            stream << ", " << initializer;
-        }
-        stream << ']';
+    stream << "\", " << declarator->type << ", \"" << declarator->identifier  << "\"";
+    if (initializer) {
+        stream << ", " << initializer;
     }
+    stream << ']';
+}
+
+Function::Function(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&& parameters, Statement* body)
+    : Entity(declarator), parameters(move(parameters)), body(body) {
+    auto scope = declarator->declaration->scope;
+    auto storage_class = declarator->declaration->storage_class;
+
+    if ((storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) ||
+        (storage_class == StorageClass::STATIC && scope != IdentifierScope::FILE)) {
+        message(Severity::ERROR, declarator->location) << "invalid storage class\n";
+    }
+
+    inline_definition = (linkage() == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
+}
+
+Function::Function(Declarator* declarator): Entity(declarator) {
+}
+
+DeclaratorKind Function::kind() const {
+    return DeclaratorKind::FUNCTION;
+}
+
+const char* Function::error_kind() const {
+    return "function";
+}
+
+bool Function::is_definition() const {
+    return body;
+}
+
+VisitDeclaratorOutput Function::accept(Visitor& visitor, const VisitDeclaratorInput& input) {
+    return visitor.visit(declarator, this, input);
+}
+
+void Function::print(ostream& stream) const {
+    stream << "[\"fun\", \"" << linkage();
+
+    if (inline_definition) {
+        stream << 'i';
+    }
+
+    stream << "\", " << declarator->type << ", \"" << declarator->identifier << '"';
+    if (body) {
+        stream << ", [";
+        for (auto i = 0; i < parameters.size(); ++i) {
+            if (i != 0) stream << ", ";
+            auto identifier = parameters[i]->identifier;
+            stream << '"' << identifier << '"';
+        }
+        stream << "], " << body;
+    }
+    stream << ']';
 }
 
 TypeDef::TypeDef(Declarator* declarator)

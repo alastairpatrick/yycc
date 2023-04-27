@@ -16,35 +16,46 @@ struct EntityPass: Visitor {
         }
     }
 
-    virtual VisitDeclaratorOutput visit(Declarator* primary, Entity* entity, const VisitDeclaratorInput& input) override {
+    virtual VisitDeclaratorOutput visit(Declarator* primary, Variable* entity, const VisitDeclaratorInput& input) override {
         primary = primary->primary;
-        entity = primary->entity();
+        entity = primary->variable();
+        
+        if (entity->storage_duration() != StorageDuration::STATIC) return VisitDeclaratorOutput();
+
+        if (entity->value.kind == ValueKind::LVALUE) return VisitDeclaratorOutput();
+
+        auto name = identifier_name(primary->identifier);
+        auto prefixed_name = prefix + name;
+
+        auto global = LLVMAddGlobal(llvm_module, primary->type->llvm_type(), prefixed_name.c_str());
+        entity->value = Value(ValueKind::LVALUE, primary->type, global);
+
+        LLVMSetGlobalConstant(global, primary->type->qualifiers() & QUAL_CONST);
+
+        if (entity->linkage() != Linkage::EXTERNAL) {
+            LLVMSetLinkage(global, LLVMInternalLinkage);
+        }
+
+        return VisitDeclaratorOutput();
+    }
+
+    virtual VisitDeclaratorOutput visit(Declarator* primary, Function* entity, const VisitDeclaratorInput& input) override {
+        primary = primary->primary;
+        entity = primary->function();
         
         if (entity->value.kind == ValueKind::LVALUE) return VisitDeclaratorOutput();
 
         auto name = identifier_name(primary->identifier);
         auto prefixed_name = prefix + name;
 
-        if (entity->is_function()) {
-            auto function = LLVMAddFunction(llvm_module, prefixed_name.c_str(), primary->type->llvm_type());
-            entity->value = Value(ValueKind::LVALUE, primary->type, function);
+        auto llvm_function = LLVMAddFunction(llvm_module, prefixed_name.c_str(), primary->type->llvm_type());
+        entity->value = Value(ValueKind::LVALUE, primary->type, llvm_function);
 
-            EntityPass pass;
-            pass.llvm_module = llvm_module;
-            pass.prefix = prefix + name + '.';
+        EntityPass pass;
+        pass.llvm_module = llvm_module;
+        pass.prefix = prefixed_name + '.';
             
-            pass.accept(entity->body, VisitStatementInput());
-
-        } else if (entity->storage_duration() == StorageDuration::STATIC) {
-            auto global = LLVMAddGlobal(llvm_module, primary->type->llvm_type(), prefixed_name.c_str());
-            entity->value = Value(ValueKind::LVALUE, primary->type, global);
-
-            LLVMSetGlobalConstant(global, primary->type->qualifiers() & QUAL_CONST);
-
-            if (entity->linkage() != Linkage::EXTERNAL) {
-                LLVMSetLinkage(global, LLVMInternalLinkage);
-            }
-        }
+        pass.accept(entity->body, VisitStatementInput());
 
         return VisitDeclaratorOutput();
     }

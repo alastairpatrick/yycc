@@ -84,7 +84,7 @@ void Parser::handle_declaration_directive() {
                 break;
               case TOK_PP_STATIC:
               case TOK_PP_EXTERN:
-                new_declarator->delegate = new Entity(new_declarator);
+                new_declarator->delegate = new Variable(new_declarator);
                 new_declarator->type = &UniversalType::it;
                 break;
               case TOK_PP_TYPE:
@@ -568,7 +568,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 // C11 6.7.2.1p13 anonymous structs and unions
                 if (dynamic_cast<const StructuredType*>(member_declaration->type) && member_declaration->declarators.empty()) {
                     auto member_declarator = new Declarator(member_declaration, member_declaration->type, Identifier(), member_declaration->location);
-                    member_declarator->delegate = new Entity(member_declarator);
+                    member_declarator->delegate = new Variable(member_declarator);
                     member_declaration->declarators.push_back(member_declarator);
                 }
 
@@ -706,10 +706,10 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
             *last = true;
         }
 
-        declarator->delegate = new Entity(declarator,
-                                          specifiers,
-                                          move(declarator_transform.parameters),
-                                          body);
+        declarator->delegate = new Function(declarator,
+                                            specifiers,
+                                            move(declarator_transform.parameters),
+                                            body);
     } else {
         if (specifiers & (1 << TOK_INLINE)) {
             message(Severity::ERROR, location) << "'inline' may only appear on function\n";
@@ -718,7 +718,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         if (declaration->storage_class == StorageClass::TYPEDEF) {
             declarator->delegate = new TypeDef(declarator);
         } else {
-            declarator->delegate = new Entity(declarator, initializer, bit_field_size);
+            declarator->delegate = new Variable(declarator, initializer, bit_field_size);
         }
     }
 

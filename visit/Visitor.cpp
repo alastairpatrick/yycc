@@ -12,7 +12,11 @@ VisitDeclaratorOutput Visitor::accept(Declarator* declarator, const VisitDeclara
 void Visitor::pre_visit(Declarator* declarator) {
 }
 
-VisitDeclaratorOutput Visitor::visit(Declarator* declarator, Entity* entity, const VisitDeclaratorInput& input) {
+VisitDeclaratorOutput Visitor::visit(Declarator* declarator, Variable* variable, const VisitDeclaratorInput& input) {
+    return VisitDeclaratorOutput();
+}
+
+VisitDeclaratorOutput Visitor::visit(Declarator* declarator, Function* function, const VisitDeclaratorInput& input) {
     return VisitDeclaratorOutput();
 }
 

@@ -219,7 +219,7 @@ struct Emitter: Visitor {
         return result;
     }
 
-    void emit_function_definition(Declarator* declarator, Entity* entity) {
+    void emit_function_definition(Declarator* declarator, Function* entity) {
         function_declarator = declarator;
         function_type = type_cast<FunctionType>(declarator->primary->type);
         function = entity->value.llvm_lvalue();
@@ -328,7 +328,7 @@ struct Emitter: Visitor {
         return convert_to_type(expr, dest_type, ConvKind::IMPLICIT);
     }
 
-    void emit_variable(Declarator* declarator, Entity* entity) {
+    void emit_variable(Declarator* declarator, Variable* entity) {
         auto type = declarator->primary->type;
         auto llvm_type = type->llvm_type();
 
@@ -364,18 +364,22 @@ struct Emitter: Visitor {
         }
     }
 
-    virtual VisitDeclaratorOutput visit(Declarator* declarator, Entity* entity, const VisitDeclaratorInput& input) override {
+    virtual VisitDeclaratorOutput visit(Declarator* declarator, Variable* variable, const VisitDeclaratorInput& input) override {
         assert(declarator == declarator->primary);
           
-        if (entity->is_function()) {
-            if (entity->body) {
-                Emitter function_emitter(EmitOutcome::IR, options);
-                function_emitter.module = module;
-                function_emitter.parent = this;
-                function_emitter.emit_function_definition(declarator, entity);
-            }
-        } else {
-            emit_variable(declarator, entity);
+        emit_variable(declarator, variable);
+
+        return VisitDeclaratorOutput();
+    }
+
+    virtual VisitDeclaratorOutput visit(Declarator* declarator, Function* function, const VisitDeclaratorInput& input) override {
+        assert(declarator == declarator->primary);
+          
+        if (function->body) {
+            Emitter function_emitter(EmitOutcome::IR, options);
+            function_emitter.module = module;
+            function_emitter.parent = this;
+            function_emitter.emit_function_definition(declarator, function);
         }
 
         return VisitDeclaratorOutput();
@@ -1104,14 +1108,18 @@ struct Emitter: Visitor {
             }
 
             auto member = it->second;
-            auto member_entity = member->entity();
 
             auto result_type = member->type;
             if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
-            auto llvm_struct_type = struct_type->llvm_type();
-            auto index = member_entity->aggregate_index;
-            return VisitStatementOutput(Value(ValueKind::LVALUE, result_type, LLVMBuildStructGEP2(builder, llvm_struct_type, object.llvm_lvalue(), index, expr->identifier.name->data())));
+            auto member_variable = member->variable();
+            if (member_variable) {
+                auto llvm_struct_type = struct_type->llvm_type();
+                auto index = member_variable->aggregate_index;
+                return VisitStatementOutput(Value(ValueKind::LVALUE, result_type, LLVMBuildStructGEP2(builder, llvm_struct_type, object.llvm_lvalue(), index, expr->identifier.name->data())));
+            } else {
+                return VisitStatementOutput();
+            }
         }
 
         message(Severity::ERROR, expr->object->location) << "type '" << PrintType(object.type) << "' does not have members\n";

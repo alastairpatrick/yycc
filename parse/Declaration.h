@@ -7,7 +7,8 @@
 #include "Value.h"
 
 enum class DeclaratorKind {
-    ENTITY,
+    VARIABLE,
+    FUNCTION,
     ENUM_CONSTANT,
     TYPE_DEF,
 };
@@ -77,27 +78,38 @@ struct DeclaratorDelegate: ASTNode {
 struct Entity: DeclaratorDelegate {
     Value value;
 
-    // Variable related
-    StorageDuration storage_duration() const;
+    explicit Entity(Declarator* declarator);
+    bool is_function() const;
+    virtual Linkage linkage() const override;
+};
+
+struct Variable: Entity {
     Expr* initializer{};
     Expr* bit_field_size{};
     size_t aggregate_index{};
 
-    // Function related
+    Variable(Declarator* declarator, Expr* initializer, Expr* bit_field_size);
+    explicit Variable(Declarator* declarator);
+
+    StorageDuration storage_duration() const;
+    virtual DeclaratorKind kind() const override;
+    virtual const char* error_kind() const override;
+    virtual bool is_definition() const override;
+    virtual VisitDeclaratorOutput accept(Visitor& visitor, const VisitDeclaratorInput& input) override;
+    virtual void print(ostream& stream) const override;
+};
+
+struct Function: Entity {
     vector<Declarator*> parameters;
     Statement* body{};
     bool inline_definition{};
 
-    Entity(Declarator* declarator, Expr* initializer, Expr* bit_field_size);
-    Entity(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&& parameters, Statement* body);
-    explicit Entity(Declarator* declarator);
-
-    bool is_function() const;
+    Function(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&& parameters, Statement* body);
+    explicit Function(Declarator* declarator);
 
     virtual DeclaratorKind kind() const override;
     virtual const char* error_kind() const override;
     virtual bool is_definition() const override;
-    virtual Linkage linkage() const override;
     virtual VisitDeclaratorOutput accept(Visitor& visitor, const VisitDeclaratorInput& input) override;
     virtual void print(ostream& stream) const override;
 };

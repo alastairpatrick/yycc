@@ -46,6 +46,16 @@ struct ResolvePass: Visitor {
         }
     }
 
+    bool is_variable_potentially_function(Declarator* declarator) {
+        auto variable = declarator->variable();
+        if (!variable) return false;
+
+        if (variable->initializer) return false;
+        if (variable->bit_field_size) return false;
+
+        return true;
+    }
+
     const Type* resolve(Declarator* primary) {
         struct ResolutionCycle {};
 
@@ -85,13 +95,23 @@ struct ResolvePass: Visitor {
             swap(acyclic_declarator->type, primary->type);
             assert(!dynamic_cast<const TypeDefType*>(primary->type));
 
+            bool is_function = dynamic_cast<const FunctionType*>(primary->type);
+            if (is_function && is_variable_potentially_function(primary)) {
+                primary->delegate = new Function(primary);
+            }
+
             for (auto secondary = primary->next; secondary; secondary = secondary->next) {
+                if (is_function && is_variable_potentially_function(primary)) {
+                    secondary->delegate = new Function(secondary);
+                }
+
                 try {
                     secondary->type = resolve(secondary->type);
                 } catch (ResolutionCycle) {
                     message(Severity::ERROR, secondary->location) << "recursive definition of '" << secondary->identifier << "'\n";
                     pause_messages();
                 }
+
                 compose(primary, secondary);
             }
         } else {
@@ -178,17 +198,28 @@ struct ResolvePass: Visitor {
         return composite_type(type, ResolvedArrayType::of(ArrayKind::COMPLETE, type->element_type, size));
     }
 
-    virtual VisitDeclaratorOutput visit(Declarator* primary, Entity* primary_entity, const VisitDeclaratorInput& input) override {
+    void compose_entity(Declarator* primary, Entity* primary_entity, Declarator* secondary, Entity* secondary_entity) {
+        if (primary_entity->linkage() == Linkage::NONE || secondary_entity->linkage() == Linkage::NONE) {
+            if (primary->declaration->scope == IdentifierScope::STRUCTURED) {
+                message(Severity::ERROR, secondary->location) << "duplicate member '" << primary->identifier << "'...\n";
+                see_other_message(primary->location);
+            } else {
+                redeclaration_error(secondary, primary->location, "with no linkage");
+            }
+        }
+
+        auto composite = composite_type(primary->type, secondary->type);
+        if (composite) {
+            primary->type = composite;
+        } else {
+            redeclaration_error(secondary, primary->location, "with incompatible type");
+        }
+    }
+
+    virtual VisitDeclaratorOutput visit(Declarator* primary, Variable* primary_entity, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
         if (!secondary) {
-            auto function_type = dynamic_cast<const FunctionType*>(primary->type);
-            for (size_t i = 0; i < primary_entity->parameters.size(); ++i) {
-                primary_entity->parameters[i]->type = function_type->parameter_types[i];
-                resolve(primary_entity->parameters[i]);
-            }
-
             if (primary_entity->bit_field_size) resolve(primary_entity->bit_field_size);
-            if (primary_entity->body) resolve(primary_entity->body);
 
             if (primary_entity->initializer) {
                 resolve(primary_entity->initializer);
@@ -221,24 +252,10 @@ struct ResolvePass: Visitor {
             return VisitDeclaratorOutput();
         }
 
-        auto secondary_entity = secondary->entity();
+        auto secondary_entity = secondary->variable();
         assert(secondary_entity); //  TODO
 
-        if (primary_entity->linkage() == Linkage::NONE || secondary_entity->linkage() == Linkage::NONE) {
-            if (primary->declaration->scope == IdentifierScope::STRUCTURED) {
-                message(Severity::ERROR, secondary->location) << "duplicate member '" << primary->identifier << "'...\n";
-                see_other_message(primary->location);
-            } else {
-                redeclaration_error(secondary, primary->location, "with no linkage");
-            }
-        }
-
-        auto composite = composite_type(primary->type, secondary->type);
-        if (composite) {
-            primary->type = composite;
-        } else {
-            redeclaration_error(secondary, primary->location, "with incompatible type");
-        }
+        compose_entity(primary, primary_entity, secondary, secondary_entity);
 
         if (secondary_entity->initializer) {
             if (primary_entity->initializer) {
@@ -247,6 +264,30 @@ struct ResolvePass: Visitor {
                 primary_entity->initializer = secondary_entity->initializer;
             }
         }
+
+        assert(secondary_entity->storage_duration() == primary_entity->storage_duration());
+
+        return VisitDeclaratorOutput();
+    }
+    
+    virtual VisitDeclaratorOutput visit(Declarator* primary, Function* primary_entity, const VisitDeclaratorInput& input) override {
+        auto secondary = input.secondary;
+        if (!secondary) {
+            auto function_type = dynamic_cast<const FunctionType*>(primary->type);
+            for (size_t i = 0; i < primary_entity->parameters.size(); ++i) {
+                primary_entity->parameters[i]->type = function_type->parameter_types[i];
+                resolve(primary_entity->parameters[i]);
+            }
+
+            if (primary_entity->body) resolve(primary_entity->body);
+
+            return VisitDeclaratorOutput();
+        }
+
+        auto secondary_entity = secondary->function();
+        assert(secondary_entity); //  TODO
+
+        compose_entity(primary, primary_entity, secondary, secondary_entity);
     
         if (secondary_entity->body) {
             if (primary_entity->body) {
@@ -259,11 +300,9 @@ struct ResolvePass: Visitor {
   
         primary_entity->inline_definition = secondary_entity->inline_definition && primary_entity->inline_definition;
 
-        assert(secondary_entity->storage_duration() == primary_entity->storage_duration());
-
         return VisitDeclaratorOutput();
     }
-    
+
     virtual VisitDeclaratorOutput visit(Declarator* primary, EnumConstant* primary_enum_constant, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
         if (!secondary) {
