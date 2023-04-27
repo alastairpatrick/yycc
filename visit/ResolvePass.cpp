@@ -101,7 +101,7 @@ struct ResolvePass: Visitor {
             }
 
             for (auto secondary = primary->next; secondary; secondary = secondary->next) {
-                if (is_function && is_variable_potentially_function(primary)) {
+                if (is_function && is_variable_potentially_function(secondary)) {
                     secondary->delegate = new Function(secondary);
                 }
 

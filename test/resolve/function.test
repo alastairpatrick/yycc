@@ -114,6 +114,14 @@ EXPECT_MESSAGE
 END
 
 
+BEGIN Function declared only in variable like way
+typedef void F(int x);
+F foo;
+F foo;
+EXPECT_GLOBALS
+[["typedef",["F","V","Si"],"F"],["fun","E",["F","V","Si"],"foo"]]
+
+
 BEGIN Error on function redefinition
 void foo(int x) {
 }
