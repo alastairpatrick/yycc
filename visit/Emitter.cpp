@@ -1116,7 +1116,9 @@ struct Emitter: Visitor {
             if (member_variable) {
                 auto llvm_struct_type = struct_type->llvm_type();
                 auto index = member_variable->aggregate_index;
-                return VisitStatementOutput(Value(ValueKind::LVALUE, result_type, LLVMBuildStructGEP2(builder, llvm_struct_type, object.llvm_lvalue(), index, expr->identifier.name->data())));
+                Value value(ValueKind::LVALUE, result_type, LLVMBuildStructGEP2(builder, llvm_struct_type, object.llvm_lvalue(), index, expr->identifier.name->data()));
+                value.bit_field = member_variable->bit_field;
+                return VisitStatementOutput(value);
             } else {
                 return VisitStatementOutput();
             }

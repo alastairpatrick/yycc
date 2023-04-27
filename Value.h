@@ -9,10 +9,13 @@ enum class ValueKind {
     LVALUE,
 };
 
+struct BitField;
+
 struct Value {
     ValueKind kind = ValueKind::TYPE_ONLY;
     const Type* type{};
     unsigned qualifiers{};
+    BitField* bit_field{};
 
     Value() = default;
 

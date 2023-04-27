@@ -376,6 +376,113 @@ define void @f(i32 %0) {
 END
 
 
+BEGIN Load unsigned from bitfield
+struct S {
+    int x: 24;
+    unsigned char y: 7;
+};
+unsigned char f(S* p) {
+    return p->y;
+}
+EXPECT_IR
+%S = type { i32 }
+
+define i8 @f(ptr %0) {
+  %p = alloca ptr, align 8
+  store ptr %0, ptr %p, align 8
+  %2 = load ptr, ptr %p, align 8
+  %y = getelementptr inbounds %S, ptr %2, i32 0, i32 0
+  %3 = load i32, ptr %y, align 4
+  %4 = and i32 %3, 2130706432
+  %5 = lshr i32 %4, 24
+  %6 = trunc i32 %5 to i8
+  ret i8 %6
+}
+END
+
+
+BEGIN Load signed from bitfield
+struct S {
+    int x: 24;
+    signed char y: 7;
+};
+signed char f(S* p) {
+    return p->y;
+}
+EXPECT_IR
+%S = type { i32 }
+
+define i8 @f(ptr %0) {
+  %p = alloca ptr, align 8
+  store ptr %0, ptr %p, align 8
+  %2 = load ptr, ptr %p, align 8
+  %y = getelementptr inbounds %S, ptr %2, i32 0, i32 0
+  %3 = load i32, ptr %y, align 4
+  %4 = and i32 %3, 2130706432
+  %5 = shl i32 %4, 1
+  %6 = ashr i32 %5, 25
+  %7 = trunc i32 %6 to i8
+  ret i8 %7
+}
+END
+
+
+BEGIN Store to bitfield (1)
+struct S {
+    int x: 24;
+    char y: 8;
+};
+void f(S* p) {
+    p->y = 7;
+}
+EXPECT_IR
+%S = type { i32 }
+
+define void @f(ptr %0) {
+  %p = alloca ptr, align 8
+  store ptr %0, ptr %p, align 8
+  %2 = load ptr, ptr %p, align 8
+  %y = getelementptr inbounds %S, ptr %2, i32 0, i32 0
+  %3 = load i32, ptr %y, align 4
+  %4 = and i32 %3, 16777215
+  %5 = or i32 117440512, %4
+  store i32 %5, ptr %y, align 4
+  ret void
+}
+END
+
+
+BEGIN Store to bitfield (2)
+struct S {
+    int x: 24;
+    short y: 9;
+};
+void f(S* p, int z) {
+    p->y = z;
+}
+EXPECT_IR
+%S = type { i32, i16 }
+
+define void @f(ptr %0, i32 %1) {
+  %p = alloca ptr, align 8
+  store ptr %0, ptr %p, align 8
+  %z = alloca i32, align 4
+  store i32 %1, ptr %z, align 4
+  %3 = load ptr, ptr %p, align 8
+  %y = getelementptr inbounds %S, ptr %3, i32 0, i32 1
+  %4 = load i32, ptr %z, align 4
+  %5 = trunc i32 %4 to i16
+  %6 = shl i16 %5, 0
+  %7 = and i16 %6, 511
+  %8 = load i16, ptr %y, align 2
+  %9 = and i16 %8, -512
+  %10 = or i16 %7, %9
+  store i16 %10, ptr %y, align 2
+  ret void
+}
+END
+
+
 BEGIN Global initialized function pointer variable (1)
 void f() {
 }

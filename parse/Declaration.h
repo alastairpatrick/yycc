@@ -83,6 +83,10 @@ struct Entity: DeclaratorDelegate {
 
 struct BitField: ASTNode {
     Expr* expr;
+    LLVMTypeRef storage_type{};
+    LLVMValueRef bits_to_left{};
+    LLVMValueRef bits_to_right{};
+    LLVMValueRef mask{};
 
     explicit BitField(Expr* expr);
     virtual void print(ostream& stream) const override;

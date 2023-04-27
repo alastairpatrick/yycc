@@ -9,6 +9,7 @@
 #include "Message.h"
 #include "TranslationUnitContext.h"
 #include "visit/Visitor.h"
+#include "visit/Emitter.h"
 
 // Type codes
 // A array
@@ -611,13 +612,62 @@ LLVMTypeRef StructType::cache_llvm_type() const {
 
     vector<LLVMTypeRef> member_types;
     member_types.reserve(members.size());
+    unsigned aggregate_index{};
+
+    int bits_to_left{};
+    int bits_to_right{}; 
+    LLVMTypeRef bit_field_type{};
+
     for (auto member: members) {
         if (auto member_variable = member->variable()) {
-            member_variable->aggregate_index = member_types.size();
+            if (member_variable->bit_field) {
+                if (auto integer_type = dynamic_cast<const IntegerType*>(member->type)) {
+                    auto bit_size_value = fold_expr(member_variable->bit_field->expr);
+                    if (!bit_size_value.is_const_integer()) {
+                        // todo error
+                    }
+
+                    auto llvm_bit_size = bit_size_value.llvm_const_rvalue();
+                    auto bit_size = LLVMConstIntGetZExtValue(llvm_bit_size);
+                    if (bit_size <= bits_to_left) {
+                        LLVMValueRef one = LLVMConstInt(bit_field_type, 1, false);
+                        member_variable->bit_field->storage_type = bit_field_type;
+                        member_variable->bit_field->bits_to_left = LLVMConstInt(bit_field_type, bits_to_left - bit_size, false);
+                        member_variable->bit_field->bits_to_right = LLVMConstInt(bit_field_type, bits_to_right, false);
+
+                        // mask = ((1 << bit_size) - 1) << bits_to_right
+                        member_variable->bit_field->mask = LLVMConstShl(LLVMConstSub(LLVMConstShl(one, LLVMConstIntCast(llvm_bit_size, bit_field_type, false)), one), member_variable->bit_field->bits_to_right);
+
+                        member_variable->aggregate_index = aggregate_index - 1;
+                        bits_to_right += bit_size;
+                        bits_to_left -= bit_size;
+
+                        continue;
+                    }
+
+                    bit_field_type = integer_type->llvm_type();
+                    LLVMValueRef one = LLVMConstInt(bit_field_type, 1, false);
+
+                    member_variable->bit_field->storage_type = bit_field_type;
+                    member_variable->bit_field->bits_to_left = LLVMConstInt(bit_field_type, bits_to_left - bit_size, false);
+                    member_variable->bit_field->bits_to_right = LLVMConstInt(bit_field_type, 0, false);
+
+                    // mask = ((1 << bit_size) - 1)
+                    member_variable->bit_field->mask = LLVMConstSub(LLVMConstShl(one, LLVMConstIntCast(llvm_bit_size, bit_field_type, false)), one);
+
+                    bits_to_right = bit_size;
+                    bits_to_left = integer_type->num_bits() - bit_size;
+                } else {
+                    // TODO error
+                }
+            }
+
+            member_variable->aggregate_index = aggregate_index++;
             member_types.push_back(member->type->llvm_type());
         }
     }
-    const char* name = tag->identifier.name->empty() ? "struct" : tag->identifier.name->data();
+
+    const char* name = !tag || tag->identifier.name->empty() ? "struct" : tag->identifier.name->data();
     auto llvm_type = LLVMStructCreateNamed(llvm_context, name);
     LLVMStructSetBody(llvm_type, member_types.data(), member_types.size(), false);
     return llvm_type;
