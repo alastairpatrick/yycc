@@ -100,10 +100,6 @@ const Type* DeclaratorDelegate::to_type() const {
     return nullptr;
 }
 
-Linkage DeclaratorDelegate::get_linkage() const {
-    return Linkage::NONE;
-}
-
 Entity::Entity(Declarator* declarator)
     : DeclaratorDelegate(declarator) {
     auto storage_class = declarator->declaration->storage_class;
@@ -116,10 +112,6 @@ Entity::Entity(Declarator* declarator)
     } else {
         linkage = Linkage::NONE;
     }
-}
-
-Linkage Entity::get_linkage() const {
-    return linkage;
 }
 
 BitField::BitField(Expr* expr): expr(expr) {
