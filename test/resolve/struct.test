@@ -291,8 +291,11 @@ EXPECT_MESSAGE
 END
 
 
-
-
-
-
-
+BEGIN Resolves tag type declarators declared in struct
+struct S {
+    enum { A=1+1 };
+    char a[A];
+};
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["a",["A","C",2]]]],"S"]]
+END

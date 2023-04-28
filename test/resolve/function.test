@@ -166,7 +166,7 @@ EXPECT_AST
 ]]
 
 
-BEGIN Resolves type declarators declared in function prototype scope
+BEGIN Resolves tag type declarators declared in function prototype scope
 void f(enum E { A } a, enum E { B } b) {
 }
 EXPECT_MESSAGE

@@ -282,9 +282,14 @@ struct Emitter: Visitor {
             }
 
             if (auto struct_type = type_cast<StructType>(dest.type)) {
-                for (size_t i = 0; i < struct_type->members.size(); ++i) {
-                    LLVMValueRef dest_element = LLVMBuildStructGEP2(builder, struct_type->llvm_type(), dest.llvm_lvalue(), i, "");
-                    emit_auto_initializer(Value(ValueKind::LVALUE, struct_type->members[i]->type, dest_element), initializer->elements[i]);
+                size_t initializer_idx{};
+                for (auto declaration: struct_type->declarations) {
+                    for (auto member: declaration->declarators) {
+                        if (auto member_variable = member->variable()) {
+                            LLVMValueRef dest_element = LLVMBuildStructGEP2(builder, struct_type->llvm_type(), dest.llvm_lvalue(), member_variable->aggregate_index, "");
+                            emit_auto_initializer(Value(ValueKind::LVALUE, member->type, dest_element), initializer->elements[initializer_idx++]);
+                        }
+                    }
                 }
 
                 return;
@@ -314,9 +319,14 @@ struct Emitter: Visitor {
             }
 
             if (auto struct_type = type_cast<StructType>(dest_type)) {
-                vector<LLVMValueRef> values(struct_type->members.size());
-                for (size_t i = 0; i < struct_type->members.size(); ++i) {
-                    values[i] = emit_static_initializer(struct_type->members[i]->type, initializer->elements[i]).llvm_const_rvalue();
+                size_t initializer_idx{};
+                vector<LLVMValueRef> values;
+                for (auto declaration: struct_type->declarations) {
+                    for (auto member: declaration->declarators) {
+                        if (auto member_variable = member->variable()) {
+                            values.push_back(emit_static_initializer(member->type, initializer->elements[initializer_idx++]).llvm_const_rvalue());
+                        }
+                    }
                 }
 
                 return Value(struct_type, LLVMConstNamedStruct(struct_type->llvm_type(), values.data(), values.size()));

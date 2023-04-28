@@ -328,14 +328,18 @@ struct ResolvePass: Visitor {
         if (!a_union->complete) return true;
 
         unordered_map<InternedString, Declarator*> a_members;
-        for (auto a_member: a_union->members) {
-            a_members.insert(make_pair(a_member->identifier.name, a_member));
+        for (auto a_declaration: a_union->declarations) {
+            for (auto a_member: a_declaration->declarators) {
+                a_members.insert(make_pair(a_member->identifier.name, a_member));
+            }
         }
 
-        for (auto b_member: b_union->members) {
-            auto it = a_members.find(b_member->identifier.name);
-            if (it == a_members.end()) return false;
-            if (!compare_types(it->second->type, b_member->type)) return false;
+        for (auto b_declaration: b_union->declarations) {
+            for (auto b_member: b_declaration->declarators) {
+                auto it = a_members.find(b_member->identifier.name);
+                if (it == a_members.end()) return false;
+                if (!compare_types(it->second->type, b_member->type)) return false;
+            }
         }
 
         return true;
@@ -396,14 +400,23 @@ struct ResolvePass: Visitor {
             auto b_struct = static_cast<const StructType*>(b);
 
             if (a_struct->complete && b_struct->complete) {
-                for (size_t i = 0; i < a_struct->members.size(); ++i) {
-                    auto a_declarator = a_struct->members[i];
-                    auto b_declarator = b_struct->members[i];
+                if (a_struct->declarations.size() != b_struct->declarations.size()) return nullptr;
 
-                    if (a_declarator->identifier != b_declarator->identifier) return nullptr;
-                    if (!compare_types(a_declarator->type, b_declarator->type)) return nullptr;
+                for (size_t j = 0; j < a_struct->declarations.size(); ++j) {
+                    auto a_declaration = a_struct->declarations[j];
+                    auto b_declaration = b_struct->declarations[j];
 
-                    // TODO bitfield size, etc
+                    if (a_declaration->declarators.size() != b_declaration->declarators.size()) return nullptr;
+
+                    for (size_t i = 0; i < a_declaration->declarators.size(); ++i) {
+                        auto a_declarator = a_declaration->declarators[i];
+                        auto b_declarator = b_declaration->declarators[i];
+
+                        if (a_declarator->identifier != b_declarator->identifier) return nullptr;
+                        if (!compare_types(a_declarator->type, b_declarator->type)) return nullptr;
+
+                        // TODO bitfield size, etc
+                    }
                 }
             }
         } else if (auto a_union = dynamic_cast<const UnionType*>(a)) {
@@ -483,8 +496,11 @@ struct ResolvePass: Visitor {
         auto want_complete = type->complete;
         type->complete = false;
 
-        for (auto member: type->members) {
-            resolve(member);
+        for (auto declaration: type->declarations) {
+            resolve(declaration->type);
+            for (auto member: declaration->declarators) {
+                resolve(member);
+            }
         }
 
         type->complete = want_complete;

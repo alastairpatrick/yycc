@@ -223,7 +223,7 @@ struct StructuredType: TagType {
     StructuredType(const Location& location);
 
     const Location location;
-    mutable vector<Declarator*> members;
+    mutable vector<Declaration*> declarations;
     unordered_map<InternedString, Declarator*> member_index;
     mutable bool complete{};
 

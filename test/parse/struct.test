@@ -23,9 +23,13 @@ EXPECT_AST
 
 
 BEGIN Bit-fields
-struct { int x: 15; int y: 17; } z;
+struct {
+    int x : 15;
+    int   : 1;
+    int y : 16;
+} z;
 EXPECT_AST
-[["var", "ES", ["STRUCT", [["x", "Si", 15], ["y", "Si", 17]]], "z"]]
+[["var","ES",["STRUCT",[["x","Si",15],["","Si",1],["y","Si",16]]],"z"]]
 
 
 BEGIN Anonymous struct

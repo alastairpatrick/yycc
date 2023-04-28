@@ -245,6 +245,10 @@ ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
     return node;
 }
 
+bool allow_abstract_declarator(IdentifierScope scope) {
+    return scope == IdentifierScope::PROTOTYPE || scope == IdentifierScope::STRUCTURED;
+}
+
 Declaration* Parser::parse_declaration(IdentifierScope scope) {
     auto location = preprocessor.location();
     auto begin = position();
@@ -258,10 +262,7 @@ Declaration* Parser::parse_declaration(IdentifierScope scope) {
             int flags = PD_ALLOW_IDENTIFIER | PD_ALLOW_INITIALIZER;
             if (declarator_count == 0) flags |= PD_ALLOW_FUNCTION_DEFINITION;
             auto declarator = parse_declarator(declaration, base_type, specifiers, flags, &last_declarator);
-            if (declarator->identifier.name->empty()) {
-                message(Severity::ERROR, preprocessor.location()) << "expected identifier but got '" << preprocessor.text() << "'\n";
-                pause_messages();
-            } else {
+            if (!declarator->identifier.name->empty() || allow_abstract_declarator(scope)) {
                 declaration->declarators.push_back(declarator);
                 ++declarator_count;
             }
@@ -569,9 +570,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                     member_declaration->declarators.push_back(member_declarator);
                 }
 
-                for (auto member: member_declaration->declarators) {
-                    structured_type->members.push_back(member);
-                }
+                structured_type->declarations.push_back(member_declaration);
             }
 
             if (!anonymous) {
@@ -758,6 +757,9 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, in
             if (token == TOK_IDENTIFIER) {
                 declarator.identifier = preprocessor.identifier();
                 consume();
+            } else if (!allow_abstract_declarator(scope)) {
+                message(Severity::ERROR, preprocessor.location()) << "expected identifier but got '" << preprocessor.text() << "'\n";
+                pause_messages();
             }
         }
     }
