@@ -579,8 +579,10 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
             if (!anonymous) {
                 structured_type->scope = identifiers.pop_scope();
 
-                oi_scope.scope = &structured_type->scope;
-                order_independent_scopes.push_back(oi_scope);
+                if (preparse) {
+                    oi_scope.scope = &structured_type->scope;
+                    order_independent_scopes.push_back(oi_scope);
+                }
             }
 
             consume_required('}');
