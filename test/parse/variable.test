@@ -363,18 +363,11 @@ EXPECT_AST
 
 
 
-BEGIN #extern directive
-#extern x
+BEGIN #var directive
+#var x
 PARSE
 EXPECT_GLOBALS
 [["var","ES","?","x"]]
-
-
-BEGIN #static directive
-#static x
-PARSE
-EXPECT_GLOBALS
-[["var","IS","?","x"]]
 
 
 BEGIN Empty initializer

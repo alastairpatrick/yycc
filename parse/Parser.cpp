@@ -40,10 +40,10 @@ void Parser::consume() {
         switch (token) {
           default:
             return;
-          case TOK_PP_EXTERN:
-          case TOK_PP_STATIC:
-          case TOK_PP_TYPE:
           case TOK_PP_ENUM:
+          case TOK_PP_FUNC:
+          case TOK_PP_TYPE:
+          case TOK_PP_VAR:
             handle_declaration_directive();
             break;
         }
@@ -51,22 +51,7 @@ void Parser::consume() {
 }
 
 void Parser::handle_declaration_directive() {
-    StorageClass storage_class;
-    switch (token) {
-      default:
-        assert(false);
-        break;
-      case TOK_PP_ENUM:
-      case TOK_PP_TYPE:
-        storage_class = StorageClass::NONE;
-        break;
-      case TOK_PP_STATIC:
-        storage_class = StorageClass::STATIC;
-        break;
-      case TOK_PP_EXTERN:
-        storage_class = StorageClass::EXTERN;
-        break;
-    }
+    StorageClass storage_class = token == TOK_PP_ENUM || token == TOK_PP_TYPE ? StorageClass::NONE : StorageClass::EXTERN;
 
     auto pp_token = preprocessor.next_pp_token();
 
@@ -82,14 +67,17 @@ void Parser::handle_declaration_directive() {
                 new_declarator->delegate = new EnumConstant(new_declarator);
                 new_declarator->type = IntegerType::default_type();
                 break;
-              case TOK_PP_STATIC:
-              case TOK_PP_EXTERN:
-                new_declarator->delegate = new Variable(new_declarator);
+              case TOK_PP_FUNC:
+                new_declarator->delegate = new Function(new_declarator);
                 new_declarator->type = &UniversalType::it;
                 break;
               case TOK_PP_TYPE:
                 new_declarator->delegate = new TypeDef(new_declarator);
                 new_declarator->type = new_declarator->to_type();
+                break;
+              case TOK_PP_VAR:
+                new_declarator->delegate = new Variable(new_declarator);
+                new_declarator->type = &UniversalType::it;
                 break;
               default:
                 preprocessor.unexpected_directive_token();
@@ -98,8 +86,7 @@ void Parser::handle_declaration_directive() {
 
             if (new_declarator->delegate) {
                 auto old_declarator = identifiers.lookup_declarator(id);
-                if (old_declarator &&
-                    old_declarator->delegate->get_linkage() == new_declarator->delegate->get_linkage()) {
+                if (old_declarator) {
                     if (old_declarator->delegate->kind() < new_declarator->delegate->kind()) {
                         *old_declarator = move(*new_declarator);
                         old_declarator->delegate->declarator = old_declarator;

@@ -106,16 +106,16 @@ enum TokenKind {
     TOK_PP_ENDIF,
     TOK_PP_ENUM,
     TOK_PP_ERROR,
-    TOK_PP_EXTERN,
+    TOK_PP_FUNC,
     TOK_PP_IF,
     TOK_PP_IFDEF,
     TOK_PP_IFNDEF,
     TOK_PP_INCLUDE,
     TOK_PP_LINE,
     TOK_PP_PRAGMA,
-    TOK_PP_STATIC,
     TOK_PP_TYPE,
     TOK_PP_UNDEF,
+    TOK_PP_VAR,
 
     TOK_NUM
 };

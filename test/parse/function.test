@@ -288,3 +288,12 @@ PREPARSE
 EXPECT_AST
 [["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]
 ,["var","ES","NF","foo"]]
+
+
+
+BEGIN #func directive
+#func f
+PARSE
+EXPECT_GLOBALS
+[["fun","E","?","f"]]
+

@@ -173,3 +173,11 @@ EXPECT_MESSAGE
 :1:33: error enum constant 'B'...
 :1:8: ...missing from other definition
 END
+
+
+BEGIN #func directive preceeding function declaration
+#func f
+void f() {}
+EXPECT_GLOBALS
+[["fun","E",["F","V"],"f",[],["block",[]]]]
+
