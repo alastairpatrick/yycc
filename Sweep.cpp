@@ -140,7 +140,7 @@ void sweep(ostream& stream, const File& file) {
             token = preprocessor2.next_token();
         }
         
-        while (token && oi_scope_it != oi_scopes.end() && oi_scope_it->position < preprocessor2.fragment.position) {
+        while (oi_scope_it != oi_scopes.end() && oi_scope_it->position < preprocessor2.fragment.position) {
             ++oi_scope_it;
         }
 
