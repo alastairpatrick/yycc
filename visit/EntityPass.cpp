@@ -32,7 +32,7 @@ struct EntityPass: Visitor {
 
         LLVMSetGlobalConstant(global, primary->type->qualifiers() & QUAL_CONST);
 
-        if (entity->linkage() != Linkage::EXTERNAL) {
+        if (entity->linkage != Linkage::EXTERNAL) {
             LLVMSetLinkage(global, LLVMInternalLinkage);
         }
 

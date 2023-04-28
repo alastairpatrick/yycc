@@ -69,3 +69,18 @@ BEGIN #static directive preceeding variable declaration
 int x;
 EXPECT_GLOBALS
 [["var","IS","Si","x"]]
+
+
+BEGIN Variable declared both static and extern has internal linkage (1)
+extern int x;
+static int x;
+EXPECT_GLOBALS
+[["var","IS","Si","x"]]
+
+
+BEGIN Variable declared both static and extern has internal linkage (2)
+static int x;
+extern int x;
+EXPECT_GLOBALS
+[["var","IS","Si","x"]]
+

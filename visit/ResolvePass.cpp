@@ -134,8 +134,8 @@ struct ResolvePass: Visitor {
         message(Severity::INFO, location) << "...see other\n";
     }
 
-    void redeclaration_error(const Declarator* secondary, const Location &primary_location, const char* problem) {
-        auto& stream = message(Severity::ERROR, secondary->location);
+    void redeclaration_message(Severity severity, const Declarator* secondary, const Location &primary_location, const char* problem) {
+        auto& stream = message(severity, secondary->location);
         
         if (secondary->delegate->is_definition()) {
             stream << "redefinition";
@@ -157,7 +157,7 @@ struct ResolvePass: Visitor {
 
     void compose(Declarator* primary, Declarator* secondary) {
         if (secondary->delegate && primary->delegate && typeid(*secondary->delegate) != typeid(*primary->delegate)) {
-            redeclaration_error(secondary, primary->location, "with different kind of identifier");
+            redeclaration_message(Severity::ERROR, secondary, primary->location, "with different kind of identifier");
             return;
         }
 
@@ -199,12 +199,16 @@ struct ResolvePass: Visitor {
     }
 
     void compose_entity(Declarator* primary, Entity* primary_entity, Declarator* secondary, Entity* secondary_entity) {
-        if (primary_entity->linkage() == Linkage::NONE || secondary_entity->linkage() == Linkage::NONE) {
+        if (primary_entity->linkage == Linkage::NONE || secondary_entity->linkage == Linkage::NONE) {
             if (primary->declaration->scope == IdentifierScope::STRUCTURED) {
                 message(Severity::ERROR, secondary->location) << "duplicate member '" << primary->identifier << "'...\n";
                 see_other_message(primary->location);
             } else {
-                redeclaration_error(secondary, primary->location, "with no linkage");
+                redeclaration_message(Severity::ERROR, secondary, primary->location, "with no linkage");
+            }
+        } else {
+            if (primary_entity->linkage != secondary_entity->linkage) {
+                primary_entity->linkage = secondary_entity->linkage = Linkage::INTERNAL;
             }
         }
 
@@ -212,7 +216,7 @@ struct ResolvePass: Visitor {
         if (composite) {
             primary->type = composite;
         } else {
-            redeclaration_error(secondary, primary->location, "with incompatible type");
+            redeclaration_message(Severity::ERROR, secondary, primary->location, "with incompatible type");
         }
     }
 
@@ -259,7 +263,8 @@ struct ResolvePass: Visitor {
 
         if (secondary_entity->initializer) {
             if (primary_entity->initializer) {
-                redeclaration_error(secondary, primary->location, nullptr);
+                // todo: allow this on globals if they evaluate to the same constant
+                redeclaration_message(Severity::ERROR, secondary, primary->location, nullptr);
             } else {
                 primary_entity->initializer = secondary_entity->initializer;
             }
@@ -291,7 +296,7 @@ struct ResolvePass: Visitor {
     
         if (secondary_entity->body) {
             if (primary_entity->body) {
-                redeclaration_error(secondary, primary->location, nullptr);
+                redeclaration_message(Severity::ERROR, secondary, primary->location, nullptr);
             } else {
                 primary_entity->body = secondary_entity->body;
                 primary_entity->parameters = move(secondary_entity->parameters);
@@ -330,7 +335,7 @@ struct ResolvePass: Visitor {
             primary_enum_constant->enum_tag == secondary_enum_constant->enum_tag ||                   // enum E { A, A };
             primary_enum_constant->enum_tag->primary != secondary_enum_constant->enum_tag->primary    // enum E1 { A }; enum E2 { A };
         ) {
-            redeclaration_error(secondary, primary->location, nullptr);
+            redeclaration_message(Severity::ERROR, secondary, primary->location, nullptr);
         }
         
         return VisitDeclaratorOutput();
@@ -454,7 +459,7 @@ struct ResolvePass: Visitor {
 
         auto type = compare_types(primary->type, secondary->type);
         if (!type) {
-            redeclaration_error(secondary, primary->location, "with incompatible type");
+            redeclaration_message(Severity::ERROR, secondary, primary->location, "with incompatible type");
             return VisitDeclaratorOutput();
         }
 

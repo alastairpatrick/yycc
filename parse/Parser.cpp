@@ -99,7 +99,7 @@ void Parser::handle_declaration_directive() {
             if (new_declarator->delegate) {
                 auto old_declarator = identifiers.lookup_declarator(id);
                 if (old_declarator &&
-                    old_declarator->delegate->linkage() == new_declarator->delegate->linkage()) {
+                    old_declarator->delegate->get_linkage() == new_declarator->delegate->get_linkage()) {
                     if (old_declarator->delegate->kind() < new_declarator->delegate->kind()) {
                         *old_declarator = move(*new_declarator);
                         old_declarator->delegate->declarator = old_declarator;

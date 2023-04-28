@@ -96,29 +96,30 @@ void Declarator::print(ostream& stream) const {
 DeclaratorDelegate::DeclaratorDelegate(Declarator* declarator): declarator(declarator) {
 }
 
-Linkage DeclaratorDelegate::linkage() const {
-    return Linkage::NONE;
-}
-
 const Type* DeclaratorDelegate::to_type() const {
     return nullptr;
 }
 
-Entity::Entity(Declarator* declarator)
-    : DeclaratorDelegate(declarator) {
+Linkage DeclaratorDelegate::get_linkage() const {
+    return Linkage::NONE;
 }
 
-Linkage Entity::linkage() const {
+Entity::Entity(Declarator* declarator)
+    : DeclaratorDelegate(declarator) {
     auto storage_class = declarator->declaration->storage_class;
     auto scope = declarator->declaration->scope;
 
     if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
-        return Linkage::INTERNAL;
+        linkage = Linkage::INTERNAL;
     } else if (storage_class == StorageClass::EXTERN || scope == IdentifierScope::FILE) {
-        return Linkage::EXTERNAL;
+        linkage = Linkage::EXTERNAL;
     } else {
-        return Linkage::NONE;
+        linkage = Linkage::NONE;
     }
+}
+
+Linkage Entity::get_linkage() const {
+    return linkage;
 }
 
 BitField::BitField(Expr* expr): expr(expr) {
@@ -170,7 +171,7 @@ VisitDeclaratorOutput Variable::accept(Visitor& visitor, const VisitDeclaratorIn
 }
 
 void Variable::print(ostream& stream) const {
-    stream << "[\"var\", \"" << linkage() << storage_duration();
+    stream << "[\"var\", \"" << linkage << storage_duration();
 
     stream << "\", " << declarator->type << ", \"" << declarator->identifier  << "\"";
     if (initializer) {
@@ -189,7 +190,7 @@ Function::Function(Declarator* declarator, uint32_t specifiers, vector<Declarato
         message(Severity::ERROR, declarator->location) << "invalid storage class\n";
     }
 
-    inline_definition = (linkage() == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
+    inline_definition = (linkage == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
 }
 
 Function::Function(Declarator* declarator): Entity(declarator) {
@@ -212,7 +213,7 @@ VisitDeclaratorOutput Function::accept(Visitor& visitor, const VisitDeclaratorIn
 }
 
 void Function::print(ostream& stream) const {
-    stream << "[\"fun\", \"" << linkage();
+    stream << "[\"fun\", \"" << linkage;
 
     if (inline_definition) {
         stream << 'i';

@@ -377,17 +377,6 @@ EXPECT_GLOBALS
 [["var","IS","?","x"]]
 
 
-BEGIN Error if identifier declared with both #extern and #static
-#extern x
-#static x
-PARSE
-EXPECT_MESSAGE
-:2:9: error static declaration of 'x' follows non-static declaration
-:1:9: see prior declaration
-EXPECT_GLOBALS
-[["var","ES","?","x"]]
-
-
 BEGIN Empty initializer
 int x[] = {};
 EXPECT_AST
@@ -425,30 +414,11 @@ EXPECT_AST
 ,["var", "ES", "Si", "x"]]
 
 
-BEGIN Variable declaration with internal linkage may not follow variable declaration with external linkage
+BEGIN Variable declaration with internal linkage may follow variable declaration with external linkage
 extern int x;
 static int x;
-EXPECT_MESSAGE
-:2:12: error static declaration of 'x' follows non-static declaration
-:1:12: see prior declaration
 EXPECT_AST
 [["var","ES","Si","x"]
-,["var","IS","Si","x"]]
-
-
-BEGIN Variable declaration having internal linkage may preceed variable declaration having external linkage
-static int x;
-extern int x;
-EXPECT_AST
-[["var","IS","Si","x"]
-,["var","ES","Si","x"]]
-
-
-BEGIN Multiple variable declarations having internal linkage
-static int x;
-static int x;
-EXPECT_AST
-[["var","IS","Si","x"]
 ,["var","IS","Si","x"]]
 
 

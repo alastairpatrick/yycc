@@ -59,11 +59,6 @@ Declarator* IdentifierMap::add_declarator_to_scope(Scope& scope, Declarator* dec
         return nullptr;
     }
 
-    if (declarator->delegate->linkage() == Linkage::INTERNAL && it->second->delegate->linkage() != Linkage::INTERNAL) {
-        message(Severity::ERROR, declarator->location) << "static declaration of '" << declarator->identifier << "' follows non-static declaration\n";
-        message(Severity::INFO, it->second->location) << "see prior declaration\n";
-    }
-
     return it->second->primary;
 }
 

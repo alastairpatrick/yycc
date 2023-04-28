@@ -243,32 +243,12 @@ EXPECT_AST
 ,["fun", "E", ["F", "V", "Si"], "foo"]]
 
 
-BEGIN Function declaration having internal linkage may not follow function declaration having external linkage
+BEGIN Function declaration having internal linkage may follow function declaration having external linkage
 extern void foo(int);
 static void foo(int);
-EXPECT_MESSAGE
-:2:13: error static declaration of 'foo' follows non-static declaration
-:1:13: see prior declaration
 EXPECT_AST
 [["fun","E",["F","V","Si"],"foo"]
 ,["fun","I",["F","V","Si"],"foo"]]
-
-
-
-BEGIN Function declaration having internal linkage may preceed function declaration having external linkage
-static void foo(int);
-extern void foo(int);
-EXPECT_AST
-[["fun","I",["F","V","Si"],"foo"]
-,["fun","E",["F","V","Si"],"foo"]]
-
-
-BEGIN Multiple function declarations with internal linkage
-static void foo(int);
-static void foo(int);
-EXPECT_AST
-[["fun","I",["F", "V", "Si"],"foo"]
-,["fun","I",["F", "V", "Si"],"foo"]]
 
 
 BEGIN Empty function definition

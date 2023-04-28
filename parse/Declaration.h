@@ -65,7 +65,7 @@ struct DeclaratorDelegate: ASTNode {
     virtual DeclaratorKind kind() const = 0;
     virtual const char* error_kind() const = 0;
     virtual bool is_definition() const = 0;
-    virtual Linkage linkage() const;
+    virtual Linkage get_linkage() const;  // todo remove; only Entity and derived structs should have notion of linkage
     virtual const Type* to_type() const;
     virtual VisitDeclaratorOutput accept(Visitor& visitor, const VisitDeclaratorInput& input) = 0;
     virtual void print(ostream& stream) const = 0;
@@ -75,10 +75,11 @@ struct DeclaratorDelegate: ASTNode {
 };
 
 struct Entity: DeclaratorDelegate {
+    Linkage linkage;
     Value value;
 
     explicit Entity(Declarator* declarator);
-    virtual Linkage linkage() const override;
+    virtual Linkage get_linkage() const override;
 };
 
 struct BitField: ASTNode {

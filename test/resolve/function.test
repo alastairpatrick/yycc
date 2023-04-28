@@ -159,7 +159,7 @@ EXPECT_AST
 ,["fun","E",["F","V","Si"],"foo"],["block",[
     ["typedef","Si","x"]
     ,["block",[
-        [["var","ES","Si","x"]
+        [["var","IS","Si","x"]
         ,["var","ES","Si","y"]]
         ,["*","Nx","Ny"]]
     ]]
