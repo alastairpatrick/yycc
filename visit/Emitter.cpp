@@ -1100,8 +1100,8 @@ struct Emitter: Visitor {
         }
 
         if (auto struct_type = type_cast<StructType>(object.type)) {
-            auto it = struct_type->member_index.find(expr->identifier.name);
-            if (it == struct_type->member_index.end()) {
+            auto it = struct_type->scope.declarators.find(expr->identifier.name);
+            if (it == struct_type->scope.declarators.end()) {
                 message(Severity::ERROR, expr->location) << "no member named '" << *expr->identifier.name << "' in '" << PrintType(struct_type) << "'\n";
                 pause_messages();
                 return VisitStatementOutput(Value::default_int());

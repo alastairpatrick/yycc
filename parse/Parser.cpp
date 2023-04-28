@@ -552,6 +552,9 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
         type = structured_type;
 
         if (consume('{')) {
+            OrderIndependentScope oi_scope;
+            oi_scope.position = position();
+
             // C99 6.7.2.3p6
             if (!identifier.name->empty()) tag_declarator = declare_tag_type(declaration, identifier, type, specifier_location);
 
@@ -574,7 +577,10 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
             }
 
             if (!anonymous) {
-                structured_type->member_index = identifiers.pop_scope().declarators;
+                structured_type->scope = identifiers.pop_scope();
+
+                oi_scope.scope = &structured_type->scope;
+                order_independent_scopes.push_back(oi_scope);
             }
 
             consume_required('}');
@@ -1061,7 +1067,7 @@ CompoundStatement* Parser::parse_compound_statement() {
         ASTNodeVector nodes;
         while (token && token != '}') {
             auto node = parse_declaration_or_statement(IdentifierScope::BLOCK);
-            if (preprocessor.is_marking()) nodes.push_back(node);
+            nodes.push_back(node);
         }
 
         Scope scope = identifiers.pop_scope();
@@ -1328,7 +1334,9 @@ Expr* Parser::parse_initializer() {
 ASTNodeVector Parser::parse() {
     ASTNodeVector declarations;
     while (token) {
-        declarations.push_back(parse_declaration_or_statement(IdentifierScope::FILE));
+        auto keep = !preparse || preprocessor.include_stack.empty();
+        auto declaration = parse_declaration_or_statement(IdentifierScope::FILE);
+        if (keep) declarations.push_back(declaration);
     }
     return declarations;
 }

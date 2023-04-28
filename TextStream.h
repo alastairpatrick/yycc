@@ -14,6 +14,7 @@ struct TextStream {
 
     void locate(const Location& location);
     void write(string_view text);
+    void new_line();
 };
 
 #endif

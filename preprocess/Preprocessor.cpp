@@ -139,10 +139,6 @@ TokenKind Preprocessor::commit_token(TokenKind token, string_view text) {
     return token;
 }
 
-bool Preprocessor::is_marking() const {
-    return include_stack.empty();
-}
-
 string_view Preprocessor::output() {
     return string_view(string_stream.str(), string_stream.pcount());
 }

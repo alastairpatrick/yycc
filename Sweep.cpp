@@ -14,8 +14,8 @@ struct DeclarationMarker {
     unordered_set<const Declaration*> marked;
     unordered_map<string_view, Declarator*> declarator_names;
 
-    void mark(string_view input, const ASTNodeVector& declarations) {
-        for (auto node : declarations) {
+    void mark(string_view input, const ASTNodeVector& initial_todo) {
+        for (auto node : initial_todo) {
             auto declaration = dynamic_cast<Declaration*>(node);
             assert(declaration);
 
@@ -44,19 +44,6 @@ struct DeclarationMarker {
     void lookup(const Identifier& id) {
         auto declarator = identifiers.lookup_declarator(id);
         while (declarator) {
-            auto name = *declarator->identifier.name;
-            auto kind = declarator->delegate->kind();
-            auto linkage = declarator->delegate->linkage();
-
-            auto it = declarator_names.find(name);
-            if (it == declarator_names.end()) {
-                declarator_names[name] = declarator;
-            } else {
-                if (kind > it->second->delegate->kind()) {
-                    it->second = declarator;
-                }
-            }
-
             if (!is_marked(declarator->declaration)) {
                 todo.insert(declarator->declaration);
             }
@@ -68,44 +55,57 @@ struct DeclarationMarker {
     bool is_marked(const Declaration* declaration) const {
         return marked.find(declaration) != marked.end();
     }
+};
 
-    void output_declaration_directives(TextStream& stream) {
-        vector<Declarator*> ordered_declarators;
-        for (auto p: declarator_names) {
-            ordered_declarators.push_back(p.second);
+
+void output_declaration_directives_of_kind(TextStream& stream, const vector<Declarator*>& declarators, DeclaratorKind kind, string_view directive) {
+    size_t count{};
+    for (auto declarator: declarators) {
+        if (declarator->delegate->kind() != kind) continue;
+        ++count;
+    }
+
+    if (count == 0) return;
+
+    stream.new_line();
+    stream.write(directive);
+
+    for (auto declarator: declarators) {
+        if (declarator->delegate->kind() != kind) continue;
+        stream.write(" ");
+        stream.write(*declarator->identifier.name);
+    }
+
+    stream.write("\n");
+}
+
+void output_declaration_directives(TextStream& stream, Scope* scope, DeclarationMarker* marker) {
+    vector<Declarator*> ordered_declarators;
+    for (auto p: scope->declarators) {
+        Declarator* output_declarator{};
+        auto kind = p.second->delegate->kind();
+        for (auto declarator = p.second; declarator; declarator = declarator->next) {
+            if (marker && !marker->is_marked(declarator->declaration)) continue;
+                
+            if (!output_declarator || output_declarator->delegate->kind() < declarator->delegate->kind()) {
+                output_declarator = declarator;
+            }
         }
 
-        sort(ordered_declarators.begin(), ordered_declarators.end(), [](Declarator* a, Declarator* b) {
-            return a->location < b->location;
-        });
-
-        for (auto declarator: ordered_declarators) {
-            auto location = declarator->location;
-            stream.locate(location);
-
-            switch (declarator->delegate->kind()) {
-              case DeclaratorKind::ENUM_CONSTANT:
-                stream.write("#enum ");
-                break;
-              case DeclaratorKind::FUNCTION:
-              case DeclaratorKind::VARIABLE:
-                if (declarator->delegate->linkage() == Linkage::EXTERNAL) {
-                    stream.write("#extern ");
-                } else {
-                    stream.write("#static ");
-                }
-                break;
-              case DeclaratorKind::TYPE_DEF:
-                stream.write("#type ");
-                break;
-            }
-
-
-            stream.write(*declarator->identifier.name);
-            stream.write("\n");
+        if (output_declarator) {
+            ordered_declarators.push_back(output_declarator);
         }
     }
-};
+
+    sort(ordered_declarators.begin(), ordered_declarators.end(), [](Declarator* a, Declarator* b) {
+        return *a->identifier.name < *b->identifier.name;
+    });
+
+    output_declaration_directives_of_kind(stream, ordered_declarators, DeclaratorKind::ENUM_CONSTANT, "#enum");
+    output_declaration_directives_of_kind(stream, ordered_declarators, DeclaratorKind::FUNCTION, "#func");
+    output_declaration_directives_of_kind(stream, ordered_declarators, DeclaratorKind::TYPE_DEF, "#type");
+    output_declaration_directives_of_kind(stream, ordered_declarators, DeclaratorKind::VARIABLE, "#var");
+}
 
 void sweep(ostream& stream, const File& file) {
     Preprocessor preprocessor1(file.text, true);
@@ -122,12 +122,15 @@ void sweep(ostream& stream, const File& file) {
 
     TextStream text_stream(stream);
 
-    marker.output_declaration_directives(text_stream);
+    output_declaration_directives(text_stream, &identifiers.scopes.front(), &marker);
 
     vector<const Declaration*> marked(marker.marked.begin(), marker.marked.end());
     sort(marked.begin(), marked.end(), [](const Declaration* a, const Declaration* b) {
         return a->fragment.position > b->fragment.position;
     });
+
+    auto& oi_scopes = parser.order_independent_scopes;
+    auto oi_scope_it = oi_scopes.begin();
 
     while (token && marked.size()) {
         auto declaration = marked.back();
@@ -136,8 +139,17 @@ void sweep(ostream& stream, const File& file) {
         while (token && preprocessor2.fragment.position < declaration->fragment.position) {
             token = preprocessor2.next_token();
         }
+        
+        while (token && oi_scope_it != oi_scopes.end() && oi_scope_it->position < preprocessor2.fragment.position) {
+            ++oi_scope_it;
+        }
 
         while (token && preprocessor2.fragment.position < (declaration->fragment.position + declaration->fragment.length)) {
+            if (oi_scope_it != oi_scopes.end() && preprocessor2.fragment.position == oi_scope_it->position) {
+                output_declaration_directives(text_stream, oi_scope_it->scope, nullptr);
+                ++oi_scope_it;
+            }
+
             if (token != '\n') {
                 text_stream.locate(preprocessor2.location());
                 text_stream.write(preprocessor2.text());

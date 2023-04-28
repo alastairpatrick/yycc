@@ -10,6 +10,11 @@
 #include "TextStream.h"
 
 struct Preprocessor {
+    const bool preparse;
+    TokenKind token;
+    Fragment fragment;    
+    vector<Location> include_stack;
+
     explicit Preprocessor(bool preparse);
     Preprocessor(string_view input, bool preparse);
     void operator=(const Preprocessor&) = delete;
@@ -34,13 +39,7 @@ struct Preprocessor {
     void require_eol();
     void unexpected_directive_token();
 
-    bool is_marking() const;
-
     string_view output();
-
-    const bool preparse;
-    TokenKind token;
-    Fragment fragment;
 
 private:
     TokenKind commit_token(TokenKind token, string_view text);
@@ -57,8 +56,6 @@ private:
 
     size_t pending_line{};
     size_t pending_column{};
-
-    vector<Location> include_stack;
 
     TextStream text_stream;
     strstream string_stream;

@@ -26,6 +26,11 @@ enum class SubExpressionKind {
     CAST,
 };
 
+struct OrderIndependentScope {
+    size_t position; // position after opening '{' of scope
+    Scope* scope;
+};
+
 struct Parser {
     Parser(Preprocessor& preprocessor, IdentifierMap& identifiers);
     void operator=(const Parser&) = delete;
@@ -35,6 +40,8 @@ struct Parser {
     bool check_eof(); // for testing
 
     ASTNodeVector parse();
+
+    vector<OrderIndependentScope> order_independent_scopes;
 
 private:
     Preprocessor& preprocessor;

@@ -70,3 +70,11 @@ void TextStream::write(string_view text) {
         need_newline = text.back() != '\n';
     }
 }
+
+void TextStream::new_line() {
+    if (!need_newline) return;
+
+    stream << '\n';
+    ++current_location.line;
+    current_location.column = 1;
+}

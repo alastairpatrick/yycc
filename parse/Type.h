@@ -6,6 +6,7 @@
 #include "lex/Location.h"
 #include "lex/Token.h"
 #include "Printable.h"
+#include "Scope.h"
 
 struct Emitter;
 struct Declaration;
@@ -224,7 +225,7 @@ struct StructuredType: TagType {
 
     const Location location;
     mutable vector<Declaration*> declarations;
-    unordered_map<InternedString, Declarator*> member_index;
+    Scope scope;
     mutable bool complete{};
 
     const Declarator* lookup_member(const Identifier& identifier) const;
