@@ -609,6 +609,9 @@ VisitTypeOutput StructType::accept(Visitor& visitor, const VisitTypeInput& input
 
 LLVMTypeRef StructType::cache_llvm_type() const {
     auto llvm_context = TranslationUnitContext::it->llvm_context;
+    
+    const char* name = !tag || tag->identifier.name->empty() ? "struct" : tag->identifier.name->data();
+    cached_llvm_type = LLVMStructCreateNamed(llvm_context, name);
 
     vector<LLVMTypeRef> member_types;
     member_types.reserve(members.size());
@@ -624,11 +627,26 @@ LLVMTypeRef StructType::cache_llvm_type() const {
                 if (auto integer_type = dynamic_cast<const IntegerType*>(member->type)) {
                     auto bit_size_value = fold_expr(member_variable->bit_field->expr);
                     if (!bit_size_value.is_const_integer()) {
-                        // todo error
+                        message(Severity::ERROR, member_variable->bit_field->expr->location) << "bit field '" << *member->identifier.name << "' must have integer width, not '"
+                                                                                             << PrintType(bit_size_value.type) << "'\n";
+                        continue;
                     }
 
                     auto llvm_bit_size = bit_size_value.llvm_const_rvalue();
-                    auto bit_size = LLVMConstIntGetZExtValue(llvm_bit_size);
+                    auto bit_size = LLVMConstIntGetSExtValue(llvm_bit_size);
+                    if (bit_size <= 0) {
+                        message(Severity::ERROR, member_variable->bit_field->expr->location) << "bit field '" << *member->identifier.name << "' has invalid width ("
+                                                                                             << bit_size << " bits)\n";
+                        continue;
+                    }
+
+                    if (bit_size > integer_type->num_bits()) {
+                        message(Severity::ERROR, member_variable->bit_field->expr->location) << "width of bit field '" << *member->identifier.name
+                                                                                             << "' (" << bit_size << " bits) exceeds width of its type '"
+                                                                                             << PrintType(integer_type) << "' (" << integer_type->num_bits() << " bits)\n";
+                        continue;
+                    }
+
                     if (bit_size <= bits_to_left) {
                         LLVMValueRef one = LLVMConstInt(bit_field_type, 1, false);
                         member_variable->bit_field->storage_type = bit_field_type;
@@ -658,7 +676,7 @@ LLVMTypeRef StructType::cache_llvm_type() const {
                     bits_to_right = bit_size;
                     bits_to_left = integer_type->num_bits() - bit_size;
                 } else {
-                    // TODO error
+                    message(Severity::ERROR, member->location) << "bit field '" << *member->identifier.name << "' has non-integer type '" << PrintType(member->type) << "'\n";
                 }
             }
 
@@ -667,10 +685,8 @@ LLVMTypeRef StructType::cache_llvm_type() const {
         }
     }
 
-    const char* name = !tag || tag->identifier.name->empty() ? "struct" : tag->identifier.name->data();
-    auto llvm_type = LLVMStructCreateNamed(llvm_context, name);
-    LLVMStructSetBody(llvm_type, member_types.data(), member_types.size(), false);
-    return llvm_type;
+    LLVMStructSetBody(cached_llvm_type, member_types.data(), member_types.size(), false);
+    return cached_llvm_type;
 }
 
 void StructType::message_print(ostream& stream, int section) const {
@@ -697,8 +713,8 @@ VisitTypeOutput UnionType::accept(Visitor& visitor, const VisitTypeInput& input)
 }
 
 LLVMTypeRef UnionType::cache_llvm_type() const {
-    assert(false);
-    return nullptr;
+    // todo
+    return VoidType::it.llvm_type();
 }
 
 void UnionType::message_print(ostream& stream, int section) const {

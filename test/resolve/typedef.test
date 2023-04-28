@@ -74,7 +74,7 @@ char a[T];
 EXPECT_MESSAGE
 :2:8: error identifier is not an expression
 EXPECT_GLOBALS
-[["typedef","Si","T"],["var","ES",["A","C",1],"a"]]
+[["typedef","Si","T"],["var","ES",["A","C"],"a"]]
 
 
 BEGIN Redefinition of typedef

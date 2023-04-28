@@ -538,7 +538,7 @@ struct ResolvePass: Visitor {
         if (type->size) {
             resolve(type->size);
             unsigned long long size_int = 1;
-            auto size_constant = fold_expr(type->size, size_int);
+            auto size_constant = fold_expr(type->size);
             if (!size_constant.is_const_integer()) {
                 message(Severity::ERROR, type->size->location) << "size of array must have integer type\n";
             } else {
@@ -614,6 +614,10 @@ ResolvePassResult resolve_pass(const unordered_set<Declarator*>& declarators, co
     }
 
     resume_messages();
+
+    for (auto type: pass.result.tag_types) {
+        type->llvm_type();
+    }
 
     return move(pass.result);
 }

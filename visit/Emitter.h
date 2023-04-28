@@ -8,7 +8,7 @@ struct EmitOptions {
 };
 
 const Type* get_expr_type(const Expr* expr);
-Value fold_expr(const Expr* expr, unsigned long long error_value = 0);
+Value fold_expr(const Expr* expr);
 LLVMModuleRef emit_pass(const ASTNodeVector& nodes, const EmitOptions& options);
 
 #endif

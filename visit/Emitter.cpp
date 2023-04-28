@@ -1245,7 +1245,7 @@ const Type* get_expr_type(const Expr* expr) {
     }
 }
 
-Value fold_expr(const Expr* expr, unsigned long long error_value) {
+Value fold_expr(const Expr* expr) {
     static const EmitOptions options;
     Emitter emitter(EmitOutcome::FOLD, options);
 
@@ -1257,11 +1257,7 @@ Value fold_expr(const Expr* expr, unsigned long long error_value) {
         }
 
         auto type = get_expr_type(expr)->unqualified();
-        if (auto int_type = dynamic_cast<const IntegerType*>(type)) {
-            return Value(type, LLVMConstInt(type->llvm_type(), error_value, int_type->is_signed()));
-        } else {
-            return Value(type, LLVMConstNull(type->llvm_type()));
-        }
+        return Value(type, LLVMConstNull(type->llvm_type()));
     }
 }
 

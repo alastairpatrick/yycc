@@ -253,3 +253,46 @@ EXPECT_GLOBALS
 [["typedef",["STRUCT",["?"]],"S"]
 ,["typedef",["STRUCT",[["x",["P",["STRUCT",["?"]]]]]],"T"]
 ,["var","ES",["P",["STRUCT",["?"]]],"y"]]
+
+
+BEGIN Bit field size must be integer constant expression
+struct S {
+    int x: 1.5;
+};
+EXPECT_MESSAGE
+:2:12: error bit field 'x' must have integer width, not 'double'
+END
+
+
+BEGIN Bit field size must be positive
+struct S {
+    int x: 0;
+};
+EXPECT_MESSAGE
+:2:12: error bit field 'x' has invalid width (0 bits)
+END
+
+
+BEGIN Bit field size must be no more than its type
+struct S {
+    int x: 33;
+};
+EXPECT_MESSAGE
+:2:12: error width of bit field 'x' (33 bits) exceeds width of its type 'int' (32 bits)
+END
+
+
+BEGIN Bit field type must be integer
+struct S {
+    float x: 8;
+};
+EXPECT_MESSAGE
+:2:11: error bit field 'x' has non-integer type 'float'
+END
+
+
+
+
+
+
+
