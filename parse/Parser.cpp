@@ -61,41 +61,13 @@ void Parser::handle_declaration_directive() {
         if (pp_token == TOK_IDENTIFIER) {
             auto id = preprocessor.identifier();
 
-            auto new_declarator = new Declarator(declaration, id, preprocessor.location());
-            switch (token) {
-              case TOK_PP_ENUM:
-                new_declarator->delegate = new EnumConstant(new_declarator);
-                new_declarator->type = IntegerType::default_type();
-                break;
-              case TOK_PP_FUNC:
-                new_declarator->delegate = new Function(new_declarator);
-                new_declarator->type = &UniversalType::it;
-                break;
-              case TOK_PP_TYPE:
-                new_declarator->delegate = new TypeDef(new_declarator);
-                new_declarator->type = new_declarator->to_type();
-                break;
-              case TOK_PP_VAR:
-                new_declarator->delegate = new Variable(new_declarator);
-                new_declarator->type = &UniversalType::it;
-                break;
-              default:
-                preprocessor.unexpected_directive_token();
-                break;
+            auto declarator = identifiers.add_declarator(declaration, nullptr, id, preprocessor.location());
+            if (token == TOK_PP_TYPE) {
+                declarator->delegate = new TypeDef(declarator);
+                declarator->type = declarator->to_type();
             }
 
-            if (new_declarator->delegate) {
-                auto old_declarator = identifiers.lookup_declarator(id);
-                if (old_declarator) {
-                    if (old_declarator->delegate->kind() < new_declarator->delegate->kind()) {
-                        *old_declarator = move(*new_declarator);
-                        old_declarator->delegate->declarator = old_declarator;
-                    }
-                } else {
-                    identifiers.add_declarator(new_declarator);
-                    declaration->declarators.push_back(new_declarator);
-                }
-            }
+            declaration->declarators.push_back(declarator);
         } else {
             preprocessor.unexpected_directive_token();
         }
@@ -615,10 +587,9 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                     }
                 }
 
-                auto declarator = new Declarator(declaration, IntegerType::default_type(), identifier, location);
+                auto declarator = identifiers.add_declarator(declaration, IntegerType::default_type(), identifier, location);
                 auto enum_constant = new EnumConstant(declarator, tag_declarator, constant);
                 declarator->delegate = enum_constant;
-                identifiers.add_declarator(declarator);
 
                 if (declarator) {
                     enum_type->constants.push_back(declarator);
@@ -644,11 +615,9 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 }
 
 Declarator* Parser::declare_tag_type(Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location) {
-    auto declarator = new Declarator(declaration, identifier, location);
-    declarator->type = type;
+    auto declarator = identifiers.add_declarator(declaration, type, identifier, location);
     declarator->delegate = new TypeDef(declarator);
     type->tag = declarator;
-    identifiers.add_declarator(declarator);
     return declarator;
 }
 
@@ -692,7 +661,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         initializer = parse_initializer();
     }
 
-    auto declarator = new Declarator(declaration, type, declarator_transform.identifier, location);
+    auto declarator = identifiers.add_declarator(declaration, type, declarator_transform.identifier, location);
 
     if (is_function && declaration->storage_class != StorageClass::TYPEDEF) {
         CompoundStatement* body{};
@@ -717,10 +686,6 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         } else {
             declarator->delegate = new Variable(declarator, initializer, bit_field_size);
         }
-    }
-
-    if (!declarator->identifier.name->empty()) {
-        identifiers.add_declarator(declarator);
     }
 
     declarator->fragment = end_fragment(begin);

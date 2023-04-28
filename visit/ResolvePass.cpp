@@ -34,12 +34,12 @@ struct ResolvePass: Visitor {
         }
     }
 
-    bool is_trivially_cyclic(Declarator* declarator, const Type* type) {
+    bool is_trivially_cyclic(Declarator* primary, const Type* type) {
         for (;;) {
             if (auto qt = dynamic_cast<const QualifiedType*>(type)) {
                 type = qt->base_type;
             } else if (auto tdt = dynamic_cast<const TypeDefType*>(type)) {
-                return tdt->declarator == declarator;
+                return tdt->declarator->primary == primary;
             } else {
                 return false;
             }
@@ -64,6 +64,12 @@ struct ResolvePass: Visitor {
         if (primary->status == DeclaratorStatus::RESOLVING) throw ResolutionCycle();
 
         primary->status = DeclaratorStatus::RESOLVING;
+
+        if (!primary->type) {
+            message(Severity::ERROR, primary->location) << "declaration directive not matched with a proper declaration of '" << *primary->identifier.name << "'\n";
+            primary->type = IntegerType::default_type();
+            primary->delegate = new Variable(primary, nullptr, nullptr);
+        }
 
         Declarator* acyclic_declarator{};
         for (auto declarator = primary; declarator; declarator = declarator->next) {

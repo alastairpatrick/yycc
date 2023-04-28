@@ -90,7 +90,11 @@ VisitDeclaratorOutput Declarator::accept(Visitor& visitor, const VisitDeclarator
 }
 
 void Declarator::print(ostream& stream) const {
-    delegate->print(stream);
+    if (delegate) {
+        delegate->print(stream);
+    } else {
+        stream << "\"placeholder\"";
+    }
 }
 
 DeclaratorDelegate::DeclaratorDelegate(Declarator* declarator): declarator(declarator) {

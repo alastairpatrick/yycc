@@ -299,3 +299,32 @@ struct S {
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["a",["A","C",2]]]],"S"]]
 END
+
+
+BEGIN #var in struct definition
+struct S {
+    #var x
+    int x;
+};
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["x","Si"]]],"S"],["var","","Si","x"]]
+END
+
+
+BEGIN #var in struct definition
+struct S {
+    #func f
+    int f();
+};
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["f",["F","Si"]]]],"S"],["fun","",["F","Si"],"f"]]
+END
+
+
+BEGIN Unmatched #var in struct definition
+struct S {
+    #var x
+};
+EXPECT_MESSAGE
+:2:10: error declaration directive not matched with a proper declaration of 'x'
+END

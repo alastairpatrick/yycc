@@ -12,6 +12,7 @@ EXPECT_AST
 
 BEGIN #enum directive
 #enum A
+enum E { A };
 PARSE
 EXPECT_GLOBALS
-[["ec","A"]]
+[["ec","A",0],["typedef",["ENUM",[["ec","A",0]]],"E"]]

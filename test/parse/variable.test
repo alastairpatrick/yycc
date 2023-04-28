@@ -365,9 +365,10 @@ EXPECT_AST
 
 BEGIN #var directive
 #var x
+int x;
 PARSE
 EXPECT_GLOBALS
-[["var","ES","?","x"]]
+[["var","ES","Si","x"]]
 
 
 BEGIN Empty initializer

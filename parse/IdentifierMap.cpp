@@ -23,10 +23,23 @@ const Type* IdentifierMap::lookup_type(const Identifier& identifier) const {
     return declarator->to_type();
 }
 
-void IdentifierMap::add_declarator(Declarator* declarator) {
-    Declarator* primary{};
-    auto declaration = declarator->declaration;
+Declarator* IdentifierMap::add_declarator(const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location) {
+    Declarator* declarator{};
+    if (declaration->scope == IdentifierScope::FILE || declaration->storage_class == StorageClass::EXTERN) {
+        declarator = find_placeholder(scopes.back(), declaration, type, identifier, location);
+        if (declarator) return declarator;
+    }
 
+    if (declaration->scope != IdentifierScope::FILE) {
+        declarator = find_placeholder(scopes.front(), declaration, type, identifier, location);
+        if (declarator) return declarator;
+    }
+
+    declarator = new Declarator(declaration, type, identifier, location);
+
+    if (identifier.name->empty()) return declarator;
+
+    Declarator* primary{};
     if (declaration->scope == IdentifierScope::FILE || declaration->storage_class == StorageClass::EXTERN) {
         primary = add_declarator_to_scope(scopes.back(), declarator);
     }
@@ -50,6 +63,25 @@ void IdentifierMap::add_declarator(Declarator* declarator) {
     } else {
         primary_declarators.insert(declarator);
     }
+
+    return declarator;
+}
+
+Declarator* IdentifierMap::find_placeholder(Scope& scope, const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location) {
+    if (!identifier.name->empty()) {
+        auto it = scopes.back().declarators.find(identifier.name);
+        if (it != scopes.back().declarators.end()) {
+            auto declarator = it->second;
+            if (!declarator->delegate) {
+                assert(declarator->identifier.name == identifier.name);
+                declarator->declaration = declaration;
+                declarator->type = type;
+                declarator->location = location;
+                return declarator;
+            }
+        }
+    }
+    return nullptr;
 }
 
 Declarator* IdentifierMap::add_declarator_to_scope(Scope& scope, Declarator* declarator) {

@@ -293,7 +293,8 @@ EXPECT_AST
 
 BEGIN #func directive
 #func f
+void f();
 PARSE
 EXPECT_GLOBALS
-[["fun","E","?","f"]]
+[["fun","E",["F","V"],"f"]]
 

@@ -48,18 +48,25 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN #var directives composed
-#var x
-#var x
-EXPECT_MESSAGE
-:1:6: error variable 'x' has incomplete type
-EXPECT_GLOBALS
-[["var","ES","?","x"]]
-
-
 BEGIN #var directive preceeding variable declaration
 #var x
 int x;
+EXPECT_GLOBALS
+[["var","ES","Si","x"]]
+
+
+BEGIN Multiple #var directives for same declarator
+#var x
+#var x
+int x;
+EXPECT_GLOBALS
+[["var","ES","Si","x"]]
+
+
+BEGIN Error on unmatched #var
+#var x
+EXPECT_MESSAGE
+:1:6: error declaration directive not matched with a proper declaration of 'x'
 EXPECT_GLOBALS
 [["var","ES","Si","x"]]
 
