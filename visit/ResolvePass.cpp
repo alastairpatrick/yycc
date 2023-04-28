@@ -303,15 +303,27 @@ struct ResolvePass: Visitor {
         return VisitDeclaratorOutput();
     }
 
+    void fold_enum_constant(EnumConstant* enum_constant) {
+        resolve(enum_constant->constant_expr);
+        Value value = fold_expr(enum_constant->constant_expr);
+        if (!value.is_const_integer()) {
+            // todo
+        }
+
+        enum_constant->constant_int = LLVMConstIntGetSExtValue(value.llvm_const_rvalue());
+    }
+
     virtual VisitDeclaratorOutput visit(Declarator* primary, EnumConstant* primary_enum_constant, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
         if (!secondary) {
-            resolve(primary_enum_constant->constant_expr);
+            fold_enum_constant(primary_enum_constant);
             return VisitDeclaratorOutput();
         }
 
         auto secondary_enum_constant = secondary->enum_constant();
         assert(secondary_enum_constant); //  TODO
+
+        fold_enum_constant(secondary_enum_constant);
 
         if (!primary_enum_constant->enum_tag ||                                                       // enum { A }; enum E { A };
             !secondary_enum_constant->enum_tag ||                                                     // enum E { A }; enum { A };
@@ -512,19 +524,8 @@ struct ResolvePass: Visitor {
         auto want_complete = type->complete;
         type->complete = false;
 
-        type->base_type = IntegerType::default_type();
-        long long next_int = 0;
-
-        for (auto declarator: type->constants) {
-            resolve(declarator);
-            auto enum_constant = declarator->enum_constant();
-            if (enum_constant->constant_expr) {
-                auto value = fold_expr(enum_constant->constant_expr);
-                next_int = LLVMConstIntGetSExtValue(value.llvm_const_rvalue());
-            }
-
-            enum_constant->constant_int = next_int;
-            ++next_int;
+        for (auto constant: type->constants) {
+            resolve(constant);
         }
 
         type->complete = want_complete;

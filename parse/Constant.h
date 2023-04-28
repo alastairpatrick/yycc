@@ -16,6 +16,7 @@ struct IntegerConstant: Constant {
 
     static IntegerConstant* default_expr(const Location& location);
     static IntegerConstant* of(string_view text, TokenKind token, const Location& location);
+    static IntegerConstant* of(const IntegerType* type, unsigned long long value, const Location& location);
 
     IntegerConstant(LLVMValueRef value, const IntegerType* type, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;

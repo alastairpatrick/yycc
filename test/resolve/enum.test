@@ -17,7 +17,7 @@ EXPECT_MESSAGE
 :1:10: ...see other
 EXPECT_GLOBALS
 [["ec","A",0]
-,["typedef",["ENUM",[["ec","A",0],["ec","A"]]],"E"]]
+,["typedef",["ENUM",[["ec","A",0],["ec","A",1]]],"E"]]
 
 
 BEGIN Tagged union with multiple compatible definitions

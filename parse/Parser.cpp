@@ -587,9 +587,44 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
             // C99 6.7.2.3p6
             if (!identifier.name->empty()) tag_declarator = declare_tag_type(declaration, identifier, type, specifier_location);
 
+            Expr* base_expr{};
+            size_t base_offset{};
             enum_type->complete = true;
             while (token && token != '}') {
-                auto declarator = parse_enum_constant(declaration, enum_type, tag_declarator);
+
+                auto location = preprocessor.location();
+
+                Identifier identifier;
+                if (require(TOK_IDENTIFIER)) {
+                    identifier = preprocessor.identifier();
+                    consume();
+                }
+
+                Expr* constant{};
+                if (consume('=')) {
+                    base_expr = parse_expr(CONDITIONAL_PRECEDENCE);
+                    base_offset = 0;
+                }
+
+                if (base_expr) {
+                    auto base_offset_expr = IntegerConstant::of(enum_type->base_type, base_offset, location);
+                    constant = new BinaryExpr(base_expr, base_offset_expr, TokenKind('+'), location);
+                } else {
+                    constant = IntegerConstant::of(enum_type->base_type, base_offset, location);
+                }
+                ++base_offset;
+
+                if (!consume(',')) {
+                    if (token != '}') {
+                        unexpected_token();
+                    }
+                }
+
+                auto declarator = new Declarator(declaration, IntegerType::default_type(), identifier, location);
+                auto enum_constant = new EnumConstant(declarator, tag_declarator, constant);
+                declarator->delegate = enum_constant;
+                identifiers.add_declarator(declarator);
+
                 if (declarator) {
                     enum_type->constants.push_back(declarator);
                 }
@@ -639,35 +674,6 @@ const Type* Parser::parse_typeof() {
 
     consume_required(')');
     return type;
-}
-
-Declarator* Parser::parse_enum_constant(Declaration* declaration, const EnumType* type, Declarator* tag) {
-    auto location = preprocessor.location();
-
-    Identifier identifier;
-    if (require(TOK_IDENTIFIER)) {
-        identifier = preprocessor.identifier();
-        consume();
-    }
-
-    Expr* constant{};
-    if (consume('=')) {
-        constant = parse_expr(CONDITIONAL_PRECEDENCE);
-    }
-
-    if (!consume(',')) {
-        if (token != '}') {
-            unexpected_token();
-        }
-    }
-
-    auto declarator = new Declarator(declaration, IntegerType::default_type(), identifier, location);
-    auto enum_constant = new EnumConstant(declarator, tag, constant);
-    declarator->delegate = enum_constant;
-    identifiers.add_declarator(declarator);
-    enum_constant = declarator->enum_constant();
-
-    return declarator;
 }
 
 Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, int flags, bool* last) {

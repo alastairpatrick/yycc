@@ -1,19 +1,7 @@
-BEGIN Untagged enum definition
-enum { A=1, B } z;
-EXPECT_AST
-[["var", "ES", ["ENUM", [["ec", "A", 1], ["ec", "B"]]], "z"]]
-
-
 BEGIN Tagged enum definition
 enum E { A=1, B } z;
 EXPECT_AST
-[["var", "ES", ["ENUM", [["ec", "A", 1], ["ec", "B"]]], "z"]]
-
-
-BEGIN Tagged enum definition
-enum E { A=1, B } z;
-EXPECT_AST
-[["var", "ES", ["ENUM", [["ec", "A", 1], ["ec", "B"]]], "z"]]
+[["var","ES",["ENUM",[["ec","A",["+",1,0]],["ec","B",["+",1,1]]]],"z"]]
 
 
 BEGIN Tagged incomplete enum

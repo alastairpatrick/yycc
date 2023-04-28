@@ -120,6 +120,10 @@ IntegerConstant* IntegerConstant::of(string_view text, TokenKind token, const Lo
     }
 }
 
+IntegerConstant* IntegerConstant::of(const IntegerType* type, unsigned long long value, const Location& location) {
+    return new IntegerConstant(LLVMConstInt(type->llvm_type(), value, type->is_signed()), type, location);
+}
+
 IntegerConstant::IntegerConstant(LLVMValueRef value, const IntegerType* type, const Location& location)
     : Constant(location), type(type), value(value) {
     assert(value);

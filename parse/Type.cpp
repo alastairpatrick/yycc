@@ -737,7 +737,7 @@ void UnionType::print(std::ostream& stream) const {
 #pragma region EnumType
 
 EnumType::EnumType(const Location& location)
-    : location(location) {
+    : base_type(IntegerType::default_type()), location(location) {
 }
 
 TypePartition EnumType::partition() const {
