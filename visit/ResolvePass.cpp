@@ -178,9 +178,6 @@ struct ResolvePass: Visitor {
     const Type* composite_type(const Type* a, const Type* b) {
         if (a == b) return a;
 
-        if (a == &UniversalType::it) return b;
-        if (b == &UniversalType::it) return a;
-
         if (typeid(*a) == typeid(*b)) {
             if (auto a_array = dynamic_cast<const ResolvedArrayType*>(a)) {
                 auto b_array = static_cast<const ResolvedArrayType*>(b);

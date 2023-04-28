@@ -70,16 +70,6 @@ struct VoidType: Type {
     virtual void print(std::ostream& stream) const override;
 };
 
-// UniversalType is an incomplete type compatible with all types.
-struct UniversalType: Type {
-    static const UniversalType it;
-    virtual TypePartition partition() const override;
-    virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
-    virtual LLVMTypeRef llvm_type() const override;
-    virtual void message_print(ostream& stream, int section) const override;
-    virtual void print(std::ostream& stream) const override;
-};
-
 enum class IntegerSize {
     BOOL,
     CHAR,

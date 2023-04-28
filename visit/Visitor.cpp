@@ -34,10 +34,6 @@ VisitTypeOutput Visitor::visit(const VoidType* type, const VisitTypeInput& input
     return VisitTypeOutput(type);
 }
 
-VisitTypeOutput Visitor::visit(const UniversalType* type, const VisitTypeInput& input) {
-    return VisitTypeOutput(type);
-}
-
 VisitTypeOutput Visitor::visit(const IntegerType* type, const VisitTypeInput& input) {
     return VisitTypeOutput(type);
 }

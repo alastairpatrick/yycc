@@ -99,35 +99,6 @@ void VoidType::print(std::ostream& stream) const {
 
 #pragma endregion VoidType
 
-#pragma region UniversalType
-
-const UniversalType UniversalType::it;
-
-TypePartition UniversalType::partition() const {
-    return TypePartition::INCOMPLETE;
-}
-
-VisitTypeOutput UniversalType::accept(Visitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
-}
-
-LLVMTypeRef UniversalType::llvm_type() const {
-    assert(false);
-    auto llvm_context = TranslationUnitContext::it->llvm_context;
-    return LLVMVoidTypeInContext(llvm_context);
-}
-
-void UniversalType::message_print(ostream& stream, int section) const {
-    if (section == 0) {
-        stream << "universal";
-    }
-}
-
-void UniversalType::print(std::ostream& stream) const {
-    stream << "\"?\"";
-}
-
-#pragma endregion UniversalType
 
 #pragma region IntegerType
 

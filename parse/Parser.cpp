@@ -55,7 +55,7 @@ void Parser::handle_declaration_directive() {
 
     auto pp_token = preprocessor.next_pp_token();
 
-    auto declaration = new Declaration(IdentifierScope::FILE, storage_class, &UniversalType::it, preprocessor.location());
+    auto declaration = new Declaration(IdentifierScope::FILE, storage_class, &VoidType::it, preprocessor.location());
 
     while (pp_token && pp_token != '\n') {
         if (pp_token == TOK_IDENTIFIER) {

@@ -71,7 +71,6 @@ struct Visitor {
     virtual VisitTypeOutput visit(const VoidType* type, const VisitTypeInput& input);
     virtual VisitTypeOutput visit(const UnboundType* type, const VisitTypeInput& input);
     virtual VisitTypeOutput visit(const UnionType* type, const VisitTypeInput& input);
-    virtual VisitTypeOutput visit(const UniversalType* type, const VisitTypeInput& input);
     virtual VisitTypeOutput visit(const UnqualifiedType* type, const VisitTypeInput& input);
     virtual VisitTypeOutput visit(const UnresolvedArrayType* type, const VisitTypeInput& input);
 
