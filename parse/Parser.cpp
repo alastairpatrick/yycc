@@ -689,9 +689,11 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
             message(Severity::ERROR, declarator->location) << "invalid storage class\n";
         }
 
+        bool inline_definition = (linkage == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class != StorageClass::EXTERN);
+
         declarator->delegate = new Function(declarator,
                                             linkage,
-                                            specifiers,
+                                            inline_definition,
                                             move(declarator_transform.parameters),
                                             body);
     } else {

@@ -111,7 +111,7 @@ struct Function: Entity {
     Statement* body{};
     bool inline_definition{};
 
-    Function(Declarator* declarator, Linkage linkage, uint32_t specifiers, vector<Declarator*>&& parameters, Statement* body);
+    Function(Declarator* declarator, Linkage linkage, bool inline_definition, vector<Declarator*>&& parameters, Statement* body);
     Function(Declarator* declarator, Linkage linkage);
 
     virtual DeclaratorKind kind() const override;

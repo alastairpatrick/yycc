@@ -164,12 +164,8 @@ void Variable::print(ostream& stream) const {
     stream << ']';
 }
 
-Function::Function(Declarator* declarator, Linkage linkage, uint32_t specifiers, vector<Declarator*>&& parameters, Statement* body)
-    : Entity(declarator, linkage), parameters(move(parameters)), body(body) {
-    auto scope = declarator->declaration->scope;
-    auto storage_class = declarator->declaration->storage_class;
-
-    inline_definition = (linkage == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
+Function::Function(Declarator* declarator, Linkage linkage, bool inline_definition, vector<Declarator*>&& parameters, Statement* body)
+    : Entity(declarator, linkage), inline_definition(inline_definition), parameters(move(parameters)), body(body) {
 }
 
 Function::Function(Declarator* declarator, Linkage linkage): Entity(declarator, linkage) {
