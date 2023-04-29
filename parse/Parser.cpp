@@ -9,12 +9,6 @@
 #include "Message.h"
 #include "Statement.h"
 
-enum {
-    PD_ALLOW_FUNCTION_DEFINITION  = 0x0001,
-    PD_ALLOW_IDENTIFIER           = 0x0002,
-    PD_ALLOW_INITIALIZER          = 0x0004,
-};
-
 const Type* DeclaratorTransform::apply(const Type* type) {
     if (type_transform) type = type_transform(type);
     return type;
@@ -214,8 +208,8 @@ Declaration* Parser::parse_declaration(IdentifierScope scope) {
         int declarator_count = 0;
         bool last_declarator{};
         while (token && token != ';') {
-            int flags = PD_ALLOW_IDENTIFIER | PD_ALLOW_INITIALIZER;
-            if (declarator_count == 0) flags |= PD_ALLOW_FUNCTION_DEFINITION;
+            ParseDeclaratorFlags flags = { .allow_identifier = true, .allow_initializer = true };
+            if (declarator_count == 0) flags.allow_function_definition = true;
             auto declarator = parse_declarator(declaration, base_type, specifiers, flags, &last_declarator);
             if (!declarator->identifier.name->empty() || allow_abstract_declarator(scope)) {
                 declaration->declarators.push_back(declarator);
@@ -635,7 +629,7 @@ const Type* Parser::parse_typeof() {
     return type;
 }
 
-Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, int flags, bool* last) {
+Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, ParseDeclaratorFlags flags, bool* last) {
     auto location = preprocessor.location();
     auto begin = position();
 
@@ -652,7 +646,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     }
 
     Expr* initializer{};
-    if ((flags & PD_ALLOW_INITIALIZER) && consume('=')) {
+    if (flags.allow_initializer && consume('=')) {
         initializer = parse_initializer();
     }
 
@@ -675,7 +669,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
 
     if (is_function && declaration->storage_class != StorageClass::TYPEDEF) {
         CompoundStatement* body{};
-        if ((flags & PD_ALLOW_FUNCTION_DEFINITION) && token == '{') {
+        if (flags.allow_function_definition && token == '{') {
             identifiers.push_scope(move(declarator_transform.prototype_scope));
             body = parse_compound_statement();
             identifiers.pop_scope();
@@ -717,7 +711,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     return declarator;
 }
 
-DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, int flags) {
+DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, ParseDeclaratorFlags flags) {
     function<const Type*(const Type*)> left_transform;
     while (consume('*')) {
         left_transform = [left_transform](const Type* type) {
@@ -744,7 +738,7 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, in
         declarator = parse_declarator_transform(scope, flags);
         consume_required(')');
     } else {
-        if (flags & PD_ALLOW_IDENTIFIER) {
+        if (flags.allow_identifier) {
             if (token == TOK_IDENTIFIER) {
                 declarator.identifier = preprocessor.identifier();
                 consume();
@@ -856,7 +850,7 @@ Declarator* Parser::parse_parameter_declarator() {
 
     bool last;
     auto begin_declarator = position();
-    auto declarator = parse_declarator(declaration, base_type, specifiers, PD_ALLOW_IDENTIFIER, &last);
+    auto declarator = parse_declarator(declaration, base_type, specifiers, { .allow_identifier = true }, &last);
     declarator->fragment = end_fragment(begin_declarator);
 
     declaration->declarators.push_back(declarator);
@@ -1337,7 +1331,7 @@ const Type* Parser::parse_type() {
     if (!declaration) return nullptr;
 
     if (token && token != ')') {
-        auto transform = parse_declarator_transform(IdentifierScope::EXPRESSION, 0);
+        auto transform = parse_declarator_transform(IdentifierScope::EXPRESSION, {});
         type = transform.apply(type);
     }
 

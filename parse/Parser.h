@@ -19,6 +19,12 @@ struct DeclaratorTransform {
     const Type* apply(const Type* type);
 };
 
+struct ParseDeclaratorFlags {
+    bool allow_function_definition: 1;
+    bool allow_identifier: 1;
+    bool allow_initializer: 1;
+};
+
 enum class SubExpressionKind {
     PRIMARY,
     POSTFIX,
@@ -73,8 +79,8 @@ private:
     Declarator* declare_tag_type(AddDeclaratorScope add_scope, Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location);
     const Type* parse_typeof();
     Declarator* parse_enum_constant(Declaration* declaration, const EnumType* type);
-    Declarator* parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, int flags, bool* last);
-    DeclaratorTransform parse_declarator_transform(IdentifierScope scope, int flags);
+    Declarator* parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, ParseDeclaratorFlags flags, bool* last);
+    DeclaratorTransform parse_declarator_transform(IdentifierScope scope, ParseDeclaratorFlags flags);
     Declarator* parse_parameter_declarator();
     Statement* parse_statement();
     CompoundStatement* parse_compound_statement();

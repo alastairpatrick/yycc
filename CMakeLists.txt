@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20.6)
 
 project(lang)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
