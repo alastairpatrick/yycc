@@ -55,6 +55,10 @@ struct DeclarationMarker {
     bool is_marked(const Declaration* declaration) const {
         return marked.find(declaration) != marked.end();
     }
+
+    bool is_marked(Declarator* declarator) const {
+        return is_marked(declarator->declaration);
+    }
 };
 
 
@@ -85,7 +89,7 @@ void output_declaration_directives(TextStream& stream, Scope* scope, Declaration
         Declarator* output_declarator{};
         auto kind = p.second->delegate->kind();
         for (auto declarator = p.second; declarator; declarator = declarator->next) {
-            if (marker && !marker->is_marked(declarator->declaration)) continue;
+            if (marker && !marker->is_marked(declarator)) continue;
                 
             if (!output_declarator || output_declarator->delegate->kind() < declarator->delegate->kind()) {
                 output_declarator = declarator;

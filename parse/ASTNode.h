@@ -50,7 +50,6 @@ struct Declarator: ASTNode {
     Declarator* primary{};
     Location location;
     Fragment fragment;
-    const Declaration* declaration{};
     const Type* type{};
     Identifier identifier;
     DeclaratorDelegate* delegate{};
@@ -71,6 +70,11 @@ struct Declarator: ASTNode {
     bool is_member() const;
     VisitDeclaratorOutput accept(Visitor& visitor, const VisitDeclaratorInput& input);
     void print(ostream& stream) const;
+
+private:
+    friend class DeclarationMarker;
+    friend class IdentifierMap;
+    const Declaration* declaration{};
 };
 
 enum class LabelKind {
