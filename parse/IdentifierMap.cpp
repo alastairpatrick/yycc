@@ -23,14 +23,14 @@ const Type* IdentifierMap::lookup_type(const Identifier& identifier) const {
     return declarator->to_type();
 }
 
-Declarator* IdentifierMap::add_declarator(const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location) {
+Declarator* IdentifierMap::add_declarator(AddDeclaratorScope add_scope, const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location) {
     Declarator* declarator{};
-    if (declaration->scope == IdentifierScope::FILE || declaration->storage_class == StorageClass::EXTERN) {
+    if (add_scope != AddDeclaratorScope::CURRENT) {
         declarator = find_placeholder(scopes.back(), declaration, type, identifier, location);
         if (declarator) return declarator;
     }
 
-    if (declaration->scope != IdentifierScope::FILE) {
+    if (add_scope != AddDeclaratorScope::FILE) {
         declarator = find_placeholder(scopes.front(), declaration, type, identifier, location);
         if (declarator) return declarator;
     }
@@ -40,11 +40,11 @@ Declarator* IdentifierMap::add_declarator(const Declaration* declaration, const 
     if (identifier.name->empty()) return declarator;
 
     Declarator* primary{};
-    if (declaration->scope == IdentifierScope::FILE || declaration->storage_class == StorageClass::EXTERN) {
+    if (add_scope != AddDeclaratorScope::CURRENT) {
         primary = add_declarator_to_scope(scopes.back(), declarator);
     }
 
-    if (declaration->scope != IdentifierScope::FILE) {
+    if (add_scope != AddDeclaratorScope::FILE) {
         auto primary2 = add_declarator_to_scope(scopes.front(), declarator);
         if (primary2) {
             assert(primary == nullptr || primary == primary2);
