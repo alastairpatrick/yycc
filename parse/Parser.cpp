@@ -684,6 +684,11 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
             *last = true;
         }
 
+        if ((storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) ||
+            (storage_class == StorageClass::STATIC && scope != IdentifierScope::FILE)) {
+            message(Severity::ERROR, declarator->location) << "invalid storage class\n";
+        }
+
         declarator->delegate = new Function(declarator,
                                             linkage,
                                             specifiers,

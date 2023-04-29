@@ -169,11 +169,6 @@ Function::Function(Declarator* declarator, Linkage linkage, uint32_t specifiers,
     auto scope = declarator->declaration->scope;
     auto storage_class = declarator->declaration->storage_class;
 
-    if ((storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) ||
-        (storage_class == StorageClass::STATIC && scope != IdentifierScope::FILE)) {
-        message(Severity::ERROR, declarator->location) << "invalid storage class\n";
-    }
-
     inline_definition = (linkage == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
 }
 
