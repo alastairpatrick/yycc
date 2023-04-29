@@ -85,6 +85,10 @@ const Type* Declarator::to_type() const {
     return delegate->to_type();
 }
 
+bool Declarator::is_member() const {
+    return declaration ? declaration->scope == IdentifierScope::STRUCTURED : false;
+}
+
 VisitDeclaratorOutput Declarator::accept(Visitor& visitor, const VisitDeclaratorInput& input) {
     return delegate->accept(visitor, input);
 }
@@ -128,7 +132,7 @@ DeclaratorKind Variable::kind() const {
 }
 
 const char* Variable::error_kind() const {
-    if (declarator->declaration && declarator->declaration->scope == IdentifierScope::STRUCTURED) {
+    if (declarator->is_member()) {
         return "member";
     } else {
         return "variable";
