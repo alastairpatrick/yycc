@@ -272,7 +272,7 @@ struct TypeOfType: ASTNode, Type {
     virtual void print(std::ostream& stream) const override;
 };
 
-// This type is only used during preparsing, when names cannot necessarily be bound to declarations.
+// This type is only used during preparsing, when identifiers cannot necessarily be bound to declarators.
 struct UnboundType: Type {
     static const UnboundType* of(const Identifier& identifier);
 
