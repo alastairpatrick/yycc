@@ -195,4 +195,4 @@ BEGIN Error on unmatched #func
 EXPECT_MESSAGE
 :1:7: error declaration directive not matched with a proper declaration of 'f'
 EXPECT_GLOBALS
-[["var","ES","Si","f"]]
+[["var","S","Si","f"]]

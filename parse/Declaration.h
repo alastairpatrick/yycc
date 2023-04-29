@@ -77,7 +77,7 @@ struct Entity: DeclaratorDelegate {
     Linkage linkage;
     Value value;
 
-    explicit Entity(Declarator* declarator);
+    Entity(Declarator* declarator, Linkage linkage);
 };
 
 struct BitField: ASTNode {
@@ -96,8 +96,7 @@ struct Variable: Entity {
     BitField* bit_field{};
     size_t aggregate_index{};
 
-    Variable(Declarator* declarator, Expr* initializer, Expr* bit_field_size);
-    explicit Variable(Declarator* declarator);
+    Variable(Declarator* declarator, Linkage linkage, Expr* initializer, Expr* bit_field_size);
 
     StorageDuration storage_duration() const;
     virtual DeclaratorKind kind() const override;
@@ -112,8 +111,8 @@ struct Function: Entity {
     Statement* body{};
     bool inline_definition{};
 
-    Function(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&& parameters, Statement* body);
-    explicit Function(Declarator* declarator);
+    Function(Declarator* declarator, Linkage linkage, uint32_t specifiers, vector<Declarator*>&& parameters, Statement* body);
+    Function(Declarator* declarator, Linkage linkage);
 
     virtual DeclaratorKind kind() const override;
     virtual const char* error_kind() const override;

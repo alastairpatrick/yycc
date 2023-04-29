@@ -46,14 +46,14 @@ struct ResolvePass: Visitor {
         }
     }
 
-    bool is_variable_potentially_function(Declarator* declarator) {
+    void fix_misidentified_function(Declarator* declarator) {
         auto variable = declarator->variable();
-        if (!variable) return false;
+        if (!variable) return;
 
-        if (variable->initializer) return false;
-        if (variable->bit_field) return false;
+        if (variable->initializer) return;
+        if (variable->bit_field) return;
 
-        return true;
+        declarator->delegate = new Function(declarator, variable->linkage);
     }
 
     const Type* resolve(Declarator* primary) {
@@ -68,7 +68,7 @@ struct ResolvePass: Visitor {
         if (!primary->type) {
             message(Severity::ERROR, primary->location) << "declaration directive not matched with a proper declaration of '" << *primary->identifier.name << "'\n";
             primary->type = IntegerType::default_type();
-            primary->delegate = new Variable(primary, nullptr, nullptr);
+            primary->delegate = new Variable(primary, Linkage::NONE, nullptr, nullptr);
         }
 
         Declarator* acyclic_declarator{};
@@ -102,14 +102,10 @@ struct ResolvePass: Visitor {
             assert(!dynamic_cast<const TypeDefType*>(primary->type));
 
             bool is_function = dynamic_cast<const FunctionType*>(primary->type);
-            if (is_function && is_variable_potentially_function(primary)) {
-                primary->delegate = new Function(primary);
-            }
+            if (is_function) fix_misidentified_function(primary);
 
             for (auto secondary = primary->next; secondary; secondary = secondary->next) {
-                if (is_function && is_variable_potentially_function(secondary)) {
-                    secondary->delegate = new Function(secondary);
-                }
+                if (is_function) fix_misidentified_function(secondary);
 
                 try {
                     secondary->type = resolve(secondary->type);

@@ -104,18 +104,9 @@ const Type* DeclaratorDelegate::to_type() const {
     return nullptr;
 }
 
-Entity::Entity(Declarator* declarator)
-    : DeclaratorDelegate(declarator) {
-    auto storage_class = declarator->declaration->storage_class;
-    auto scope = declarator->declaration->scope;
+Entity::Entity(Declarator* declarator, Linkage linkage)
+    : DeclaratorDelegate(declarator), linkage(linkage) {
 
-    if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
-        linkage = Linkage::INTERNAL;
-    } else if (storage_class == StorageClass::EXTERN || scope == IdentifierScope::FILE) {
-        linkage = Linkage::EXTERNAL;
-    } else {
-        linkage = Linkage::NONE;
-    }
 }
 
 BitField::BitField(Expr* expr): expr(expr) {
@@ -125,14 +116,11 @@ void BitField::print(ostream& stream) const {
     stream << expr;
 }
 
-Variable::Variable(Declarator* declarator, Expr* initializer, Expr* bit_field_size)
-    : Entity(declarator), initializer(initializer) {
+Variable::Variable(Declarator* declarator, Linkage linkage, Expr* initializer, Expr* bit_field_size)
+    : Entity(declarator, linkage), initializer(initializer) {
     if (bit_field_size) {
         bit_field = new BitField(bit_field_size);
     }
-}
-
-Variable::Variable(Declarator* declarator): Entity(declarator) {
 }
 
 StorageDuration Variable::storage_duration() const {
@@ -176,8 +164,8 @@ void Variable::print(ostream& stream) const {
     stream << ']';
 }
 
-Function::Function(Declarator* declarator, uint32_t specifiers, vector<Declarator*>&& parameters, Statement* body)
-    : Entity(declarator), parameters(move(parameters)), body(body) {
+Function::Function(Declarator* declarator, Linkage linkage, uint32_t specifiers, vector<Declarator*>&& parameters, Statement* body)
+    : Entity(declarator, linkage), parameters(move(parameters)), body(body) {
     auto scope = declarator->declaration->scope;
     auto storage_class = declarator->declaration->storage_class;
 
@@ -189,7 +177,7 @@ Function::Function(Declarator* declarator, uint32_t specifiers, vector<Declarato
     inline_definition = (linkage == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class !=  StorageClass::EXTERN);
 }
 
-Function::Function(Declarator* declarator): Entity(declarator) {
+Function::Function(Declarator* declarator, Linkage linkage): Entity(declarator, linkage) {
 }
 
 DeclaratorKind Function::kind() const {

@@ -528,7 +528,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 // C11 6.7.2.1p13 anonymous structs and unions
                 if (dynamic_cast<const StructuredType*>(member_declaration->type) && member_declaration->declarators.empty()) {
                     auto member_declarator = new Declarator(member_declaration, member_declaration->type, Identifier(), member_declaration->location);
-                    member_declarator->delegate = new Variable(member_declarator);
+                    member_declarator->delegate = new Variable(member_declarator, Linkage::NONE, nullptr, nullptr);
                     member_declaration->declarators.push_back(member_declarator);
                 }
 
@@ -662,6 +662,18 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     }
 
     auto declarator = identifiers.add_declarator(declaration, type, declarator_transform.identifier, location);
+    
+    auto storage_class = declaration->storage_class;
+    auto scope = declaration->scope;
+
+    Linkage linkage;
+    if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
+        linkage = Linkage::INTERNAL;
+    } else if (storage_class == StorageClass::EXTERN || scope == IdentifierScope::FILE) {
+        linkage = Linkage::EXTERNAL;
+    } else {
+        linkage = Linkage::NONE;
+    }
 
     if (is_function && declaration->storage_class != StorageClass::TYPEDEF) {
         CompoundStatement* body{};
@@ -673,6 +685,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         }
 
         declarator->delegate = new Function(declarator,
+                                            linkage,
                                             specifiers,
                                             move(declarator_transform.parameters),
                                             body);
@@ -684,7 +697,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         if (declaration->storage_class == StorageClass::TYPEDEF) {
             declarator->delegate = new TypeDef(declarator);
         } else {
-            declarator->delegate = new Variable(declarator, initializer, bit_field_size);
+            declarator->delegate = new Variable(declarator, linkage, initializer, bit_field_size);
         }
     }
 
