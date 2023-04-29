@@ -134,12 +134,12 @@ struct TypeDef: DeclaratorDelegate {
 };
 
 struct EnumConstant: DeclaratorDelegate {
-    Declarator* enum_tag{};
+    const EnumType* type{};
     Expr* constant_expr{};
     long long constant_int{};
 
     explicit EnumConstant(Declarator* declarator);
-    EnumConstant(Declarator* declarator, Declarator* enum_tag, Expr* constant);
+    EnumConstant(Declarator* declarator, const EnumType* type, Expr* constant);
 
     virtual DeclaratorKind kind() const override;
     virtual const char* error_kind() const override;

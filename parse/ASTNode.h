@@ -29,21 +29,22 @@ struct ASTNode: virtual Printable {
     ASTNode();
     ASTNode(const ASTNode&);
     ASTNode(ASTNode&&);
+    virtual ~ASTNode() = default;
     ASTNode& operator=(const ASTNode&);
     ASTNode& operator=(ASTNode&&);
 
     ASTNode* next_delete;
 };
 
-typedef vector<ASTNode*> ASTNodeVector;
-
-ostream& operator<<(ostream& stream, const ASTNodeVector& items);
-
 struct LocationNode: ASTNode {
     Location location;
 
     LocationNode(const Location& location);
 };
+
+typedef vector<LocationNode*> ASTNodeVector;
+
+ostream& operator<<(ostream& stream, const ASTNodeVector& items);
 
 enum class DeclaratorStatus {
     UNRESOLVED,

@@ -16,7 +16,6 @@ struct IdentifierMap {
     void operator=(const IdentifierMap&) = delete;
 
     list<Scope> scopes;
-    unordered_set<Declarator*> primary_declarators;
     const bool preparse;
 
     Declarator* lookup_declarator(const Identifier& identifier) const;

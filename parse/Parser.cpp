@@ -184,10 +184,10 @@ bool Parser::check_eof() {
     return false;
 }
 
-ASTNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
+LocationNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
     resume_messages();
 
-    ASTNode* node = parse_declaration(scope);
+    LocationNode* node = parse_declaration(scope);
     if (node) return node;
 
     node = parse_statement();
@@ -578,7 +578,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 }
 
                 auto declarator = identifiers.add_declarator(AddDeclaratorScope::CURRENT, declaration, IntegerType::default_type(), identifier, location);
-                auto enum_constant = new EnumConstant(declarator, tag_declarator, constant);
+                auto enum_constant = new EnumConstant(declarator, enum_type, constant);
                 declarator->delegate = enum_constant;
 
                 if (declarator) {

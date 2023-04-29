@@ -60,8 +60,6 @@ Declarator* IdentifierMap::add_declarator(AddDeclaratorScope add_scope, const De
         declarator->primary = primary;
         declarator->next = primary->next;
         primary->next = declarator;
-    } else {
-        primary_declarators.insert(declarator);
     }
 
     return declarator;

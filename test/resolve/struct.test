@@ -191,7 +191,7 @@ struct T {
     S x;
 };
 EXPECT_MESSAGE
-:3:7: error member 'x' has incomplete type
+:6:7: error member 'x' has incomplete type
 END
 
 
@@ -324,6 +324,7 @@ END
 BEGIN Unmatched #var in struct definition
 struct S {
     #var x
+    int f() { return x; }
 };
 EXPECT_MESSAGE
 :2:10: error declaration directive not matched with a proper declaration of 'x'

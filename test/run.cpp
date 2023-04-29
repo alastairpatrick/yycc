@@ -174,7 +174,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
         } else {
             auto declarations = parse_declarations(identifiers, sections[INPUT]);
 
-            if (test_type >= TestType::RESOLVE) resolve_pass(identifiers.primary_declarators, declarations);
+            if (test_type >= TestType::RESOLVE) resolve_pass(declarations);
 
             if (test_type >= TestType::EMIT) {
                 EmitOptions options;

@@ -175,6 +175,17 @@ EXPECT_MESSAGE
 END
 
 
+BEGIN Resolves tag type declarators declared in function block scope
+void f() {
+    enum E { A };
+    enum E { B };
+}
+EXPECT_MESSAGE
+:3:14: error enum constant 'B'...
+:2:5: ...missing from other definition
+END
+
+
 BEGIN #func directive preceeding function declaration
 #func f
 void f() {}
@@ -192,7 +203,7 @@ EXPECT_GLOBALS
 
 BEGIN Error on unmatched #func
 #func f
+void* p = f;
 EXPECT_MESSAGE
 :1:7: error declaration directive not matched with a proper declaration of 'f'
-EXPECT_GLOBALS
-[["var","S","Si","f"]]
+END

@@ -72,7 +72,7 @@ private:
 
     void handle_declaration_directive();
 
-    ASTNode* parse_declaration_or_statement(IdentifierScope scope);
+    LocationNode* parse_declaration_or_statement(IdentifierScope scope);
     Declaration* parse_declaration(IdentifierScope scope);
     Declaration* parse_declaration_specifiers(IdentifierScope scope, const Type*& type, uint32_t& specifiers);
     const Type* parse_structured_type(Declaration* declaration);

@@ -12,6 +12,15 @@ struct ResolvePass: Visitor {
     ResolvePassResult result;
     unordered_set<const TagType*> tag_types;
 
+    struct TodoLess {
+        bool operator()(LocationNode* a, LocationNode* b) const {
+            return a->location < b->location;
+        }
+    };
+
+    set<LocationNode*, TodoLess> todo;
+    unordered_set<LocationNode*> done;
+
     const Type* resolve(const Type* type) {
         type = type->accept(*this, VisitTypeInput()).value.type;
 
@@ -24,8 +33,27 @@ struct ResolvePass: Visitor {
         return type;
     }
 
-    void resolve(Statement* statement) {
-        accept(statement, VisitStatementInput());
+    void pend(LocationNode* node) {
+        if (!node) return;
+        if (done.find(node) != done.end()) return;
+        todo.insert(node);
+    }
+
+    void resolve(LocationNode* node) {
+        if (!node) return;
+
+        if (auto declaration = dynamic_cast<Declaration*>(node)) {
+            declaration->type = resolve(declaration->type);
+            for (auto declarator: declaration->declarators) {
+                resolve(declarator);
+            }
+        } else if (auto declarator = dynamic_cast<Declarator*>(node)) {
+            resolve(declarator);            
+        } else if (auto statement = dynamic_cast<Statement*>(node)) {
+            accept(statement, VisitStatementInput());
+        } else {
+            assert(false);
+        }
     }
 
     virtual void pre_visit(Statement* statement) override {
@@ -61,7 +89,9 @@ struct ResolvePass: Visitor {
 
         primary = primary->primary;
         if (primary->status >= DeclaratorStatus::RESOLVED) return primary->type;
-        if (primary->status == DeclaratorStatus::RESOLVING) throw ResolutionCycle();
+        if (primary->status == DeclaratorStatus::RESOLVING) {
+            throw ResolutionCycle();
+        }
 
         primary->status = DeclaratorStatus::RESOLVING;
 
@@ -279,7 +309,7 @@ struct ResolvePass: Visitor {
         if (!secondary) {
             auto function_type = dynamic_cast<const FunctionType*>(primary->type);
             for (size_t i = 0; i < primary_entity->parameters.size(); ++i) {
-                primary_entity->parameters[i]->type = function_type->parameter_types[i];
+                primary_entity->parameters[i]->type = resolve(function_type->parameter_types[i]);
                 resolve(primary_entity->parameters[i]);
             }
 
@@ -321,6 +351,7 @@ struct ResolvePass: Visitor {
         auto secondary = input.secondary;
         if (!secondary) {
             fold_enum_constant(primary_enum_constant);
+            primary_enum_constant->type = static_cast<const EnumType*>(resolve(primary_enum_constant->type));
             return VisitDeclaratorOutput();
         }
 
@@ -329,10 +360,10 @@ struct ResolvePass: Visitor {
 
         fold_enum_constant(secondary_enum_constant);
 
-        if (!primary_enum_constant->enum_tag ||                                                       // enum { A }; enum E { A };
-            !secondary_enum_constant->enum_tag ||                                                     // enum E { A }; enum { A };
-            primary_enum_constant->enum_tag == secondary_enum_constant->enum_tag ||                   // enum E { A, A };
-            primary_enum_constant->enum_tag->primary != secondary_enum_constant->enum_tag->primary    // enum E1 { A }; enum E2 { A };
+        if (!primary_enum_constant->type->tag ||                                                        // enum { A }; enum E { A };
+            !secondary_enum_constant->type->tag ||                                                      // enum E { A }; enum { A };
+            primary_enum_constant->type->tag == secondary_enum_constant->type->tag ||                   // enum E { A, A };
+            primary_enum_constant->type->tag->primary != secondary_enum_constant->type->tag->primary    // enum E1 { A }; enum E2 { A };
         ) {
             redeclaration_message(Severity::ERROR, secondary, primary->location, nullptr);
         }
@@ -379,6 +410,9 @@ struct ResolvePass: Visitor {
             }
 
             auto a_declarator = it->second;
+            resolve(a_declarator);
+            resolve(b_declarator);
+
             auto b_enum_constant = b_declarator->enum_constant();
             auto a_enum_constant = a_declarator->enum_constant();
             if (b_enum_constant->constant_int != a_enum_constant->constant_int) {
@@ -508,15 +542,16 @@ struct ResolvePass: Visitor {
     }
 
     VisitTypeOutput visit_structured_type(const StructuredType* type, const VisitTypeInput& input) {
+        pend(type->tag);
+
+        if (!type->complete) return VisitTypeOutput(type);
+
         // C99 6.7.2.3p4
         auto want_complete = type->complete;
         type->complete = false;
 
         for (auto declaration: type->declarations) {
-            resolve(declaration->type);
-            for (auto member: declaration->declarators) {
-                resolve(member);
-            }
+            resolve(declaration);
         }
 
         type->complete = want_complete;
@@ -524,6 +559,10 @@ struct ResolvePass: Visitor {
     }
 
     virtual VisitTypeOutput visit(const EnumType* type, const VisitTypeInput& input) override {
+        pend(type->tag);
+
+        if (!type->complete) return VisitTypeOutput(type);
+
         // C99 6.7.2.3p4
         auto want_complete = type->complete;
         type->complete = false;
@@ -578,7 +617,9 @@ struct ResolvePass: Visitor {
     }
 
     virtual VisitStatementOutput visit(CompoundStatement* statement, const VisitStatementInput& input) override {
-        resolve_pass({}, statement->nodes);
+        for (auto node: statement->nodes) {
+            resolve(node);
+        }
         return VisitStatementOutput();
     }
 
@@ -603,42 +644,31 @@ struct ResolvePass: Visitor {
 
         return VisitStatementOutput();
     }
+
+    void resolve(const ASTNodeVector& nodes) {
+        for (auto node: nodes) {
+            todo.insert(node);
+        }
+
+        while (!todo.empty()) {
+            auto node = *todo.begin();
+            todo.erase(todo.begin());
+            done.insert(node);
+
+            resume_messages();
+            resolve(node);
+        }
+    
+        resume_messages();
+
+        for (auto type: result.tag_types) {
+            type->llvm_type();
+        }
+    }
 };
 
-ResolvePassResult resolve_pass(const unordered_set<Declarator*>& declarators, const ASTNodeVector& nodes) {
-    // Sort declarators so error messages don't vary between runs.
-    vector<Declarator*> ordered;
-    for (auto declarator: declarators) {
-        ordered.push_back(declarator);
-    }
-
-    sort(ordered.begin(), ordered.end(), [](Declarator* a, Declarator* b) {
-        return a->location < b->location || (a->location == b->location && a < b);
-    });
-    
+ResolvePassResult resolve_pass(const ASTNodeVector& nodes) {
     ResolvePass pass;
-    for (auto declarator: ordered) {
-        resume_messages();
-        pass.resolve(declarator);
-    }
-    
-    for (auto node: nodes) {
-        if (auto declaration = dynamic_cast<Declaration*>(node)) {
-            resume_messages();
-            declaration->type = pass.resolve(declaration->type);
-        }
-
-        if (auto statement = dynamic_cast<Statement*>(node)) {
-            resume_messages();
-            pass.resolve(statement);
-        }
-    }
-
-    resume_messages();
-
-    for (auto type: pass.result.tag_types) {
-        type->llvm_type();
-    }
-
+    pass.resolve(nodes);
     return move(pass.result);
 }

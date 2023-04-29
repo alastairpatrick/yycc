@@ -44,7 +44,7 @@ int main(int argc, const char* argv[]) {
         nodes.insert(nodes.end(), parsed.begin(), parsed.end());
     }
 
-    resolve_pass(identifiers.primary_declarators, nodes);
+    resolve_pass(nodes);
 
     EmitOptions options;
     auto module = emit_pass(nodes, options);
