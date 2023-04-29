@@ -528,7 +528,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 // C11 6.7.2.1p13 anonymous structs and unions
                 if (dynamic_cast<const StructuredType*>(member_declaration->type) && member_declaration->declarators.empty()) {
                     auto member_declarator = new Declarator(member_declaration, member_declaration->type, Identifier(), member_declaration->location);
-                    member_declarator->delegate = new Variable(member_declarator, Linkage::NONE, nullptr, nullptr);
+                    member_declarator->delegate = new Variable(member_declarator, Linkage::NONE, StorageDuration::AUTO);
                     member_declaration->declarators.push_back(member_declarator);
                 }
 
@@ -666,7 +666,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     auto storage_class = declaration->storage_class;
     auto scope = declaration->scope;
 
-    Linkage linkage;
+    Linkage linkage{};
     if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
         linkage = Linkage::INTERNAL;
     } else if (storage_class == StorageClass::EXTERN || scope == IdentifierScope::FILE) {
@@ -701,10 +701,17 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
             message(Severity::ERROR, location) << "'inline' may only appear on function\n";
         }
 
-        if (declaration->storage_class == StorageClass::TYPEDEF) {
+        if (storage_class == StorageClass::TYPEDEF) {
             declarator->delegate = new TypeDef(declarator);
         } else {
-            declarator->delegate = new Variable(declarator, linkage, initializer, bit_field_size);
+            StorageDuration storage_duration{};
+            if (storage_class == StorageClass::EXTERN || storage_class == StorageClass::STATIC || scope == IdentifierScope::FILE) {
+                storage_duration = StorageDuration::STATIC;
+            } else {
+                storage_duration = StorageDuration::AUTO;
+            }
+
+            declarator->delegate = new Variable(declarator, linkage, storage_duration, initializer, bit_field_size);
         }
     }
 

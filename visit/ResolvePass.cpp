@@ -68,7 +68,7 @@ struct ResolvePass: Visitor {
         if (!primary->type) {
             message(Severity::ERROR, primary->location) << "declaration directive not matched with a proper declaration of '" << *primary->identifier.name << "'\n";
             primary->type = IntegerType::default_type();
-            primary->delegate = new Variable(primary, Linkage::NONE, nullptr, nullptr);
+            primary->delegate = new Variable(primary, Linkage::NONE, StorageDuration::STATIC);
         }
 
         Declarator* acyclic_declarator{};
@@ -269,7 +269,7 @@ struct ResolvePass: Visitor {
             }
         }
 
-        assert(secondary_entity->storage_duration() == primary_entity->storage_duration());
+        assert(secondary_entity->storage_duration == primary_entity->storage_duration);
 
         return VisitDeclaratorOutput();
     }

@@ -92,13 +92,13 @@ struct BitField: ASTNode {
 };
 
 struct Variable: Entity {
+    StorageDuration storage_duration{};
     Expr* initializer{};
     BitField* bit_field{};
     size_t aggregate_index{};
 
-    Variable(Declarator* declarator, Linkage linkage, Expr* initializer, Expr* bit_field_size);
+    Variable(Declarator* declarator, Linkage linkage, StorageDuration storage_duration, Expr* initializer = nullptr, Expr* bit_field_size = nullptr);
 
-    StorageDuration storage_duration() const;
     virtual DeclaratorKind kind() const override;
     virtual const char* error_kind() const override;
     virtual bool is_definition() const override;

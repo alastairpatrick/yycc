@@ -116,21 +116,10 @@ void BitField::print(ostream& stream) const {
     stream << expr;
 }
 
-Variable::Variable(Declarator* declarator, Linkage linkage, Expr* initializer, Expr* bit_field_size)
-    : Entity(declarator, linkage), initializer(initializer) {
+Variable::Variable(Declarator* declarator, Linkage linkage, StorageDuration storage_duration, Expr* initializer, Expr* bit_field_size)
+    : Entity(declarator, linkage), storage_duration(storage_duration), initializer(initializer) {
     if (bit_field_size) {
         bit_field = new BitField(bit_field_size);
-    }
-}
-
-StorageDuration Variable::storage_duration() const {
-    auto scope = declarator->declaration->scope;
-    auto storage_class = declarator->declaration->storage_class;
-
-    if (storage_class == StorageClass::EXTERN || storage_class == StorageClass::STATIC || scope == IdentifierScope::FILE) {
-        return StorageDuration::STATIC;
-    } else {
-        return StorageDuration::AUTO;
     }
 }
 
@@ -155,7 +144,7 @@ VisitDeclaratorOutput Variable::accept(Visitor& visitor, const VisitDeclaratorIn
 }
 
 void Variable::print(ostream& stream) const {
-    stream << "[\"var\", \"" << linkage << storage_duration();
+    stream << "[\"var\", \"" << linkage << storage_duration;
 
     stream << "\", " << declarator->type << ", \"" << declarator->identifier  << "\"";
     if (initializer) {

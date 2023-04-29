@@ -344,7 +344,7 @@ struct Emitter: Visitor {
 
         auto null_value = LLVMConstNull(llvm_type);
 
-        if (entity->storage_duration() == StorageDuration::AUTO) {
+        if (entity->storage_duration == StorageDuration::AUTO) {
             auto first_insn = LLVMGetFirstInstruction(entry_block);
             if (first_insn) {
                 LLVMPositionBuilderBefore(temp_builder, first_insn);
@@ -361,7 +361,7 @@ struct Emitter: Visitor {
                 LLVMBuildStore(builder, null_value, storage);
             }
 
-        } else if (entity->storage_duration() == StorageDuration::STATIC) {
+        } else if (entity->storage_duration == StorageDuration::STATIC) {
             auto global = entity->value.llvm_lvalue();
 
             LLVMValueRef initial = null_value;

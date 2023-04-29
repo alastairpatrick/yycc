@@ -20,7 +20,7 @@ struct EntityPass: Visitor {
         primary = primary->primary;
         entity = primary->variable();
         
-        if (entity->storage_duration() != StorageDuration::STATIC) return VisitDeclaratorOutput();
+        if (entity->storage_duration != StorageDuration::STATIC) return VisitDeclaratorOutput();
 
         if (entity->value.kind == ValueKind::LVALUE) return VisitDeclaratorOutput();
 
