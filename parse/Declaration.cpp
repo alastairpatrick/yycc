@@ -128,7 +128,7 @@ DeclaratorKind Variable::kind() const {
 }
 
 const char* Variable::error_kind() const {
-    if (declarator->declaration->scope == IdentifierScope::STRUCTURED) {
+    if (declarator->declaration && declarator->declaration->scope == IdentifierScope::STRUCTURED) {
         return "member";
     } else {
         return "variable";

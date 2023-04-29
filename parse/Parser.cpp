@@ -55,19 +55,15 @@ void Parser::handle_declaration_directive() {
 
     auto pp_token = preprocessor.next_pp_token();
 
-    auto declaration = new Declaration(IdentifierScope::FILE, storage_class, &VoidType::it, preprocessor.location());
-
     while (pp_token && pp_token != '\n') {
         if (pp_token == TOK_IDENTIFIER) {
             auto id = preprocessor.identifier();
 
-            auto declarator = identifiers.add_declarator(AddDeclaratorScope::CURRENT, declaration, nullptr, id, preprocessor.location());
+            auto declarator = identifiers.add_declarator(AddDeclaratorScope::CURRENT, nullptr, nullptr, id, preprocessor.location());
             if (token == TOK_PP_TYPE) {
                 declarator->delegate = new TypeDef(declarator);
                 declarator->type = declarator->to_type();
             }
-
-            declaration->declarators.push_back(declarator);
         } else {
             preprocessor.unexpected_directive_token();
         }

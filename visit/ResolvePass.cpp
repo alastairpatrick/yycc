@@ -199,7 +199,7 @@ struct ResolvePass: Visitor {
 
     void compose_entity(Declarator* primary, Entity* primary_entity, Declarator* secondary, Entity* secondary_entity) {
         if (primary_entity->linkage == Linkage::NONE || secondary_entity->linkage == Linkage::NONE) {
-            if (primary->declaration->scope == IdentifierScope::STRUCTURED) {
+            if (primary->declaration && primary->declaration->scope == IdentifierScope::STRUCTURED) {
                 message(Severity::ERROR, secondary->location) << "duplicate member '" << primary->identifier << "'...\n";
                 see_other_message(primary->location);
             } else {
