@@ -32,3 +32,6 @@ ostream& operator<<(ostream& stream, const ASTNodeVector& items) {
     }
     return stream << ']';
 }
+
+LocationNode::LocationNode(const Location& location): location(location) {
+}

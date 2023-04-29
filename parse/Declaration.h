@@ -45,8 +45,7 @@ ostream& operator<<(ostream& stream, Linkage linkage);
 ostream& operator<<(ostream& stream, StorageDuration duration);
 
 
-struct Declaration: ASTNode {
-    Location location;
+struct Declaration: LocationNode {
     Fragment fragment;
     IdentifierScope scope{};
     StorageClass storage_class = StorageClass::NONE;

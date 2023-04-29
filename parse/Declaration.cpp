@@ -32,11 +32,11 @@ ostream& operator<<(ostream& stream, StorageDuration duration) {
 }
 
 Declaration::Declaration(IdentifierScope scope, StorageClass storage_class, const Type* type, const Location& location)
-    : location(location), scope(scope), storage_class(storage_class), type(type) {
+    : LocationNode(location), scope(scope), storage_class(storage_class), type(type) {
 }
 
 Declaration::Declaration(IdentifierScope scope, const Location& location)
-    : location(location), scope(scope) {
+    : LocationNode(location), scope(scope) {
 }
 
 void Declaration::print(ostream& stream) const {
@@ -53,11 +53,11 @@ void Declaration::print(ostream& stream) const {
 }
 
 Declarator::Declarator(const Declaration* declaration, const Type* type, const Identifier &identifier, const Location& location)
-    : primary(this), location(location), declaration(declaration), type(type), identifier(identifier) {
+    : primary(this), LocationNode(location), declaration(declaration), type(type), identifier(identifier) {
 }
 
 Declarator::Declarator(const Declaration* declaration, const Identifier &identifier, const Location& location)
-    : primary(this), location(location), declaration(declaration), identifier(identifier) {
+    : primary(this), LocationNode(location), declaration(declaration), identifier(identifier) {
 }
 
 EnumConstant* Declarator::enum_constant() {

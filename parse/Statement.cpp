@@ -2,7 +2,7 @@
 #include "Declaration.h"
 #include "visit/Visitor.h"
 
-Statement::Statement(const Location& location): location(location) {
+Statement::Statement(const Location& location): LocationNode(location) {
 }
 
 void Statement::print(ostream& stream) const {

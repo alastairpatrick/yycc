@@ -39,6 +39,12 @@ typedef vector<ASTNode*> ASTNodeVector;
 
 ostream& operator<<(ostream& stream, const ASTNodeVector& items);
 
+struct LocationNode: ASTNode {
+    Location location;
+
+    LocationNode(const Location& location);
+};
+
 enum class DeclaratorStatus {
     UNRESOLVED,
     RESOLVING,
@@ -46,9 +52,8 @@ enum class DeclaratorStatus {
     EMITTED,
 };
 
-struct Declarator: ASTNode {
+struct Declarator: LocationNode {
     Declarator* primary{};
-    Location location;
     Fragment fragment;
     const Type* type{};
     Identifier identifier;
@@ -89,9 +94,7 @@ struct Label {
     Expr* case_expr{};
 };
 
-struct Statement: ASTNode {
-    Location location;
-
+struct Statement: LocationNode {
     vector<Label> labels;
 
     explicit Statement(const Location& location);
