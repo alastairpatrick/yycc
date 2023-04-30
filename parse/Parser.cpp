@@ -544,8 +544,6 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
             // C99 6.7.2.3p6
             if (!identifier.name->empty()) tag_declarator = declare_tag_type(AddDeclaratorScope::CURRENT, declaration, identifier, type, specifier_location);
 
-            Expr* base_expr{};
-            size_t base_offset{};
             enum_type->complete = true;
             while (token && token != '}') {
 
@@ -559,17 +557,8 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
                 Expr* constant{};
                 if (consume('=')) {
-                    base_expr = parse_expr(CONDITIONAL_PRECEDENCE);
-                    base_offset = 0;
+                    constant = parse_expr(CONDITIONAL_PRECEDENCE);
                 }
-
-                if (base_expr) {
-                    auto base_offset_expr = IntegerConstant::of(enum_type->base_type, base_offset, location);
-                    constant = new BinaryExpr(base_expr, base_offset_expr, TokenKind('+'), location);
-                } else {
-                    constant = IntegerConstant::of(enum_type->base_type, base_offset, location);
-                }
-                ++base_offset;
 
                 if (!consume(',')) {
                     if (token != '}') {
@@ -577,7 +566,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                     }
                 }
 
-                auto declarator = identifiers.add_declarator(AddDeclaratorScope::CURRENT, declaration, IntegerType::default_type(), identifier, location);
+                auto declarator = identifiers.add_declarator(AddDeclaratorScope::CURRENT, declaration, enum_type, identifier, location);
                 auto enum_constant = new EnumConstant(declarator, enum_type, constant);
                 declarator->delegate = enum_constant;
 

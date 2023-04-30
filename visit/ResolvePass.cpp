@@ -11,6 +11,7 @@
 struct ResolvePass: Visitor {
     ResolvePassResult result;
     unordered_set<const TagType*> tag_types;
+    unordered_map<const Type*, const Type*> resolved_types;
 
     struct TodoLess {
         bool operator()(LocationNode* a, LocationNode* b) const {
@@ -21,16 +22,19 @@ struct ResolvePass: Visitor {
     set<LocationNode*, TodoLess> todo;
     unordered_set<LocationNode*> done;
 
-    const Type* resolve(const Type* type) {
-        type = type->accept(*this, VisitTypeInput()).value.type;
+    const Type* resolve(const Type* unresolved_type) {
+        auto& resolved_type = resolved_types[unresolved_type];
+        if (resolved_type) return resolved_type;
 
-        if (auto tag_type = dynamic_cast<const TagType*>(type)) {
+        resolved_type = unresolved_type->accept(*this, VisitTypeInput()).value.type;
+
+        if (auto tag_type = dynamic_cast<const TagType*>(resolved_type)) {
             if (tag_types.insert(tag_type).second) {
                 result.tag_types.push_back(tag_type);
             }
         }
 
-        return type;
+        return resolved_type;
     }
 
     void pend(LocationNode* node) {
@@ -337,28 +341,15 @@ struct ResolvePass: Visitor {
         return VisitDeclaratorOutput();
     }
 
-    void fold_enum_constant(EnumConstant* enum_constant) {
-        resolve(enum_constant->constant_expr);
-        Value value = fold_expr(enum_constant->constant_expr);
-        if (!value.is_const_integer()) {
-            // todo
-        }
-
-        enum_constant->constant_int = LLVMConstIntGetSExtValue(value.llvm_const_rvalue());
-    }
-
     virtual VisitDeclaratorOutput visit(Declarator* primary, EnumConstant* primary_enum_constant, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
         if (!secondary) {
-            fold_enum_constant(primary_enum_constant);
-            primary_enum_constant->type = static_cast<const EnumType*>(resolve(primary_enum_constant->type));
+            primary_enum_constant->type = dynamic_cast<const EnumType*>(resolve(primary_enum_constant->type));
             return VisitDeclaratorOutput();
         }
 
         auto secondary_enum_constant = secondary->enum_constant();
         assert(secondary_enum_constant); //  TODO
-
-        fold_enum_constant(secondary_enum_constant);
 
         if (!primary_enum_constant->type->tag ||                                                        // enum { A }; enum E { A };
             !secondary_enum_constant->type->tag ||                                                      // enum E { A }; enum { A };
@@ -550,8 +541,13 @@ struct ResolvePass: Visitor {
         auto want_complete = type->complete;
         type->complete = false;
 
-        for (auto declaration: type->declarations) {
-            resolve(declaration);
+        try {
+            for (auto declaration: type->declarations) {
+                resolve(declaration);
+            }
+        } catch (...) {
+            type->complete = want_complete;
+            throw;
         }
 
         type->complete = want_complete;
@@ -567,8 +563,27 @@ struct ResolvePass: Visitor {
         auto want_complete = type->complete;
         type->complete = false;
 
-        for (auto constant: type->constants) {
-            resolve(constant);
+        try {
+            long long next = 0;
+            for (auto declarator: type->constants) {
+                auto enum_constant = declarator->enum_constant();
+                if (enum_constant->constant_expr) {
+                    resolve(enum_constant->constant_expr);
+                    auto value = fold_expr(enum_constant->constant_expr);
+                    if (!value.is_const_integer()) {
+                        // todo error
+                    }
+
+                    next = LLVMConstIntGetSExtValue(value.llvm_const_rvalue());                
+                }
+
+                enum_constant->constant_int = next++;
+
+                pend(declarator);
+            }
+        } catch (...) {
+            type->complete = want_complete;
+            throw;
         }
 
         type->complete = want_complete;

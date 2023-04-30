@@ -1,7 +1,7 @@
 BEGIN Tagged enum definition
 enum E { A=1, B } z;
 EXPECT_AST
-[["var","ES",["ENUM",[["ec","A",["+",1,0]],["ec","B",["+",1,1]]]],"z"]]
+[["var","ES",["ENUM",[["ec","A",1],["ec","B"]]],"z"]]
 
 
 BEGIN Tagged incomplete enum
@@ -15,4 +15,4 @@ BEGIN #enum directive
 enum E { A };
 PARSE
 EXPECT_GLOBALS
-[["ec","A",0],["typedef",["ENUM",[["ec","A",0]]],"E"]]
+[["ec","A"],["typedef",["ENUM",[["ec","A"]]],"E"]]

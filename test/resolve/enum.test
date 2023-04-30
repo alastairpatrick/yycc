@@ -17,7 +17,7 @@ EXPECT_MESSAGE
 :1:10: ...see other
 EXPECT_GLOBALS
 [["ec","A",0]
-,["typedef",["ENUM",[["ec","A",0],["ec","A",1]]],"E"]]
+,["typedef",["ENUM",[["ec","A",0],["ec","A"]]],"E"]]
 
 
 BEGIN Tagged union with multiple compatible definitions
@@ -151,3 +151,18 @@ enum E { A = sizeof(E) };
 EXPECT_MESSAGE
 :1:14: error sizeof applied to incomplete type
 END
+
+
+BEGIN Type of enum constant is the enum
+enum E { A };
+typeof(A) v;
+EXPECT_GLOBALS
+[["ec","A",0]
+,["typedef",["ENUM",[["ec","A",0]]],"E"],["var","ES",["ENUM",[["ec","A",0]]],"v"]]
+
+
+BEGIN Use enum constant in integer constant expression
+enum { A = 1 };
+char a[A];
+EXPECT_GLOBALS
+[["ec","A",1],["var","ES",["A","C",1],"a"]]

@@ -47,6 +47,12 @@ enum Section {
 };
 
 static const Test tests[] = {
+    { "resolve/enum",               TestType::RESOLVE},
+
+
+
+
+
     { "parse/preprocess",           TestType::PREPROCESS },
     { "parse/sweep",                TestType::SWEEP },
 

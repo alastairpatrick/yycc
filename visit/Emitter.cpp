@@ -463,6 +463,10 @@ struct Emitter: Visitor {
         return VisitTypeOutput(); 
     }
 
+    virtual VisitTypeOutput visit(const EnumType* source_type, const VisitTypeInput& input) override {
+        return visit(source_type->base_type, input);
+    }
+
     virtual VisitTypeOutput visit(const FloatingPointType* source_type, const VisitTypeInput& input) override {
         auto dest_type = input.dest_type;
         auto value = input.value;
@@ -700,6 +704,10 @@ struct Emitter: Visitor {
 
     const Type* promote_integer(const Type* type) {
         auto int_type = IntegerType::default_type();
+
+        while (auto enum_type = type_cast<EnumType>(type)) {
+            type = enum_type->base_type;
+        }
 
         if (auto type_as_int = type_cast<IntegerType>(type)) {
             // Integer types smaller than int are promoted when an operation is performed on them.
@@ -1049,7 +1057,8 @@ struct Emitter: Visitor {
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
         if (auto enum_constant = declarator->enum_constant()) {
-            auto int_type = type_cast<IntegerType>(result_type);
+            auto enum_type = type_cast<EnumType>(result_type->unqualified());
+            auto int_type = type_cast<IntegerType>(enum_type->base_type);
             return VisitStatementOutput(result_type,
                                         LLVMConstInt(result_type->llvm_type(), enum_constant->constant_int, int_type->is_signed()));
 
