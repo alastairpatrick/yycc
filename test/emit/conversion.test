@@ -147,6 +147,58 @@ define i32 @f(float %0) {
 END
 
 
+BEGIN Enum to integer conversion
+enum E { A };
+short f(E x) {
+    return x;
+}
+END
+
+
+BEGIN Integer to enum conversion
+enum E { A };
+E f(short x) {
+    return (E) x;
+}
+END
+
+
+BEGIN Error on implcit integer to enum conversion
+enum E { A };
+E f(short x) {
+    return x;
+}
+EXPECT_MESSAGE
+:3:12: error conversion from type 'short' to type 'enum E' requires explicit cast
+END
+
+
+BEGIN Enum to floating point conversion
+enum E { A };
+float f(E x) {
+    return x;
+}
+END
+
+
+BEGIN Floating point to enum conversion
+enum E { A };
+E f(float x) {
+    return (E) x;
+}
+END
+
+
+BEGIN Error on implcit floating point to enum conversion
+enum E { A };
+E f(float x) {
+    return x;
+}
+EXPECT_MESSAGE
+:3:12: error conversion from type 'float' to type 'enum E' requires explicit cast
+END
+
+
 BEGIN Convert non-void pointer to void pointer (1)
 void* f(int* x) {
     return x;

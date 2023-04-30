@@ -194,11 +194,21 @@ struct Emitter: Visitor {
 
         if (value.type == dest_type) return value;
 
+        const EnumType* dest_enum_type{};
+        if (dest_enum_type = type_cast<EnumType>(dest_type)) {
+            dest_type = dest_enum_type->base_type;
+        }
+
         VisitTypeInput input;
         input.value = value;
         input.dest_type = dest_type;
         auto output = value.type->accept(*this, input);
         auto result = output.value;
+
+        if (dest_enum_type) {
+            result = result.bit_cast(dest_enum_type);
+            dest_type = dest_enum_type;
+        }
 
         if (!result.is_valid()) {
             message(Severity::ERROR, location) << "cannot convert from type '" << PrintType(value.type)
@@ -209,7 +219,7 @@ struct Emitter: Visitor {
             } else {
                 return Value::of_zero_int();
             }
-        } else if (output.conv_kind != ConvKind::IMPLICIT && kind == ConvKind::IMPLICIT) {
+        } else if ((dest_enum_type || output.conv_kind != ConvKind::IMPLICIT) && kind == ConvKind::IMPLICIT) {
             auto severity = output.conv_kind == ConvKind::C_IMPLICIT ? Severity::CONTEXTUAL_ERROR : Severity::ERROR;
             message(severity, location) << "conversion from type '" << PrintType(value.type)
                                         << "' to type '" << PrintType(dest_type) << "' requires explicit cast\n";
@@ -502,15 +512,14 @@ struct Emitter: Visitor {
         auto value = input.value;
 
         if (auto int_target = type_cast<IntegerType>(dest_type)) {
-            if (int_target->size == source_type->size) return VisitTypeOutput(value.bit_cast(dest_type));
-            return VisitTypeOutput(dest_type, LLVMBuildIntCast2(builder, get_rvalue(value), input.dest_type->llvm_type(), source_type->is_signed(), ""));
+            return VisitTypeOutput(dest_type, LLVMBuildIntCast2(builder, get_rvalue(value), dest_type->llvm_type(), source_type->is_signed(), ""));
         }
 
         if (type_cast<FloatingPointType>(dest_type)) {
             if (source_type->is_signed()) {
-                return VisitTypeOutput(dest_type, LLVMBuildSIToFP(builder, get_rvalue(value), input.dest_type->llvm_type(), ""));
+                return VisitTypeOutput(dest_type, LLVMBuildSIToFP(builder, get_rvalue(value), dest_type->llvm_type(), ""));
             } else {
-                return VisitTypeOutput(dest_type, LLVMBuildUIToFP(builder, get_rvalue(value), input.dest_type->llvm_type(), ""));
+                return VisitTypeOutput(dest_type, LLVMBuildUIToFP(builder, get_rvalue(value), dest_type->llvm_type(), ""));
             }
         }
 
