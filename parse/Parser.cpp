@@ -361,7 +361,6 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
     if (!declaration) return declaration;
 
     uint32_t storage_class_set = specifier_set & storage_class_mask;
-    // Note bit hack that checks only one bit out of many is set.
     if (storage_class_set != 0 && storage_class_set & (storage_class_set-1)) {
         message(Severity::ERROR, storage_class_location) << "too many storage classes\n";
     }
