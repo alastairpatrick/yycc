@@ -411,7 +411,7 @@ struct Emitter: Visitor {
 
         ConvKind result = unqualified_source_base_type == unqualified_dest_base_type ? ConvKind::IMPLICIT : ConvKind::C_IMPLICIT;
 
-        if (unqualified_dest_base_type == &VoidType::it) {
+        if (unqualified_dest_base_type == &VoidType::it && source_base_type->partition() != TypePartition::FUNCTION) {
             result = ConvKind::IMPLICIT;
         }
 
@@ -425,6 +425,11 @@ struct Emitter: Visitor {
 
         if ((result == ConvKind::IMPLICIT) && (dest_base_type->qualifiers() < source_base_type->qualifiers())) {
             result = ConvKind::C_IMPLICIT;
+        }
+
+        if (source_base_type->partition() != dest_base_type->partition()) {
+            if (source_base_type->partition() == TypePartition::FUNCTION) result = ConvKind::EXPLICIT;
+            if (dest_base_type->partition() == TypePartition::FUNCTION) result = ConvKind::EXPLICIT;
         }
 
         return result;

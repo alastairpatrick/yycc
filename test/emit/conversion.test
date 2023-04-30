@@ -425,3 +425,19 @@ END
 BEGIN Can implicitly convert literal zero to pointer
 void *p = 0;
 END
+
+
+BEGIN Cannot implicitly convert function pointer to void pointer
+void f() {}
+void* p = &f;
+EXPECT_MESSAGE
+:2:11: error conversion from type 'void(*)()' to type 'void*' requires explicit cast
+END
+
+
+BEGIN Cannot implicitly convert void pointer to function pointer
+int x;
+void (*p)() = &x;
+EXPECT_MESSAGE
+:2:15: error conversion from type 'int*' to type 'void(*)()' requires explicit cast
+END
