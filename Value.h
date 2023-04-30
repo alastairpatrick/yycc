@@ -34,7 +34,7 @@ struct Value {
         return Value(type, LLVMConstInt(type->llvm_type(), int_value, type->is_signed()));
     }
 
-    static Value default_int();
+    static Value of_zero_int();
 
     bool is_valid() const {
         return type;

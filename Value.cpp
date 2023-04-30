@@ -2,7 +2,7 @@
 #include "parse/Declaration.h"
 #include "TranslationUnitContext.h"
 
-Value Value::default_int() {
+Value Value::of_zero_int() {
     auto context = TranslationUnitContext::it;
     return Value(IntegerType::default_type(), context->zero_int);
 }

@@ -207,7 +207,7 @@ struct Emitter: Visitor {
             if (dest_type != &VoidType::it) {
                 result = Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
             } else {
-                return Value::default_int();
+                return Value::of_zero_int();
             }
         } else if (output.conv_kind != ConvKind::IMPLICIT && kind == ConvKind::IMPLICIT) {
             auto severity = output.conv_kind == ConvKind::C_IMPLICIT ? Severity::CONTEXTUAL_ERROR : Severity::ERROR;
@@ -948,7 +948,7 @@ struct Emitter: Visitor {
             auto& stream = message(Severity::ERROR, expr->location) << "'" << expr->message_kind() << "' operation may not be evaluated with operands of types '"
                                                                            << PrintType(left_value.type) << "' and '" << PrintType(right_value.type) << "'\n";
             pause_messages();
-            intermediate = Value::default_int();
+            intermediate = Value::of_zero_int();
         }
 
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(intermediate);
@@ -1004,7 +1004,7 @@ struct Emitter: Visitor {
             // TODO there are other combinations of types that are valid for condition expressions
             message(Severity::ERROR, expr->location) << "incompatible conditional operand types '" << PrintType(then_type) << "' and '" << PrintType(else_type) << "'\n";
             pause_messages();
-            return VisitStatementOutput(Value::default_int());
+            return VisitStatementOutput(Value::of_zero_int());
         }
 
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
@@ -1120,7 +1120,7 @@ struct Emitter: Visitor {
             if (it == struct_type->scope.declarators.end()) {
                 message(Severity::ERROR, expr->location) << "no member named '" << *expr->identifier.name << "' in '" << PrintType(struct_type) << "'\n";
                 pause_messages();
-                return VisitStatementOutput(Value::default_int());
+                return VisitStatementOutput(Value::of_zero_int());
             }
 
             if (dereferenced) {
@@ -1152,7 +1152,7 @@ struct Emitter: Visitor {
 
         message(Severity::ERROR, expr->object->location) << "type '" << PrintType(object.type) << "' does not have members\n";
         pause_messages();
-        return VisitStatementOutput(Value::default_int());
+        return VisitStatementOutput(Value::of_zero_int());
     }
 
     virtual VisitStatementOutput visit(SizeOfExpr* expr, const VisitStatementInput& input) override {
