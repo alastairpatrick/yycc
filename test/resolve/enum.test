@@ -17,7 +17,7 @@ EXPECT_MESSAGE
 :1:10: ...see other
 EXPECT_GLOBALS
 [["ec","A",0]
-,["typedef",["ENUM",[["ec","A",0],["ec","A"]]],"E"]]
+,["typedef",["ENUM",[["ec","A",0],["ec","A",1]]],"E"]]
 
 
 BEGIN Tagged union with multiple compatible definitions
@@ -98,7 +98,7 @@ EXPECT_GLOBALS
 [["ec","A",1],["ec","B",1],["typedef",["ENUM",[["ec","A",1],["ec","B",1]]],"E"]]
 
 
-BEGIN Enum constant may not refer to following constants
+BEGIN Enum constant may not refer to following constants (1)
 enum E { B = A, A = 1 };
 EXPECT_MESSAGE
 :1:14: error 'A' undeclared
@@ -106,10 +106,26 @@ EXPECT_GLOBALS
 [["ec","A",1],["ec","B",0],["typedef",["ENUM",[["ec","B",0],["ec","A",1]]],"E"]]
 
 
-BEGIN Enum constant may not refer to self
+BEGIN Enum constant may not refer to following constants (2)
+#enum A
+enum E { B = A, A = 1 };
+EXPECT_MESSAGE
+:2:14: error enum constant 'A' not yet available
+END
+
+
+BEGIN Enum constant may not refer to self (1)
 enum E { A = A };
 EXPECT_MESSAGE
 :1:14: error 'A' undeclared
+END
+
+
+BEGIN Enum constant may not refer to self (2)
+#enum A
+enum E { A = A };
+EXPECT_MESSAGE
+:2:14: error enum constant 'A' not yet available
 END
 
 

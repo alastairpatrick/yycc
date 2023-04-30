@@ -135,8 +135,9 @@ struct TypeDef: DeclaratorDelegate {
 
 struct EnumConstant: DeclaratorDelegate {
     const EnumType* type{};
-    Expr* constant_expr{};
-    long long constant_int{};
+    Expr* expr{};
+    bool ready{};
+    long long value{};
 
     explicit EnumConstant(Declarator* declarator);
     EnumConstant(Declarator* declarator, const EnumType* type, Expr* constant);

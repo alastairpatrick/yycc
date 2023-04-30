@@ -1057,10 +1057,14 @@ struct Emitter: Visitor {
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
         if (auto enum_constant = declarator->enum_constant()) {
+            if (!enum_constant->ready) {
+                message(Severity::ERROR, expr->location) << "enum constant '" << *declarator->identifier.name << "' not yet available\n";
+            }
+
             auto enum_type = type_cast<EnumType>(result_type->unqualified());
             auto int_type = type_cast<IntegerType>(enum_type->base_type);
             return VisitStatementOutput(result_type,
-                                        LLVMConstInt(result_type->llvm_type(), enum_constant->constant_int, int_type->is_signed()));
+                                        LLVMConstInt(result_type->llvm_type(), enum_constant->value, int_type->is_signed()));
 
         } else if (auto entity = declarator->entity()) {
             // EntityPass ensures that all functions and globals are created before the Emitter pass.

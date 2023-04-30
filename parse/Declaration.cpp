@@ -241,7 +241,7 @@ EnumConstant::EnumConstant(Declarator* declarator)
 }
 
 EnumConstant::EnumConstant(Declarator* declarator, const EnumType* type, Expr* constant)
-    : DeclaratorDelegate(declarator), type(type), constant_expr(constant) {
+    : DeclaratorDelegate(declarator), type(type), expr(constant) {
 }
 
 DeclaratorKind EnumConstant::kind() const {
@@ -262,11 +262,11 @@ VisitDeclaratorOutput EnumConstant::accept(Visitor& visitor, const VisitDeclarat
 
 void EnumConstant::print(ostream& stream) const {
     stream << "[\"ec\", \"" << declarator->identifier << '"';
-    if (declarator->status >= DeclaratorStatus::RESOLVED) {
-        stream << ", " << constant_int;
+    if (ready) {
+        stream << ", " << value;
     } else {
-        if (constant_expr) {
-            stream << ", " << constant_expr;
+        if (expr) {
+            stream << ", " << expr;
         }
     }
     stream << ']';

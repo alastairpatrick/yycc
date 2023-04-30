@@ -401,14 +401,11 @@ struct ResolvePass: Visitor {
             }
 
             auto a_declarator = it->second;
-            resolve(a_declarator);
-            resolve(b_declarator);
-
             auto b_enum_constant = b_declarator->enum_constant();
             auto a_enum_constant = a_declarator->enum_constant();
-            if (b_enum_constant->constant_int != a_enum_constant->constant_int) {
-                message(Severity::ERROR, b_declarator->location) << "incompatible enum constant '" << b_declarator->identifier << "' value " << b_enum_constant->constant_int << "...\n";
-                message(Severity::INFO, a_declarator->location) << "...versus " << a_enum_constant->constant_int << " here\n";
+            if (b_enum_constant->value != a_enum_constant->value) {
+                message(Severity::ERROR, b_declarator->location) << "incompatible enum constant '" << b_declarator->identifier << "' value " << b_enum_constant->value << "...\n";
+                message(Severity::INFO, a_declarator->location) << "...versus " << a_enum_constant->value << " here\n";
                 pause_messages();
                 return false;
             }
@@ -567,18 +564,19 @@ struct ResolvePass: Visitor {
             long long next = 0;
             for (auto declarator: type->constants) {
                 auto enum_constant = declarator->enum_constant();
-                if (enum_constant->constant_expr) {
-                    resolve(enum_constant->constant_expr);
-                    auto value = fold_expr(enum_constant->constant_expr);
+                if (enum_constant->expr) {
+                    resolve(enum_constant->expr);
+                    auto value = fold_expr(enum_constant->expr);
                     if (value.is_const_integer()) {
                         next = LLVMConstIntGetSExtValue(value.llvm_const_rvalue());                
                     } else {
-                        message(Severity::ERROR, enum_constant->constant_expr->location) << "enum constant type '" << PrintType(value.type) << "' is not an integer type\n";
+                        message(Severity::ERROR, enum_constant->expr->location) << "enum constant type '" << PrintType(value.type) << "' is not an integer type\n";
                     }
 
                 }
 
-                enum_constant->constant_int = next++;
+                enum_constant->value = next++;
+                enum_constant->ready = true;
 
                 pend(declarator);
             }
