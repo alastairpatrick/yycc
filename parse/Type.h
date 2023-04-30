@@ -249,7 +249,8 @@ struct EnumType: TagType {
     explicit EnumType(const Location& location);
     
     const Location location;
-    const IntegerType* base_type{};
+    const Type* base_type{};
+    bool explicit_base_type{};
     vector<Declarator*> constants;
     mutable bool complete{};
 

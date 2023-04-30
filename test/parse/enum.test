@@ -10,6 +10,13 @@ EXPECT_AST
 [["var","ES",["ENUM",["?"]],"z"]]
 
 
+BEGIN Enum with explicit base type
+enum E: unsigned char {
+} z;
+EXPECT_AST
+[["var","ES",["ENUM","Uc",[]],"z"]]
+
+
 BEGIN #enum directive
 #enum A
 enum E { A };

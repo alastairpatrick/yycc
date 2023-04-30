@@ -474,7 +474,7 @@ struct Emitter: Visitor {
     }
 
     virtual VisitTypeOutput visit(const EnumType* source_type, const VisitTypeInput& input) override {
-        return visit(source_type->base_type, input);
+        return source_type->base_type->accept(*this, input);
     }
 
     virtual VisitTypeOutput visit(const FloatingPointType* source_type, const VisitTypeInput& input) override {

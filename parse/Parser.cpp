@@ -540,6 +540,15 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
         auto enum_type = new EnumType(specifier_location);
         type = enum_type;
 
+        if (consume(':')) {
+            const Type* base_type{};
+            uint32_t specifiers{};
+            parse_declaration_specifiers(IdentifierScope::EXPRESSION, base_type, specifiers);
+
+            enum_type->base_type = base_type;
+            enum_type->explicit_base_type = true;
+        }
+
         if (consume('{')) {
             // C99 6.7.2.3p6
             if (!identifier.name->empty()) tag_declarator = declare_tag_type(AddDeclaratorScope::CURRENT, declaration, identifier, type, specifier_location);

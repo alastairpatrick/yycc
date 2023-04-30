@@ -733,7 +733,13 @@ void EnumType::message_print(ostream& stream, int section) const {
 }
 
 void EnumType::print(std::ostream& stream) const {
-    stream << "[\"ENUM\", [";
+    stream << "[\"ENUM\", ";
+    
+    if (explicit_base_type) {
+        stream << base_type << ", ";
+    }
+
+    stream << "[";
 
     auto separator = false;
     for (auto constant : constants) {
