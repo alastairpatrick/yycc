@@ -397,7 +397,7 @@ struct ResolvePass: Visitor {
         if (!type->complete) return VisitTypeOutput(type);
 
         // C99 6.7.2.3p4
-        auto want_complete = type->complete;
+        bool want_complete = type->complete;
         type->complete = false;
 
         SCOPE_EXIT {
@@ -417,7 +417,7 @@ struct ResolvePass: Visitor {
         if (!type->complete) return VisitTypeOutput(type);
 
         // C99 6.7.2.3p4
-        auto want_complete = type->complete;
+        bool want_complete = type->complete;
         type->complete = false;
 
         for (auto declarator: type->constants) {
