@@ -66,7 +66,8 @@ static IntegerConstant* parse_integer_literal(string_view text, int radix, const
         type = smallest_integer_type(IntegerSignedness::SIGNED, IntegerSignedness::UNSIGNED, target_size, value_int, location);
     }
 
-    return new IntegerConstant(LLVMConstIntCast(value, type->llvm_type(), type->signedness == IntegerSignedness::SIGNED), type, location);
+    value = LLVMConstIntCast(value, type->llvm_type(), type->is_signed());
+    return new IntegerConstant(Value(type, value), location);
 }
 
 static IntegerConstant* parse_char_literal(string_view text, const Location& location) {
@@ -89,15 +90,13 @@ static IntegerConstant* parse_char_literal(string_view text, const Location& loc
         }
     }
 
-    auto type = IntegerType::of_char(is_wide);
-    auto value = LLVMConstInt(type->llvm_type(), c, type->is_signed());
-    return new IntegerConstant(value, type, location);
+    auto value = Value::of_int(IntegerType::of_char(is_wide), c);
+    return new IntegerConstant(value, location);
 }
 
 IntegerConstant* IntegerConstant::default_expr(const Location& location) {
-    auto type = IntegerType::default_type();
-    auto value = LLVMConstInt(type->llvm_type(), 0, type->is_signed());
-    return new IntegerConstant(value, type, location);
+    auto value = Value::of_int(IntegerType::default_type(), 0);
+    return new IntegerConstant(value, location);
 }
 
 IntegerConstant* IntegerConstant::of(string_view text, TokenKind token, const Location& location) {
@@ -121,12 +120,11 @@ IntegerConstant* IntegerConstant::of(string_view text, TokenKind token, const Lo
 }
 
 IntegerConstant* IntegerConstant::of(const IntegerType* type, unsigned long long value, const Location& location) {
-    return new IntegerConstant(LLVMConstInt(type->llvm_type(), value, type->is_signed()), type, location);
+    return new IntegerConstant(Value::of_int(type, value), location);
 }
 
-IntegerConstant::IntegerConstant(LLVMValueRef value, const IntegerType* type, const Location& location)
-    : Constant(location), type(type), value(value) {
-    assert(value);
+IntegerConstant::IntegerConstant(const Value& value, const Location& location)
+    : Constant(location), value(value) {
 }
 
 VisitStatementOutput IntegerConstant::accept(Visitor& visitor, const VisitStatementInput& input) {
@@ -134,15 +132,15 @@ VisitStatementOutput IntegerConstant::accept(Visitor& visitor, const VisitStatem
 }
 
 bool IntegerConstant::is_null_literal() const {
-    return value == LLVMConstInt(type->llvm_type(), 0, false);
+    return value.llvm_const_rvalue() == LLVMConstInt(value.type->llvm_type(), 0, false);
 }
 
 void IntegerConstant::print(ostream& stream) const {
-    auto int_value = LLVMConstIntGetZExtValue(value);
-    if (type == IntegerType::of(IntegerSignedness::SIGNED, IntegerSize::INT)) {
+    auto int_value = LLVMConstIntGetZExtValue(value.llvm_const_rvalue());
+    if (value.type == IntegerType::of(IntegerSignedness::SIGNED, IntegerSize::INT)) {
         stream << int_value;
     } else {
-        stream << '[' << type << ", " << int_value << ']';
+        stream << '[' << value.type << ", " << int_value << ']';
     }
 }
 
@@ -158,13 +156,12 @@ FloatingPointConstant* FloatingPointConstant::of(string_view text, TokenKind tok
 
     auto type = FloatingPointType::of(size);
     auto value = LLVMConstRealOfStringAndSize(type->llvm_type(), text.data(), text.size());
-    return new FloatingPointConstant(value, type, location);
+    return new FloatingPointConstant(Value(type, value), location);
 }
 
 
-FloatingPointConstant::FloatingPointConstant(LLVMValueRef value, const FloatingPointType* type, const Location& location)
-    : Constant(location), type(type), value(value) {
-    assert(value);
+FloatingPointConstant::FloatingPointConstant(const Value& value, const Location& location)
+    : Constant(location), value(value) {
 }
 
 VisitStatementOutput FloatingPointConstant::accept(Visitor& visitor, const VisitStatementInput& input) {
@@ -173,8 +170,8 @@ VisitStatementOutput FloatingPointConstant::accept(Visitor& visitor, const Visit
 
 void FloatingPointConstant::print(ostream& stream) const {
     LLVMBool loses_info;
-    double float_value = LLVMConstRealGetDouble(value, &loses_info);
-    stream << '[' << type << ", " << float_value << ']';
+    double float_value = LLVMConstRealGetDouble(value.llvm_const_rvalue(), &loses_info);
+    stream << '[' << value.type << ", " << float_value << ']';
 }
 
 StringConstant* StringConstant::of(string_view text, const Location& location) {

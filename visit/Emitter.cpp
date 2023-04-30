@@ -1067,8 +1067,7 @@ struct Emitter: Visitor {
             }
 
             auto int_type = type_cast<IntegerType>(type);
-            return VisitStatementOutput(result_type,
-                                        LLVMConstInt(result_type->llvm_type(), enum_constant->value, int_type->is_signed()));
+            return VisitStatementOutput(Value::of_int(int_type, enum_constant->value).bit_cast(result_type));
 
         } else if (auto entity = declarator->entity()) {
             // EntityPass ensures that all functions and globals are created before the Emitter pass.
@@ -1208,11 +1207,11 @@ struct Emitter: Visitor {
     }
 
     virtual VisitStatementOutput visit(IntegerConstant* constant, const VisitStatementInput& input) override {
-        return VisitStatementOutput(constant->type, constant->value);
+        return VisitStatementOutput(constant->value);
     }
 
     virtual VisitStatementOutput visit(FloatingPointConstant* constant, const VisitStatementInput& input) override {
-        return VisitStatementOutput(constant->type, constant->value);
+        return VisitStatementOutput(constant->value);
     }
 
     virtual VisitStatementOutput visit(StringConstant* constant, const VisitStatementInput& input) override {
