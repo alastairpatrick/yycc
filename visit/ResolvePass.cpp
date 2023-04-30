@@ -22,148 +22,10 @@ struct ResolvePass: Visitor {
     set<LocationNode*, TodoLess> todo;
     unordered_set<LocationNode*> done;
 
-    const Type* resolve(const Type* unresolved_type) {
-        auto& resolved_type = resolved_types[unresolved_type];
-        if (resolved_type) return resolved_type;
-
-        resolved_type = unresolved_type->accept(*this, VisitTypeInput()).value.type;
-
-        if (auto tag_type = dynamic_cast<const TagType*>(resolved_type)) {
-            if (tag_types.insert(tag_type).second) {
-                result.tag_types.push_back(tag_type);
-            }
-        }
-
-        return resolved_type;
-    }
-
-    void pend(LocationNode* node) {
-        if (!node) return;
-        if (done.find(node) != done.end()) return;
-        todo.insert(node);
-    }
-
-    void resolve(LocationNode* node) {
-        if (!node) return;
-
-        if (auto declaration = dynamic_cast<Declaration*>(node)) {
-            declaration->type = resolve(declaration->type);
-            for (auto declarator: declaration->declarators) {
-                resolve(declarator);
-            }
-        } else if (auto declarator = dynamic_cast<Declarator*>(node)) {
-            resolve(declarator);            
-        } else if (auto statement = dynamic_cast<Statement*>(node)) {
-            accept(statement, VisitStatementInput());
-        } else {
-            assert(false);
-        }
-    }
-
     virtual void pre_visit(Statement* statement) override {
         for (auto& label: statement->labels) {
             resolve(label.case_expr);
         }
-    }
-
-    bool is_trivially_cyclic(Declarator* primary, const Type* type) {
-        for (;;) {
-            if (auto qt = dynamic_cast<const QualifiedType*>(type)) {
-                type = qt->base_type;
-            } else if (auto tdt = dynamic_cast<const TypeDefType*>(type)) {
-                return tdt->declarator->primary == primary;
-            } else {
-                return false;
-            }
-        }
-    }
-
-    void fix_misidentified_function(Declarator* declarator) {
-        auto variable = declarator->variable();
-        if (!variable) return;
-
-        if (variable->initializer) return;
-        if (variable->bit_field) return;
-
-        declarator->delegate = new Function(declarator, variable->linkage);
-    }
-
-    const Type* resolve(Declarator* primary) {
-        struct ResolutionCycle {};
-
-        primary = primary->primary;
-        if (primary->status >= DeclaratorStatus::RESOLVED) return primary->type;
-        if (primary->status == DeclaratorStatus::RESOLVING) {
-            throw ResolutionCycle();
-        }
-
-        primary->status = DeclaratorStatus::RESOLVING;
-
-        if (!primary->type) {
-            message(Severity::ERROR, primary->location) << "declaration directive not matched with a proper declaration of '" << *primary->identifier.name << "'\n";
-            primary->type = IntegerType::default_type();
-            primary->delegate = new Variable(primary, Linkage::NONE, StorageDuration::STATIC);
-        }
-
-        Declarator* acyclic_declarator{};
-        for (auto declarator = primary; declarator; declarator = declarator->next) {
-            try {
-                if (declarator->type->has_tag(declarator) && declarator->type->partition() != TypePartition::INCOMPLETE) {
-                    swap(declarator->type, primary->type);
-                    acyclic_declarator = primary;
-                    primary->status = DeclaratorStatus::RESOLVED;
-                    auto resolved_type = resolve(primary->type);
-                    assert(resolved_type == primary->type);  // must be because declarator was already marked resolved
-                    break;
-                }
-
-                declarator->type = resolve(declarator->type);
-                if (!acyclic_declarator || (declarator->type->partition() != TypePartition::INCOMPLETE && acyclic_declarator->type->partition() == TypePartition::INCOMPLETE)) {
-                    acyclic_declarator = declarator;
-                }
-            } catch (ResolutionCycle) {
-                if (!is_trivially_cyclic(primary, declarator->type)) {
-                    message(Severity::ERROR, declarator->location) << "recursive definition of '" << declarator->identifier << "'\n";
-                    pause_messages();
-                }
-            }
-        }
-
-        if (primary->type_def()) primary->status = DeclaratorStatus::RESOLVED;
-
-        if (acyclic_declarator) {
-            swap(acyclic_declarator->type, primary->type);
-            assert(!dynamic_cast<const TypeDefType*>(primary->type));
-
-            bool is_function = dynamic_cast<const FunctionType*>(primary->type);
-            if (is_function) fix_misidentified_function(primary);
-
-            for (auto secondary = primary->next; secondary; secondary = secondary->next) {
-                if (is_function) fix_misidentified_function(secondary);
-
-                try {
-                    secondary->type = resolve(secondary->type);
-                } catch (ResolutionCycle) {
-                    message(Severity::ERROR, secondary->location) << "recursive definition of '" << secondary->identifier << "'\n";
-                    pause_messages();
-                }
-
-                compose(primary, secondary);
-            }
-        } else {
-            auto declarator = primary;
-            while (declarator->next) {
-                declarator = declarator->next;
-            }
-            primary->type = IntegerType::default_type();
-            message(Severity::ERROR, declarator->location) << "'" << declarator->identifier << "' undeclared\n";
-        }
-
-        primary->next = nullptr;
-        primary->accept(*this, VisitDeclaratorInput());
-        primary->status = DeclaratorStatus::RESOLVED;
-
-        return primary->type;
     }
     
     void see_other_message(const Location& location) {
@@ -670,6 +532,138 @@ struct ResolvePass: Visitor {
         return VisitStatementOutput();
     }
 
+    bool is_trivially_cyclic(Declarator* primary, const Type* type) {
+        for (;;) {
+            if (auto qt = dynamic_cast<const QualifiedType*>(type)) {
+                type = qt->base_type;
+            } else if (auto tdt = dynamic_cast<const TypeDefType*>(type)) {
+                return tdt->declarator->primary == primary;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    void fix_misidentified_function(Declarator* declarator) {
+        auto variable = declarator->variable();
+        if (!variable) return;
+
+        if (variable->initializer) return;
+        if (variable->bit_field) return;
+
+        declarator->delegate = new Function(declarator, variable->linkage);
+    }
+
+    const Type* resolve(Declarator* primary) {
+        struct ResolutionCycle {};
+
+        primary = primary->primary;
+        if (primary->status >= DeclaratorStatus::RESOLVED) return primary->type;
+        if (primary->status == DeclaratorStatus::RESOLVING) {
+            throw ResolutionCycle();
+        }
+
+        primary->status = DeclaratorStatus::RESOLVING;
+
+        if (!primary->type) {
+            message(Severity::ERROR, primary->location) << "declaration directive not matched with a proper declaration of '" << *primary->identifier.name << "'\n";
+            primary->type = IntegerType::default_type();
+            primary->delegate = new Variable(primary, Linkage::NONE, StorageDuration::STATIC);
+        }
+
+        Declarator* acyclic_declarator{};
+        for (auto declarator = primary; declarator; declarator = declarator->next) {
+            try {
+                if (declarator->type->has_tag(declarator) && declarator->type->partition() != TypePartition::INCOMPLETE) {
+                    swap(declarator->type, primary->type);
+                    acyclic_declarator = primary;
+                    primary->status = DeclaratorStatus::RESOLVED;
+                    auto resolved_type = resolve(primary->type);
+                    assert(resolved_type == primary->type);  // must be because declarator was already marked resolved
+                    break;
+                }
+
+                declarator->type = resolve(declarator->type);
+                if (!acyclic_declarator || (declarator->type->partition() != TypePartition::INCOMPLETE && acyclic_declarator->type->partition() == TypePartition::INCOMPLETE)) {
+                    acyclic_declarator = declarator;
+                }
+            } catch (ResolutionCycle) {
+                if (!is_trivially_cyclic(primary, declarator->type)) {
+                    message(Severity::ERROR, declarator->location) << "recursive definition of '" << declarator->identifier << "'\n";
+                    pause_messages();
+                }
+            }
+        }
+
+        if (primary->type_def()) primary->status = DeclaratorStatus::RESOLVED;
+
+        if (acyclic_declarator) {
+            swap(acyclic_declarator->type, primary->type);
+            assert(!dynamic_cast<const TypeDefType*>(primary->type));
+
+            bool is_function = dynamic_cast<const FunctionType*>(primary->type);
+            if (is_function) fix_misidentified_function(primary);
+
+            for (auto secondary = primary->next; secondary; secondary = secondary->next) {
+                if (is_function) fix_misidentified_function(secondary);
+
+                try {
+                    secondary->type = resolve(secondary->type);
+                } catch (ResolutionCycle) {
+                    message(Severity::ERROR, secondary->location) << "recursive definition of '" << secondary->identifier << "'\n";
+                    pause_messages();
+                }
+
+                compose(primary, secondary);
+            }
+        } else {
+            auto declarator = primary;
+            while (declarator->next) {
+                declarator = declarator->next;
+            }
+            primary->type = IntegerType::default_type();
+            message(Severity::ERROR, declarator->location) << "'" << declarator->identifier << "' undeclared\n";
+        }
+
+        primary->next = nullptr;
+        primary->accept(*this, VisitDeclaratorInput());
+        primary->status = DeclaratorStatus::RESOLVED;
+
+        return primary->type;
+    }
+    
+    const Type* resolve(const Type* unresolved_type) {
+        auto& resolved_type = resolved_types[unresolved_type];
+        if (resolved_type) return resolved_type;
+
+        resolved_type = unresolved_type->accept(*this, VisitTypeInput()).value.type;
+
+        if (auto tag_type = dynamic_cast<const TagType*>(resolved_type)) {
+            if (tag_types.insert(tag_type).second) {
+                result.tag_types.push_back(tag_type);
+            }
+        }
+
+        return resolved_type;
+    }
+
+    void resolve(LocationNode* node) {
+        if (!node) return;
+
+        if (auto declaration = dynamic_cast<Declaration*>(node)) {
+            declaration->type = resolve(declaration->type);
+            for (auto declarator: declaration->declarators) {
+                resolve(declarator);
+            }
+        } else if (auto declarator = dynamic_cast<Declarator*>(node)) {
+            resolve(declarator);            
+        } else if (auto statement = dynamic_cast<Statement*>(node)) {
+            accept(statement, VisitStatementInput());
+        } else {
+            assert(false);
+        }
+    }
+    
     void resolve(const ASTNodeVector& nodes) {
         for (auto node: nodes) {
             todo.insert(node);
@@ -689,6 +683,12 @@ struct ResolvePass: Visitor {
         for (auto type: result.tag_types) {
             type->llvm_type();
         }
+    }
+
+    void pend(LocationNode* node) {
+        if (!node) return;
+        if (done.find(node) != done.end()) return;
+        todo.insert(node);
     }
 };
 
