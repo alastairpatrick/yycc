@@ -166,3 +166,11 @@ enum { A = 1 };
 char a[A];
 EXPECT_GLOBALS
 [["ec","A",1],["var","ES",["A","C",1],"a"]]
+
+
+BEGIN Error if enum constant is not integer
+enum { A = 1.5 };
+EXPECT_MESSAGE
+:1:12: error enum constant type 'double' is not an integer type
+EXPECT_GLOBALS
+[["ec","A",0]]

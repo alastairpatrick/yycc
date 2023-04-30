@@ -570,11 +570,12 @@ struct ResolvePass: Visitor {
                 if (enum_constant->constant_expr) {
                     resolve(enum_constant->constant_expr);
                     auto value = fold_expr(enum_constant->constant_expr);
-                    if (!value.is_const_integer()) {
-                        // todo error
+                    if (value.is_const_integer()) {
+                        next = LLVMConstIntGetSExtValue(value.llvm_const_rvalue());                
+                    } else {
+                        message(Severity::ERROR, enum_constant->constant_expr->location) << "enum constant type '" << PrintType(value.type) << "' is not an integer type\n";
                     }
 
-                    next = LLVMConstIntGetSExtValue(value.llvm_const_rvalue());                
                 }
 
                 enum_constant->constant_int = next++;
