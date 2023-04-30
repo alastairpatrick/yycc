@@ -605,7 +605,7 @@ LLVMTypeRef StructType::cache_llvm_type() const {
                             continue;
                         }
 
-                        auto llvm_bit_size = bit_size_value.llvm_const_rvalue();
+                        auto llvm_bit_size = bit_size_value.get_const();
                         auto bit_size = LLVMConstIntGetSExtValue(llvm_bit_size);
                         if (bit_size <= 0) {
                             message(Severity::ERROR, member_variable->bit_field->expr->location) << "bit field '" << *member->identifier.name << "' has invalid width ("

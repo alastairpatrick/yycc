@@ -7,7 +7,7 @@ Value Value::default_int() {
     return Value(IntegerType::default_type(), context->zero_int);
 }
 
-LLVMValueRef Value::llvm_rvalue(LLVMBuilderRef builder) const {
+LLVMValueRef Value::get_rvalue(LLVMBuilderRef builder) const {
     assert(llvm);
     if (kind == ValueKind::RVALUE) return llvm;
 
@@ -33,7 +33,7 @@ LLVMValueRef Value::llvm_rvalue(LLVMBuilderRef builder) const {
 }
 
 void Value::store(LLVMBuilderRef builder, const Value& new_value) const {
-    auto value = new_value.llvm_rvalue(builder);
+    auto value = new_value.get_rvalue(builder);
 
     if (bit_field) {
         // value = (value << bits_to_right) & mask
@@ -41,7 +41,7 @@ void Value::store(LLVMBuilderRef builder, const Value& new_value) const {
         value = LLVMBuildAnd(builder, LLVMBuildShl(builder, value, bit_field->bits_to_right, ""), bit_field->mask, "");
 
         // existing = (*p) & ~mask
-        LLVMValueRef existing = LLVMBuildLoad2(builder, bit_field->storage_type, llvm_lvalue(), "");
+        LLVMValueRef existing = LLVMBuildLoad2(builder, bit_field->storage_type, get_lvalue(), "");
         LLVMSetVolatile(existing, qualifiers & QUAL_VOLATILE);
         existing = LLVMBuildAnd(builder, existing, LLVMBuildNot(builder, bit_field->mask, ""), "");
 
@@ -49,7 +49,7 @@ void Value::store(LLVMBuilderRef builder, const Value& new_value) const {
         value = LLVMBuildOr(builder, value, existing, "");
     }
 
-    LLVMSetVolatile(LLVMBuildStore(builder, value, llvm_lvalue()),
+    LLVMSetVolatile(LLVMBuildStore(builder, value, get_lvalue()),
                     qualifiers & QUAL_VOLATILE);
 }
 

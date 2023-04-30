@@ -132,11 +132,11 @@ VisitStatementOutput IntegerConstant::accept(Visitor& visitor, const VisitStatem
 }
 
 bool IntegerConstant::is_null_literal() const {
-    return value.llvm_const_rvalue() == LLVMConstInt(value.type->llvm_type(), 0, false);
+    return value.get_const() == LLVMConstInt(value.type->llvm_type(), 0, false);
 }
 
 void IntegerConstant::print(ostream& stream) const {
-    auto int_value = LLVMConstIntGetZExtValue(value.llvm_const_rvalue());
+    auto int_value = LLVMConstIntGetZExtValue(value.get_const());
     if (value.type == IntegerType::of(IntegerSignedness::SIGNED, IntegerSize::INT)) {
         stream << int_value;
     } else {
@@ -170,7 +170,7 @@ VisitStatementOutput FloatingPointConstant::accept(Visitor& visitor, const Visit
 
 void FloatingPointConstant::print(ostream& stream) const {
     LLVMBool loses_info;
-    double float_value = LLVMConstRealGetDouble(value.llvm_const_rvalue(), &loses_info);
+    double float_value = LLVMConstRealGetDouble(value.get_const(), &loses_info);
     stream << '[' << value.type << ", " << float_value << ']';
 }
 

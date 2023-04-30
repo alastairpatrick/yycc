@@ -106,12 +106,12 @@ struct Emitter: Visitor {
         declarator->status = DeclaratorStatus::EMITTED;
     }
     
-    LLVMValueRef llvm_rvalue(const Value &value) {
+    LLVMValueRef get_rvalue(const Value &value) {
         if (outcome == EmitOutcome::IR) {
-            return value.llvm_rvalue(builder);
+            return value.get_rvalue(builder);
         } else {
             if (value.is_const()) {
-                return value.llvm_const_rvalue();
+                return value.get_const();
             } else {
                 throw EmitError(false);
             }
@@ -222,7 +222,7 @@ struct Emitter: Visitor {
     void emit_function_definition(Declarator* declarator, Function* entity) {
         function_declarator = declarator;
         function_type = type_cast<FunctionType>(declarator->primary->type);
-        function = entity->value.llvm_lvalue();
+        function = entity->value.get_lvalue();
 
         entry_block = append_block("");
         unreachable_block = append_block("");
@@ -275,7 +275,7 @@ struct Emitter: Visitor {
             if (auto array_type = type_cast<ResolvedArrayType>(dest.type)) {
                 for (size_t i = 0; i < array_type->size; ++i) {
                     LLVMValueRef indices[] = { context->zero_size, size_const_int(i) };
-                    LLVMValueRef dest_element = LLVMBuildGEP2(builder, array_type->llvm_type(), dest.llvm_lvalue(), indices, 2, "");
+                    LLVMValueRef dest_element = LLVMBuildGEP2(builder, array_type->llvm_type(), dest.get_lvalue(), indices, 2, "");
                     emit_auto_initializer(Value(ValueKind::LVALUE, array_type->element_type, dest_element), initializer->elements[i]);
                 }
                 return;
@@ -286,7 +286,7 @@ struct Emitter: Visitor {
                 for (auto declaration: struct_type->declarations) {
                     for (auto member: declaration->declarators) {
                         if (auto member_variable = member->variable()) {
-                            LLVMValueRef dest_element = LLVMBuildStructGEP2(builder, struct_type->llvm_type(), dest.llvm_lvalue(), member_variable->aggregate_index, "");
+                            LLVMValueRef dest_element = LLVMBuildStructGEP2(builder, struct_type->llvm_type(), dest.get_lvalue(), member_variable->aggregate_index, "");
                             emit_auto_initializer(Value(ValueKind::LVALUE, member->type, dest_element), initializer->elements[initializer_idx++]);
                         }
                     }
@@ -300,7 +300,7 @@ struct Emitter: Visitor {
             scalar_value = convert_to_type(expr, dest.type, ConvKind::IMPLICIT);
         }
 
-        LLVMBuildStore(builder, llvm_rvalue(scalar_value), dest.llvm_lvalue());
+        LLVMBuildStore(builder, get_rvalue(scalar_value), dest.get_lvalue());
     }
     
     Value emit_static_initializer(const Type* dest_type, Expr* expr) {
@@ -312,7 +312,7 @@ struct Emitter: Visitor {
             if (auto array_type = type_cast<ResolvedArrayType>(dest_type)) {
                 vector<LLVMValueRef> values(array_type->size);
                 for (size_t i = 0; i < array_type->size; ++i) {
-                    values[i] = emit_static_initializer(array_type->element_type, initializer->elements[i]).llvm_const_rvalue();
+                    values[i] = emit_static_initializer(array_type->element_type, initializer->elements[i]).get_const();
                 }
 
                 return Value(array_type, LLVMConstArray(array_type->element_type->llvm_type(), values.data(), values.size()));
@@ -324,7 +324,7 @@ struct Emitter: Visitor {
                 for (auto declaration: struct_type->declarations) {
                     for (auto member: declaration->declarators) {
                         if (auto member_variable = member->variable()) {
-                            values.push_back(emit_static_initializer(member->type, initializer->elements[initializer_idx++]).llvm_const_rvalue());
+                            values.push_back(emit_static_initializer(member->type, initializer->elements[initializer_idx++]).get_const());
                         }
                     }
                 }
@@ -362,11 +362,11 @@ struct Emitter: Visitor {
             }
 
         } else if (entity->storage_duration == StorageDuration::STATIC) {
-            auto global = entity->value.llvm_lvalue();
+            auto global = entity->value.get_lvalue();
 
             LLVMValueRef initial = null_value;
             if (entity->initializer) {
-                initial = emit_static_initializer(type, entity->initializer).llvm_const_rvalue();
+                initial = emit_static_initializer(type, entity->initializer).get_const();
             }
             LLVMSetInitializer(global, initial);
 
@@ -426,7 +426,7 @@ struct Emitter: Visitor {
 
         if (auto dest_array_type = type_cast<ResolvedArrayType>(dest_type)) {
             if (value.is_const() && source_type->element_type == dest_array_type->element_type && source_type->size <= dest_array_type->size) {
-                LLVMValueRef source_array = value.llvm_const_rvalue();
+                LLVMValueRef source_array = value.get_const();
                 vector<LLVMValueRef> resized_array_values(dest_array_type->size);
                 size_t i;
                 for (i = 0; i < source_type->size; ++i) {
@@ -445,16 +445,16 @@ struct Emitter: Visitor {
 
         if (auto pointer_type = type_cast<PointerType>(dest_type)) {
             if (value.kind == ValueKind::LVALUE) {
-                return VisitTypeOutput(dest_type, value.llvm_lvalue(), check_pointer_conversion(source_type->element_type, pointer_type->base_type));
+                return VisitTypeOutput(dest_type, value.get_lvalue(), check_pointer_conversion(source_type->element_type, pointer_type->base_type));
             }
 
             if (value.is_const()) {
-                auto& global = module->reified_constants[value.llvm_const_rvalue()];
+                auto& global = module->reified_constants[value.get_const()];
                 if (!global) {
                     global = LLVMAddGlobal(module->llvm_module, value.type->llvm_type(), "const");
                     LLVMSetGlobalConstant(global, true);
                     LLVMSetLinkage(global, LLVMPrivateLinkage);
-                    LLVMSetInitializer(global, value.llvm_const_rvalue());
+                    LLVMSetInitializer(global, value.get_const());
                 }
                 return VisitTypeOutput(dest_type, global);
             }
@@ -472,14 +472,14 @@ struct Emitter: Visitor {
         auto value = input.value;
 
         if (type_cast<FloatingPointType>(dest_type)) {
-            return VisitTypeOutput(dest_type, LLVMBuildFPCast(builder, llvm_rvalue(value), input.dest_type->llvm_type(), ""));
+            return VisitTypeOutput(dest_type, LLVMBuildFPCast(builder, get_rvalue(value), input.dest_type->llvm_type(), ""));
         }
 
         if (auto dest_int_type = type_cast<IntegerType>(dest_type)) {
             if (dest_int_type->is_signed()) {
-                return VisitTypeOutput(dest_type, LLVMBuildFPToSI(builder, llvm_rvalue(value), input.dest_type->llvm_type(), ""));
+                return VisitTypeOutput(dest_type, LLVMBuildFPToSI(builder, get_rvalue(value), input.dest_type->llvm_type(), ""));
             } else {
-                return VisitTypeOutput(dest_type, LLVMBuildFPToUI(builder, llvm_rvalue(value), input.dest_type->llvm_type(), ""));
+                return VisitTypeOutput(dest_type, LLVMBuildFPToUI(builder, get_rvalue(value), input.dest_type->llvm_type(), ""));
             }
         }
 
@@ -491,7 +491,7 @@ struct Emitter: Visitor {
         auto value = input.value;
 
         if (auto pointer_type = type_cast<PointerType>(dest_type)) {
-            return VisitTypeOutput(dest_type, value.llvm_lvalue());
+            return VisitTypeOutput(dest_type, value.get_lvalue());
         }
 
         return VisitTypeOutput();
@@ -503,19 +503,19 @@ struct Emitter: Visitor {
 
         if (auto int_target = type_cast<IntegerType>(dest_type)) {
             if (int_target->size == source_type->size) return VisitTypeOutput(value.bit_cast(dest_type));
-            return VisitTypeOutput(dest_type, LLVMBuildIntCast2(builder, llvm_rvalue(value), input.dest_type->llvm_type(), source_type->is_signed(), ""));
+            return VisitTypeOutput(dest_type, LLVMBuildIntCast2(builder, get_rvalue(value), input.dest_type->llvm_type(), source_type->is_signed(), ""));
         }
 
         if (type_cast<FloatingPointType>(dest_type)) {
             if (source_type->is_signed()) {
-                return VisitTypeOutput(dest_type, LLVMBuildSIToFP(builder, llvm_rvalue(value), input.dest_type->llvm_type(), ""));
+                return VisitTypeOutput(dest_type, LLVMBuildSIToFP(builder, get_rvalue(value), input.dest_type->llvm_type(), ""));
             } else {
-                return VisitTypeOutput(dest_type, LLVMBuildUIToFP(builder, llvm_rvalue(value), input.dest_type->llvm_type(), ""));
+                return VisitTypeOutput(dest_type, LLVMBuildUIToFP(builder, get_rvalue(value), input.dest_type->llvm_type(), ""));
             }
         }
 
         if (type_cast<PointerType>(dest_type)) {
-            return VisitTypeOutput(dest_type, LLVMBuildIntToPtr(builder, llvm_rvalue(value), dest_type->llvm_type(), ""), ConvKind::EXPLICIT);
+            return VisitTypeOutput(dest_type, LLVMBuildIntToPtr(builder, get_rvalue(value), dest_type->llvm_type(), ""), ConvKind::EXPLICIT);
         }
 
         return VisitTypeOutput();
@@ -530,7 +530,7 @@ struct Emitter: Visitor {
         }
 
         if (type_cast<IntegerType>(dest_type)) {
-            return VisitTypeOutput(dest_type, LLVMBuildPtrToInt(builder, llvm_rvalue(value), dest_type->llvm_type(), ""));
+            return VisitTypeOutput(dest_type, LLVMBuildPtrToInt(builder, get_rvalue(value), dest_type->llvm_type(), ""));
         }
 
         return VisitTypeOutput();
@@ -567,7 +567,7 @@ struct Emitter: Visitor {
 
         if (statement->condition) {
             auto condition_value = convert_to_type(statement->condition, IntegerType::of_bool(), ConvKind::IMPLICIT);
-            LLVMBuildCondBr(builder, llvm_rvalue(condition_value), body_block, end_block);
+            LLVMBuildCondBr(builder, get_rvalue(condition_value), body_block, end_block);
         }
 
         LLVMPositionBuilderAtEnd(builder, body_block);
@@ -615,7 +615,7 @@ struct Emitter: Visitor {
         if (!statement->else_statement) else_block = end_block;
 
         auto condition_value = convert_to_type(statement->condition, IntegerType::of_bool(), ConvKind::IMPLICIT);
-        LLVMBuildCondBr(builder, llvm_rvalue(condition_value), then_block, else_block);
+        LLVMBuildCondBr(builder, get_rvalue(condition_value), then_block, else_block);
 
         LLVMPositionBuilderAtEnd(builder, then_block);
         emit(statement->then_statement);
@@ -649,7 +649,7 @@ struct Emitter: Visitor {
                 message(Severity::ERROR, statement->location) << "non-void function '" << *function_declarator->identifier.name << "' should return a value\n";
                 value = Value(function_type->return_type, LLVMConstNull(function_type->return_type->llvm_type()));
             }
-            LLVMBuildRet(builder, llvm_rvalue(value));
+            LLVMBuildRet(builder, get_rvalue(value));
         }
 
         LLVMPositionBuilderAtEnd(builder, unreachable_block);
@@ -670,7 +670,7 @@ struct Emitter: Visitor {
         }
 
         auto expr_value = emit(statement->expr).unqualified();
-        auto switch_value = LLVMBuildSwitch(builder, llvm_rvalue(expr_value), default_block, statement->cases.size());
+        auto switch_value = LLVMBuildSwitch(builder, get_rvalue(expr_value), default_block, statement->cases.size());
 
         for (auto case_expr: statement->cases) {
             auto case_label = append_block("");
@@ -678,7 +678,7 @@ struct Emitter: Visitor {
 
             auto case_value = fold_expr(case_expr);
             if(case_value.is_const_integer()) {
-                LLVMAddCase(switch_value, case_value.llvm_const_rvalue(), case_label);
+                LLVMAddCase(switch_value, case_value.get_const(), case_label);
             } else {
                 message(Severity::ERROR, case_expr->location) << "case must have integer constant expression\n";
             }
@@ -699,7 +699,7 @@ struct Emitter: Visitor {
         auto result_type = value.type->pointer_to();
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
-        return VisitStatementOutput(result_type, value.llvm_lvalue());
+        return VisitStatementOutput(result_type, value.get_lvalue());
     }
 
     const Type* promote_integer(const Type* type) {
@@ -818,27 +818,27 @@ struct Emitter: Visitor {
                 return right_value;
               case '+':
               case TOK_ADD_ASSIGN:
-                return Value(result_type, LLVMBuildAdd(builder, llvm_rvalue(left_value), llvm_rvalue(right_value), ""));
+                return Value(result_type, LLVMBuildAdd(builder, get_rvalue(left_value), get_rvalue(right_value), ""));
               case '-':
               case TOK_SUB_ASSIGN:
-                return Value(result_type, LLVMBuildSub(builder, llvm_rvalue(left_value), llvm_rvalue(right_value), ""));
+                return Value(result_type, LLVMBuildSub(builder, get_rvalue(left_value), get_rvalue(right_value), ""));
               case '*':
               case TOK_MUL_ASSIGN:
-                return Value(result_type, LLVMBuildMul(builder, llvm_rvalue(left_value), llvm_rvalue(right_value), ""));
+                return Value(result_type, LLVMBuildMul(builder, get_rvalue(left_value), get_rvalue(right_value), ""));
               case '/':
               case TOK_DIV_ASSIGN:
                 if (as_int->is_signed()) {
-                    return Value(result_type, LLVMBuildSDiv(builder, llvm_rvalue(left_value), llvm_rvalue(right_value), ""));
+                    return Value(result_type, LLVMBuildSDiv(builder, get_rvalue(left_value), get_rvalue(right_value), ""));
                 } else {
-                    return Value(result_type, LLVMBuildUDiv(builder, llvm_rvalue(left_value), llvm_rvalue(right_value), ""));
+                    return Value(result_type, LLVMBuildUDiv(builder, get_rvalue(left_value), get_rvalue(right_value), ""));
                 }
               case TOK_LEFT_OP:
-                return Value(result_type, LLVMBuildShl(builder, llvm_rvalue(left_value), llvm_rvalue(right_value), ""));
+                return Value(result_type, LLVMBuildShl(builder, get_rvalue(left_value), get_rvalue(right_value), ""));
               case TOK_RIGHT_OP:
                 if (as_int->is_signed()) {
-                  return Value(result_type, LLVMBuildAShr(builder, llvm_rvalue(left_value), llvm_rvalue(right_value), ""));
+                  return Value(result_type, LLVMBuildAShr(builder, get_rvalue(left_value), get_rvalue(right_value), ""));
                 } else {
-                  return Value(result_type, LLVMBuildLShr(builder, llvm_rvalue(left_value), llvm_rvalue(right_value), ""));
+                  return Value(result_type, LLVMBuildLShr(builder, get_rvalue(left_value), get_rvalue(right_value), ""));
                 }
               case '<':       
               case '>':       
@@ -848,7 +848,7 @@ struct Emitter: Visitor {
               case TOK_NE_OP:
                 return Value(result_type, LLVMBuildICmp(builder,
                                                         llvm_int_predicate(as_int->is_signed(), expr->op),
-                                                        llvm_rvalue(left_value), llvm_rvalue(right_value),
+                                                        get_rvalue(left_value), get_rvalue(right_value),
                                                         ""));
             }
         }
@@ -861,16 +861,16 @@ struct Emitter: Visitor {
                 return right_value;
               case '+':
               case TOK_ADD_ASSIGN:
-                return Value(result_type, LLVMBuildFAdd(builder, llvm_rvalue(left_value), llvm_rvalue(right_value), ""));
+                return Value(result_type, LLVMBuildFAdd(builder, get_rvalue(left_value), get_rvalue(right_value), ""));
               case '-':
               case TOK_SUB_ASSIGN:
-                return Value(result_type, LLVMBuildFSub(builder, llvm_rvalue(left_value), llvm_rvalue(right_value), ""));
+                return Value(result_type, LLVMBuildFSub(builder, get_rvalue(left_value), get_rvalue(right_value), ""));
               case '*':
               case TOK_MUL_ASSIGN:
-                return Value(result_type, LLVMBuildFMul(builder, llvm_rvalue(left_value), llvm_rvalue(right_value), ""));
+                return Value(result_type, LLVMBuildFMul(builder, get_rvalue(left_value), get_rvalue(right_value), ""));
               case '/':
               case TOK_DIV_ASSIGN:
-                return Value(result_type, LLVMBuildFDiv(builder, llvm_rvalue(left_value), llvm_rvalue(right_value), ""));
+                return Value(result_type, LLVMBuildFDiv(builder, get_rvalue(left_value), get_rvalue(right_value), ""));
               case '<':       
               case '>':       
               case TOK_LE_OP: 
@@ -879,7 +879,7 @@ struct Emitter: Visitor {
               case TOK_NE_OP:
                 return Value(result_type, LLVMBuildFCmp(builder,
                                                         llvm_float_predicate(expr->op),
-                                                        llvm_rvalue(left_value), llvm_rvalue(right_value),
+                                                        get_rvalue(left_value), get_rvalue(right_value),
                                                         ""));
             }
         }
@@ -893,15 +893,15 @@ struct Emitter: Visitor {
         if (expr->op == '+' || expr->op == TOK_ADD_ASSIGN) {
             if (outcome == EmitOutcome::TYPE) return Value(pointer_type);
 
-            LLVMValueRef index = llvm_rvalue(right_value);
-            return Value(pointer_type, LLVMBuildGEP2(builder, pointer_type->base_type->llvm_type(), llvm_rvalue(left_value), &index, 1, ""));
+            LLVMValueRef index = get_rvalue(right_value);
+            return Value(pointer_type, LLVMBuildGEP2(builder, pointer_type->base_type->llvm_type(), get_rvalue(left_value), &index, 1, ""));
 
         } else if (expr->op == '-') {
             auto result_type = IntegerType::of_size(IntegerSignedness::SIGNED);
             if (outcome == EmitOutcome::TYPE) return Value(result_type);
             
-            auto left_int = LLVMBuildPtrToInt(builder, llvm_rvalue(left_value), result_type->llvm_type(), "");
-            auto right_int = LLVMBuildPtrToInt(builder, llvm_rvalue(right_value), result_type->llvm_type(), "");
+            auto left_int = LLVMBuildPtrToInt(builder, get_rvalue(left_value), result_type->llvm_type(), "");
+            auto right_int = LLVMBuildPtrToInt(builder, get_rvalue(right_value), result_type->llvm_type(), "");
             auto byte_diff = LLVMBuildSub(builder, left_int, right_int, "");
             auto size_of_base_type = LLVMStoreSizeOfType(llvm_target_data, pointer_type->base_type->llvm_type());
             auto result = LLVMBuildSDiv(builder, byte_diff, LLVMConstInt(result_type->llvm_type(), size_of_base_type, true), "");
@@ -920,7 +920,7 @@ struct Emitter: Visitor {
 
             LLVMValueRef indices[2] = {zero, zero};
             return Value(result_type,
-                         LLVMBuildGEP2(builder, array_type->llvm_type(), value.llvm_lvalue(), indices, 2, ""));
+                         LLVMBuildGEP2(builder, array_type->llvm_type(), value.get_lvalue(), indices, 2, ""));
         }
 
         return value;
@@ -964,7 +964,7 @@ struct Emitter: Visitor {
         auto function_value = emit(expr->function).unqualified();
 
         if (auto pointer_type = type_cast<PointerType>(function_value.type)) {
-            function_value = Value(ValueKind::LVALUE, pointer_type->base_type, llvm_rvalue(function_value));
+            function_value = Value(ValueKind::LVALUE, pointer_type->base_type, get_rvalue(function_value));
         }
 
         if (auto function_type = type_cast<FunctionType>(function_value.type)) {
@@ -976,10 +976,10 @@ struct Emitter: Visitor {
                 auto param_expr = expr->parameters[i];
                 auto expected_type = function_type->parameter_types[i];
                 auto param_value = convert_to_type(param_expr, expected_type, ConvKind::IMPLICIT);
-                llvm_params[i] = llvm_rvalue(param_value);
+                llvm_params[i] = get_rvalue(param_value);
             }
 
-            auto result = LLVMBuildCall2(builder, function_type->llvm_type(), function_value.llvm_lvalue(), llvm_params.data(), llvm_params.size(), "");
+            auto result = LLVMBuildCall2(builder, function_type->llvm_type(), function_value.get_lvalue(), llvm_params.data(), llvm_params.size(), "");
             return VisitStatementOutput(result_type, result);
         }
 
@@ -1016,16 +1016,16 @@ struct Emitter: Visitor {
         auto merge_block = append_block("merge");
 
         auto condition_value = convert_to_type(expr->condition, IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL), ConvKind::IMPLICIT);
-        LLVMBuildCondBr(builder, llvm_rvalue(condition_value), alt_blocks[0], alt_blocks[1]);
+        LLVMBuildCondBr(builder, get_rvalue(condition_value), alt_blocks[0], alt_blocks[1]);
 
         LLVMValueRef alt_values[2];
 
         LLVMPositionBuilderAtEnd(builder, alt_blocks[0]);
-        alt_values[0] = llvm_rvalue(convert_to_type(expr->then_expr, result_type, ConvKind::IMPLICIT));
+        alt_values[0] = get_rvalue(convert_to_type(expr->then_expr, result_type, ConvKind::IMPLICIT));
         LLVMBuildBr(builder, merge_block);
 
         LLVMPositionBuilderAtEnd(builder, alt_blocks[1]);
-        alt_values[1] = llvm_rvalue(convert_to_type(expr->else_expr, result_type, ConvKind::IMPLICIT));
+        alt_values[1] = get_rvalue(convert_to_type(expr->else_expr, result_type, ConvKind::IMPLICIT));
         LLVMBuildBr(builder, merge_block);
 
         LLVMPositionBuilderAtEnd(builder, merge_block);
@@ -1047,7 +1047,7 @@ struct Emitter: Visitor {
         auto result_type = pointer_type->base_type;
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
-        return VisitStatementOutput(Value(ValueKind::LVALUE, result_type, llvm_rvalue(value)));
+        return VisitStatementOutput(Value(ValueKind::LVALUE, result_type, get_rvalue(value)));
     }
 
     virtual VisitStatementOutput visit(EntityExpr* expr, const VisitStatementInput& input) override {
@@ -1071,7 +1071,7 @@ struct Emitter: Visitor {
 
         } else if (auto entity = declarator->entity()) {
             // EntityPass ensures that all functions and globals are created before the Emitter pass.
-            assert(entity->value.llvm_lvalue());
+            assert(entity->value.get_lvalue());
             return VisitStatementOutput(entity->value);
         } else {
             message(Severity::ERROR, expr->location) << "identifier is not an expression\n";
@@ -1094,10 +1094,10 @@ struct Emitter: Visitor {
         Value after_value;
         switch (expr->op) {
           case TOK_INC_OP:
-            after_value = Value(result_type, LLVMBuildAdd(builder, llvm_rvalue(before_value), one, ""));
+            after_value = Value(result_type, LLVMBuildAdd(builder, get_rvalue(before_value), one, ""));
             break;
           case TOK_DEC_OP:
-            after_value = Value(result_type, LLVMBuildSub(builder, llvm_rvalue(before_value), one, ""));
+            after_value = Value(result_type, LLVMBuildSub(builder, get_rvalue(before_value), one, ""));
             break;
         }
 
@@ -1112,7 +1112,7 @@ struct Emitter: Visitor {
         bool dereferenced{};
         if (auto pointer_type = type_cast<PointerType>(object.type)) {
             dereferenced = true;
-            object = Value(ValueKind::LVALUE, pointer_type->base_type, llvm_rvalue(object));
+            object = Value(ValueKind::LVALUE, pointer_type->base_type, get_rvalue(object));
         }
 
         if (auto struct_type = type_cast<StructType>(object.type)) {
@@ -1142,7 +1142,7 @@ struct Emitter: Visitor {
             if (member_variable) {
                 auto llvm_struct_type = struct_type->llvm_type();
                 auto index = member_variable->aggregate_index;
-                Value value(ValueKind::LVALUE, result_type, LLVMBuildStructGEP2(builder, llvm_struct_type, object.llvm_lvalue(), index, expr->identifier.name->data()));
+                Value value(ValueKind::LVALUE, result_type, LLVMBuildStructGEP2(builder, llvm_struct_type, object.get_lvalue(), index, expr->identifier.name->data()));
                 value.bit_field = member_variable->bit_field;
                 return VisitStatementOutput(value);
             } else {
@@ -1184,22 +1184,22 @@ struct Emitter: Visitor {
             auto result_type = pointer_type->base_type;
             if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
-            LLVMValueRef index = llvm_rvalue(index_value);
+            LLVMValueRef index = get_rvalue(index_value);
             return VisitStatementOutput(Value(
                 ValueKind::LVALUE,
                 result_type,
-                LLVMBuildGEP2(builder, result_type->llvm_type(), llvm_rvalue(left_value), &index, 1, "")));
+                LLVMBuildGEP2(builder, result_type->llvm_type(), get_rvalue(left_value), &index, 1, "")));
         }
 
         if (auto array_type = type_cast<ArrayType>(left_value.type)) {
             auto result_type = array_type->element_type;
             if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
-            LLVMValueRef indices[2] = { zero, llvm_rvalue(index_value) };
+            LLVMValueRef indices[2] = { zero, get_rvalue(index_value) };
             return VisitStatementOutput(Value(
                 ValueKind::LVALUE,
                 result_type,
-                LLVMBuildGEP2(builder, array_type->llvm_type(), left_value.llvm_lvalue(), indices, 2, "")));
+                LLVMBuildGEP2(builder, array_type->llvm_type(), left_value.get_lvalue(), indices, 2, "")));
         }
 
         assert(false);

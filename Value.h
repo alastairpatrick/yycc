@@ -48,17 +48,17 @@ struct Value {
         return kind == ValueKind::RVALUE && LLVMIsAConstantInt(llvm);
     }
 
-    LLVMValueRef llvm_const_rvalue() const{
+    LLVMValueRef get_const() const{
         assert(is_const());
         return llvm;
     }
 
-    LLVMValueRef llvm_lvalue() const{
+    LLVMValueRef get_lvalue() const{
         assert(llvm && kind == ValueKind::LVALUE);
         return llvm;
     }
 
-    LLVMValueRef llvm_rvalue(LLVMBuilderRef builder) const;
+    LLVMValueRef get_rvalue(LLVMBuilderRef builder) const;
 
     Value unqualified() const {
         return bit_cast(type->unqualified());
@@ -71,7 +71,7 @@ struct Value {
     }
 
     Value load(LLVMBuilderRef builder) const {
-        return Value(type, llvm_rvalue(builder));
+        return Value(type, get_rvalue(builder));
     }
 
     void store(LLVMBuilderRef builder, const Value& new_value) const;
