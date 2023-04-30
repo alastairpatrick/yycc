@@ -38,7 +38,7 @@ ostream& operator<<(ostream& stream, const PrintType& print_type) {
 
 #pragma region Type
 
-unsigned Type::qualifiers() const {
+QualifierSet Type::qualifiers() const {
     return 0;
 }
 
@@ -384,7 +384,7 @@ const Type* QualifiedType::of(const Type* base_type, unsigned qualifiers) {
     return TranslationUnitContext::it->type.get_qualified_type(base_type, qualifiers);
 }
 
-unsigned QualifiedType::qualifiers() const {
+QualifierSet QualifiedType::qualifiers() const {
     return qualifier_flags;
 }
 
@@ -408,17 +408,17 @@ void QualifiedType::message_print(ostream& stream, int section) const {
     base_type->message_print(stream, section);
 
     if (section == 1) {
-        if (qualifier_flags & QUAL_CONST) stream << " const";
-        if (qualifier_flags & QUAL_RESTRICT) stream << " restricted";
-        if (qualifier_flags & QUAL_VOLATILE) stream << " volatile";
+        if (qualifier_flags & QUALIFIER_CONST) stream << " const";
+        if (qualifier_flags & QUALIFIER_RESTRICT) stream << " restricted";
+        if (qualifier_flags & QUALIFIER_VOLATILE) stream << " volatile";
     }
 }
 
 void QualifiedType::print(std::ostream& stream) const {
     stream << "[\"Q";
-    if (qualifier_flags & QUAL_CONST) stream << 'c';
-    if (qualifier_flags & QUAL_RESTRICT) stream << 'r';
-    if (qualifier_flags & QUAL_VOLATILE) stream << 'v';
+    if (qualifier_flags & QUALIFIER_CONST) stream << 'c';
+    if (qualifier_flags & QUALIFIER_RESTRICT) stream << 'r';
+    if (qualifier_flags & QUALIFIER_VOLATILE) stream << 'v';
     stream << "\", " << base_type << ']';
 }
 
@@ -433,7 +433,7 @@ QualifiedType::QualifiedType(const Type* base_type, unsigned qualifiers)
 UnqualifiedType::UnqualifiedType(const Type* base_type): base_type(base_type) {
 }
 
-unsigned UnqualifiedType::qualifiers() const {
+QualifierSet UnqualifiedType::qualifiers() const {
     return 0;
 }
 

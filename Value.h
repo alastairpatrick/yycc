@@ -3,7 +3,7 @@
 
 #include "parse/Type.h"
 
-enum class ValueKind {
+enum class ValueKind: uint8_t {
     TYPE_ONLY,
     RVALUE,
     LVALUE,
@@ -13,8 +13,8 @@ struct BitField;
 
 struct Value {
     ValueKind kind = ValueKind::TYPE_ONLY;
+    QualifierSet qualifiers{};
     const Type* type{};
-    unsigned qualifiers{};
     BitField* bit_field{};
 
     Value() = default;

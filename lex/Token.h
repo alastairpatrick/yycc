@@ -2,49 +2,11 @@
 #define LEX_TOKEN_H
 
 enum TokenKind {
-    TOK_EOF,
-
-    TOK_TYPEDEF,
-    TOK_EXTERN,
-    TOK_STATIC,
-    TOK_AUTO,
-    TOK_REGISTER,
-
-    TOK_CHAR,
-    TOK_SHORT,
-    TOK_INT,
-    TOK_LONG,
-    TOK_SIGNED,
-    TOK_UNSIGNED,
-    TOK_FLOAT,
-    TOK_DOUBLE,
-    TOK_VOID,
-
-    TOK_BOOL,
-    TOK_COMPLEX,
-    TOK_IMAGINARY,
-    
-    TOK_CONST,
-    TOK_RESTRICT,
-    TOK_VOLATILE,
-
-    TOK_STRUCT,
-    TOK_UNION,
-    TOK_ENUM,
-    TOK_IDENTIFIER,
-
-    TOK_TYPEOF,
-    TOK_TYPEOF_UNQUAL,
-
-    TOK_INLINE,
-
-    // Tokens above are <32 so that they don't overlap with single character punctuators.
-    // It is also convenient to be able to use a 32-bit int as a token set for these, e.g.
-    // for set of type specifiers.
+    TOK_EOF = 0, // must be zero so it evaluates to false in conditionals
+    TOK_INVALID,
 
     // The [32,127] range is reserved for single character punctuators.
 
-    // Tokens below fall in the lower case letter range so they don't overlap with punctuators. 
     TOK_PTR_OP = 128,
     TOK_INC_OP,
     TOK_DEC_OP,
@@ -117,7 +79,45 @@ enum TokenKind {
     TOK_PP_UNDEF,
     TOK_PP_VAR,
 
-    TOK_NUM
+    TOK_BEGIN_SPECIFIER_LIKE,
+
+    // Qualifiers come first so associaited set can fit in uint8_t
+    TOK_CONST = TOK_BEGIN_SPECIFIER_LIKE,
+    TOK_RESTRICT,
+    TOK_VOLATILE,
+
+    TOK_AUTO,
+    TOK_EXTERN,
+    TOK_STATIC,
+    TOK_REGISTER,
+    TOK_TYPEDEF,
+
+    TOK_BOOL,
+    TOK_CHAR,
+    TOK_COMPLEX,
+    TOK_FLOAT,
+    TOK_DOUBLE,
+    TOK_IMAGINARY,
+    TOK_INT,
+    TOK_LONG,
+    TOK_SHORT,
+    TOK_SIGNED,
+    TOK_UNSIGNED,
+    TOK_VOID,
+    
+    TOK_ENUM,
+    TOK_IDENTIFIER,
+    TOK_STRUCT,
+    TOK_UNION,
+
+    TOK_TYPEOF,
+    TOK_TYPEOF_UNQUAL,
+
+    TOK_INLINE,
+
+    TOK_END_SPECIFIER_LIKE,
+
+    TOK_NUM = TOK_END_SPECIFIER_LIKE
 };
 
 #endif

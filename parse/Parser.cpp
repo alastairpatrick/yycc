@@ -7,6 +7,7 @@
 #include "Expr.h"
 #include "lex/Token.h"
 #include "Message.h"
+#include "Specifier.h"
 #include "Statement.h"
 
 const Type* DeclaratorTransform::apply(const Type* type) {
@@ -203,7 +204,7 @@ Declaration* Parser::parse_declaration(IdentifierScope scope) {
     auto begin = position();
 
     const Type* base_type{};
-    uint32_t specifiers;
+    SpecifierSet specifiers;
     if (auto declaration = parse_declaration_specifiers(scope, base_type, specifiers)) {
         int declarator_count = 0;
         bool last_declarator{};
@@ -231,12 +232,7 @@ Declaration* Parser::parse_declaration(IdentifierScope scope) {
     return nullptr;
 }
 
-Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const Type*& type, uint32_t& specifiers) {
-    const uint32_t storage_class_mask = (1 << TOK_TYPEDEF) | (1 << TOK_EXTERN) | (1 << TOK_STATIC) | (1 << TOK_AUTO) | (1 << TOK_REGISTER);
-    const uint32_t type_qualifier_mask = (1 << TOK_CONST) | (1 << TOK_RESTRICT) | (1 << TOK_VOLATILE);
-    const uint32_t function_specifier_mask = 1 << TOK_INLINE;
-    const uint32_t type_specifier_mask = ~(storage_class_mask | type_qualifier_mask | function_specifier_mask);
-
+Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const Type*& type, SpecifierSet& specifiers) {
     Declaration* declaration{};
     Location declaration_location = preprocessor.location();
     StorageClass storage_class;
@@ -244,8 +240,8 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
     Location type_specifier_location = preprocessor.location();
     Location function_specifier_location;
     Location qualifier_location;
-    uint32_t specifier_set = 0;
-    uint32_t qualifier_set = 0;
+    SpecifierSet specifier_set = 0;
+    SpecifierSet qualifier_set = 0;
     int num_longs = 0;
     while (token) {
         if (token == TOK_LONG) {
@@ -253,18 +249,18 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
             if (num_longs > 2) {
                 message(Severity::ERROR, preprocessor.location()) << "invalid type specifier combination\n";
             }
-            specifier_set &= ~(1 << token);
+            specifier_set &= ~token_to_specifier(token);
         }
 
         Location specifier_location = preprocessor.location();
-        TokenKind found_specifier{};
+        TokenKind found_specifier_token{};
         switch (token) {
             case TOK_TYPEDEF:
             case TOK_EXTERN:
             case TOK_STATIC:
             case TOK_AUTO:
             case TOK_REGISTER: {
-              found_specifier = token;
+              found_specifier_token = token;
               storage_class_location = preprocessor.location();
               consume();
               break;
@@ -280,13 +276,13 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
             case TOK_UNSIGNED:
             case TOK_BOOL:
             case TOK_COMPLEX: {
-              found_specifier = token;
+              found_specifier_token = token;
               type_specifier_location = preprocessor.location();                
               consume();
               break;
 
           } case TOK_IDENTIFIER: {
-              if ((specifier_set & type_specifier_mask) == 0) {
+              if ((specifier_set & SPECIFIER_MASK_TYPE) == 0) {
                   const Type* typedef_type{};
                   if (preparse) {
                       typedef_type = UnboundType::of(preprocessor.identifier());
@@ -306,7 +302,7 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
                   }
 
                   type = typedef_type;
-                  found_specifier = token;
+                  found_specifier_token = token;
                   type_specifier_location = preprocessor.location();                
                   consume();
               }
@@ -315,7 +311,7 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
           } case TOK_ENUM:
             case TOK_STRUCT:
             case TOK_UNION: {
-              found_specifier = token;
+              found_specifier_token = token;
               type_specifier_location = preprocessor.location();
               if (!declaration) declaration = new Declaration(scope, declaration_location);
               type = parse_structured_type(declaration);
@@ -323,36 +319,36 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
 
           } case TOK_TYPEOF:
             case TOK_TYPEOF_UNQUAL: {
-              found_specifier = token;
+              found_specifier_token = token;
               type_specifier_location = preprocessor.location();
               type = parse_typeof();
               break;
           
           } case TOK_INLINE: {
-              found_specifier = token;
+              found_specifier_token = token;
               function_specifier_location = preprocessor.location();
-              specifier_set &= ~(1 << token); // function speficiers may be repeated
+              specifier_set &= ~token_to_specifier(token); // function speficiers may be repeated
               consume();
               break;
 
           } case TOK_CONST:
             case TOK_RESTRICT:
             case TOK_VOLATILE: {
-              found_specifier = token;
+              found_specifier_token = token;
               qualifier_location = preprocessor.location();
-              specifier_set &= ~(1 << token); // qualifiers may be repeated
+              specifier_set &= ~token_to_specifier(token); // qualifiers may be repeated
               consume();
               break;       
           }
         }
 
-        if (found_specifier) {
-            assert(found_specifier < 32);
+        if (found_specifier_token) {
+            assert(found_specifier_token >= TOK_BEGIN_SPECIFIER_LIKE && found_specifier_token < TOK_END_SPECIFIER_LIKE);
             if (!declaration) declaration = new Declaration(scope, declaration_location);
-            if (specifier_set & (1 << found_specifier)) {
+            if (specifier_set & token_to_specifier(found_specifier_token)) {
                 message(Severity::ERROR, specifier_location) << "invalid declaration specifier or type qualifier combination\n";
             }
-            specifier_set |= 1 << found_specifier;
+            specifier_set |= token_to_specifier(found_specifier_token);
         } else {
             break;
         }
@@ -360,109 +356,109 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
 
     if (!declaration) return declaration;
 
-    uint32_t storage_class_set = specifier_set & storage_class_mask;
-    if (storage_class_set != 0 && storage_class_set & (storage_class_set-1)) {
+    SpecifierSet storage_class_set = specifier_set & SPECIFIER_MASK_STORAGE_CLASS;
+    if (storage_class_set != 0 && multiple_specifiers(storage_class_set)) {
         message(Severity::ERROR, storage_class_location) << "too many storage classes\n";
     }
 
     storage_class = StorageClass::NONE;
-    if (storage_class_set & (1 << TOK_STATIC))        storage_class = StorageClass::STATIC;
-    else if (storage_class_set & (1 << TOK_EXTERN))   storage_class = StorageClass::EXTERN;
-    else if (storage_class_set & (1 << TOK_TYPEDEF))  storage_class = StorageClass::TYPEDEF;
-    else if (storage_class_set & (1 << TOK_AUTO))     storage_class = StorageClass::AUTO;
-    else if (storage_class_set & (1 << TOK_REGISTER)) storage_class = StorageClass::REGISTER;
+    if (storage_class_set & SPECIFIER_STATIC)        storage_class = StorageClass::STATIC;
+    else if (storage_class_set & SPECIFIER_EXTERN)   storage_class = StorageClass::EXTERN;
+    else if (storage_class_set & SPECIFIER_TYPEDEF)  storage_class = StorageClass::TYPEDEF;
+    else if (storage_class_set & SPECIFIER_AUTO)     storage_class = StorageClass::AUTO;
+    else if (storage_class_set & SPECIFIER_REGISTER) storage_class = StorageClass::REGISTER;
     
-    switch (specifier_set & type_specifier_mask) {
+    switch (specifier_set & SPECIFIER_MASK_TYPE) {
         default: {
           type = IntegerType::default_type();
           message(Severity::ERROR, type_specifier_location) << "invalid type specifier combination\n";
           break;
 
-      } case (1 << TOK_VOID): {
+      } case SPECIFIER_VOID: {
           type = &VoidType::it;
           break;
 
-      } case (1 << TOK_CHAR): {
+      } case SPECIFIER_CHAR: {
           type = IntegerType::of_char(false);
           break;
 
-      } case (1 << TOK_SIGNED) | (1 << TOK_CHAR): {
+      } case SPECIFIER_SIGNED | SPECIFIER_CHAR: {
           type = IntegerType::of(IntegerSignedness::SIGNED, IntegerSize::CHAR);
           break;
 
-      } case (1 << TOK_UNSIGNED) | (1 << TOK_CHAR): {
+      } case SPECIFIER_UNSIGNED | SPECIFIER_CHAR: {
           type = IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::CHAR);
           break;
 
-      } case (1 << TOK_SHORT):
-        case (1 << TOK_SIGNED) | (1 << TOK_SHORT):
-        case (1 << TOK_SHORT) | (1 << TOK_INT):
-        case (1 << TOK_SIGNED) | (1 << TOK_SHORT) | (1 << TOK_INT): {
+      } case SPECIFIER_SHORT:
+        case SPECIFIER_SIGNED | SPECIFIER_SHORT:
+        case SPECIFIER_SHORT | SPECIFIER_INT:
+        case SPECIFIER_SIGNED | SPECIFIER_SHORT | SPECIFIER_INT: {
           type = IntegerType::of(IntegerSignedness::SIGNED, IntegerSize::SHORT);
           break;
 
-      } case (1 << TOK_UNSIGNED) | (1 << TOK_SHORT):
-        case (1 << TOK_UNSIGNED) | (1 << TOK_SHORT) | (1 << TOK_INT): {
+      } case SPECIFIER_UNSIGNED | SPECIFIER_SHORT:
+        case SPECIFIER_UNSIGNED | SPECIFIER_SHORT | SPECIFIER_INT: {
           type = IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::SHORT);
           break;
 
-      } case (1 << TOK_INT):
-        case (1 << TOK_SIGNED):
-        case (1 << TOK_SIGNED) | (1 << TOK_INT): {
+      } case SPECIFIER_INT:
+        case SPECIFIER_SIGNED:
+        case SPECIFIER_SIGNED | SPECIFIER_INT: {
           type = IntegerType::of(IntegerSignedness::SIGNED, IntegerSize::INT);
           break;
 
-      } case (1 << TOK_UNSIGNED):
-        case (1 << TOK_UNSIGNED) | (1 << TOK_INT): {
+      } case SPECIFIER_UNSIGNED:
+        case SPECIFIER_UNSIGNED | SPECIFIER_INT: {
           type = IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::INT);
           break;
 
-      } case (1 << TOK_LONG):
-        case (1 << TOK_SIGNED) | (1 << TOK_LONG):
-        case (1 << TOK_LONG) | (1 << TOK_INT):
-        case (1 << TOK_SIGNED) | (1 << TOK_LONG) | (1 << TOK_INT): {
+      } case SPECIFIER_LONG:
+        case SPECIFIER_SIGNED | SPECIFIER_LONG:
+        case SPECIFIER_LONG | SPECIFIER_INT:
+        case SPECIFIER_SIGNED | SPECIFIER_LONG | SPECIFIER_INT: {
           type = IntegerType::of(IntegerSignedness::SIGNED, num_longs == 1 ? IntegerSize::LONG : IntegerSize::LONG_LONG);
           break;
 
-      } case (1 << TOK_UNSIGNED) | (1 << TOK_LONG):
-        case (1 << TOK_UNSIGNED) | (1 << TOK_LONG) | (1 << TOK_INT): {
+      } case SPECIFIER_UNSIGNED | SPECIFIER_LONG:
+        case SPECIFIER_UNSIGNED | SPECIFIER_LONG | SPECIFIER_INT: {
           type = IntegerType::of(IntegerSignedness::UNSIGNED, num_longs == 1 ? IntegerSize::LONG : IntegerSize::LONG_LONG);
           break;
 
-      } case (1 << TOK_FLOAT): {
+      } case SPECIFIER_FLOAT: {
           type = FloatingPointType::of(FloatingPointSize::FLOAT);
           break;
 
-      } case (1 << TOK_DOUBLE): {
+      } case SPECIFIER_DOUBLE: {
           type = FloatingPointType::of(FloatingPointSize::DOUBLE);
           break;
 
-      } case (1 << TOK_LONG) | (1 << TOK_DOUBLE): {
+      } case SPECIFIER_LONG | SPECIFIER_DOUBLE: {
           type = FloatingPointType::of(FloatingPointSize::LONG_DOUBLE);
           break;
 
-      } case (1 << TOK_BOOL): {
+      } case SPECIFIER_BOOL: {
           type = IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL);
           break;
 
-      } case (1 << TOK_ENUM):
-        case (1 << TOK_IDENTIFIER):
-        case (1 << TOK_STRUCT):
-        case (1 << TOK_UNION):
-        case (1 << TOK_TYPEOF):
-        case (1 << TOK_TYPEOF_UNQUAL): {
+      } case SPECIFIER_ENUM:
+        case SPECIFIER_IDENTIFIER:
+        case SPECIFIER_STRUCT:
+        case SPECIFIER_UNION:
+        case SPECIFIER_TYPEOF:
+        case SPECIFIER_TYPEOF_UNQUAL: {
           break;
       }
     }
 
-    if (specifier_set & type_qualifier_mask) {
-        type = QualifiedType::of(type, specifier_set & type_qualifier_mask);
+    if (specifier_set & SPECIFIER_MASK_QUALIFIER) {
+        type = QualifiedType::of(type, specifier_set & SPECIFIER_MASK_QUALIFIER);
     }
 
     declaration->storage_class = storage_class;
     declaration->type = type;
 
-    specifiers = specifier_set & function_specifier_mask;
+    specifiers = specifier_set & SPECIFIER_MASK_FUNCTION;
     return declaration;
 }
 
@@ -541,7 +537,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
         if (consume(':')) {
             const Type* base_type{};
-            uint32_t specifiers{};
+            SpecifierSet specifiers{};
             parse_declaration_specifiers(IdentifierScope::EXPRESSION, base_type, specifiers);
 
             enum_type->base_type = base_type;
@@ -626,7 +622,7 @@ const Type* Parser::parse_typeof() {
     return type;
 }
 
-Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, ParseDeclaratorFlags flags, bool* last) {
+Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type, SpecifierSet specifiers, ParseDeclaratorFlags flags, bool* last) {
     auto location = preprocessor.location();
     auto begin = position();
 
@@ -678,7 +674,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
             message(Severity::ERROR, declarator->location) << "invalid storage class\n";
         }
 
-        bool inline_definition = (linkage == Linkage::EXTERNAL) && (specifiers & (1 << TOK_INLINE)) && (storage_class != StorageClass::EXTERN);
+        bool inline_definition = (linkage == Linkage::EXTERNAL) && (specifiers & SPECIFIER_INLINE) && (storage_class != StorageClass::EXTERN);
 
         declarator->delegate = new Function(declarator,
                                             linkage,
@@ -686,7 +682,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
                                             move(declarator_transform.parameters),
                                             body);
     } else {
-        if (specifiers & (1 << TOK_INLINE)) {
+        if (specifiers & SPECIFIER_INLINE) {
             message(Severity::ERROR, location) << "'inline' may only appear on function\n";
         }
 
@@ -716,9 +712,9 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, Pa
             return type->pointer_to();
         };
 
-        unsigned qualifier_set = 0;
+        SpecifierSet qualifier_set = 0;
         while (token == TOK_CONST || token == TOK_RESTRICT || token == TOK_VOLATILE) {
-            qualifier_set |= 1 << token;
+            qualifier_set |= token_to_specifier(token);
             consume();
         }
 
@@ -751,11 +747,11 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, Pa
     for (int depth = 0; token; ++depth) {
         if (consume('[')) {
             // C99 6.7.5.3p7
-            unsigned array_qualifier_set{};
+            SpecifierSet array_qualifier_set{};
             if (depth == 0 && scope == IdentifierScope::PROTOTYPE) {
                 while (token == TOK_CONST || token == TOK_RESTRICT || token == TOK_VOLATILE || token == TOK_STATIC) {
                     if (token != TOK_STATIC) {
-                        array_qualifier_set |= 1 << token;
+                        array_qualifier_set |= token_to_specifier(token);
                     }
                     consume();
                 }
@@ -834,7 +830,7 @@ Declarator* Parser::parse_parameter_declarator() {
     auto begin_declaration = position();
 
     const Type* base_type{};
-    uint32_t specifiers{};
+    SpecifierSet specifiers{};
     auto declaration = parse_declaration_specifiers(IdentifierScope::PROTOTYPE, base_type, specifiers);
     if (!declaration) {
         return nullptr;
@@ -1323,7 +1319,7 @@ OperatorPrec Parser::prec() {
 
 const Type* Parser::parse_type() {
     const Type* type{};
-    uint32_t specifiers{};
+    SpecifierSet specifiers{};
     auto declaration = parse_declaration_specifiers(IdentifierScope::EXPRESSION, type, specifiers);
     if (!declaration) return nullptr;
 

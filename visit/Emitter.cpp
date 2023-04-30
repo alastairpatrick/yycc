@@ -1230,7 +1230,7 @@ struct Emitter: Visitor {
 
     virtual VisitStatementOutput visit(StringConstant* constant, const VisitStatementInput& input) override {
         auto result_type = ResolvedArrayType::of(ArrayKind::COMPLETE,
-                                                 QualifiedType::of(constant->character_type, QUAL_CONST),
+                                                 QualifiedType::of(constant->character_type, QUALIFIER_CONST),
                                                  constant->value.length + 1);
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 

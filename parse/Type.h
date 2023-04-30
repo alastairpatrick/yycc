@@ -7,6 +7,7 @@
 #include "lex/Token.h"
 #include "Printable.h"
 #include "Scope.h"
+#include "Specifier.h"
 
 struct Emitter;
 struct Declaration;
@@ -38,7 +39,7 @@ struct Type: virtual Printable {
     Type(const Type&) = delete;
     void operator=(const Type&) = delete;
 
-    virtual unsigned qualifiers() const;
+    virtual QualifierSet qualifiers() const;
     virtual const Type* unqualified() const;
 
     const PointerType* pointer_to() const;
@@ -147,19 +148,13 @@ private:
     virtual LLVMTypeRef cache_llvm_type() const override;
 };
 
-enum TypeQualifiers {
-    QUAL_CONST = 1 << TOK_CONST,
-    QUAL_RESTRICT = 1 << TOK_RESTRICT,
-    QUAL_VOLATILE = 1 << TOK_VOLATILE,
-};
-
 struct QualifiedType: Type {
     static const Type* of(const Type* base_type, unsigned qualifiers);
 
     const Type* const base_type;
-    const unsigned qualifier_flags;
+    const QualifierSet qualifier_flags;
 
-    virtual unsigned qualifiers() const override;
+    virtual QualifierSet qualifiers() const override;
     virtual const Type* unqualified() const override;
     virtual TypePartition partition() const override;
 
@@ -180,7 +175,7 @@ struct UnqualifiedType: ASTNode, Type {
     const Type* const base_type;
 
     explicit UnqualifiedType(const Type* base_type);
-    virtual unsigned qualifiers() const override;
+    virtual QualifierSet qualifiers() const override;
     virtual const Type* unqualified() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual void message_print(ostream& stream, int section) const override;

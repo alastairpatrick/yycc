@@ -52,7 +52,7 @@ struct Parser {
 private:
     Preprocessor& preprocessor;
     IdentifierMap& identifiers;
-    TokenKind token = TOK_NUM;
+    TokenKind token = TOK_INVALID;
     const bool preparse;
     SwitchStatement* innermost_switch{};
 
@@ -74,12 +74,12 @@ private:
 
     LocationNode* parse_declaration_or_statement(IdentifierScope scope);
     Declaration* parse_declaration(IdentifierScope scope);
-    Declaration* parse_declaration_specifiers(IdentifierScope scope, const Type*& type, uint32_t& specifiers);
+    Declaration* parse_declaration_specifiers(IdentifierScope scope, const Type*& type, SpecifierSet& specifiers);
     const Type* parse_structured_type(Declaration* declaration);
     Declarator* declare_tag_type(AddDeclaratorScope add_scope, Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location);
     const Type* parse_typeof();
     Declarator* parse_enum_constant(Declaration* declaration, const EnumType* type);
-    Declarator* parse_declarator(Declaration* declaration, const Type* type, uint32_t specifiers, ParseDeclaratorFlags flags, bool* last);
+    Declarator* parse_declarator(Declaration* declaration, const Type* type, SpecifierSet specifiers, ParseDeclaratorFlags flags, bool* last);
     DeclaratorTransform parse_declarator_transform(IdentifierScope scope, ParseDeclaratorFlags flags);
     Declarator* parse_parameter_declarator();
     Statement* parse_statement();
