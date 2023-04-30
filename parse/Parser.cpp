@@ -995,7 +995,7 @@ Statement* Parser::parse_statement() {
 
           return new GoToStatement(kind, identifier, location);
 
-      } default : {
+      } default: {
           Label label;
           Statement* statement = parse_expr(SEQUENCE_PRECEDENCE, &label.identifier);
 
