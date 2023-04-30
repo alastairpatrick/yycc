@@ -110,6 +110,28 @@ EXPECT_GLOBALS
 [["ec","A",0],["ec","B",1],["typedef",["ENUM","C",[["ec","A",0],["ec","B",1]]],"E"]]
 
 
+BEGIN Enum constant may refer to sizeof prior constant (3)
+typedef char T;
+enum E: T { A, B = sizeof(A) };
+EXPECT_GLOBALS
+[["ec","A",0]
+,["ec","B",1]
+,["typedef",["ENUM","C",[["ec","A",0],["ec","B",1]]],"E"]
+,["typedef","C","T"]]
+
+
+BEGIN Error if enum base type is not an integer type
+typedef float T;
+enum E: T { A, B = sizeof(A) };
+EXPECT_MESSAGE
+:2:1: error type 'float' is not a valid integer enum base type
+EXPECT_GLOBALS
+[["ec","A",0]
+,["ec","B",4]
+,["typedef",["ENUM",[["ec","A",0],["ec","B",4]]],"E"]
+,["typedef","Ff","T"]]
+
+
 BEGIN Enum constant may not refer to following constants (1)
 enum E { B = A, A = 1 };
 EXPECT_MESSAGE

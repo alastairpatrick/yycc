@@ -590,6 +590,13 @@ struct ResolvePass: Visitor {
             pend(declarator);
         }
 
+        type->base_type = resolve(type->base_type);
+        if (!dynamic_cast<const IntegerType*>(type->base_type)) {
+            message(Severity::ERROR, type->location) << "type '" << PrintType(type->base_type) << "' is not a valid integer enum base type\n";
+            type->base_type = IntegerType::default_type();
+            type->explicit_base_type = false;
+        }
+
         return VisitTypeOutput(type);
     }
 
