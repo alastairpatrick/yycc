@@ -8,6 +8,8 @@
 #include "reflex/matcher.h"
 #include "reflex/abslexer.h"
 
+#include "scope_exit/scope_exit.h"
+
 #include <algorithm>
 #include <cassert>
 #include <charconv>

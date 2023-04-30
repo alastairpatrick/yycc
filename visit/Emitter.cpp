@@ -1061,8 +1061,12 @@ struct Emitter: Visitor {
                 message(Severity::ERROR, expr->location) << "enum constant '" << *declarator->identifier.name << "' not yet available\n";
             }
 
-            auto enum_type = type_cast<EnumType>(result_type->unqualified());
-            auto int_type = type_cast<IntegerType>(enum_type->base_type);
+            auto type = result_type;
+            while (auto enum_type = type_cast<EnumType>(type->unqualified())) {
+                type = enum_type->base_type;
+            }
+
+            auto int_type = type_cast<IntegerType>(type);
             return VisitStatementOutput(result_type,
                                         LLVMConstInt(result_type->llvm_type(), enum_constant->value, int_type->is_signed()));
 

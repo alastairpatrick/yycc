@@ -98,6 +98,12 @@ EXPECT_GLOBALS
 [["ec","A",1],["ec","B",1],["typedef",["ENUM",[["ec","A",1],["ec","B",1]]],"E"]]
 
 
+BEGIN Enum constant may refer to sizeof prior constant
+enum E { A, B = sizeof(A) };
+EXPECT_GLOBALS
+[["ec","A",0],["ec","B",4],["typedef",["ENUM",[["ec","A",0],["ec","B",4]]],"E"]]
+
+
 BEGIN Enum constant may not refer to following constants (1)
 enum E { B = A, A = 1 };
 EXPECT_MESSAGE

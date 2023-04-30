@@ -538,16 +538,14 @@ struct ResolvePass: Visitor {
         auto want_complete = type->complete;
         type->complete = false;
 
-        try {
-            for (auto declaration: type->declarations) {
-                resolve(declaration);
-            }
-        } catch (...) {
+        SCOPE_EXIT {
             type->complete = want_complete;
-            throw;
+        };
+
+        for (auto declaration: type->declarations) {
+            resolve(declaration);
         }
 
-        type->complete = want_complete;
         return VisitTypeOutput(type);
     }
 
@@ -560,32 +558,38 @@ struct ResolvePass: Visitor {
         auto want_complete = type->complete;
         type->complete = false;
 
-        try {
-            long long next = 0;
-            for (auto declarator: type->constants) {
-                auto enum_constant = declarator->enum_constant();
-                if (enum_constant->expr) {
-                    resolve(enum_constant->expr);
-                    auto value = fold_expr(enum_constant->expr);
-                    if (value.is_const_integer()) {
-                        next = LLVMConstIntGetSExtValue(value.llvm_const_rvalue());                
-                    } else {
-                        message(Severity::ERROR, enum_constant->expr->location) << "enum constant type '" << PrintType(value.type) << "' is not an integer type\n";
-                    }
-
-                }
-
-                enum_constant->value = next++;
-                enum_constant->ready = true;
-
-                pend(declarator);
-            }
-        } catch (...) {
-            type->complete = want_complete;
-            throw;
+        for (auto declarator: type->constants) {
+            declarator->type = type->base_type;
         }
 
-        type->complete = want_complete;
+        SCOPE_EXIT {
+            type->complete = want_complete;
+
+            for (auto declarator: type->constants) {
+                declarator->type = type;
+            }
+        };
+
+        long long next = 0;
+        for (auto declarator: type->constants) {
+            auto enum_constant = declarator->enum_constant();
+            if (enum_constant->expr) {
+                resolve(enum_constant->expr);
+                auto value = fold_expr(enum_constant->expr);
+                if (value.is_const_integer()) {
+                    next = LLVMConstIntGetSExtValue(value.llvm_const_rvalue());                
+                } else {
+                    message(Severity::ERROR, enum_constant->expr->location) << "enum constant type '" << PrintType(value.type) << "' is not an integer type\n";
+                }
+
+            }
+
+            enum_constant->value = next++;
+            enum_constant->ready = true;
+
+            pend(declarator);
+        }
+
         return VisitTypeOutput(type);
     }
 
