@@ -38,6 +38,11 @@ struct OrderIndependentScope {
 };
 
 struct Parser {
+    Preprocessor& preprocessor;
+    IdentifierMap& identifiers;
+    const bool preparse;
+    vector<OrderIndependentScope> order_independent_scopes;
+
     Parser(Preprocessor& preprocessor, IdentifierMap& identifiers);
     void operator=(const Parser&) = delete;
 
@@ -47,13 +52,8 @@ struct Parser {
 
     vector<Declaration*> parse();
 
-    vector<OrderIndependentScope> order_independent_scopes;
-
 private:
-    Preprocessor& preprocessor;
-    IdentifierMap& identifiers;
     TokenKind token = TOK_INVALID;
-    const bool preparse;
     SwitchStatement* innermost_switch{};
 
     void consume();
