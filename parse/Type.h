@@ -56,14 +56,15 @@ struct Type: virtual Printable {
 
 struct CachedType: Type {
     mutable LLVMTypeRef cached_llvm_type{};
-    virtual LLVMTypeRef llvm_type() const override;
 
+    virtual LLVMTypeRef llvm_type() const override;
 private:
     virtual LLVMTypeRef cache_llvm_type() const = 0;
 };
 
 struct VoidType: Type {
     static const VoidType it;
+
     virtual TypePartition partition() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;
@@ -121,9 +122,9 @@ enum class FloatingPointSize {
 };
 
 struct FloatingPointType: Type {
-    static const FloatingPointType* of(FloatingPointSize size);
-
     const FloatingPointSize size;
+
+    static const FloatingPointType* of(FloatingPointSize size);
 
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;
@@ -149,10 +150,10 @@ private:
 };
 
 struct QualifiedType: Type {
-    static const Type* of(const Type* base_type, unsigned qualifiers);
-
     const Type* const base_type;
     const QualifierSet qualifier_flags;
+
+    static const Type* of(const Type* base_type, unsigned qualifiers);
 
     virtual QualifierSet qualifiers() const override;
     virtual const Type* unqualified() const override;
@@ -183,11 +184,11 @@ struct UnqualifiedType: ASTNode, Type {
 };
 
 struct FunctionType: CachedType {
-    static const FunctionType* of(const Type* return_type, vector<const Type*> parameter_types, bool variadic);
-
     const Type* const return_type;
     const std::vector<const Type*> parameter_types;
     const bool variadic;
+
+    static const FunctionType* of(const Type* return_type, vector<const Type*> parameter_types, bool variadic);
 
     virtual TypePartition partition() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
@@ -202,19 +203,18 @@ private:
 
 struct TagType: CachedType {
     Declarator* tag{};
+
     virtual void message_print(ostream& stream, int section) const override;
 };
 
 struct StructuredType: TagType {
-    StructuredType(const Location& location);
-
     const Location location;
     mutable vector<Declaration*> declarations;
     Scope scope;
     mutable bool complete{};
 
+    StructuredType(const Location& location);
     const Declarator* lookup_member(const Identifier& identifier) const;
-
     virtual TypePartition partition() const override;
     virtual bool has_tag(const Declarator* declarator) const override;
     virtual void print(std::ostream& stream) const override;
@@ -241,14 +241,13 @@ private:
 };
 
 struct EnumType: TagType {
-    explicit EnumType(const Location& location);
-    
     const Location location;
     mutable const Type* base_type{};
     mutable bool explicit_base_type{};
     vector<Declarator*> constants;
     mutable bool complete{};
 
+    explicit EnumType(const Location& location);
     virtual TypePartition partition() const override;
     virtual bool has_tag(const Declarator* declarator) const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
@@ -270,10 +269,9 @@ struct TypeOfType: ASTNode, Type {
 
 // This type is only used during preparsing, when identifiers cannot necessarily be bound to declarators.
 struct UnboundType: Type {
-    static const UnboundType* of(const Identifier& identifier);
-
     const Identifier identifier;
 
+    static const UnboundType* of(const Identifier& identifier);
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;
     virtual void message_print(ostream& stream, int section) const override;
@@ -285,10 +283,9 @@ private:
 };
 
 struct TypeDefType: Type {
-    TypeDefType(Declarator* declarator);
-
     Declarator* const declarator;
 
+    TypeDefType(Declarator* declarator);
     virtual const Type* unqualified() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;
