@@ -5,6 +5,7 @@
 #include "parse/AssocPrec.h"
 #include "parse/Declaration.h"
 #include "TranslationUnitContext.h"
+#include "Visitor.h"
 
 struct Emitter;
 
@@ -92,6 +93,12 @@ struct Emitter: Visitor {
 
     void emit(Declaration* declaration) {
         for (auto declarator: declaration->declarators) {
+            emit(declarator);
+        }
+    }
+
+    void emit(Scope* scope) {
+        for (auto declarator: scope->declarators) {
             emit(declarator);
         }
     }
@@ -985,12 +992,21 @@ struct Emitter: Visitor {
             auto result_type = function_type->return_type;
             if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
-            vector<LLVMValueRef> llvm_params(function_type->parameter_types.size());
-            for (size_t i = 0; i < llvm_params.size(); ++i) {
+            // todo check number of parameters match
+
+            vector<LLVMValueRef> llvm_params;
+            llvm_params.reserve(function_type->parameter_types.size() + 1);
+
+            if (auto member_expr = dynamic_cast<MemberExpr*>(expr->function)) {
+                // todo convert types, e.g. in case it drops qualifiers
+                llvm_params.push_back(emit_member_expr_object(member_expr).get_lvalue());
+            }
+
+            for (size_t i = 0; i < expr->parameters.size(); ++i) {
                 auto param_expr = expr->parameters[i];
                 auto expected_type = function_type->parameter_types[i];
                 auto param_value = convert_to_type(param_expr, expected_type, ConvKind::IMPLICIT);
-                llvm_params[i] = get_rvalue(param_value);
+                llvm_params.push_back(get_rvalue(param_value));
             }
 
             auto result = LLVMBuildCall2(builder, function_type->llvm_type(), function_value.get_lvalue(), llvm_params.data(), llvm_params.size(), "");
@@ -1119,17 +1135,25 @@ struct Emitter: Visitor {
         return VisitStatementOutput(expr->postfix ? before_value : after_value);
     }
 
-virtual VisitStatementOutput visit(MemberExpr* expr, const VisitStatementInput& input) override {
+    Value emit_member_expr_object(MemberExpr* expr) {
         auto object = emit(expr->object).unqualified();
-        auto message_type = object.type;
+        if (auto pointer_type = type_cast<PointerType>(object.type)) {
+            object = Value(ValueKind::LVALUE, object.type, get_rvalue(object));
+        }
+        return object;
+    }
+
+    virtual VisitStatementOutput visit(MemberExpr* expr, const VisitStatementInput& input) override {
+        auto object_type = get_expr_type(expr->object)->unqualified();
+        auto message_type = object_type;
 
         bool dereferenced{};
-        if (auto pointer_type = type_cast<PointerType>(object.type)) {
+        if (auto pointer_type = type_cast<PointerType>(object_type)) {
             dereferenced = true;
-            object = Value(ValueKind::LVALUE, pointer_type->base_type, get_rvalue(object));
+            object_type = pointer_type->base_type;
         }
 
-        if (auto struct_type = type_cast<StructType>(object.type)) {
+        if (auto struct_type = type_cast<StructType>(object_type)) {
             auto it = struct_type->scope.declarator_map.find(expr->identifier.name);
             if (it == struct_type->scope.declarator_map.end()) {
                 message(Severity::ERROR, expr->location) << "no member named '" << *expr->identifier.name << "' in '" << PrintType(struct_type) << "'\n";
@@ -1152,19 +1176,23 @@ virtual VisitStatementOutput visit(MemberExpr* expr, const VisitStatementInput& 
             auto result_type = member->type;
             if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
-            auto member_variable = member->variable();
-            if (member_variable) {
+            if (auto member_variable = member->variable()) {
+                auto object = emit_member_expr_object(expr);
+
                 auto llvm_struct_type = struct_type->llvm_type();
                 auto index = member_variable->aggregate_index;
                 Value value(ValueKind::LVALUE, result_type, LLVMBuildStructGEP2(builder, llvm_struct_type, object.get_lvalue(), index, expr->identifier.name->data()));
                 value.bit_field = member_variable->bit_field;
                 return VisitStatementOutput(value);
-            } else {
-                return VisitStatementOutput();
+            }
+            
+            if (auto member_entity = member->entity()) {
+                assert(member_entity->value.is_valid());
+                return VisitStatementOutput(member_entity->value);
             }
         }
 
-        message(Severity::ERROR, expr->object->location) << "type '" << PrintType(object.type) << "' does not have members\n";
+        message(Severity::ERROR, expr->object->location) << "type '" << PrintType(object_type) << "' does not have members\n";
         pause_messages();
         return VisitStatementOutput(Value::of_zero_int());
     }
@@ -1301,20 +1329,21 @@ Value fold_expr(const Expr* expr) {
     }
 }
 
-LLVMModuleRef emit_pass(const vector<Declaration*>& declarations, const EmitOptions& options) {
+LLVMModuleRef emit_pass(const ResolvedModule& resolved_module, const EmitOptions& options) {
     auto llvm_context = TranslationUnitContext::it->llvm_context;
 
     Module module;
     module.llvm_module = LLVMModuleCreateWithNameInContext("my_module", llvm_context);
 
-    void entity_pass(const vector<Declaration*>& declarations, LLVMModuleRef llvm_module);
-    entity_pass(declarations, module.llvm_module);
+    void entity_pass(const ResolvedModule& resolved_module, LLVMModuleRef llvm_module);
+    entity_pass(resolved_module, module.llvm_module);
 
     Emitter emitter(EmitOutcome::IR, options);
     emitter.module = &module;
 
-    for (auto declaration: declarations) {
-        emitter.emit(declaration);
+    emitter.emit(resolved_module.file_scope);
+    for (auto scope: resolved_module.type_scopes) {
+        emitter.emit(scope);
     }
 
     LLVMVerifyModule(module.llvm_module, LLVMPrintMessageAction, nullptr);

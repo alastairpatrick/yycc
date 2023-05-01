@@ -518,8 +518,6 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 }
 
                 structured_type->declarations.push_back(member_declaration);
-                structured_type->scope.declarators.insert(structured_type->scope.declarators.end(),
-                                                          member_declaration->declarators.begin(), member_declaration->declarators.end());
             }
 
             if (!anonymous) {
@@ -696,6 +694,8 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
             StorageDuration storage_duration{};
             if (storage_class == StorageClass::EXTERN || storage_class == StorageClass::STATIC || scope == IdentifierScope::FILE) {
                 storage_duration = StorageDuration::STATIC;
+            } else if (scope == IdentifierScope::STRUCTURED) {
+                storage_duration = StorageDuration::MEMBER;
             } else {
                 storage_duration = StorageDuration::AUTO;
             }
@@ -1312,7 +1312,6 @@ vector<Declaration*> Parser::parse() {
             if (keep) {
                 declarations.push_back(declaration);
                 auto& declarators = identifiers.scopes.back().declarators;
-                declarators.insert(declarators.end(), declaration->declarators.begin(), declaration->declarators.end());
             }
         } else {
             message(Severity::ERROR, node->location) << "expected declaration; statements may occur at block scope but not file scope\n";

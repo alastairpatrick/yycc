@@ -44,10 +44,10 @@ int main(int argc, const char* argv[]) {
         declarations.insert(declarations.end(), parsed.begin(), parsed.end());
     }
 
-    resolve_pass(declarations, identifiers.scopes.back());
+    auto resolved_module = resolve_pass(declarations, identifiers.scopes.back());
 
     EmitOptions options;
-    auto module = emit_pass(declarations, options);
+    auto module = emit_pass(resolved_module, options);
     
     char* error{};
     LLVMTargetMachineEmitToFile(g_llvm_target_machine, module, "generated.asm", LLVMAssemblyFile, &error);

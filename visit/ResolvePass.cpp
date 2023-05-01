@@ -677,6 +677,10 @@ struct ResolvePass: Visitor {
         for (auto scope: result.type_scopes) {
             scope->type->llvm_type();
         }
+
+        sort(result.type_scopes.begin(), result.type_scopes.end(), [](const Scope* a, const Scope* b) {
+            return a->type->location < b->type->location;
+        });
     }
 
     void pend(LocationNode* node) {

@@ -1,4 +1,5 @@
 #include "parse/Declaration.h"
+#include "ResolvePass.h"
 #include "Visitor.h"
 
 // This pass creates LLVM globals for all variables with static duration and LLVM functions, including those nested within functions.
@@ -6,11 +7,9 @@ struct EntityPass: Visitor {
     string prefix;
     LLVMModuleRef llvm_module{};
 
-    void emit(const vector<Declaration*>& declarations) {
-        for (auto declaration: declarations) {
-            for (auto declarator: declaration->declarators) {
-                accept(declarator, VisitDeclaratorInput());
-            }
+    void emit(const Scope* scope) {
+        for (auto declarator: scope->declarators) {
+            accept(declarator, VisitDeclaratorInput());
         }
     }
 
@@ -59,8 +58,12 @@ struct EntityPass: Visitor {
     }
 };
 
-void entity_pass(const vector<Declaration*>& declarations, LLVMModuleRef llvm_module) {
+void entity_pass(const ResolvedModule& resolved_module, LLVMModuleRef llvm_module) {
     EntityPass pass;
     pass.llvm_module = llvm_module;
-    pass.emit(declarations);
+
+    pass.emit(resolved_module.file_scope);
+    for (auto scope: resolved_module.type_scopes) {
+        pass.emit(scope);
+    }
 }

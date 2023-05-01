@@ -174,22 +174,24 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
         } else {
             auto declarations = parse_declarations(identifiers, sections[INPUT]);
 
-            if (test_type >= TestType::RESOLVE) resolve_pass(declarations, identifiers.scopes.back());
+            if (test_type >= TestType::RESOLVE) {
+                auto resolved_module = resolve_pass(declarations, identifiers.scopes.back());
 
-            if (test_type >= TestType::EMIT) {
-                EmitOptions options;
-                options.initialize_variables = false;
+                if (test_type >= TestType::EMIT) {
+                    EmitOptions options;
+                    options.initialize_variables = false;
 
-                auto module = emit_pass(declarations, options);
-                char* module_string = LLVMPrintModuleToString(module);
-                module_ir = module_string;
-                LLVMDisposeMessage(module_string);
-                LLVMDisposeModule(module);
+                    auto module = emit_pass(resolved_module, options);
+                    char* module_string = LLVMPrintModuleToString(module);
+                    module_ir = module_string;
+                    LLVMDisposeMessage(module_string);
+                    LLVMDisposeModule(module);
 
-                // Erase first three lines:
-                module_ir.erase(0, module_ir.find("\n") + 1);
-                module_ir.erase(0, module_ir.find("\n") + 1);
-                module_ir.erase(0, module_ir.find("\n") + 1);
+                    // Erase first three lines:
+                    module_ir.erase(0, module_ir.find("\n") + 1);
+                    module_ir.erase(0, module_ir.find("\n") + 1);
+                    module_ir.erase(0, module_ir.find("\n") + 1);
+                }
             }
 
             output_stream << declarations;

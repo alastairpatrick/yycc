@@ -38,6 +38,7 @@ enum class Linkage {
 
 enum class StorageDuration {
     AUTO,
+    MEMBER,  // not a real duration; for Variables that are member variables
     STATIC,
 };
 

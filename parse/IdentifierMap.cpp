@@ -70,11 +70,16 @@ Declarator* IdentifierMap::find_placeholder(Scope& scope, const Declaration* dec
         auto it = scopes.back().declarator_map.find(identifier.name);
         if (it != scopes.back().declarator_map.end()) {
             auto declarator = it->second;
-            if (!declarator->delegate) {
+            if (!declarator->type) {
                 assert(declarator->identifier.name == identifier.name);
                 declarator->declaration = declaration;
                 declarator->type = type;
                 declarator->location = location;
+
+                if (type) {
+                    scope.declarators.push_back(declarator);
+                }
+
                 return declarator;
             }
         }
@@ -86,7 +91,9 @@ Declarator* IdentifierMap::add_declarator_to_scope(Scope& scope, Declarator* dec
     auto it = scope.declarator_map.find(declarator->identifier.name);
     if (it == scope.declarator_map.end()) {
         scope.declarator_map[declarator->identifier.name] = declarator;
-        //scope.declarators.push_back(declarator);
+        if (declarator->type) {
+            scope.declarators.push_back(declarator);
+        }
         return nullptr;
     }
 
