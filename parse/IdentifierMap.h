@@ -12,11 +12,11 @@ enum class AddDeclaratorScope {
 };
 
 struct IdentifierMap {
+    const bool preparse;
+    list<Scope> scopes;
+
     explicit IdentifierMap(bool preparse);
     void operator=(const IdentifierMap&) = delete;
-
-    list<Scope> scopes;
-    const bool preparse;
 
     Declarator* lookup_declarator(const Identifier& identifier) const;
     const Type* lookup_type(const Identifier& identifier) const;
