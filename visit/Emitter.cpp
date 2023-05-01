@@ -1119,7 +1119,7 @@ struct Emitter: Visitor {
         return VisitStatementOutput(expr->postfix ? before_value : after_value);
     }
 
-    virtual VisitStatementOutput visit(MemberExpr* expr, const VisitStatementInput& input) override {
+virtual VisitStatementOutput visit(MemberExpr* expr, const VisitStatementInput& input) override {
         auto object = emit(expr->object).unqualified();
         auto message_type = object.type;
 
@@ -1301,20 +1301,20 @@ Value fold_expr(const Expr* expr) {
     }
 }
 
-LLVMModuleRef emit_pass(const ASTNodeVector& nodes, const EmitOptions& options) {
+LLVMModuleRef emit_pass(const vector<Declaration*>& declarations, const EmitOptions& options) {
     auto llvm_context = TranslationUnitContext::it->llvm_context;
 
     Module module;
     module.llvm_module = LLVMModuleCreateWithNameInContext("my_module", llvm_context);
 
-    void entity_pass(const ASTNodeVector& nodes, LLVMModuleRef llvm_module);
-    entity_pass(nodes, module.llvm_module);
+    void entity_pass(const vector<Declaration*>& declarations, LLVMModuleRef llvm_module);
+    entity_pass(declarations, module.llvm_module);
 
     Emitter emitter(EmitOutcome::IR, options);
     emitter.module = &module;
 
-    for (auto node: nodes) {
-        emitter.emit(node);
+    for (auto declaration: declarations) {
+        emitter.emit(declaration);
     }
 
     LLVMVerifyModule(module.llvm_module, LLVMPrintMessageAction, nullptr);

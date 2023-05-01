@@ -8,6 +8,6 @@ struct ResolvePassResult {
     vector<const TagType*> tag_types;
 };
 
-ResolvePassResult resolve_pass(const ASTNodeVector& nodes);
+ResolvePassResult resolve_pass(const vector<Declaration*>& declarations);
 
 #endif

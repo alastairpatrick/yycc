@@ -52,6 +52,17 @@ void Declaration::print(ostream& stream) const {
     if (declarators.size() != 1) stream << ']';
 }
 
+ostream& operator<<(ostream& stream, const vector<Declaration*>& items) {
+    stream << '[';
+    auto separate = false;
+    for (auto item : items) {
+        if (separate) stream << ", ";
+        separate = true;
+        stream << item;
+    }
+    return stream << ']';
+}
+
 Declarator::Declarator(const Declaration* declaration, const Type* type, const Identifier &identifier, const Location& location)
     : primary(this), LocationNode(location), declaration(declaration), type(type), identifier(identifier) {
 }

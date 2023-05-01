@@ -45,7 +45,7 @@ struct Parser {
     Statement* parse_standalone_statement();  // for testing
     bool check_eof(); // for testing
 
-    ASTNodeVector parse();
+    vector<Declaration*> parse();
 
     vector<OrderIndependentScope> order_independent_scopes;
 

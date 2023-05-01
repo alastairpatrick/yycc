@@ -6,12 +6,10 @@ struct EntityPass: Visitor {
     string prefix;
     LLVMModuleRef llvm_module{};
 
-    void emit(const ASTNodeVector& nodes) {
-        for (auto node: nodes) {
-            if (auto declaration = dynamic_cast<Declaration*>(node)) {
-                for (auto declarator: declaration->declarators) {
-                    accept(declarator, VisitDeclaratorInput());
-                }
+    void emit(const vector<Declaration*>& declarations) {
+        for (auto declaration: declarations) {
+            for (auto declarator: declaration->declarators) {
+                accept(declarator, VisitDeclaratorInput());
             }
         }
     }
@@ -54,15 +52,15 @@ struct EntityPass: Visitor {
         EntityPass pass;
         pass.llvm_module = llvm_module;
         pass.prefix = prefixed_name + '.';
-            
+
         pass.accept(entity->body, VisitStatementInput());
 
         return VisitDeclaratorOutput();
     }
 };
 
-void entity_pass(const ASTNodeVector& nodes, LLVMModuleRef llvm_module) {
+void entity_pass(const vector<Declaration*>& declarations, LLVMModuleRef llvm_module) {
     EntityPass pass;
     pass.llvm_module = llvm_module;
-    pass.emit(nodes);
+    pass.emit(declarations);
 }

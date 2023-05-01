@@ -1297,12 +1297,18 @@ Expr* Parser::parse_initializer() {
     return result;
 }
 
-ASTNodeVector Parser::parse() {
-    ASTNodeVector declarations;
+vector<Declaration*> Parser::parse() {
+    vector<Declaration*> declarations;
     while (token) {
         auto keep = !preparse || preprocessor.include_stack.empty();
-        auto declaration = parse_declaration_or_statement(IdentifierScope::FILE);
-        if (keep) declarations.push_back(declaration);
+        auto node = parse_declaration_or_statement(IdentifierScope::FILE);
+        auto declaration = dynamic_cast<Declaration*>(node);
+
+        if (declaration) {
+            if (keep) declarations.push_back(declaration);
+        } else {
+            message(Severity::ERROR, node->location) << "expected declaration; statements may occur at block scope but not file scope\n";
+        }
     }
     return declarations;
 }

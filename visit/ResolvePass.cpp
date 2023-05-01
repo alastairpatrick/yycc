@@ -664,9 +664,9 @@ struct ResolvePass: Visitor {
         }
     }
     
-    void resolve(const ASTNodeVector& nodes) {
-        for (auto node: nodes) {
-            todo.insert(node);
+    void resolve(const vector<Declaration*>& declarations) {
+        for (auto declaration: declarations) {
+            todo.insert(declaration);
         }
 
         while (!todo.empty()) {
@@ -692,8 +692,8 @@ struct ResolvePass: Visitor {
     }
 };
 
-ResolvePassResult resolve_pass(const ASTNodeVector& nodes) {
+ResolvePassResult resolve_pass(const vector<Declaration*>& declarations) {
     ResolvePass pass;
-    pass.resolve(nodes);
+    pass.resolve(declarations);
     return move(pass.result);
 }

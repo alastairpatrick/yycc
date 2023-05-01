@@ -38,16 +38,16 @@ int main(int argc, const char* argv[]) {
         }
     }
 
-    ASTNodeVector nodes;
+    vector<Declaration*> declarations;
     for (auto& input : inputs) {
-        ASTNodeVector parsed = input.parser.parse();
-        nodes.insert(nodes.end(), parsed.begin(), parsed.end());
+        vector<Declaration*> parsed = input.parser.parse();
+        declarations.insert(declarations.end(), parsed.begin(), parsed.end());
     }
 
-    resolve_pass(nodes);
+    resolve_pass(declarations);
 
     EmitOptions options;
-    auto module = emit_pass(nodes, options);
+    auto module = emit_pass(declarations, options);
     
     char* error{};
     LLVMTargetMachineEmitToFile(g_llvm_target_machine, module, "generated.asm", LLVMAssemblyFile, &error);

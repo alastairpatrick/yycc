@@ -145,8 +145,7 @@ EXPECT_MESSAGE
 :2:2: error unexpected token ','
 EXPECT_AST
 [
-    ["fun", "E", ["F", "Si", "Si"], "bar", ["x"], ["block", []]],
-    0
+    ["fun", "E", ["F", "Si", "Si"], "bar", ["x"], ["block", []]]
 ]
 
 
@@ -298,3 +297,9 @@ PARSE
 EXPECT_GLOBALS
 [["fun","E",["F","V"],"f"]]
 
+
+BEGIN Statement may not occur at file scope
+return;
+EXPECT_MESSAGE
+:1:1: error expected declaration; statements may occur at block scope but not file scope
+END

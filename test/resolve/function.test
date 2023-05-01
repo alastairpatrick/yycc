@@ -135,18 +135,19 @@ END
 
 BEGIN Block scope extern storage class
 void foo(int);
-{
+void f() {
     extern void foo(int);
 }
 EXPECT_AST
-[["fun","E",["F","V","Si"],"foo"],["block",[
-    ["fun","E",["F","V","Si"],"foo"]]
+[["fun","E",["F","V","Si"],"foo"]
+,["fun","E",["F","V"],"f",[],["block",[
+    ["fun","E",["F","V","Si"],"foo"]]]
 ]]
 
 
 BEGIN Redeclare variable with internal linkage at block scope.
 static int x;
-void foo(int);
+void f()
 {
     typedef int x;
     {
@@ -156,12 +157,10 @@ void foo(int);
 }
 EXPECT_AST
 [["var","IS","Si","x"]
-,["fun","E",["F","V","Si"],"foo"],["block",[
-    ["typedef","Si","x"]
-    ,["block",[
-        [["var","IS","Si","x"]
-        ,["var","ES","Si","y"]]
-        ,["*","Nx","Ny"]]
+,["fun","E",["F","V"],"f",[],["block",[
+    ["typedef","Si","x"],["block",[
+        [["var","IS","Si","x"],["var","ES","Si","y"]]
+        ,["*","Nx","Ny"]]]
     ]]
 ]]
 

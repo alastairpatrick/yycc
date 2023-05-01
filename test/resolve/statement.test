@@ -1,13 +1,21 @@
 BEGIN Resolves compound statement
-{ int a[1+1]; }
+void f() {
+    int a[1+1];
+}
 RESOLVE
 EXPECT_AST
-[["block",[["var","",["A","Si",2],"a"]]]]
+[["fun","E",["F","V"],"f",[],["block",[
+    ["var","",["A","Si",2],"a"]]]
+]]
 
 
 BEGIN Resolves return statement
-return sizeof(int[1+1]);
+unsigned f() {
+    return sizeof(int[1+1]);
+}
 RESOLVE
 EXPECT_AST
-[["return",["sizeof",["A","Si",2]]]]
+[["fun","E",["F","Ui"],"f",[],["block",[
+    ["return",["sizeof",["A","Si",2]]]]]
+]]
 

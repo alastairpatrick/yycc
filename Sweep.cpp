@@ -14,11 +14,8 @@ struct DeclarationMarker {
     unordered_set<const Declaration*> marked;
     unordered_map<string_view, Declarator*> declarator_names;
 
-    void mark(string_view input, const ASTNodeVector& initial_todo) {
-        for (auto node : initial_todo) {
-            auto declaration = dynamic_cast<Declaration*>(node);
-            assert(declaration);
-
+    void mark(string_view input, const vector<Declaration*>& initial_todo) {
+        for (auto declaration: initial_todo) {
             todo.insert(declaration);
         }
 

@@ -47,12 +47,6 @@ enum Section {
 };
 
 static const Test tests[] = {
-    { "resolve/enum",               TestType::RESOLVE},
-
-
-
-
-
     { "parse/preprocess",           TestType::PREPROCESS },
     { "parse/sweep",                TestType::SWEEP },
 
@@ -136,7 +130,7 @@ Statement* parse_statement(IdentifierMap& identifiers, const Input& input) {
     return result;
 }
 
-ASTNodeVector parse_declarations(IdentifierMap& identifiers, const Input& input) {
+vector<Declaration*> parse_declarations(IdentifierMap& identifiers, const Input& input) {
     Preprocessor preprocessor(identifiers.preparse);
     preprocessor.in(input);
 

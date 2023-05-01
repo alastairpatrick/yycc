@@ -58,6 +58,8 @@ struct Declaration: LocationNode {
     virtual void print(ostream& stream) const override;
 };
 
+ostream& operator<<(ostream& stream, const vector<Declaration*>& items);
+
 struct DeclaratorDelegate: ASTNode {
     Declarator* declarator;
 
