@@ -209,7 +209,7 @@ struct TagType: LocationNode, CachedType {
 };
 
 struct StructuredType: TagType {
-    mutable vector<Declaration*> declarations;
+    vector<Declaration*> declarations;
     Scope scope;
     mutable bool complete{};
 
