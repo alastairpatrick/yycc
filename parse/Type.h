@@ -201,14 +201,14 @@ private:
     virtual LLVMTypeRef cache_llvm_type() const override;
 };
 
-struct TagType: CachedType {
+struct TagType: LocationNode, CachedType {
     Declarator* tag{};
 
+    TagType(const Location& location);
     virtual void message_print(ostream& stream, int section) const override;
 };
 
 struct StructuredType: TagType {
-    const Location location;
     mutable vector<Declaration*> declarations;
     Scope scope;
     mutable bool complete{};
@@ -241,7 +241,6 @@ private:
 };
 
 struct EnumType: TagType {
-    const Location location;
     mutable const Type* base_type{};
     mutable bool explicit_base_type{};
     vector<Declarator*> constants;

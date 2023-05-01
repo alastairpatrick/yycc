@@ -512,6 +512,9 @@ FunctionType::FunctionType(const Type* return_type, std::vector<const Type*> par
 
 #pragma endregion FunctionType
 
+TagType::TagType(const Location& location): LocationNode(location) {
+}
+
 void TagType::message_print(ostream& stream, int section) const {
     if (section != 0) return;
 
@@ -525,7 +528,7 @@ void TagType::message_print(ostream& stream, int section) const {
 #pragma region StructuredType
 
 StructuredType::StructuredType(const Location& location)
-    : location(location) {
+    : TagType(location) {
 }
 
 const Declarator* StructuredType::lookup_member(const Identifier& identifier) const {
@@ -708,7 +711,7 @@ void UnionType::print(std::ostream& stream) const {
 #pragma region EnumType
 
 EnumType::EnumType(const Location& location)
-    : base_type(IntegerType::default_type()), location(location) {
+    : TagType(location), base_type(IntegerType::default_type()) {
 }
 
 TypePartition EnumType::partition() const {
