@@ -555,8 +555,8 @@ void StructuredType::print(std::ostream& stream) const {
             separator = true;
             stream << "[\"" << member->identifier << "\", " << member->type;
             if (auto member_variable = member->variable()) {
-                if (member_variable->bit_field) {
-                    stream << ", " << member_variable->bit_field;
+                if (member_variable->member->bit_field) {
+                    stream << ", " << member_variable->member->bit_field;
                 }
             }
             stream << ']';
@@ -584,7 +584,8 @@ VisitTypeOutput StructType::accept(Visitor& visitor, const VisitTypeInput& input
 }
 
 LLVMTypeRef StructType::cache_llvm_type() const {
-    auto llvm_context = TranslationUnitContext::it->llvm_context;
+    auto context = TranslationUnitContext::it;
+    auto llvm_context = context->llvm_context;
     
     const char* name = !tag || tag->identifier.name->empty() ? "struct" : tag->identifier.name->data();
     cached_llvm_type = LLVMStructCreateNamed(llvm_context, name);
@@ -596,14 +597,19 @@ LLVMTypeRef StructType::cache_llvm_type() const {
     int bits_to_right{}; 
     LLVMTypeRef bit_field_type{};
 
+    auto gep_index_type = IntegerType::default_type();
+
     for (auto declaration: declarations) {
         for (auto member: declaration->declarators) {
             if (auto member_variable = member->variable()) {
-                if (member_variable->bit_field) {
+                member_variable->member->gep_indices.push_back(context->zero_int);
+
+                auto bit_field = member_variable->member->bit_field.get();
+                if (bit_field) {
                     if (auto integer_type = dynamic_cast<const IntegerType*>(member->type)) {
-                        auto bit_size_value = fold_expr(member_variable->bit_field->expr);
+                        auto bit_size_value = fold_expr(member_variable->member->bit_field->expr);
                         if (!bit_size_value.is_const_integer()) {
-                            message(Severity::ERROR, member_variable->bit_field->expr->location) << "bit field '" << *member->identifier.name << "' must have integer width, not '"
+                            message(Severity::ERROR, bit_field->expr->location) << "bit field '" << *member->identifier.name << "' must have integer width, not '"
                                                                                                  << PrintType(bit_size_value.type) << "'\n";
                             continue;
                         }
@@ -611,13 +617,13 @@ LLVMTypeRef StructType::cache_llvm_type() const {
                         auto llvm_bit_size = bit_size_value.get_const();
                         auto bit_size = LLVMConstIntGetSExtValue(llvm_bit_size);
                         if (bit_size <= 0) {
-                            message(Severity::ERROR, member_variable->bit_field->expr->location) << "bit field '" << *member->identifier.name << "' has invalid width ("
+                            message(Severity::ERROR, bit_field->expr->location) << "bit field '" << *member->identifier.name << "' has invalid width ("
                                                                                                  << bit_size << " bits)\n";
                             continue;
                         }
 
                         if (bit_size > integer_type->num_bits()) {
-                            message(Severity::ERROR, member_variable->bit_field->expr->location) << "width of bit field '" << *member->identifier.name
+                            message(Severity::ERROR, bit_field->expr->location) << "width of bit field '" << *member->identifier.name
                                                                                                  << "' (" << bit_size << " bits) exceeds width of its type '"
                                                                                                  << PrintType(integer_type) << "' (" << integer_type->num_bits() << " bits)\n";
                             continue;
@@ -625,14 +631,14 @@ LLVMTypeRef StructType::cache_llvm_type() const {
 
                         if (bit_size <= bits_to_left) {
                             LLVMValueRef one = LLVMConstInt(bit_field_type, 1, false);
-                            member_variable->bit_field->storage_type = bit_field_type;
-                            member_variable->bit_field->bits_to_left = LLVMConstInt(bit_field_type, bits_to_left - bit_size, false);
-                            member_variable->bit_field->bits_to_right = LLVMConstInt(bit_field_type, bits_to_right, false);
+                            bit_field->storage_type = bit_field_type;
+                            bit_field->bits_to_left = LLVMConstInt(bit_field_type, bits_to_left - bit_size, false);
+                            bit_field->bits_to_right = LLVMConstInt(bit_field_type, bits_to_right, false);
 
                             // mask = ((1 << bit_size) - 1) << bits_to_right
-                            member_variable->bit_field->mask = LLVMConstShl(LLVMConstSub(LLVMConstShl(one, LLVMConstIntCast(llvm_bit_size, bit_field_type, false)), one), member_variable->bit_field->bits_to_right);
+                            bit_field->mask = LLVMConstShl(LLVMConstSub(LLVMConstShl(one, LLVMConstIntCast(llvm_bit_size, bit_field_type, false)), one), bit_field->bits_to_right);
 
-                            member_variable->aggregate_index = aggregate_index - 1;
+                            member_variable->member->gep_indices.push_back(Value::of_int(gep_index_type, aggregate_index - 1).get_const());
                             bits_to_right += bit_size;
                             bits_to_left -= bit_size;
 
@@ -642,12 +648,12 @@ LLVMTypeRef StructType::cache_llvm_type() const {
                         bit_field_type = integer_type->llvm_type();
                         LLVMValueRef one = LLVMConstInt(bit_field_type, 1, false);
 
-                        member_variable->bit_field->storage_type = bit_field_type;
-                        member_variable->bit_field->bits_to_left = LLVMConstInt(bit_field_type, bits_to_left - bit_size, false);
-                        member_variable->bit_field->bits_to_right = LLVMConstInt(bit_field_type, 0, false);
+                        bit_field->storage_type = bit_field_type;
+                        bit_field->bits_to_left = LLVMConstInt(bit_field_type, bits_to_left - bit_size, false);
+                        bit_field->bits_to_right = LLVMConstInt(bit_field_type, 0, false);
 
                         // mask = ((1 << bit_size) - 1)
-                        member_variable->bit_field->mask = LLVMConstSub(LLVMConstShl(one, LLVMConstIntCast(llvm_bit_size, bit_field_type, false)), one);
+                        bit_field->mask = LLVMConstSub(LLVMConstShl(one, LLVMConstIntCast(llvm_bit_size, bit_field_type, false)), one);
 
                         bits_to_right = bit_size;
                         bits_to_left = integer_type->num_bits() - bit_size;
@@ -656,7 +662,8 @@ LLVMTypeRef StructType::cache_llvm_type() const {
                     }
                 }
 
-                member_variable->aggregate_index = aggregate_index++;
+                member_variable->member->gep_indices.push_back(Value::of_int(gep_index_type, aggregate_index).get_const());
+                ++aggregate_index;
                 member_types.push_back(member->type->llvm_type());
             }
         }

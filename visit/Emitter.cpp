@@ -303,7 +303,9 @@ struct Emitter: Visitor {
                 for (auto declaration: struct_type->declarations) {
                     for (auto member: declaration->declarators) {
                         if (auto member_variable = member->variable()) {
-                            LLVMValueRef dest_element = LLVMBuildStructGEP2(builder, struct_type->llvm_type(), dest.get_lvalue(), member_variable->aggregate_index, "");
+                            LLVMValueRef dest_element = LLVMBuildInBoundsGEP2(builder, struct_type->llvm_type(), dest.get_lvalue(),
+                                                                              member_variable->member->gep_indices.data(), member_variable->member->gep_indices.size(),
+                                                                              member->identifier.name->data());
                             emit_auto_initializer(Value(ValueKind::LVALUE, member->type, dest_element), initializer->elements[initializer_idx++]);
                         }
                     }
@@ -1178,11 +1180,13 @@ struct Emitter: Visitor {
 
             if (auto member_variable = member->variable()) {
                 auto object = emit_member_expr_object(expr);
-
+                
                 auto llvm_struct_type = struct_type->llvm_type();
-                auto index = member_variable->aggregate_index;
-                Value value(ValueKind::LVALUE, result_type, LLVMBuildStructGEP2(builder, llvm_struct_type, object.get_lvalue(), index, expr->identifier.name->data()));
-                value.bit_field = member_variable->bit_field;
+
+                Value value(ValueKind::LVALUE, result_type, LLVMBuildInBoundsGEP2(builder, llvm_struct_type, object.get_lvalue(),
+                                                                                  member_variable->member->gep_indices.data(), member_variable->member->gep_indices.size(),
+                                                                                  expr->identifier.name->data()));
+                value.bit_field = member_variable->member->bit_field.get();
                 return VisitStatementOutput(value);
             }
             

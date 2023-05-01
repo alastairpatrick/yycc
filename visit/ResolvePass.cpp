@@ -118,7 +118,9 @@ struct ResolvePass: Visitor {
     virtual VisitDeclaratorOutput visit(Declarator* primary, Variable* primary_entity, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
         if (!secondary) {
-            if (primary_entity->bit_field) resolve(primary_entity->bit_field->expr);
+            if (primary_entity->member) {
+                if (primary_entity->member->bit_field) resolve(primary_entity->member->bit_field->expr);
+            }
 
             if (primary_entity->initializer) {
                 resolve(primary_entity->initializer);
@@ -551,7 +553,10 @@ struct ResolvePass: Visitor {
         if (!variable) return;
 
         if (variable->initializer) return;
-        if (variable->bit_field) return;
+
+        if (variable->member) {
+            if (variable->member->bit_field) return;
+        }
 
         declarator->delegate = new Function(declarator, variable->linkage);
     }

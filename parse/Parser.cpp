@@ -513,7 +513,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 // C11 6.7.2.1p13 anonymous structs and unions
                 if (dynamic_cast<const StructuredType*>(member_declaration->type) && member_declaration->declarators.empty()) {
                     auto member_declarator = new Declarator(member_declaration, member_declaration->type, Identifier(), member_declaration->location);
-                    member_declarator->delegate = new Variable(member_declarator, Linkage::NONE, StorageDuration::AUTO);
+                    member_declarator->delegate = new Variable(member_declarator, Linkage::NONE, StorageDuration::AGGREGATE);
                     member_declaration->declarators.push_back(member_declarator);
                 }
 
@@ -695,12 +695,17 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
             if (storage_class == StorageClass::EXTERN || storage_class == StorageClass::STATIC || scope == IdentifierScope::FILE) {
                 storage_duration = StorageDuration::STATIC;
             } else if (scope == IdentifierScope::STRUCTURED) {
-                storage_duration = StorageDuration::MEMBER;
+                storage_duration = StorageDuration::AGGREGATE;
             } else {
                 storage_duration = StorageDuration::AUTO;
             }
 
-            declarator->delegate = new Variable(declarator, linkage, storage_duration, initializer, bit_field_size);
+            auto variable = new Variable(declarator, linkage, storage_duration, initializer);
+            declarator->delegate = variable;
+
+            if (scope == IdentifierScope::STRUCTURED && storage_duration == StorageDuration::AGGREGATE) {
+                if (bit_field_size) variable->member->bit_field.reset(new BitField(bit_field_size));
+            }
         }
     }
 

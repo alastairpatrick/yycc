@@ -38,8 +38,8 @@ enum class Linkage {
 
 enum class StorageDuration {
     AUTO,
-    MEMBER,  // not a real duration; for Variables that are member variables
     STATIC,
+    AGGREGATE,  // same duration as aggregate typed object of which this is a part
 };
 
 ostream& operator<<(ostream& stream, Linkage linkage);
@@ -82,7 +82,7 @@ struct Entity: DeclaratorDelegate {
     Entity(Declarator* declarator, Linkage linkage);
 };
 
-struct BitField: ASTNode {
+struct BitField: Printable {
     Expr* expr;
     LLVMTypeRef storage_type{};
     LLVMValueRef bits_to_left{};
@@ -93,13 +93,17 @@ struct BitField: ASTNode {
     virtual void print(ostream& stream) const override;
 };
 
+struct MemberVariable {
+    unique_ptr<BitField> bit_field{};
+    vector<LLVMValueRef> gep_indices{};
+};
+
 struct Variable: Entity {
     StorageDuration storage_duration{};
     Expr* initializer{};
-    BitField* bit_field{};
-    size_t aggregate_index{};
+    unique_ptr<MemberVariable> member{};
 
-    Variable(Declarator* declarator, Linkage linkage, StorageDuration storage_duration, Expr* initializer = nullptr, Expr* bit_field_size = nullptr);
+    Variable(Declarator* declarator, Linkage linkage, StorageDuration storage_duration, Expr* initializer = nullptr);
 
     virtual DeclaratorKind kind() const override;
     virtual const char* error_kind() const override;

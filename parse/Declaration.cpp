@@ -131,10 +131,10 @@ void BitField::print(ostream& stream) const {
     stream << expr;
 }
 
-Variable::Variable(Declarator* declarator, Linkage linkage, StorageDuration storage_duration, Expr* initializer, Expr* bit_field_size)
+Variable::Variable(Declarator* declarator, Linkage linkage, StorageDuration storage_duration, Expr* initializer)
     : Entity(declarator, linkage), storage_duration(storage_duration), initializer(initializer) {
-    if (bit_field_size) {
-        bit_field = new BitField(bit_field_size);
+    if (storage_duration == StorageDuration::AGGREGATE) {
+        member.reset(new MemberVariable);
     }
 }
 
