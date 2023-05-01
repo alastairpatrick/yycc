@@ -4,9 +4,12 @@
 #include "InternedString.h"
 
 struct Declarator;
+struct StructuredType;
 
 struct Scope {
-    unordered_map<InternedString, Declarator*> declarators;
+    const StructuredType* type{};
+    vector<Declarator*> declarators;
+    unordered_map<InternedString, Declarator*> declarator_map;
 };
 
 #endif

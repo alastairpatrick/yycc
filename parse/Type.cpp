@@ -532,8 +532,8 @@ StructuredType::StructuredType(const Location& location)
 }
 
 const Declarator* StructuredType::lookup_member(const Identifier& identifier) const {
-    auto it = scope.declarators.find(identifier.name);
-    if (it == scope.declarators.end()) return nullptr;
+    auto it = scope.declarator_map.find(identifier.name);
+    if (it == scope.declarator_map.end()) return nullptr;
     return it->second;
 }
 

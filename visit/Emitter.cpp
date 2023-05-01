@@ -1130,8 +1130,8 @@ virtual VisitStatementOutput visit(MemberExpr* expr, const VisitStatementInput& 
         }
 
         if (auto struct_type = type_cast<StructType>(object.type)) {
-            auto it = struct_type->scope.declarators.find(expr->identifier.name);
-            if (it == struct_type->scope.declarators.end()) {
+            auto it = struct_type->scope.declarator_map.find(expr->identifier.name);
+            if (it == struct_type->scope.declarator_map.end()) {
                 message(Severity::ERROR, expr->location) << "no member named '" << *expr->identifier.name << "' in '" << PrintType(struct_type) << "'\n";
                 pause_messages();
                 return VisitStatementOutput(Value::of_zero_int());

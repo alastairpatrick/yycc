@@ -44,7 +44,7 @@ int main(int argc, const char* argv[]) {
         declarations.insert(declarations.end(), parsed.begin(), parsed.end());
     }
 
-    resolve_pass(declarations);
+    resolve_pass(declarations, identifiers.scopes.back());
 
     EmitOptions options;
     auto module = emit_pass(declarations, options);

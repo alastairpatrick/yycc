@@ -82,10 +82,10 @@ void output_declaration_directives_of_kind(TextStream& stream, const vector<Decl
 
 void output_declaration_directives(TextStream& stream, Scope* scope, DeclarationMarker* marker) {
     vector<Declarator*> ordered_declarators;
-    for (auto p: scope->declarators) {
+    for (auto pair: scope->declarator_map) {
         Declarator* output_declarator{};
-        auto kind = p.second->delegate->kind();
-        for (auto declarator = p.second; declarator; declarator = declarator->next) {
+        auto kind = pair.second->delegate->kind();
+        for (auto declarator = pair.second; declarator; declarator = declarator->next) {
             if (marker && !marker->is_marked(declarator)) continue;
                 
             if (!output_declarator || output_declarator->delegate->kind() < declarator->delegate->kind()) {

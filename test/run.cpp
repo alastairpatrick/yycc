@@ -174,7 +174,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
         } else {
             auto declarations = parse_declarations(identifiers, sections[INPUT]);
 
-            if (test_type >= TestType::RESOLVE) resolve_pass(declarations);
+            if (test_type >= TestType::RESOLVE) resolve_pass(declarations, identifiers.scopes.back());
 
             if (test_type >= TestType::EMIT) {
                 EmitOptions options;
@@ -213,8 +213,8 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
 
         if (!sections[EXPECT_GLOBALS].empty()) {
             vector<Declarator*> declarators;
-            for (auto& p : identifiers.scopes.front().declarators) {
-                declarators.push_back(p.second);
+            for (auto& pair : identifiers.scopes.front().declarator_map) {
+                declarators.push_back(pair.second);
             }
 
             sort(declarators.begin(), declarators.end(), [](Declarator* a, Declarator* b) {

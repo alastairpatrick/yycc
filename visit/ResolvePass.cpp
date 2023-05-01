@@ -9,7 +9,7 @@
 #include "Visitor.h"
 
 struct ResolvePass: Visitor {
-    ResolvePassResult result;
+    ResolvedModule result;
     unordered_set<const TagType*> tag_types;
     unordered_map<const Type*, const Type*> resolved_types;
 
@@ -396,6 +396,8 @@ struct ResolvePass: Visitor {
 
         if (!type->complete) return VisitTypeOutput(type);
 
+        result.type_scopes.push_back(&type->scope);        
+
         // C99 6.7.2.3p4
         bool want_complete = type->complete;
         type->complete = false;
@@ -636,15 +638,7 @@ struct ResolvePass: Visitor {
         auto& resolved_type = resolved_types[unresolved_type];
         if (resolved_type) return resolved_type;
 
-        resolved_type = unresolved_type->accept(*this, VisitTypeInput()).value.type;
-
-        if (auto tag_type = dynamic_cast<const TagType*>(resolved_type)) {
-            if (tag_types.insert(tag_type).second) {
-                result.tag_types.push_back(tag_type);
-            }
-        }
-
-        return resolved_type;
+        return resolved_type = unresolved_type->accept(*this, VisitTypeInput()).value.type;
     }
 
     void resolve(LocationNode* node) {
@@ -680,8 +674,8 @@ struct ResolvePass: Visitor {
     
         resume_messages();
 
-        for (auto type: result.tag_types) {
-            type->llvm_type();
+        for (auto scope: result.type_scopes) {
+            scope->type->llvm_type();
         }
     }
 
@@ -692,8 +686,9 @@ struct ResolvePass: Visitor {
     }
 };
 
-ResolvePassResult resolve_pass(const vector<Declaration*>& declarations) {
+ResolvedModule resolve_pass(const vector<Declaration*>& declarations, Scope& file_scope) {
     ResolvePass pass;
+    pass.result.file_scope = &file_scope;
     pass.resolve(declarations);
     return move(pass.result);
 }

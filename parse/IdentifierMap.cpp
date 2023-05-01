@@ -4,8 +4,8 @@
 
 Declarator* IdentifierMap::lookup_declarator(const Identifier& identifier) const {
     for (auto& scope : scopes) {
-        auto it = scope.declarators.find(identifier.name);
-        if (it != scope.declarators.end()) {
+        auto it = scope.declarator_map.find(identifier.name);
+        if (it != scope.declarator_map.end()) {
             // Note that this intentionally does _not_ always return the primary. For reporting errors
             // it is better to return a declarator that is currently in scope. The primary declarator
             // might not be in scope, e.g. it has extern storage class and block scope.
@@ -67,8 +67,8 @@ Declarator* IdentifierMap::add_declarator(AddDeclaratorScope add_scope, const De
 
 Declarator* IdentifierMap::find_placeholder(Scope& scope, const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location) {
     if (!identifier.name->empty()) {
-        auto it = scopes.back().declarators.find(identifier.name);
-        if (it != scopes.back().declarators.end()) {
+        auto it = scopes.back().declarator_map.find(identifier.name);
+        if (it != scopes.back().declarator_map.end()) {
             auto declarator = it->second;
             if (!declarator->delegate) {
                 assert(declarator->identifier.name == identifier.name);
@@ -83,9 +83,10 @@ Declarator* IdentifierMap::find_placeholder(Scope& scope, const Declaration* dec
 }
 
 Declarator* IdentifierMap::add_declarator_to_scope(Scope& scope, Declarator* declarator) {
-    auto it = scope.declarators.find(declarator->identifier.name);
-    if (it == scope.declarators.end()) {
-        scope.declarators[declarator->identifier.name] = declarator;
+    auto it = scope.declarator_map.find(declarator->identifier.name);
+    if (it == scope.declarator_map.end()) {
+        scope.declarator_map[declarator->identifier.name] = declarator;
+        //scope.declarators.push_back(declarator);
         return nullptr;
     }
 

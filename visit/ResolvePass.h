@@ -4,10 +4,11 @@
 #include "parse/ASTNode.h"
 #include "parse/Type.h"
 
-struct ResolvePassResult {
-    vector<const TagType*> tag_types;
+struct ResolvedModule {
+    Scope* file_scope;
+    vector<Scope*> type_scopes;
 };
 
-ResolvePassResult resolve_pass(const vector<Declaration*>& declarations);
+ResolvedModule resolve_pass(const vector<Declaration*>& declarations, Scope& file_scope);
 
 #endif

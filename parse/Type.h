@@ -210,7 +210,7 @@ struct TagType: LocationNode, CachedType {
 
 struct StructuredType: TagType {
     vector<Declaration*> declarations;
-    Scope scope;
+    mutable Scope scope;
     mutable bool complete{};
 
     StructuredType(const Location& location);
