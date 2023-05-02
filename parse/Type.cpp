@@ -556,7 +556,7 @@ void StructuredType::print(std::ostream& stream) const {
     stream << ']';
 }
 
-LLVMTypeRef StructuredType::build_llvm_type(const vector<LLVMValueRef>& gep_indices_prefix, const char* name) const {
+LLVMTypeRef StructuredType::build_llvm_struct_type(const vector<LLVMValueRef>& gep_indices_prefix, const char* name) const {
     auto context = TranslationUnitContext::it;
     auto llvm_context = context->llvm_context;
     bool is_union = dynamic_cast<const UnionType*>(this);
@@ -668,7 +668,7 @@ LLVMTypeRef StructuredType::build_llvm_type(const vector<LLVMValueRef>& gep_indi
             LLVMTypeRef llvm_member_type{};
             if (member->identifier.name->empty()) {
                 if (auto structured_member_type = dynamic_cast<const StructuredType*>(member->type)) {
-                    llvm_member_type = structured_member_type->build_llvm_type(member_variable->member->gep_indices, nullptr);
+                    llvm_member_type = structured_member_type->build_llvm_struct_type(member_variable->member->gep_indices, nullptr);
                 }
             }
 
@@ -715,7 +715,7 @@ LLVMTypeRef StructuredType::cache_llvm_type() const {
     if (tag && !tag->identifier.name->empty()) name = tag->identifier.name->data();
     if (!name) name = "anon";
 
-    return build_llvm_type({TranslationUnitContext::it->zero_int}, name);
+    return build_llvm_struct_type({TranslationUnitContext::it->zero_int}, name);
 }
 
 

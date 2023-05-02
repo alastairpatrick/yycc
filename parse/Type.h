@@ -208,6 +208,7 @@ struct TagType: LocationNode, CachedType {
     virtual void message_print(ostream& stream, int section) const override;
 };
 
+// A StructuredType corresponds to an LLVM struct type. In C terms, it could be a struct type or a union type.
 struct StructuredType: TagType {
     vector<Declaration*> declarations;
     mutable Scope scope;
@@ -220,7 +221,7 @@ struct StructuredType: TagType {
     virtual void print(std::ostream& stream) const override;
 
 private:
-    LLVMTypeRef build_llvm_type(const vector<LLVMValueRef>& gep_indices_prefix, const char* name) const;
+    LLVMTypeRef build_llvm_struct_type(const vector<LLVMValueRef>& gep_indices_prefix, const char* name) const;
     virtual LLVMTypeRef cache_llvm_type() const override;
 };
 
