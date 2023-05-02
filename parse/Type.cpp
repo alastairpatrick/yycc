@@ -571,18 +571,6 @@ void StructuredType::print(std::ostream& stream) const {
     stream << ']';
 }
 
-#pragma endregion StructuredType
-
-#pragma region StructType
-
-StructType::StructType(const Location& location)
-    : StructuredType(location) {
-}
-
-VisitTypeOutput StructType::accept(Visitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
-}
-
 LLVMTypeRef StructuredType::cache_llvm_type() const {
     auto context = TranslationUnitContext::it;
     auto llvm_context = context->llvm_context;
@@ -721,6 +709,18 @@ LLVMTypeRef StructuredType::cache_llvm_type() const {
 
     LLVMStructSetBody(cached_llvm_type, member_types.data(), member_types.size(), false);
     return cached_llvm_type;
+}
+
+#pragma endregion StructuredType
+
+#pragma region StructType
+
+StructType::StructType(const Location& location)
+    : StructuredType(location) {
+}
+
+VisitTypeOutput StructType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
 }
 
 void StructType::message_print(ostream& stream, int section) const {
