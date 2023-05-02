@@ -556,18 +556,12 @@ void StructuredType::print(std::ostream& stream) const {
     stream << ']';
 }
 
-LLVMTypeRef StructuredType::cache_llvm_type() const {
+LLVMTypeRef StructuredType::build_llvm_type(const vector<LLVMValueRef>& gep_indices_prefix, const char* name) const {
     auto context = TranslationUnitContext::it;
     auto llvm_context = context->llvm_context;
     bool is_union = dynamic_cast<const UnionType*>(this);
 
-    const char* name{};
-    if (tag && !tag->identifier.name->empty()) name = tag->identifier.name->data();
-    if (!name) {
-         name = is_union ? "union" : "struct";
-    }
-
-    cached_llvm_type = LLVMStructCreateNamed(llvm_context, name);
+    if (name) cached_llvm_type = LLVMStructCreateNamed(llvm_context, name);
 
     vector<Declarator*> members;
     size_t largest_member_idx{};
@@ -605,15 +599,15 @@ LLVMTypeRef StructuredType::cache_llvm_type() const {
         auto member = members[member_idx];
 
         if (auto member_variable = member->variable()) {
-            member_variable->member->gep_indices.resize(is_union ? 3 : 2, context->zero_int);
+            member_variable->member->gep_indices = gep_indices_prefix;
 
             auto bit_field = member_variable->member->bit_field.get();
             if (bit_field) {
                 if (auto integer_type = dynamic_cast<const IntegerType*>(member->type)) {
                     auto bit_size_value = fold_expr(member_variable->member->bit_field->expr);
                     if (!bit_size_value.is_const_integer()) {
-                        message(Severity::ERROR, bit_field->expr->location) << "bit field '" << *member->identifier.name << "' must have integer width, not '"
-                                                                                              << PrintType(bit_size_value.type) << "'\n";
+                        message(Severity::ERROR, bit_field->expr->location) << "bit field '" << *member->identifier.name << "' must have integer type, not '"
+                                                                                             << PrintType(bit_size_value.type) << "'\n";
                         continue;
                     }
 
@@ -621,7 +615,7 @@ LLVMTypeRef StructuredType::cache_llvm_type() const {
                     auto bit_size = LLVMConstIntGetSExtValue(llvm_bit_size);
                     if (bit_size <= 0) {
                         message(Severity::ERROR, bit_field->expr->location) << "bit field '" << *member->identifier.name << "' has invalid width ("
-                                                                                              << bit_size << " bits)\n";
+                                                                                             << bit_size << " bits)\n";
                         continue;
                     }
 
@@ -642,7 +636,8 @@ LLVMTypeRef StructuredType::cache_llvm_type() const {
                         bits_to_right += bit_size;
                         bits_to_left -= bit_size;
 
-                        member_variable->member->gep_indices[1] = Value::of_int(gep_index_type, aggregate_index - 1).get_const();
+                        member_variable->member->gep_indices.push_back(Value::of_int(gep_index_type, aggregate_index - 1).get_const());
+                        if (is_union) member_variable->member->gep_indices.push_back(context->zero_int);
 
                         continue;
                     }
@@ -665,24 +660,38 @@ LLVMTypeRef StructuredType::cache_llvm_type() const {
                 }
             }
 
-            member_variable->member->gep_indices[1] = Value::of_int(gep_index_type, aggregate_index).get_const();
+            member_variable->member->gep_indices.push_back(Value::of_int(gep_index_type, aggregate_index).get_const());
+            if (is_union) member_variable->member->gep_indices.push_back(context->zero_int);
             ++aggregate_index;
             
-            auto llvm_member_type = member->type->llvm_type();
+            // Anonymous struct or union?
+            LLVMTypeRef llvm_member_type{};
+            if (member->identifier.name->empty()) {
+                if (auto structured_member_type = dynamic_cast<const StructuredType*>(member->type)) {
+                    llvm_member_type = structured_member_type->build_llvm_type(member_variable->member->gep_indices, nullptr);
+                }
+            }
+
+            if (!llvm_member_type) {
+                llvm_member_type = member->type->llvm_type();
+            }
+
             if (is_union) {
-                // A union is represented as a struct, with all but the last member being a zero size array of the appropriate type.
-                // The last member of the struct has size one, and so is the only one contributing to the size of the union. It must
-                // be the one with the largest size, which was arranged earlier. Because all but the last array have zero size, all
-                // the arrays will be located at the same address, as desired.
+                // A union is represented as an LLVM struct, with all but the last member being a zero size array of the appropriate type.
+                // The last member of the LLVM struct has array size one, and so is the only one contributing to the size of the LLVM struct.
+                // It must be the member with the largest storage, which was arranged near the beginning of this function. Because all
+                // but the last array have zero size, all the arrays are located beginning at the same address, as needed.
                 //
-                // union This {
+                // union This {           <- C union type
                 //   double d;
+                //   float f;
                 //   char c;
                 // };
                 // 
-                // struct BecomesThis {
-                //   char c[0];           <- error in C but okay for LLVM type
-                //   double d[1];         <- largest member moved to last
+                // struct BecomesThis {   <- LLVM struct type
+                //   char c[0];           <- error in C but equivalent okay in LLVM type system
+                //   float f[0];
+                //   double d[1];         <- largest member swapped to last earlier
                 // };
 
                 llvm_member_type = LLVMArrayType(llvm_member_type, member_idx == members.size() - 1 ? 1 : 0);
@@ -692,10 +701,22 @@ LLVMTypeRef StructuredType::cache_llvm_type() const {
         }
     }
 
-    LLVMStructSetBody(cached_llvm_type, member_types.data(), member_types.size(), false);
+    if (name) {
+        LLVMStructSetBody(cached_llvm_type, member_types.data(), member_types.size(), false);
+    } else {
+        cached_llvm_type = LLVMStructTypeInContext(llvm_context, member_types.data(), member_types.size(), false);
+    }
+
     return cached_llvm_type;
 }
 
+LLVMTypeRef StructuredType::cache_llvm_type() const {
+    const char* name{};
+    if (tag && !tag->identifier.name->empty()) name = tag->identifier.name->data();
+    if (!name) name = "anon";
+
+    return build_llvm_type({TranslationUnitContext::it->zero_int}, name);
+}
 
 
 StructType::StructType(const Location& location)

@@ -220,6 +220,7 @@ struct StructuredType: TagType {
     virtual void print(std::ostream& stream) const override;
 
 private:
+    LLVMTypeRef build_llvm_type(const vector<LLVMValueRef>& gep_indices_prefix, const char* name) const;
     virtual LLVMTypeRef cache_llvm_type() const override;
 };
 

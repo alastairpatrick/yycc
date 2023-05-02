@@ -524,17 +524,68 @@ END
 
 
 BEGIN Load value of union member variable
-union U { int x; short c; };
-int f(U s) {
-    return s.x;
+union U { int x; short s; };
+int f(U u) {
+    return u.x;
 }
 EXPECT_IR
 %U = type { [0 x i16], [1 x i32] }
 
 define i32 @f(%U %0) {
-  %s = alloca %U, align 8
-  store %U %0, ptr %s, align 4
-  %x = getelementptr inbounds %U, ptr %s, i32 0, i32 1, i32 0
+  %u = alloca %U, align 8
+  store %U %0, ptr %u, align 4
+  %x = getelementptr inbounds %U, ptr %u, i32 0, i32 1, i32 0
+  %2 = load i32, ptr %x, align 4
+  ret i32 %2
+}
+END
+
+
+BEGIN Load value from anonymous union within struct
+struct S {
+    float f;
+    union {
+        int x;
+        short s;
+    };
+};
+int f(S s) {
+    return s.x;
+}
+EXPECT_IR
+%S = type { float, { [0 x i16], [1 x i32] } }
+
+define i32 @f(%S %0) {
+  %s = alloca %S, align 8
+  store %S %0, ptr %s, align 4
+  %x = getelementptr inbounds %S, ptr %s, i32 0, i32 1, i32 1, i32 0
+  %2 = load i32, ptr %x, align 4
+  ret i32 %2
+}
+END
+
+
+BEGIN Load value through a bunch of anonymous structs and unions
+struct S {
+    struct {
+        union {
+            union {
+                int x;
+                short s;
+            };
+        };
+    };
+};
+int f(S s) {
+    return s.x;
+}
+EXPECT_IR
+%S = type { { { [1 x { [0 x i16], [1 x i32] }] } } }
+
+define i32 @f(%S %0) {
+  %s = alloca %S, align 8
+  store %S %0, ptr %s, align 4
+  %x = getelementptr inbounds %S, ptr %s, i32 0, i32 0, i32 0, i32 0, i32 0, i32 1, i32 0
   %2 = load i32, ptr %x, align 4
   ret i32 %2
 }

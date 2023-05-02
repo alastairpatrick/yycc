@@ -260,7 +260,7 @@ struct S {
     int x: 1.5;
 };
 EXPECT_MESSAGE
-:2:12: error bit field 'x' must have integer width, not 'double'
+:2:12: error bit field 'x' must have integer type, not 'double'
 END
 
 
