@@ -36,7 +36,6 @@ ostream& operator<<(ostream& stream, const PrintType& print_type) {
     return stream;
 }
 
-#pragma region Type
 
 QualifierSet Type::qualifiers() const {
     return 0;
@@ -68,9 +67,7 @@ bool Type::has_tag(const Declarator* declarator) const {
     return false;
 }
 
-#pragma endregion Type
 
-#pragma region VoidType
 
 const VoidType VoidType::it;
 
@@ -97,10 +94,7 @@ void VoidType::print(std::ostream& stream) const {
     stream << "\"V\"";
 }
 
-#pragma endregion VoidType
 
-
-#pragma region IntegerType
 
 const IntegerType* IntegerType::of_bool() {
     return IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL);
@@ -268,9 +262,7 @@ bool IntegerType::is_signed() const {
 IntegerType::IntegerType(IntegerSignedness signedness, IntegerSize size)
     : signedness(signedness), size(size) {}
 
-#pragma endregion IntegerType
 
-#pragma region FloatingPointType
 
 FloatingPointType::FloatingPointType(FloatingPointSize size)
     : size(size) {
@@ -330,9 +322,7 @@ void FloatingPointType::print(ostream& stream) const {
     stream << "\"F" << types[unsigned(size)] << '"';
 }
 
-#pragma endregion FloatingPointType
 
-#pragma region PointerType
 
 VisitTypeOutput PointerType::accept(Visitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
@@ -369,9 +359,7 @@ PointerType::PointerType(const Type* base_type)
     : base_type(base_type) {
 }
 
-#pragma endregion PointerType
 
-#pragma region QualifierType
 
 const Type* QualifiedType::of(const Type* base_type, unsigned qualifiers) {
     if (qualifiers == 0) return base_type;
@@ -426,9 +414,7 @@ QualifiedType::QualifiedType(const Type* base_type, unsigned qualifiers)
     : base_type(base_type), qualifier_flags(qualifiers) {
 }
 
-#pragma endregion QualifierType
 
-#pragma region UnqualifiedType
 
 UnqualifiedType::UnqualifiedType(const Type* base_type): base_type(base_type) {
 }
@@ -456,8 +442,7 @@ void UnqualifiedType::print(std::ostream& stream) const {
     stream << "[\"Qx\", " << base_type << ']';
 }
 
-#pragma endregion UnqualifiedType
-#pragma region FunctionType
+
 
 const FunctionType* FunctionType::of(const Type* return_type, std::vector<const Type*> parameter_types, bool variadic) {
     return TranslationUnitContext::it->type.get_function_type(return_type, parameter_types, variadic);
@@ -510,7 +495,7 @@ FunctionType::FunctionType(const Type* return_type, std::vector<const Type*> par
     : return_type(return_type), parameter_types(move(parameter_types)), variadic(variadic) {
 }
 
-#pragma endregion FunctionType
+
 
 TagType::TagType(const Location& location): LocationNode(location) {
 }
@@ -525,7 +510,7 @@ void TagType::message_print(ostream& stream, int section) const {
     }
 }
 
-#pragma region StructuredType
+
 
 StructuredType::StructuredType(const Location& location)
     : TagType(location) {
@@ -711,9 +696,7 @@ LLVMTypeRef StructuredType::cache_llvm_type() const {
     return cached_llvm_type;
 }
 
-#pragma endregion StructuredType
 
-#pragma region StructType
 
 StructType::StructType(const Location& location)
     : StructuredType(location) {
@@ -734,9 +717,7 @@ void StructType::print(std::ostream& stream) const {
     stream << ']';
 }
 
-#pragma endregion StructType
 
-#pragma region UnionType
 
 UnionType::UnionType(const Location& location)
     : StructuredType(location) {
@@ -757,10 +738,7 @@ void UnionType::print(std::ostream& stream) const {
     stream << ']';
 }
 
-#pragma endregion UnionType
 
-
-#pragma region EnumType
 
 EnumType::EnumType(const Location& location)
     : TagType(location), base_type(IntegerType::default_type()) {
@@ -811,9 +789,7 @@ void EnumType::print(std::ostream& stream) const {
     stream << "]]";
 }
 
-#pragma endregion EnumType
 
-#pragma region TypeOfType
 
 TypeOfType::TypeOfType(Expr* expr, const Location& location)
     : location(location), expr(expr) {
@@ -836,9 +812,7 @@ void TypeOfType::print(std::ostream& stream) const {
     stream << "[\"typeof\", " << expr << "]";
 }
 
-#pragma endregion TypeOfTyppe
 
-#pragma region UnboundType
 
 const UnboundType* UnboundType::of(const Identifier& identifier) {
     return TranslationUnitContext::it->type.get_unbound_type(identifier);
@@ -865,9 +839,7 @@ UnboundType::UnboundType(const Identifier& identifier)
     : identifier(identifier) {
 }
 
-#pragma endregion UnboundType
 
-#pragma region TypeDefType
 
 TypeDefType::TypeDefType(Declarator* declarator): declarator(declarator) {
 }
@@ -895,4 +867,3 @@ void TypeDefType::print(ostream& stream) const {
     stream << declarator->type;
 }
 
-#pragma endregion TypeDefType
