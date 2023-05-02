@@ -168,3 +168,14 @@ BEGIN Third token of using directive not an identifier
 EXPECT_MESSAGE
 :1:15: error unexpected '7' token in directive
 END
+
+
+
+BEGIN Using directive parameter is itself evaluated as an identifier
+#using ns = std
+#using sort = ns::sort
+int std::sort;
+int x = sort;
+PARSE
+EXPECT_AST
+[["var","ES","Si","std::sort"],["var","ES","Si","x","Nstd::sort"]]

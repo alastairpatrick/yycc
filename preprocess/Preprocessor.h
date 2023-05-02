@@ -15,7 +15,7 @@ struct Preprocessor {
     Fragment fragment;    
     vector<Location> include_stack;
     string current_namespace_prefix;
-    unordered_map<InternedString, string> namespace_handles;
+    unordered_map<InternedString, InternedString> namespace_handles;
 
     explicit Preprocessor(bool preparse);
     Preprocessor(string_view input, bool preparse);
@@ -45,12 +45,14 @@ private:
     TokenKind commit_token(TokenKind token, string_view text);
     bool handle_directive();
     void handle_line_directive();
-    void handle_namespace_directive();
-    void handle_using_directive();
     void handle_error_directive();
     void handle_include_directive();
     void handle_pragma_directive();
     void handle_type_directive();
+
+    void handle_namespace_directive();
+    void handle_using_directive();
+    InternedString evaluate_identifier(string_view text) const;
 
     PPTokenLexer lexer;
     IdentifierLexer id_lexer;

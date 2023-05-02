@@ -6,6 +6,7 @@
 struct Identifier {
     Identifier() : name(empty_interned_string) {}
     explicit Identifier(string_view s): name(intern_string(s)) {}
+    explicit Identifier(InternedString s): name(s) {}
     InternedString name{};
 };
 
