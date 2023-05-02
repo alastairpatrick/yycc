@@ -218,6 +218,9 @@ struct StructuredType: TagType {
     virtual TypePartition partition() const override;
     virtual bool has_tag(const Declarator* declarator) const override;
     virtual void print(std::ostream& stream) const override;
+
+private:
+    virtual LLVMTypeRef cache_llvm_type() const override;
 };
 
 struct StructType: StructuredType {
@@ -225,9 +228,6 @@ struct StructType: StructuredType {
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual void message_print(ostream& stream, int section) const override;
     virtual void print(std::ostream& stream) const override;
-
-private:
-    virtual LLVMTypeRef cache_llvm_type() const override;
 };
 
 struct UnionType: StructuredType {
@@ -235,9 +235,6 @@ struct UnionType: StructuredType {
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual void message_print(ostream& stream, int section) const override;
     virtual void print(std::ostream& stream) const override;
-
-private:
-    virtual LLVMTypeRef cache_llvm_type() const override;
 };
 
 struct EnumType: TagType {

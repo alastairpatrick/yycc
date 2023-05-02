@@ -583,89 +583,139 @@ VisitTypeOutput StructType::accept(Visitor& visitor, const VisitTypeInput& input
     return visitor.visit(this, input);
 }
 
-LLVMTypeRef StructType::cache_llvm_type() const {
+LLVMTypeRef StructuredType::cache_llvm_type() const {
     auto context = TranslationUnitContext::it;
     auto llvm_context = context->llvm_context;
-    
-    const char* name = !tag || tag->identifier.name->empty() ? "struct" : tag->identifier.name->data();
+    bool is_union = dynamic_cast<const UnionType*>(this);
+
+    const char* name{};
+    if (tag && !tag->identifier.name->empty()) name = tag->identifier.name->data();
+    if (!name) {
+         name = is_union ? "union" : "struct";
+    }
+
     cached_llvm_type = LLVMStructCreateNamed(llvm_context, name);
+
+    vector<Declarator*> members;
+    size_t largest_member_idx{};
+    unsigned long long largest_member_size{};
+    members.reserve(declarations.size());
+    for (auto declaration: declarations) {
+        for (auto member: declaration->declarators) {
+            if (auto member_variable = member->variable()) {
+                if (is_union) {
+                    auto member_size = LLVMStoreSizeOfType(context->llvm_target_data, member->type->llvm_type());
+                    if (member_size > largest_member_size) {
+                        largest_member_size = member_size;
+                        largest_member_idx = members.size();
+                    }
+                }
+
+                members.push_back(member);
+            }
+        }
+    }
+
+    if (is_union && members.size()) {
+        swap(members[largest_member_idx], members.back());
+    }
+
+    auto gep_index_type = IntegerType::default_type();
 
     vector<LLVMTypeRef> member_types;
     unsigned aggregate_index{};
-
     int bits_to_left{};
     int bits_to_right{}; 
     LLVMTypeRef bit_field_type{};
 
-    auto gep_index_type = IntegerType::default_type();
+    for (size_t member_idx = 0; member_idx < members.size(); ++member_idx) {
+        auto member = members[member_idx];
 
-    for (auto declaration: declarations) {
-        for (auto member: declaration->declarators) {
-            if (auto member_variable = member->variable()) {
-                member_variable->member->gep_indices.push_back(context->zero_int);
+        if (auto member_variable = member->variable()) {
+            member_variable->member->gep_indices.resize(is_union ? 3 : 2, context->zero_int);
 
-                auto bit_field = member_variable->member->bit_field.get();
-                if (bit_field) {
-                    if (auto integer_type = dynamic_cast<const IntegerType*>(member->type)) {
-                        auto bit_size_value = fold_expr(member_variable->member->bit_field->expr);
-                        if (!bit_size_value.is_const_integer()) {
-                            message(Severity::ERROR, bit_field->expr->location) << "bit field '" << *member->identifier.name << "' must have integer width, not '"
-                                                                                                 << PrintType(bit_size_value.type) << "'\n";
-                            continue;
-                        }
+            auto bit_field = member_variable->member->bit_field.get();
+            if (bit_field) {
+                if (auto integer_type = dynamic_cast<const IntegerType*>(member->type)) {
+                    auto bit_size_value = fold_expr(member_variable->member->bit_field->expr);
+                    if (!bit_size_value.is_const_integer()) {
+                        message(Severity::ERROR, bit_field->expr->location) << "bit field '" << *member->identifier.name << "' must have integer width, not '"
+                                                                                              << PrintType(bit_size_value.type) << "'\n";
+                        continue;
+                    }
 
-                        auto llvm_bit_size = bit_size_value.get_const();
-                        auto bit_size = LLVMConstIntGetSExtValue(llvm_bit_size);
-                        if (bit_size <= 0) {
-                            message(Severity::ERROR, bit_field->expr->location) << "bit field '" << *member->identifier.name << "' has invalid width ("
-                                                                                                 << bit_size << " bits)\n";
-                            continue;
-                        }
+                    auto llvm_bit_size = bit_size_value.get_const();
+                    auto bit_size = LLVMConstIntGetSExtValue(llvm_bit_size);
+                    if (bit_size <= 0) {
+                        message(Severity::ERROR, bit_field->expr->location) << "bit field '" << *member->identifier.name << "' has invalid width ("
+                                                                                              << bit_size << " bits)\n";
+                        continue;
+                    }
 
-                        if (bit_size > integer_type->num_bits()) {
-                            message(Severity::ERROR, bit_field->expr->location) << "width of bit field '" << *member->identifier.name
-                                                                                                 << "' (" << bit_size << " bits) exceeds width of its type '"
-                                                                                                 << PrintType(integer_type) << "' (" << integer_type->num_bits() << " bits)\n";
-                            continue;
-                        }
+                    if (bit_size > integer_type->num_bits()) {
+                        message(Severity::ERROR, bit_field->expr->location) << "width of bit field '" << *member->identifier.name
+                                                                                              << "' (" << bit_size << " bits) exceeds width of its type '"
+                                                                                              << PrintType(integer_type) << "' (" << integer_type->num_bits() << " bits)\n";
+                        continue;
+                    }
 
-                        if (bit_size <= bits_to_left) {
-                            LLVMValueRef one = LLVMConstInt(bit_field_type, 1, false);
-                            bit_field->storage_type = bit_field_type;
-                            bit_field->bits_to_left = LLVMConstInt(bit_field_type, bits_to_left - bit_size, false);
-                            bit_field->bits_to_right = LLVMConstInt(bit_field_type, bits_to_right, false);
-
-                            // mask = ((1 << bit_size) - 1) << bits_to_right
-                            bit_field->mask = LLVMConstShl(LLVMConstSub(LLVMConstShl(one, LLVMConstIntCast(llvm_bit_size, bit_field_type, false)), one), bit_field->bits_to_right);
-
-                            member_variable->member->gep_indices.push_back(Value::of_int(gep_index_type, aggregate_index - 1).get_const());
-                            bits_to_right += bit_size;
-                            bits_to_left -= bit_size;
-
-                            continue;
-                        }
-
-                        bit_field_type = integer_type->llvm_type();
-                        LLVMValueRef one = LLVMConstInt(bit_field_type, 1, false);
-
+                    if (!is_union && bit_size <= bits_to_left) {
                         bit_field->storage_type = bit_field_type;
                         bit_field->bits_to_left = LLVMConstInt(bit_field_type, bits_to_left - bit_size, false);
-                        bit_field->bits_to_right = LLVMConstInt(bit_field_type, 0, false);
+                        bit_field->bits_to_right = LLVMConstInt(bit_field_type, bits_to_right, false);
 
-                        // mask = ((1 << bit_size) - 1)
-                        bit_field->mask = LLVMConstSub(LLVMConstShl(one, LLVMConstIntCast(llvm_bit_size, bit_field_type, false)), one);
+                        // mask = (all_ones >> (bits_to_left + bits_to_right))) << bits_to_right
+                        bit_field->mask = LLVMConstShl(LLVMConstLShr(LLVMConstAllOnes(bit_field_type), LLVMConstAdd(bit_field->bits_to_left, bit_field->bits_to_right)), bit_field->bits_to_right);
+                        bits_to_right += bit_size;
+                        bits_to_left -= bit_size;
 
-                        bits_to_right = bit_size;
-                        bits_to_left = integer_type->num_bits() - bit_size;
-                    } else {
-                        message(Severity::ERROR, member->location) << "bit field '" << *member->identifier.name << "' has non-integer type '" << PrintType(member->type) << "'\n";
+                        member_variable->member->gep_indices[1] = Value::of_int(gep_index_type, aggregate_index - 1).get_const();
+
+                        continue;
                     }
-                }
 
-                member_variable->member->gep_indices.push_back(Value::of_int(gep_index_type, aggregate_index).get_const());
-                ++aggregate_index;
-                member_types.push_back(member->type->llvm_type());
+                    bit_field_type = integer_type->llvm_type();
+                    bits_to_right = 0;
+                    bits_to_left = integer_type->num_bits();
+
+                    bit_field->storage_type = bit_field_type;
+                    bit_field->bits_to_left = LLVMConstInt(bit_field_type, bits_to_left - bit_size, false);
+                    bit_field->bits_to_right = LLVMConstInt(bit_field_type, 0, false);
+
+                    // mask = all_ones >> bits_to_left
+                    bit_field->mask = LLVMConstLShr(LLVMConstAllOnes(bit_field_type), bit_field->bits_to_left);
+                    bits_to_right += bit_size;
+                    bits_to_left -= bit_size;
+
+                } else {
+                    message(Severity::ERROR, member->location) << "bit field '" << *member->identifier.name << "' has non-integer type '" << PrintType(member->type) << "'\n";
+                }
             }
+
+            member_variable->member->gep_indices[1] = Value::of_int(gep_index_type, aggregate_index).get_const();
+            ++aggregate_index;
+            
+            auto llvm_member_type = member->type->llvm_type();
+            if (is_union) {
+                // A union is represented as a struct, with all but the last member being a zero size array of the appropriate type.
+                // The last member of the struct has size one, and so is the only one contributing to the size of the union. It must
+                // be the one with the largest size, which was arranged earlier. Because all but the last array have zero size, all
+                // the arrays will be located at the same address, as desired.
+                //
+                // union This {
+                //   double d;
+                //   char c;
+                // };
+                // 
+                // struct BecomesThis {
+                //   char c[0];           <- error in C but okay for LLVM type
+                //   double d[1];         <- largest member moved to last
+                // };
+
+                llvm_member_type = LLVMArrayType(llvm_member_type, member_idx == members.size() - 1 ? 1 : 0);
+            }
+
+            member_types.push_back(llvm_member_type);
         }
     }
 
@@ -694,11 +744,6 @@ UnionType::UnionType(const Location& location)
 
 VisitTypeOutput UnionType::accept(Visitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
-}
-
-LLVMTypeRef UnionType::cache_llvm_type() const {
-    // todo
-    return VoidType::it.llvm_type();
 }
 
 void UnionType::message_print(ostream& stream, int section) const {

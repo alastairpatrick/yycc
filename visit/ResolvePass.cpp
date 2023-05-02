@@ -148,6 +148,7 @@ struct ResolvePass: Visitor {
 
             if (primary->type->partition() == TypePartition::INCOMPLETE) {
                 message(Severity::ERROR, primary->location) << primary_entity->error_kind() << " '" << primary->identifier << "' has incomplete type\n";
+                primary->type = IntegerType::default_type();
             }
 
             return VisitDeclaratorOutput();

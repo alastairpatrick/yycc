@@ -1155,7 +1155,7 @@ struct Emitter: Visitor {
             object_type = pointer_type->base_type;
         }
 
-        if (auto struct_type = type_cast<StructType>(object_type)) {
+        if (auto struct_type = type_cast<StructuredType>(object_type)) {
             auto it = struct_type->scope.declarator_map.find(expr->identifier.name);
             if (it == struct_type->scope.declarator_map.end()) {
                 message(Severity::ERROR, expr->location) << "no member named '" << *expr->identifier.name << "' in '" << PrintType(struct_type) << "'\n";

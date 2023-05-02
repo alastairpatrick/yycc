@@ -523,6 +523,24 @@ EXPECT_MESSAGE
 END
 
 
+BEGIN Load value of union member variable
+union U { int x; short c; };
+int f(U s) {
+    return s.x;
+}
+EXPECT_IR
+%U = type { [0 x i16], [1 x i32] }
+
+define i32 @f(%U %0) {
+  %s = alloca %U, align 8
+  store %U %0, ptr %s, align 4
+  %x = getelementptr inbounds %U, ptr %s, i32 0, i32 1, i32 0
+  %2 = load i32, ptr %x, align 4
+  ret i32 %2
+}
+END
+
+
 REM ******** SubscriptExpr ********
 
 BEGIN Subscript operator on pointer (1)

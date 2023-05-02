@@ -483,6 +483,31 @@ define void @f(ptr %0, i32 %1) {
 END
 
 
+BEGIN Bitfields in union never merged, i.e. always one struct slot per member
+union U {
+    int x: 24;
+    char y: 8;
+};
+void f(U* p) {
+    p->y = 7;
+}
+EXPECT_IR
+%U = type { [0 x i8], [1 x i32] }
+
+define void @f(ptr %0) {
+  %p = alloca ptr, align 8
+  store ptr %0, ptr %p, align 8
+  %2 = load ptr, ptr %p, align 8
+  %y = getelementptr inbounds %U, ptr %2, i32 0, i32 0, i32 0
+  %3 = load i8, ptr %y, align 1
+  %4 = and i8 %3, 0
+  %5 = or i8 7, %4
+  store i8 %5, ptr %y, align 1
+  ret void
+}
+END
+
+
 BEGIN Global initialized function pointer variable (1)
 void f() {
 }
