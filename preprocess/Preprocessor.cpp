@@ -73,34 +73,68 @@ TokenKind Preprocessor::next_pp_token() {
 
 bool Preprocessor::handle_directive() {
     switch (token) {
-        case TOK_PP_INCLUDE: {
-          handle_include_directive();
-          return true;
-      } case TOK_PP_LINE: {
-          handle_line_directive();
-          break;
-      }
+      case TOK_PP_INCLUDE:
+        handle_include_directive();
+        return true;
+      case TOK_PP_LINE:
+        handle_line_directive();
+        break;
+      case TOK_PP_NAMESPACE:
+        handle_namespace_directive();
+        break;
+      case TOK_PP_USING:
+        handle_using_directive();
+        break;
     }
 
     if (!preparse) {
       switch (token) {
-          case TOK_PP_ERROR: {
-            handle_error_directive();
-            break;
-        } case TOK_PP_PRAGMA: {
-            handle_pragma_directive(); 
-            break;
-        } case TOK_PP_ENUM: 
-          case TOK_PP_FUNC:
-          case TOK_PP_TYPE:
-          case TOK_PP_VAR: {
-            return false;
-        }
+        case TOK_PP_ERROR:
+          handle_error_directive();
+          break;
+        case TOK_PP_PRAGMA:
+          handle_pragma_directive(); 
+          break;
+        case TOK_PP_ENUM: 
+        case TOK_PP_FUNC:
+        case TOK_PP_TYPE:
+        case TOK_PP_VAR:
+          return false;
       }
     }
 
     require_eol();
     return true;
+}
+
+Identifier Preprocessor::identifier() const {
+    auto text = lexer.text();
+
+    if (text[0] == ':') {
+        text.remove_prefix(2);
+        return Identifier(text);
+    }
+
+    string_view suffix;
+    auto handle_name = text;
+    auto handle_end = handle_name.find(':');
+    if (handle_end != text.npos) {
+        suffix = handle_name.substr(handle_end);
+        handle_name = handle_name.substr(0, handle_end);
+    }
+
+    auto it = namespace_handles.find(intern_string(handle_name));
+    if (it != namespace_handles.end()) {
+        string appended(it->second);
+        appended += suffix;
+        return Identifier(appended);
+    }
+
+    if (current_namespace_prefix.empty()) return Identifier(text);
+
+    string appended(current_namespace_prefix);
+    appended += text;
+    return Identifier(appended);
 }
 
 void Preprocessor::skip_to_eol() {
@@ -177,6 +211,74 @@ void Preprocessor::handle_line_directive() {
     if (filename) {
         lexer.set_filename(filename);
     }
+}
+
+void Preprocessor::handle_namespace_directive() {
+    current_namespace_prefix.clear();
+    namespace_handles.clear();
+
+    next_pp_token();
+    if (token != TOK_IDENTIFIER) return;
+
+    auto text = lexer.text();
+
+    if (text[0] == ':') {
+        text.remove_prefix(2);
+    }
+
+    current_namespace_prefix = text;
+    current_namespace_prefix += "::";
+
+    size_t handle_begin = 0;
+    for (;;) {
+        auto handle_end = text.find(':', handle_begin);
+
+        auto handle_name = text.substr(handle_begin, handle_end);
+        auto substitution = text.substr(0, handle_end);
+
+        namespace_handles[intern_string(handle_name)] = substitution;
+
+        if (handle_end == text.npos) break;
+        handle_begin = handle_end + 2;
+    }
+
+    next_pp_token();
+}
+
+void Preprocessor::handle_using_directive() {
+    next_pp_token();
+    if (token == '\n') {
+        message(Severity::ERROR, location()) << "expected identifier\n";
+    }
+
+    if (token != TOK_IDENTIFIER) return;
+
+    auto text = lexer.text();
+    next_pp_token();
+
+    string_view handle_name;
+    string_view substitution;
+    if (token == '=') {
+        next_pp_token();
+        if (token != TOK_IDENTIFIER) return;
+
+        handle_name = text;
+        substitution = lexer.text();
+        next_pp_token();
+    } else {
+        substitution = text;
+        handle_name = text;
+        auto last_colon_idx = text.rfind(':');
+        if (last_colon_idx != text.npos) {
+            handle_name = text.substr(last_colon_idx + 1);
+        }
+    }
+
+    if (substitution[0] == ':') {
+        substitution.remove_prefix(2);
+    }
+
+    namespace_handles[intern_string(handle_name)] = substitution;
 }
 
 void Preprocessor::handle_error_directive() {

@@ -1,0 +1,170 @@
+BEGIN Outside namespace, unqualified identifier
+int a;
+EXPECT_AST
+[["var","ES","Si","a"]]
+
+BEGIN Outside namespace, :: prefixed identifier
+int ::a;
+EXPECT_AST
+[["var","ES","Si","a"]]
+
+BEGIN Outside namespace, qualified identifier
+int a::b::c;
+EXPECT_AST
+[["var","ES","Si","a::b::c"]]
+
+BEGIN Outside namespace, :: prefixed and qualified identifier
+int ::a::b::c;
+EXPECT_AST
+[["var","ES","Si","a::b::c"]]
+
+
+
+BEGIN In namespace, :: prefixed identifier is always relative to root namespace
+#namespace X::Y
+int ::a;
+EXPECT_AST
+[["var","ES","Si","a"]]
+
+
+BEGIN In namespace, :: prefixed identifier is always relative to root namespace (1)
+#namespace X::Y
+int ::X::a;
+EXPECT_AST
+[["var","ES","Si","X::a"]]
+
+
+BEGIN In namespace, :: prefixed identifier is always relative to root namespace (2)
+#namespace X::Y
+int ::Y::a;
+EXPECT_AST
+[["var","ES","Si","Y::a"]]
+
+
+
+BEGIN In namespace, unqualified identifier is always appended to namespace (1)
+#namespace X::Y
+int a;
+EXPECT_AST
+[["var","ES","Si","X::Y::a"]]
+
+
+BEGIN In namespace, unqualified identifier is always appended to namespace (2)
+#namespace X::Y
+int X;
+EXPECT_AST
+[["var","ES","Si","X"]]
+
+
+BEGIN In namespace, unqualified identifier is always appended to namespace (3)
+#namespace X::Y
+int Y;
+EXPECT_AST
+[["var","ES","Si","X::Y"]]
+
+
+BEGIN In namespace, qualified identifier with no leading :: and not matching handle is appended to namespace
+#namespace X::Y
+int Z::a;
+EXPECT_AST
+[["var","ES","Si","X::Y::Z::a"]]
+
+
+BEGIN In namespace, qualified identifier with no leading :: and matching handle is relative to handle (1)
+#namespace X::Y
+int X::a;
+EXPECT_AST
+[["var","ES","Si","X::a"]]
+
+
+BEGIN In namespace, qualified identifier with no leading :: and matching handle is relative to handle (2)
+#namespace X::Y
+int Y::a;
+EXPECT_AST
+[["var","ES","Si","X::Y::a"]]
+
+
+BEGIN Reset namespace
+#namespace X::Y
+#namespace
+int a;
+EXPECT_AST
+[["var","ES","Si","a"]]
+
+
+BEGIN Namespace may be :: prefixed
+#namespace ::X::Y
+int a;
+EXPECT_AST
+[["var","ES","Si","X::Y::a"]]
+
+
+BEGIN Error if namespace token is not identifier
+#namespace 7
+EXPECT_MESSAGE
+:1:12: error unexpected '7' token in directive
+END
+
+
+BEGIN Substitute unqualified identifier according to using directive (1)
+#using std::sort
+int std::sort;
+int x = sort;
+PARSE
+EXPECT_AST
+[["var","ES","Si","std::sort"],["var","ES","Si","x","Nstd::sort"]]
+
+
+BEGIN Substitute unqualified identifier according to using directive (2)
+#using ::std::sort
+int std::sort;
+int x = sort;
+PARSE
+EXPECT_AST
+[["var","ES","Si","std::sort"],["var","ES","Si","x","Nstd::sort"]]
+
+
+BEGIN Substitute unqualified identifier according to using directive (3)
+#using std::exp::sort
+int std::exp::sort;
+int x = sort;
+PARSE
+EXPECT_AST
+[["var","ES","Si","std::exp::sort"],["var","ES","Si","x","Nstd::exp::sort"]]
+
+
+BEGIN Substitute unqualified identifier according to using equals directive (1)
+#using std_sort = std::exp::sort
+int std::exp::sort;
+int x = std_sort;
+PARSE
+EXPECT_AST
+[["var","ES","Si","std::exp::sort"],["var","ES","Si","x","Nstd::exp::sort"]]
+
+
+BEGIN First token of using missing
+#using
+EXPECT_MESSAGE
+:1:7: error expected identifier
+END
+
+
+BEGIN First token of using directive not an identifier
+#using 7
+EXPECT_MESSAGE
+:1:8: error unexpected '7' token in directive
+END
+
+
+BEGIN Unexpected punctuator instead of equals in using directive
+#using std_sort : std::exp::sort
+EXPECT_MESSAGE
+:1:17: error unexpected ':' token in directive
+END
+
+
+BEGIN Third token of using directive not an identifier
+#using sort = 7
+EXPECT_MESSAGE
+:1:15: error unexpected '7' token in directive
+END

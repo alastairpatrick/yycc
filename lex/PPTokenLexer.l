@@ -8,7 +8,6 @@
 
 %top {
 #include "InternedString.h"
-#include "lex/Identifier.h"
 #include "lex/Fragment.h"
 #include "lex/Location.h"
 #include "lex/Token.h"
@@ -24,10 +23,6 @@ public:
 
     Fragment fragment() const {
         return Fragment(matcher().first(), size());
-    }
-    
-    Identifier identifier() const {
-        return Identifier(text());
     }
 
     Location location() const {
@@ -46,6 +41,7 @@ D               [0-9]
 L               [a-zA-Z_]
 N               ([0-9a-zA-Z_\.]|([EePp][+-]))
 HW              [ \t\v\f\r]
+ID              [a-zA-Z_][a-zA-Z0-9_]*
 
 %xstate PP_TOKENS
 %xstate DIRECTIVE
@@ -72,7 +68,7 @@ HW              [ \t\v\f\r]
 // Tokenize regular text-line
 <PP_TOKENS,INCLUDE> {
 
-{L} ({L} | {D})*            { return TOK_IDENTIFIER; }
+"::"? {ID} ("::" {ID})*     { return TOK_IDENTIFIER; }
 
 "."? {D} {N}*               { return TOK_PP_NUMBER; }
 
@@ -133,22 +129,25 @@ L?  ' (\\. | [^\\'\n])*  '  { return TOK_CHAR_LITERAL; }
 // Determine the kind of directive and transition.
 <DIRECTIVE> {
 
-define          { start(PP_TOKENS);   return TOK_PP_DEFINE; }
-error           { start(PP_TOKENS);   return TOK_PP_ERROR; }
-elif            { start(PP_TOKENS);   return TOK_PP_ELIF; }
-else            { start(PP_TOKENS);   return TOK_PP_ELSE; }
-endif           { start(PP_TOKENS);   return TOK_PP_ENDIF; }
-enum            { start(PP_TOKENS);   return TOK_PP_ENUM; }
-func            { start(PP_TOKENS);   return TOK_PP_FUNC; }
-if              { start(PP_TOKENS);   return TOK_PP_IF; }
-ifdef           { start(PP_TOKENS);   return TOK_PP_IFDEF; }
-ifndef          { start(PP_TOKENS);   return TOK_PP_IFNDEF; }
-include         { start(INCLUDE);     return TOK_PP_INCLUDE; }
-line            { start(PP_TOKENS);   return TOK_PP_LINE; }
-pragma          { start(PP_TOKENS);   return TOK_PP_PRAGMA; }
-type            { start(PP_TOKENS);   return TOK_PP_TYPE; }
-undef           { start(PP_TOKENS);   return TOK_PP_UNDEF; }
-var             { start(PP_TOKENS);   return TOK_PP_VAR; }
+define              { start(PP_TOKENS);   return TOK_PP_DEFINE; }
+error               { start(PP_TOKENS);   return TOK_PP_ERROR; }
+elif                { start(PP_TOKENS);   return TOK_PP_ELIF; }
+else                { start(PP_TOKENS);   return TOK_PP_ELSE; }
+endif               { start(PP_TOKENS);   return TOK_PP_ENDIF; }
+enum                { start(PP_TOKENS);   return TOK_PP_ENUM; }
+func                { start(PP_TOKENS);   return TOK_PP_FUNC; }
+if                  { start(PP_TOKENS);   return TOK_PP_IF; }
+ifdef               { start(PP_TOKENS);   return TOK_PP_IFDEF; }
+ifndef              { start(PP_TOKENS);   return TOK_PP_IFNDEF; }
+include             { start(INCLUDE);     return TOK_PP_INCLUDE; }
+line                { start(PP_TOKENS);   return TOK_PP_LINE; }
+namespace           { start(PP_TOKENS);   return TOK_PP_NAMESPACE; }
+pragma              { start(PP_TOKENS);   return TOK_PP_PRAGMA; }
+type                { start(PP_TOKENS);   return TOK_PP_TYPE; }
+undef               { start(PP_TOKENS);   return TOK_PP_UNDEF; }
+using               { start(PP_TOKENS);   return TOK_PP_USING; }
+var                 { start(PP_TOKENS);   return TOK_PP_VAR; }
+{L} ({L} | {D})*    { return TOK_PP_UNRECOGNIZED; }
 
 }
 
@@ -158,7 +157,6 @@ var             { start(PP_TOKENS);   return TOK_PP_VAR; }
 
 <PP_TOKENS,DIRECTIVE,INCLUDE> {
 .                           { return TOK_PP_UNRECOGNIZED; }
-{L} ({L} | {D})*            { return TOK_PP_UNRECOGNIZED; }
 }
 
 %%

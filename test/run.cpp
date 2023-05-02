@@ -56,6 +56,9 @@ static const Test tests[] = {
     { "parse/float_literal",        TestType::EXPRESSION },
     { "parse/expr",                 TestType::EXPRESSION },
 
+    { "parse/namespace",            TestType::PREPARSE},
+    { "parse/namespace",            TestType::PARSE},
+
     { "parse/array",                TestType::PREPARSE },
     { "parse/array",                TestType::PARSE },
     { "resolve/array",              TestType::RESOLVE },

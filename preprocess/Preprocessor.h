@@ -14,6 +14,8 @@ struct Preprocessor {
     TokenKind token;
     Fragment fragment;    
     vector<Location> include_stack;
+    string current_namespace_prefix;
+    unordered_map<InternedString, string> namespace_handles;
 
     explicit Preprocessor(bool preparse);
     Preprocessor(string_view input, bool preparse);
@@ -30,10 +32,8 @@ struct Preprocessor {
     Location location() const {
         return lexer.location();
     }
-
-    Identifier identifier() const {
-        return lexer.identifier();
-    }
+    
+    Identifier identifier() const;
 
     void skip_to_eol();
     void require_eol();
@@ -45,6 +45,8 @@ private:
     TokenKind commit_token(TokenKind token, string_view text);
     bool handle_directive();
     void handle_line_directive();
+    void handle_namespace_directive();
+    void handle_using_directive();
     void handle_error_directive();
     void handle_include_directive();
     void handle_pragma_directive();
