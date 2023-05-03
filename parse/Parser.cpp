@@ -58,7 +58,7 @@ void Parser::handle_declaration_directive() {
         if (pp_token == TOK_IDENTIFIER) {
             auto id = preprocessor.identifier;
 
-            auto declarator = identifiers.add_declarator(AddDeclaratorScope::CURRENT, nullptr, nullptr, id, preprocessor.location());
+            auto declarator = identifiers.add_declarator(IdentifierScope::BLOCK, nullptr, nullptr, id, preprocessor.location());
             if (token == TOK_PP_TYPE) {
                 declarator->delegate = new TypeDef(declarator);
                 declarator->type = declarator->to_type();
@@ -507,16 +507,17 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
         }
         type = structured_type;
 
-        if (consume('{')) {
-            OrderIndependentScope oi_scope;
-            oi_scope.position = position();
-
+        if (token == '{') {
             // C99 6.7.2.3p6
-            if (!identifier.empty()) tag_declarator = declare_tag_type(AddDeclaratorScope::CURRENT, declaration, identifier, type, specifier_location);
+            if (!identifier.empty()) tag_declarator = declare_tag_type(declaration->scope, declaration, identifier, type, specifier_location);
 
             structured_type->complete = true;
 
             if (!anonymous) identifiers.push_scope();
+            consume();
+
+            OrderIndependentScope oi_scope;
+            oi_scope.position = position();
 
             while (token && token != '}') {
                 auto member_declaration = dynamic_cast<Declaration*>(parse_declaration_or_statement(IdentifierScope::STRUCTURED));
@@ -560,7 +561,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
         if (consume('{')) {
             // C99 6.7.2.3p6
-            if (!identifier.empty()) tag_declarator = declare_tag_type(AddDeclaratorScope::CURRENT, declaration, identifier, type, specifier_location);
+            if (!identifier.empty()) tag_declarator = declare_tag_type(declaration->scope, declaration, identifier, type, specifier_location);
 
             enum_type->complete = true;
             while (token && token != '}') {
@@ -584,7 +585,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                     }
                 }
 
-                auto declarator = identifiers.add_declarator(AddDeclaratorScope::CURRENT, declaration, enum_type, identifier, location);
+                auto declarator = identifiers.add_declarator(IdentifierScope::STRUCTURED, declaration, enum_type, identifier, location);
                 auto enum_constant = new EnumConstant(declarator, enum_type, constant);
                 declarator->delegate = enum_constant;
 
@@ -600,18 +601,18 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
     if (!tag_declarator && !identifier.empty()) {
         if (token == ';') {
             // C99 6.7.2.3p7
-            tag_declarator = declare_tag_type(AddDeclaratorScope::CURRENT, declaration, identifier, type, specifier_location);
+            tag_declarator = declare_tag_type(declaration->scope, declaration, identifier, type, specifier_location);
         } else {
             // C99 6.7.2.3p8
-            tag_declarator = declare_tag_type(AddDeclaratorScope::FILE, declaration, identifier, type, specifier_location);
+            tag_declarator = declare_tag_type(IdentifierScope::FILE, declaration, identifier, type, specifier_location);
         }
     }
 
     return type;
 }
 
-Declarator* Parser::declare_tag_type(AddDeclaratorScope add_scope, Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location) {
-    auto declarator = identifiers.add_declarator(add_scope, declaration, type, identifier, location);
+Declarator* Parser::declare_tag_type(IdentifierScope scope, Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location) {
+    auto declarator = identifiers.add_declarator(scope, declaration, type, identifier, location);
     declarator->delegate = new TypeDef(declarator);
     type->tag = declarator;
     return declarator;
@@ -657,10 +658,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         initializer = parse_initializer();
     }
 
-    bool add_file = declaration->scope == IdentifierScope::FILE || declaration->storage_class == StorageClass::EXTERN;
-    bool add_current = declaration->scope != IdentifierScope::FILE;
-    AddDeclaratorScope add_scope = add_file && add_current ? AddDeclaratorScope::BOTH : (add_file ? AddDeclaratorScope::FILE : AddDeclaratorScope::CURRENT);
-    auto declarator = identifiers.add_declarator(add_scope, declaration, type, declarator_transform.identifier, location);
+    auto declarator = identifiers.add_declarator(declaration->scope, declaration, type, declarator_transform.identifier, location);
     
     auto storage_class = declaration->storage_class;
     auto scope = declaration->scope;
@@ -719,6 +717,11 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
                 if (bit_field_size) variable->member->bit_field.reset(new BitField(bit_field_size));
             }
         }
+    }
+
+    if (declaration->scope == IdentifierScope::BLOCK && declaration->storage_class == StorageClass::EXTERN) {
+        auto file_declarator = identifiers.add_declarator(IdentifierScope::FILE, declaration, type, declarator_transform.identifier, location);
+        file_declarator->delegate = declarator->delegate;
     }
 
     declarator->fragment = end_fragment(begin);

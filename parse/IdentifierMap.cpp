@@ -23,81 +23,51 @@ const Type* IdentifierMap::lookup_type(const Identifier& identifier) const {
     return declarator->to_type();
 }
 
-Declarator* IdentifierMap::add_declarator(AddDeclaratorScope add_scope, const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location) {
-    Declarator* declarator{};
-    if (add_scope != AddDeclaratorScope::CURRENT) {
-        declarator = find_placeholder(scopes.back(), declaration, type, identifier, location);
-        if (declarator) return declarator;
-    }
+Declarator* IdentifierMap::add_declarator(IdentifierScope add_scope, const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location, Declarator* primary) {
+    if (identifier.empty()) return new Declarator(declaration, type, identifier, location);
 
-    if (add_scope != AddDeclaratorScope::FILE) {
-        declarator = find_placeholder(scopes.front(), declaration, type, identifier, location);
-        if (declarator) return declarator;
-    }
+    Scope& scope = add_scope == IdentifierScope::FILE ? scopes.back() : scopes.front();
+    Declarator* new_declarator{};
+    Declarator* existing_declarator{};
 
-    declarator = new Declarator(declaration, type, identifier, location);
+    auto it = scope.declarator_map.find(identifier.text);
+    if (it != scope.declarator_map.end()) {
+        existing_declarator = it->second;
+        if (!existing_declarator->type) {
+            new_declarator = existing_declarator;
+            assert(new_declarator->identifier.text == identifier.text);
 
-    if (identifier.empty()) return declarator;
-
-    Declarator* primary{};
-    if (add_scope != AddDeclaratorScope::CURRENT) {
-        primary = add_declarator_to_scope(scopes.back(), declarator);
-    }
-
-    if (add_scope != AddDeclaratorScope::FILE) {
-        auto primary2 = add_declarator_to_scope(scopes.front(), declarator);
-        if (primary2) {
-            assert(primary == nullptr || primary == primary2);
-            primary = primary2;
+            new_declarator->declaration = declaration;
+            new_declarator->type = type;
+            new_declarator->location = location;
         }
     }
 
-    assert(declarator->primary == declarator);
+    if (!new_declarator) {
+        new_declarator = new Declarator(declaration, type, identifier, location);
 
-    // Maintain a singly linked list of declarators linked to the same identifier, with the first such declarator
-    // encountered - the primary - always being the first node in the list.
-    if (primary) {
-        declarator->primary = primary;
-        declarator->next = primary->next;
-        primary->next = declarator;
-    }
+        if (existing_declarator) {
+            assert(!primary || existing_declarator->primary == primary);
 
-    return declarator;
-}
+            new_declarator->primary = existing_declarator->primary;
+            new_declarator->next = existing_declarator->next;
+            existing_declarator->next = new_declarator;
 
-Declarator* IdentifierMap::find_placeholder(Scope& scope, const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location) {
-    if (!identifier.empty()) {
-        auto it = scopes.back().declarator_map.find(identifier.text);
-        if (it != scopes.back().declarator_map.end()) {
-            auto declarator = it->second;
-            if (!declarator->type) {
-                assert(declarator->identifier.text == identifier.text);
-                declarator->declaration = declaration;
-                declarator->type = type;
-                declarator->location = location;
+        } else {
+            existing_declarator = new_declarator;
+            scope.declarator_map[identifier.text] = new_declarator;
 
-                if (type) {
-                    scope.declarators.push_back(declarator);
-                }
-
-                return declarator;
+            if (primary) {
+                new_declarator->primary = primary;
             }
         }
     }
-    return nullptr;
-}
 
-Declarator* IdentifierMap::add_declarator_to_scope(Scope& scope, Declarator* declarator) {
-    auto it = scope.declarator_map.find(declarator->identifier.text);
-    if (it == scope.declarator_map.end()) {
-        scope.declarator_map[declarator->identifier.text] = declarator;
-        if (declarator->type) {
-            scope.declarators.push_back(declarator);
-        }
-        return nullptr;
+    if (new_declarator->type) {
+        scope.declarators.push_back(new_declarator);
     }
 
-    return it->second->primary;
+    return new_declarator;
 }
 
 void IdentifierMap::push_scope(Scope&& scope) {

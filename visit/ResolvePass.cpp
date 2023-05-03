@@ -54,6 +54,8 @@ struct ResolvePass: Visitor {
     }
 
     void compose(Declarator* primary, Declarator* secondary) {
+        if (primary->delegate == secondary->delegate) return;
+
         if (secondary->delegate && primary->delegate && typeid(*secondary->delegate) != typeid(*primary->delegate)) {
             redeclaration_message(Severity::ERROR, secondary, primary->location, "with different kind of identifier");
             return;
