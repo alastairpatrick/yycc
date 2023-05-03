@@ -249,7 +249,7 @@ struct Emitter: Visitor {
             auto param = entity->parameters[i];
             auto param_entity = param->entity();
 
-            auto storage = LLVMBuildAlloca(builder, param->type->llvm_type(), param->identifier.c_str());
+            auto storage = LLVMBuildAlloca(builder, param->type->llvm_type(), c_str(param->identifier));
             param_entity->value = Value(ValueKind::LVALUE, param->type, storage);
             LLVMBuildStore(builder, LLVMGetParam(function, i), storage);
         }
@@ -305,7 +305,7 @@ struct Emitter: Visitor {
                         if (auto member_variable = member->variable()) {
                             LLVMValueRef dest_element = LLVMBuildInBoundsGEP2(builder, struct_type->llvm_type(), dest.get_lvalue(),
                                                                               member_variable->member->gep_indices.data(), member_variable->member->gep_indices.size(),
-                                                                              member->identifier.c_str());
+                                                                              c_str(member->identifier));
                             emit_auto_initializer(Value(ValueKind::LVALUE, member->type, dest_element), initializer->elements[initializer_idx++]);
                         }
                     }
@@ -370,7 +370,7 @@ struct Emitter: Visitor {
             } else {
                 LLVMPositionBuilderAtEnd(temp_builder, entry_block);
             }
-            auto storage = LLVMBuildAlloca(temp_builder, llvm_type, declarator->identifier.c_str());
+            auto storage = LLVMBuildAlloca(temp_builder, llvm_type, c_str(declarator->identifier));
 
             entity->value = Value(ValueKind::LVALUE, type, storage);
 
@@ -660,7 +660,7 @@ struct Emitter: Visitor {
             if (statement->expr) {
                 auto type = get_expr_type(statement->expr);
                 if (type->unqualified() != &VoidType::it) {
-                    message(Severity::ERROR, statement->expr->location) << "void function '" << function_declarator->identifier << "' should not return a value\n";
+                    message(Severity::ERROR, statement->expr->location) << "void function '" << *function_declarator->identifier << "' should not return a value\n";
                 }
             }
             LLVMBuildRetVoid(builder);
@@ -669,7 +669,7 @@ struct Emitter: Visitor {
             if (statement->expr) {
                 value = convert_to_type(statement->expr, function_type->return_type->unqualified(), ConvKind::IMPLICIT);
             } else {
-                message(Severity::ERROR, statement->location) << "non-void function '" << function_declarator->identifier << "' should return a value\n";
+                message(Severity::ERROR, statement->location) << "non-void function '" << *function_declarator->identifier << "' should return a value\n";
                 value = Value(function_type->return_type, LLVMConstNull(function_type->return_type->llvm_type()));
             }
             LLVMBuildRet(builder, get_rvalue(value));
@@ -1090,7 +1090,7 @@ struct Emitter: Visitor {
 
         if (auto enum_constant = declarator->enum_constant()) {
             if (!enum_constant->ready) {
-                message(Severity::ERROR, expr->location) << "enum constant '" << declarator->identifier << "' not yet available\n";
+                message(Severity::ERROR, expr->location) << "enum constant '" << *declarator->identifier << "' not yet available\n";
             }
 
             auto type = result_type;

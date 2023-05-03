@@ -23,9 +23,9 @@ struct DeclarationMarker {
             auto it = todo.begin();
             auto declaration = *it;
 
-            for (auto text: declaration->identifier_tokens) {
+            for (auto at_file_scope: declaration->identifier_tokens) {
                 Identifier identifier;
-                identifier.text = text;  // todo should be file_scope_name
+                identifier.at_file_scope = at_file_scope;
                 lookup(identifier);
             }
 
@@ -70,7 +70,7 @@ void output_declaration_directives_of_kind(TextStream& stream, const vector<Decl
     for (auto declarator: declarators) {
         if (declarator->delegate->kind() != kind) continue;
         stream.write(" ");
-        stream.write(*declarator->identifier.text);
+        stream.write(*declarator->identifier);
     }
 
     stream.write("\n");
@@ -95,7 +95,7 @@ void output_declaration_directives(TextStream& stream, Scope* scope, Declaration
     }
 
     sort(ordered_declarators.begin(), ordered_declarators.end(), [](Declarator* a, Declarator* b) {
-        return *a->identifier.text < *b->identifier.text;
+        return *a->identifier < *b->identifier;
     });
 
     output_declaration_directives_of_kind(stream, ordered_declarators, DeclaratorKind::ENUM_CONSTANT, "#enum");

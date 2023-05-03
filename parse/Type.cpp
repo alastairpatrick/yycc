@@ -504,7 +504,7 @@ void TagType::message_print(ostream& stream, int section) const {
     if (section != 0) return;
 
     if (tag) {
-        stream << *tag->identifier.text;
+        stream << *tag->identifier;
     } else {
         stream << "anon";
     }
@@ -538,7 +538,7 @@ void StructuredType::print(std::ostream& stream) const {
         for (auto member : declaration->declarators) {
             if (separator) stream << ", ";
             separator = true;
-            stream << "[\"" << member->identifier << "\", " << member->type;
+            stream << "[\"" << *member->identifier << "\", " << member->type;
             if (auto member_variable = member->variable()) {
                 if (member_variable->member->bit_field) {
                     stream << ", " << member_variable->member->bit_field;
@@ -606,7 +606,7 @@ LLVMTypeRef StructuredType::build_llvm_struct_type(const vector<LLVMValueRef>& g
                 if (auto integer_type = dynamic_cast<const IntegerType*>(member->type)) {
                     auto bit_size_value = fold_expr(member_variable->member->bit_field->expr);
                     if (!bit_size_value.is_const_integer()) {
-                        message(Severity::ERROR, bit_field->expr->location) << "bit field '" << member->identifier << "' must have integer type, not '"
+                        message(Severity::ERROR, bit_field->expr->location) << "bit field '" << *member->identifier << "' must have integer type, not '"
                                                                                              << PrintType(bit_size_value.type) << "'\n";
                         continue;
                     }
@@ -614,13 +614,13 @@ LLVMTypeRef StructuredType::build_llvm_struct_type(const vector<LLVMValueRef>& g
                     auto llvm_bit_size = bit_size_value.get_const();
                     auto bit_size = LLVMConstIntGetSExtValue(llvm_bit_size);
                     if (bit_size <= 0) {
-                        message(Severity::ERROR, bit_field->expr->location) << "bit field '" << member->identifier << "' has invalid width ("
+                        message(Severity::ERROR, bit_field->expr->location) << "bit field '" << *member->identifier << "' has invalid width ("
                                                                                              << bit_size << " bits)\n";
                         continue;
                     }
 
                     if (bit_size > integer_type->num_bits()) {
-                        message(Severity::ERROR, bit_field->expr->location) << "width of bit field '" << member->identifier
+                        message(Severity::ERROR, bit_field->expr->location) << "width of bit field '" << *member->identifier
                                                                                               << "' (" << bit_size << " bits) exceeds width of its type '"
                                                                                               << PrintType(integer_type) << "' (" << integer_type->num_bits() << " bits)\n";
                         continue;
@@ -656,7 +656,7 @@ LLVMTypeRef StructuredType::build_llvm_struct_type(const vector<LLVMValueRef>& g
                     bits_to_left -= bit_size;
 
                 } else {
-                    message(Severity::ERROR, member->location) << "bit field '" << member->identifier << "' has non-integer type '" << PrintType(member->type) << "'\n";
+                    message(Severity::ERROR, member->location) << "bit field '" << *member->identifier << "' has non-integer type '" << PrintType(member->type) << "'\n";
                 }
             }
 
@@ -666,7 +666,7 @@ LLVMTypeRef StructuredType::build_llvm_struct_type(const vector<LLVMValueRef>& g
             
             // Anonymous struct or union?
             LLVMTypeRef llvm_member_type{};
-            if (member->identifier.empty()) {
+            if (member->identifier->empty()) {
                 if (auto structured_member_type = dynamic_cast<const StructuredType*>(member->type)) {
                     llvm_member_type = structured_member_type->build_llvm_struct_type(member_variable->member->gep_indices, nullptr);
                 }
@@ -712,7 +712,7 @@ LLVMTypeRef StructuredType::build_llvm_struct_type(const vector<LLVMValueRef>& g
 
 LLVMTypeRef StructuredType::cache_llvm_type() const {
     const char* name{};
-    if (tag && !tag->identifier.empty()) name = tag->identifier.c_str();
+    if (tag && !tag->identifier->empty()) name = tag->identifier->data();
     if (!name) name = "anon";
 
     return build_llvm_struct_type({TranslationUnitContext::it->zero_int}, name);
@@ -881,7 +881,7 @@ LLVMTypeRef TypeDefType::llvm_type() const {
 }
 
 void TypeDefType::message_print(ostream& stream, int section) const {
-    if (section == 0) stream << *declarator->identifier.text;
+    if (section == 0) stream << *declarator->identifier;
 }
 
 void TypeDefType::print(ostream& stream) const {

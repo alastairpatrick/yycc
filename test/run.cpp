@@ -223,7 +223,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
             }
 
             sort(declarators.begin(), declarators.end(), [](Declarator* a, Declarator* b) {
-                return *a->identifier.text < *b->identifier.text;
+                return *a->identifier < *b->identifier;
             });
 
             stringstream global_stream;

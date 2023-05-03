@@ -80,7 +80,8 @@ TokenKind Preprocessor::next_pp_token() {
 
     if (token == TOK_IDENTIFIER) {
         identifier = Identifier();
-        identifier.text = evaluate_identifier(lexer.text());
+        identifier.text = intern_string(lexer.text());
+        identifier.at_file_scope = evaluate_identifier(lexer.text());
     }
 
     return token;

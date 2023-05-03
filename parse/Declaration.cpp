@@ -63,11 +63,11 @@ ostream& operator<<(ostream& stream, const vector<Declaration*>& items) {
     return stream << ']';
 }
 
-Declarator::Declarator(const Declaration* declaration, const Type* type, const Identifier &identifier, const Location& location)
+Declarator::Declarator(const Declaration* declaration, const Type* type, InternedString identifier, const Location& location)
     : primary(this), LocationNode(location), declaration(declaration), type(type), identifier(identifier) {
 }
 
-Declarator::Declarator(const Declaration* declaration, const Identifier &identifier, const Location& location)
+Declarator::Declarator(const Declaration* declaration, InternedString identifier, const Location& location)
     : primary(this), LocationNode(location), declaration(declaration), identifier(identifier) {
 }
 
@@ -161,7 +161,7 @@ VisitDeclaratorOutput Variable::accept(Visitor& visitor, const VisitDeclaratorIn
 void Variable::print(ostream& stream) const {
     stream << "[\"var\", \"" << linkage << storage_duration;
 
-    stream << "\", " << declarator->type << ", \"" << declarator->identifier  << "\"";
+    stream << "\", " << declarator->type << ", \"" << *declarator->identifier  << "\"";
     if (initializer) {
         stream << ", " << initializer;
     }
@@ -198,12 +198,12 @@ void Function::print(ostream& stream) const {
         stream << 'i';
     }
 
-    stream << "\", " << declarator->type << ", \"" << declarator->identifier << '"';
+    stream << "\", " << declarator->type << ", \"" << *declarator->identifier << '"';
     if (body) {
         stream << ", [";
         for (auto i = 0; i < parameters.size(); ++i) {
             if (i != 0) stream << ", ";
-            auto identifier = parameters[i]->identifier;
+            auto identifier = *parameters[i]->identifier;
             stream << '"' << identifier << '"';
         }
         stream << "], " << body;
@@ -244,7 +244,7 @@ VisitDeclaratorOutput TypeDef::accept(Visitor& visitor, const VisitDeclaratorInp
 }
 
 void TypeDef::print(ostream& stream) const {
-    stream << "[\"typedef\", " << declarator->type << ", \"" << declarator->identifier  << "\"]";
+    stream << "[\"typedef\", " << declarator->type << ", \"" << *declarator->identifier  << "\"]";
 }
 
 EnumConstant::EnumConstant(Declarator* declarator)
@@ -272,7 +272,7 @@ VisitDeclaratorOutput EnumConstant::accept(Visitor& visitor, const VisitDeclarat
 }
 
 void EnumConstant::print(ostream& stream) const {
-    stream << "[\"ec\", \"" << declarator->identifier << '"';
+    stream << "[\"ec\", \"" << *declarator->identifier << '"';
     if (ready) {
         stream << ", " << value;
     } else {

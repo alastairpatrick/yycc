@@ -155,7 +155,7 @@ VisitStatementOutput EntityExpr::accept(Visitor& visitor, const VisitStatementIn
 }
 
 void EntityExpr::print(ostream& stream) const {
-    stream << "\"N" << declarator->identifier << '"';
+    stream << "\"N" << *declarator->identifier << '"';
 }
 
 

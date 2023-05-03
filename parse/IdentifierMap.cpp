@@ -4,7 +4,9 @@
 
 Declarator* IdentifierMap::lookup_declarator(const Identifier& identifier) const {
     for (auto& scope : scopes) {
-        auto it = scope.declarator_map.find(identifier.text);
+        InternedString identifier_string = &scope == &scopes.back() ? identifier.at_file_scope : identifier.text;
+
+        auto it = scope.declarator_map.find(identifier_string);
         if (it != scope.declarator_map.end()) {
             // Note that this intentionally does _not_ always return the primary. For reporting errors
             // it is better to return a declarator that is currently in scope. The primary declarator
@@ -17,18 +19,20 @@ Declarator* IdentifierMap::lookup_declarator(const Identifier& identifier) const
 }
 
 Declarator* IdentifierMap::add_declarator(IdentifierScope add_scope, const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location, Declarator* primary) {
-    if (identifier.empty()) return new Declarator(declaration, type, identifier, location);
+    InternedString identifier_string = add_scope == IdentifierScope::FILE ? identifier.at_file_scope : identifier.text;
+    if (identifier_string->empty()) return new Declarator(declaration, type, identifier_string, location);
 
     Scope& scope = add_scope == IdentifierScope::FILE ? scopes.back() : scopes.front();
+
     Declarator* new_declarator{};
     Declarator* existing_declarator{};
 
-    auto it = scope.declarator_map.find(identifier.text);
+    auto it = scope.declarator_map.find(identifier_string);
     if (it != scope.declarator_map.end()) {
         existing_declarator = it->second;
         if (!existing_declarator->type) {
             new_declarator = existing_declarator;
-            assert(new_declarator->identifier.text == identifier.text);
+            assert(new_declarator->identifier == identifier_string);
 
             new_declarator->declaration = declaration;
             new_declarator->type = type;
@@ -37,7 +41,7 @@ Declarator* IdentifierMap::add_declarator(IdentifierScope add_scope, const Decla
     }
 
     if (!new_declarator) {
-        new_declarator = new Declarator(declaration, type, identifier, location);
+        new_declarator = new Declarator(declaration, type, identifier_string, location);
 
         if (existing_declarator) {
             assert(!primary || existing_declarator->primary == primary);
@@ -48,7 +52,7 @@ Declarator* IdentifierMap::add_declarator(IdentifierScope add_scope, const Decla
 
         } else {
             existing_declarator = new_declarator;
-            scope.declarator_map[identifier.text] = new_declarator;
+            scope.declarator_map[identifier_string] = new_declarator;
 
             if (primary) {
                 new_declarator->primary = primary;

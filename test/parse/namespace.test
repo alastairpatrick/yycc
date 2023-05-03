@@ -179,3 +179,46 @@ int x = sort;
 PARSE
 EXPECT_AST
 [["var","ES","Si","std::sort"],["var","ES","Si","x","Nstd::sort"]]
+
+
+
+BEGIN Namespace does not affect identifiers declared at block scope
+#namespace X::Y::Z
+void f() {
+    int x;
+}
+PARSE
+EXPECT_AST
+[["fun","E",["F","V"],"X::Y::Z::f",[],["block",[["var","","Si","x"]]]]]
+
+
+BEGIN Namespace does not affect struct members
+#namespace X::Y::Z
+struct S {
+    int x;
+} z;
+EXPECT_AST
+[["var","ES",["STRUCT",[["x","Si"]]],"X::Y::Z::z"]]
+
+
+BEGIN Namespace affects enum constants
+#namespace X::Y::Z
+enum E {
+    A,
+} z;
+EXPECT_AST
+[["var","ES",["ENUM",[["ec","X::Y::Z::A"]]],"X::Y::Z::z"]]
+
+
+BEGIN Namespace does not affects enum constants with block scope
+#namespace X::Y::Z
+void f() {
+    enum E {
+        A,
+    } z;
+}
+PARSE
+EXPECT_AST
+[["fun","E",["F","V"],"X::Y::Z::f",[],["block",[
+    ["var","",["ENUM",[["ec","A"]]],"z"]
+]]]]

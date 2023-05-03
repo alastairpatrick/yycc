@@ -31,7 +31,7 @@ Statement* Parser::parse_standalone_statement() {
 void Parser::consume() {
     while (token) {
         if (token == TOK_IDENTIFIER && preparse) {
-            identifier_tokens.insert(preprocessor.identifier.text);
+            identifier_tokens.insert(preprocessor.identifier.at_file_scope);
         }
 
         token = preprocessor.next_token();
@@ -218,7 +218,7 @@ Declaration* Parser::parse_declaration(IdentifierScope scope) {
             ParseDeclaratorFlags flags = { .allow_identifier = true, .allow_initializer = true };
             if (declarator_count == 0) flags.allow_function_definition = true;
             auto declarator = parse_declarator(declaration, base_type, specifiers, flags, &last_declarator);
-            if (!declarator->identifier.empty() || allow_abstract_declarator(scope)) {
+            if (!declarator->identifier->empty() || allow_abstract_declarator(scope)) {
                 declaration->declarators.push_back(declarator);
                 ++declarator_count;
             }
@@ -525,7 +525,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
                 // C11 6.7.2.1p13 anonymous structs and unions
                 if (dynamic_cast<const StructuredType*>(member_declaration->type) && member_declaration->declarators.empty()) {
-                    auto member_declarator = new Declarator(member_declaration, member_declaration->type, Identifier(), member_declaration->location);
+                    auto member_declarator = new Declarator(member_declaration, member_declaration->type, empty_interned_string, member_declaration->location);
                     member_declarator->delegate = new Variable(member_declarator, Linkage::NONE, StorageDuration::AGGREGATE);
                     member_declaration->declarators.push_back(member_declarator);
                 }
@@ -585,7 +585,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                     }
                 }
 
-                auto declarator = identifiers.add_declarator(IdentifierScope::STRUCTURED, declaration, enum_type, identifier, location);
+                auto declarator = identifiers.add_declarator(declaration->scope, declaration, enum_type, identifier, location);
                 auto enum_constant = new EnumConstant(declarator, enum_type, constant);
                 declarator->delegate = enum_constant;
 

@@ -15,3 +15,8 @@ InternedString intern_string(string_view source) {
     auto& inserted = strings.back();
     return &*views.insert(string_view(inserted.c_str())).first;
 }
+
+const char* c_str(InternedString str) {
+    if (str->empty()) return "";
+    return str->data();
+}

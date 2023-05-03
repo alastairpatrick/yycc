@@ -10,5 +10,6 @@ typedef const string_view* InternedString;
 extern InternedString empty_interned_string;
 
 InternedString intern_string(string_view source);
+const char* c_str(InternedString str);
 
 #endif

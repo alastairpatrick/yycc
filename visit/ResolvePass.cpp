@@ -41,7 +41,7 @@ struct ResolvePass: Visitor {
             stream << "redeclaration";
         }
         
-        stream << " of " << secondary->delegate->error_kind() << " '" << secondary->identifier << "'";
+        stream << " of " << secondary->delegate->error_kind() << " '" << *secondary->identifier << "'";
         
         if (problem) {
             stream << ' ' << problem;
@@ -98,7 +98,7 @@ struct ResolvePass: Visitor {
     void composite_entity(Declarator* primary, Entity* primary_entity, Declarator* secondary, Entity* secondary_entity) {
         if (primary_entity->linkage == Linkage::NONE || secondary_entity->linkage == Linkage::NONE) {
             if (primary->is_member()) {
-                message(Severity::ERROR, secondary->location) << "duplicate member '" << primary->identifier << "'...\n";
+                message(Severity::ERROR, secondary->location) << "duplicate member '" << *primary->identifier << "'...\n";
                 see_other_message(primary->location);
             } else {
                 redeclaration_message(Severity::ERROR, secondary, primary->location, "with no linkage");
@@ -149,7 +149,7 @@ struct ResolvePass: Visitor {
             }
 
             if (primary->type->partition() == TypePartition::INCOMPLETE) {
-                message(Severity::ERROR, primary->location) << primary_entity->error_kind() << " '" << primary->identifier << "' has incomplete type\n";
+                message(Severity::ERROR, primary->location) << primary_entity->error_kind() << " '" << *primary->identifier << "' has incomplete type\n";
                 primary->type = IntegerType::default_type();
             }
 
@@ -235,13 +235,13 @@ struct ResolvePass: Visitor {
         unordered_map<InternedString, Declarator*> a_members;
         for (auto a_declaration: a_union->declarations) {
             for (auto a_member: a_declaration->declarators) {
-                a_members.insert(make_pair(a_member->identifier.text, a_member));
+                a_members.insert(make_pair(a_member->identifier, a_member));
             }
         }
 
         for (auto b_declaration: b_union->declarations) {
             for (auto b_member: b_declaration->declarators) {
-                auto it = a_members.find(b_member->identifier.text);
+                auto it = a_members.find(b_member->identifier);
                 if (it == a_members.end()) return false;
                 if (!compare_types(it->second->type, b_member->type)) return false;
             }
@@ -255,13 +255,13 @@ struct ResolvePass: Visitor {
         
         unordered_map<InternedString, Declarator*> a_constants;
         for (auto declarator: a_enum->constants) {
-            a_constants.insert(make_pair(declarator->identifier.text, declarator));
+            a_constants.insert(make_pair(declarator->identifier, declarator));
         }
 
         for (auto b_declarator: b_enum->constants) {
-            auto it = a_constants.find(b_declarator->identifier.text);
+            auto it = a_constants.find(b_declarator->identifier);
             if (it == a_constants.end()) {
-                message(Severity::ERROR, b_declarator->location) << "enum constant '" << b_declarator->identifier << "'...\n";
+                message(Severity::ERROR, b_declarator->location) << "enum constant '" << *b_declarator->identifier << "'...\n";
                 message(Severity::INFO, a_enum->location) << "...missing from other definition\n";
                 pause_messages();
                 return false;
@@ -271,7 +271,7 @@ struct ResolvePass: Visitor {
             auto b_enum_constant = b_declarator->enum_constant();
             auto a_enum_constant = a_declarator->enum_constant();
             if (b_enum_constant->value != a_enum_constant->value) {
-                message(Severity::ERROR, b_declarator->location) << "incompatible enum constant '" << b_declarator->identifier << "' value " << b_enum_constant->value << "...\n";
+                message(Severity::ERROR, b_declarator->location) << "incompatible enum constant '" << *b_declarator->identifier << "' value " << b_enum_constant->value << "...\n";
                 message(Severity::INFO, a_declarator->location) << "...versus " << a_enum_constant->value << " here\n";
                 pause_messages();
                 return false;
@@ -286,7 +286,7 @@ struct ResolvePass: Visitor {
         bool b_has_tag = b_type->tag;
         if (a_has_tag != b_has_tag) return false;
         
-        if (a_has_tag && b_has_tag && a_type->tag->identifier.text != b_type->tag->identifier.text) return false;
+        if (a_has_tag && b_has_tag && a_type->tag->identifier != b_type->tag->identifier) return false;
 
         return true;
     }
@@ -317,7 +317,7 @@ struct ResolvePass: Visitor {
                         auto a_declarator = a_declaration->declarators[i];
                         auto b_declarator = b_declaration->declarators[i];
 
-                        if (a_declarator->identifier.text != b_declarator->identifier.text) return nullptr;
+                        if (a_declarator->identifier != b_declarator->identifier) return nullptr;
                         if (!compare_types(a_declarator->type, b_declarator->type)) return nullptr;
 
                         // TODO bitfield size, etc
@@ -576,7 +576,7 @@ struct ResolvePass: Visitor {
         primary->status = DeclaratorStatus::RESOLVING;
 
         if (!primary->type) {
-            message(Severity::ERROR, primary->location) << "declaration directive not matched with a proper declaration of '" << primary->identifier << "'\n";
+            message(Severity::ERROR, primary->location) << "declaration directive not matched with a proper declaration of '" << *primary->identifier << "'\n";
             primary->type = IntegerType::default_type();
             primary->delegate = new Variable(primary, Linkage::NONE, StorageDuration::STATIC);
         }
@@ -599,7 +599,7 @@ struct ResolvePass: Visitor {
                 }
             } catch (ResolutionCycle) {
                 if (!is_trivially_cyclic(primary, declarator->type)) {
-                    message(Severity::ERROR, declarator->location) << "recursive definition of '" << declarator->identifier << "'\n";
+                    message(Severity::ERROR, declarator->location) << "recursive definition of '" << *declarator->identifier << "'\n";
                     pause_messages();
                 }
             }
@@ -620,7 +620,7 @@ struct ResolvePass: Visitor {
                 try {
                     secondary->type = resolve(secondary->type);
                 } catch (ResolutionCycle) {
-                    message(Severity::ERROR, secondary->location) << "recursive definition of '" << secondary->identifier << "'\n";
+                    message(Severity::ERROR, secondary->location) << "recursive definition of '" << *secondary->identifier << "'\n";
                     pause_messages();
                 }
 
@@ -632,7 +632,7 @@ struct ResolvePass: Visitor {
                 declarator = declarator->next;
             }
             primary->type = IntegerType::default_type();
-            message(Severity::ERROR, declarator->location) << "'" << declarator->identifier << "' undeclared\n";
+            message(Severity::ERROR, declarator->location) << "'" << *declarator->identifier << "' undeclared\n";
         }
 
         primary->next = nullptr;
