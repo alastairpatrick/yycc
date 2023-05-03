@@ -6,10 +6,12 @@
 #include "Message.h"
 
 Preprocessor::Preprocessor(bool preparse): preparse(preparse), text_stream(string_stream) {
+    reset_namespace();
 }
 
 Preprocessor::Preprocessor(string_view input, bool preparse): Preprocessor(preparse) {
     lexer.buffer(input);
+    reset_namespace();
 }
 
 void Preprocessor::in(const Input& input) {
@@ -31,9 +33,9 @@ TokenKind Preprocessor::next_token() {
               commit_token();
               return token;
           } case TOK_IDENTIFIER: {
-              id_lexer.buffer(text());
+              id_lexer.buffer(*identifier.at_file_scope);
               token = id_lexer.next_token();
-              if (id_lexer.size() != lexer.fragment().length) {
+              if (id_lexer.size() != identifier.at_file_scope->size()) {
                   token = TOK_IDENTIFIER;
               }
               commit_token();
@@ -249,9 +251,57 @@ void Preprocessor::handle_pragma_directive() {
     skip_to_eol();
 }
 
-void Preprocessor::handle_namespace_directive() {
+void Preprocessor::reset_namespace() {
     current_namespace_prefix.clear();
     namespace_handles.clear();
+
+    add_keyword("::auto");
+    add_keyword("::_Bool");
+    add_keyword("::break");
+    add_keyword("::case");
+    add_keyword("::char");
+    add_keyword("::_Complex");
+    add_keyword("::const");
+    add_keyword("::continue");
+    add_keyword("::default");
+    add_keyword("::do");
+    add_keyword("::double");
+    add_keyword("::else");
+    add_keyword("::enum");
+    add_keyword("::extern");
+    add_keyword("::float");
+    add_keyword("::for");
+    add_keyword("::goto");
+    add_keyword("::if");
+    add_keyword("::_Imaginary");
+    add_keyword("::inline");
+    add_keyword("::int");
+    add_keyword("::long");
+    add_keyword("::register");
+    add_keyword("::restrict");
+    add_keyword("::return");
+    add_keyword("::short");
+    add_keyword("::signed");
+    add_keyword("::sizeof");
+    add_keyword("::static");
+    add_keyword("::struct");
+    add_keyword("::switch");
+    add_keyword("::typedef");
+    add_keyword("::typeof");
+    add_keyword("::typeof_unqual");
+    add_keyword("::union");
+    add_keyword("::unsigned");
+    add_keyword("::void");
+    add_keyword("::volatile");
+    add_keyword("::while");
+}
+
+void Preprocessor::add_keyword(string_view id) {
+    namespace_handles[intern_string(id.substr(2))] = intern_string(id.substr(2));
+}
+
+void Preprocessor::handle_namespace_directive() {
+    reset_namespace();
 
     next_pp_token();
     if (token != TOK_IDENTIFIER) return;

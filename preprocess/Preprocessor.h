@@ -50,6 +50,8 @@ private:
     void handle_pragma_directive();
     void handle_type_directive();
 
+    void reset_namespace();
+    void add_keyword(string_view id);
     void handle_namespace_directive();
     void handle_using_directive();
     InternedString evaluate_identifier(string_view text) const;

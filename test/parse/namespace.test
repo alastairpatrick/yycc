@@ -222,3 +222,18 @@ EXPECT_AST
 [["fun","E",["F","V"],"X::Y::Z::f",[],["block",[
     ["var","",["ENUM",[["ec","A"]]],"z"]
 ]]]]
+
+
+BEGIN Can alias keywords with using directive
+#using my_int = int
+my_int x;
+EXPECT_AST
+[["var","ES","Si","x"]]
+
+
+BEGIN Can alias keywords with using directive within namespace
+#namespace X::Y::Z
+#using my_int = int
+my_int x;
+EXPECT_AST
+[["var","ES","Si","X::Y::Z::x"]]
