@@ -22,15 +22,9 @@ struct DeclarationMarker {
         while (todo.size()) {
             auto it = todo.begin();
             auto declaration = *it;
-            assert(declaration->fragment.length);
 
-            PPTokenLexer lexer;
-            lexer.buffer(declaration->fragment.text(input));
-            for (;;) {
-                TokenKind token = TokenKind(lexer.next_token());
-                if (!token) break;
-                if (token != TOK_IDENTIFIER) continue;
-                lookup(Identifier(lexer.text()));
+            for (auto name: declaration->identifier_tokens) {
+                lookup(Identifier(name));
             }
 
             todo.erase(it);

@@ -42,6 +42,7 @@ struct Parser {
     IdentifierMap& identifiers;
     const bool preparse;
     vector<OrderIndependentScope> order_independent_scopes;
+    unordered_set<InternedString> identifier_tokens;
 
     Parser(Preprocessor& preprocessor, IdentifierMap& identifiers);
     void operator=(const Parser&) = delete;
