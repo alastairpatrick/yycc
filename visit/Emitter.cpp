@@ -817,7 +817,7 @@ struct Emitter: Visitor {
         return LLVMRealPredicate(0);
     }
 
-    Value emit_regular_binary_operation(BinaryExpr* expr, Value left_value, Value right_value, const Location& left_location, const Location& right_location) {
+    Value emit_scalar_binary_operation(BinaryExpr* expr, Value left_value, Value right_value, const Location& left_location, const Location& right_location) {
         OperatorFlags op_flags = operator_flags(expr->op);
         auto convert_type = (op_flags & OP_AS_LEFT_RESULT) ? left_value.type : usual_arithmetic_conversions(left_value.type, right_value.type);
         if (!convert_type) return Value();
@@ -921,23 +921,31 @@ struct Emitter: Visitor {
         return Value();
     }
 
-    Value emit_pointer_arithmetic_operation(BinaryExpr* expr, const PointerType* pointer_type, Value left_value, Value right_value) {
+    Value emit_pointer_binary_operation(BinaryExpr* expr, Value left_value, Value right_value, const Location &left_location, const Location& right_location) {
         auto llvm_target_data = TranslationUnitContext::it->llvm_target_data;
+        auto left_pointer_type = type_cast<PointerType>(left_value.type);
+        auto right_pointer_type = type_cast<PointerType>(right_value.type);
 
         if (expr->op == '+' || expr->op == TOK_ADD_ASSIGN) {
-            if (outcome == EmitOutcome::TYPE) return Value(pointer_type);
+            right_value = convert_to_type(right_value, promote_integer(right_value.type), ConvKind::IMPLICIT, right_location);
+            if (!type_cast<IntegerType>(right_value.type)) return Value();
+
+            if (outcome == EmitOutcome::TYPE) return Value(left_pointer_type);
 
             LLVMValueRef index = get_rvalue(right_value);
-            return Value(pointer_type, LLVMBuildGEP2(builder, pointer_type->base_type->llvm_type(), get_rvalue(left_value), &index, 1, ""));
+
+            return Value(left_pointer_type, LLVMBuildGEP2(builder, left_pointer_type->base_type->llvm_type(), get_rvalue(left_value), &index, 1, ""));
 
         } else if (expr->op == '-') {
+            // todo check right hand side has appropriate pointer type
+            // todo support subtraction of integer from pointer
             auto result_type = IntegerType::of_size(IntegerSignedness::SIGNED);
             if (outcome == EmitOutcome::TYPE) return Value(result_type);
             
             auto left_int = LLVMBuildPtrToInt(builder, get_rvalue(left_value), result_type->llvm_type(), "");
             auto right_int = LLVMBuildPtrToInt(builder, get_rvalue(right_value), result_type->llvm_type(), "");
             auto byte_diff = LLVMBuildSub(builder, left_int, right_int, "");
-            auto size_of_base_type = LLVMStoreSizeOfType(llvm_target_data, pointer_type->base_type->llvm_type());
+            auto size_of_base_type = LLVMStoreSizeOfType(llvm_target_data, left_pointer_type->base_type->llvm_type());
             auto result = LLVMBuildSDiv(builder, byte_diff, LLVMConstInt(result_type->llvm_type(), size_of_base_type, true), "");
             return Value(result_type, result);
         }
@@ -971,11 +979,11 @@ struct Emitter: Visitor {
 
         Value intermediate;
         if (left_pointer_type) {
-            intermediate = emit_pointer_arithmetic_operation(expr, left_pointer_type, left_value, right_value);
+            intermediate = emit_pointer_binary_operation(expr, left_value, right_value, expr->left->location, expr->right->location);
         } else if (right_pointer_type) {
-            intermediate = emit_pointer_arithmetic_operation(expr, right_pointer_type, right_value, left_value);
+            intermediate = emit_pointer_binary_operation(expr, right_value, left_value, expr->right->location, expr->left->location);
         } else {
-            intermediate = emit_regular_binary_operation(expr, left_value, right_value, expr->left->location, expr->right->location);
+            intermediate = emit_scalar_binary_operation(expr, left_value, right_value, expr->left->location, expr->right->location);
         }
 
         if (!intermediate.is_valid()) {
