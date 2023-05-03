@@ -606,7 +606,7 @@ LLVMTypeRef StructuredType::build_llvm_struct_type(const vector<LLVMValueRef>& g
                 if (auto integer_type = dynamic_cast<const IntegerType*>(member->type)) {
                     auto bit_size_value = fold_expr(member_variable->member->bit_field->expr);
                     if (!bit_size_value.is_const_integer()) {
-                        message(Severity::ERROR, bit_field->expr->location) << "bit field '" << *member->identifier.name << "' must have integer type, not '"
+                        message(Severity::ERROR, bit_field->expr->location) << "bit field '" << member->identifier << "' must have integer type, not '"
                                                                                              << PrintType(bit_size_value.type) << "'\n";
                         continue;
                     }
@@ -614,13 +614,13 @@ LLVMTypeRef StructuredType::build_llvm_struct_type(const vector<LLVMValueRef>& g
                     auto llvm_bit_size = bit_size_value.get_const();
                     auto bit_size = LLVMConstIntGetSExtValue(llvm_bit_size);
                     if (bit_size <= 0) {
-                        message(Severity::ERROR, bit_field->expr->location) << "bit field '" << *member->identifier.name << "' has invalid width ("
+                        message(Severity::ERROR, bit_field->expr->location) << "bit field '" << member->identifier << "' has invalid width ("
                                                                                              << bit_size << " bits)\n";
                         continue;
                     }
 
                     if (bit_size > integer_type->num_bits()) {
-                        message(Severity::ERROR, bit_field->expr->location) << "width of bit field '" << *member->identifier.name
+                        message(Severity::ERROR, bit_field->expr->location) << "width of bit field '" << member->identifier
                                                                                               << "' (" << bit_size << " bits) exceeds width of its type '"
                                                                                               << PrintType(integer_type) << "' (" << integer_type->num_bits() << " bits)\n";
                         continue;
@@ -656,7 +656,7 @@ LLVMTypeRef StructuredType::build_llvm_struct_type(const vector<LLVMValueRef>& g
                     bits_to_left -= bit_size;
 
                 } else {
-                    message(Severity::ERROR, member->location) << "bit field '" << *member->identifier.name << "' has non-integer type '" << PrintType(member->type) << "'\n";
+                    message(Severity::ERROR, member->location) << "bit field '" << member->identifier << "' has non-integer type '" << PrintType(member->type) << "'\n";
                 }
             }
 
@@ -849,11 +849,11 @@ LLVMTypeRef UnboundType::llvm_type() const {
 }
 
 void UnboundType::message_print(ostream& stream, int section) const {
-    if (section == 0) stream << *identifier.name;
+    if (section == 0) stream << identifier;
 }
 
 void UnboundType::print(ostream& stream) const {
-    stream << "\"N" << *identifier.name << '"';
+    stream << "\"N" << identifier << '"';
 }
 
 UnboundType::UnboundType(const Identifier& identifier)

@@ -574,7 +574,7 @@ struct ResolvePass: Visitor {
         primary->status = DeclaratorStatus::RESOLVING;
 
         if (!primary->type) {
-            message(Severity::ERROR, primary->location) << "declaration directive not matched with a proper declaration of '" << *primary->identifier.name << "'\n";
+            message(Severity::ERROR, primary->location) << "declaration directive not matched with a proper declaration of '" << primary->identifier << "'\n";
             primary->type = IntegerType::default_type();
             primary->delegate = new Variable(primary, Linkage::NONE, StorageDuration::STATIC);
         }

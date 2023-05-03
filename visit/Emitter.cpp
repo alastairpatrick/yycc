@@ -660,7 +660,7 @@ struct Emitter: Visitor {
             if (statement->expr) {
                 auto type = get_expr_type(statement->expr);
                 if (type->unqualified() != &VoidType::it) {
-                    message(Severity::ERROR, statement->expr->location) << "void function '" << *function_declarator->identifier.name << "' should not return a value\n";
+                    message(Severity::ERROR, statement->expr->location) << "void function '" << function_declarator->identifier << "' should not return a value\n";
                 }
             }
             LLVMBuildRetVoid(builder);
@@ -669,7 +669,7 @@ struct Emitter: Visitor {
             if (statement->expr) {
                 value = convert_to_type(statement->expr, function_type->return_type->unqualified(), ConvKind::IMPLICIT);
             } else {
-                message(Severity::ERROR, statement->location) << "non-void function '" << *function_declarator->identifier.name << "' should return a value\n";
+                message(Severity::ERROR, statement->location) << "non-void function '" << function_declarator->identifier << "' should return a value\n";
                 value = Value(function_type->return_type, LLVMConstNull(function_type->return_type->llvm_type()));
             }
             LLVMBuildRet(builder, get_rvalue(value));
@@ -1090,7 +1090,7 @@ struct Emitter: Visitor {
 
         if (auto enum_constant = declarator->enum_constant()) {
             if (!enum_constant->ready) {
-                message(Severity::ERROR, expr->location) << "enum constant '" << *declarator->identifier.name << "' not yet available\n";
+                message(Severity::ERROR, expr->location) << "enum constant '" << declarator->identifier << "' not yet available\n";
             }
 
             auto type = result_type;
@@ -1158,7 +1158,7 @@ struct Emitter: Visitor {
         if (auto struct_type = type_cast<StructuredType>(object_type)) {
             auto it = struct_type->scope.declarator_map.find(expr->identifier.name);
             if (it == struct_type->scope.declarator_map.end()) {
-                message(Severity::ERROR, expr->location) << "no member named '" << *expr->identifier.name << "' in '" << PrintType(struct_type) << "'\n";
+                message(Severity::ERROR, expr->location) << "no member named '" << expr->identifier << "' in '" << PrintType(struct_type) << "'\n";
                 pause_messages();
                 return VisitStatementOutput(Value::of_zero_int());
             }

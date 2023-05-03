@@ -222,7 +222,7 @@ void MemberExpr::print(ostream& stream) const {
         stream << "->";
     }
 
-    stream << "\", " << object << ", \"" << *identifier.name << "\"]";
+    stream << "\", " << object << ", \"" << identifier << "\"]";
 }
 
 
