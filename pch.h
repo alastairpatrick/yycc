@@ -4,6 +4,7 @@
 #include "llvm-c/ExecutionEngine.h"
 #include "llvm-c/Target.h"
 #include "llvm-c/TargetMachine.h"
+#include "llvm-c/Transforms/PassBuilder.h"
 
 #include "reflex/matcher.h"
 #include "reflex/abslexer.h"

@@ -47,10 +47,16 @@ int main(int argc, const char* argv[]) {
     auto resolved_module = resolve_pass(declarations, identifiers.scopes.back());
 
     EmitOptions options;
-    auto module = emit_pass(resolved_module, options);
+    auto llvm_module = emit_pass(resolved_module, options);
     
+    auto pass_builder_options = LLVMCreatePassBuilderOptions();
+
+    LLVMRunPasses(llvm_module, "default<O0>", g_llvm_target_machine, pass_builder_options);
+
+    LLVMDisposePassBuilderOptions(pass_builder_options);
+
     char* error{};
-    LLVMTargetMachineEmitToFile(g_llvm_target_machine, module, "generated.asm", LLVMAssemblyFile, &error);
+    LLVMTargetMachineEmitToFile(g_llvm_target_machine, llvm_module, "generated.asm", LLVMAssemblyFile, &error);
     LLVMDisposeMessage(error);
 
     return context.highest_severity == Severity::INFO ? EXIT_SUCCESS : EXIT_FAILURE;
