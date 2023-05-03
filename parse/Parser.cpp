@@ -1253,7 +1253,7 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
                 consume_required(')');
                 auto expr = parse_sub_expr(SubExpressionKind::CAST);
 
-                if (is_assignment_token(token)) {
+                if (operator_flags(token) & OP_ASSIGN) {
                     message(Severity::ERROR, preprocessor.location()) << "cast expression is not assignable\n";
                 }
 

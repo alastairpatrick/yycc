@@ -8,6 +8,13 @@ extern "C" {
 #endif
 
 typedef enum {
+    OP_ASSIGN             = 0x01,
+    OP_BOOL_RESULT        = 0x02,
+    OP_AS_LEFT_RESULT     = 0x04,
+
+} OperatorFlags;
+
+typedef enum {
     LEFT_ASSOCIATIVE,
     RIGHT_ASSOCIATIVE,
 } OperatorAssoc;
@@ -32,12 +39,12 @@ typedef enum {
 typedef struct {
     OperatorAssoc assoc;
     OperatorPrec prec;
-    bool is_assignment;
+    OperatorFlags op_flags;
 } AssocPrec;
 
 extern const AssocPrec g_assoc_prec[];
 
-bool is_assignment_token(int token);
+OperatorFlags operator_flags(int token);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -818,12 +818,12 @@ struct Emitter: Visitor {
     }
 
     Value emit_regular_binary_operation(BinaryExpr* expr, Value left_value, Value right_value, const Location& left_location, const Location& right_location) {
-        bool is_assign = is_assignment_token(expr->op);
-        auto convert_type = is_assign ? left_value.type : usual_arithmetic_conversions(left_value.type, right_value.type);
+        OperatorFlags op_flags = operator_flags(expr->op);
+        auto convert_type = (op_flags & OP_AS_LEFT_RESULT) ? left_value.type : usual_arithmetic_conversions(left_value.type, right_value.type);
         if (!convert_type) return Value();
 
         auto result_type = convert_type;
-        if (llvm_float_predicate(expr->op)) {
+        if (op_flags & OP_BOOL_RESULT) {
             result_type = IntegerType::of_bool();
         }
 
@@ -987,7 +987,7 @@ struct Emitter: Visitor {
 
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(intermediate);
 
-        if (is_assignment_token(expr->op)) {
+        if (operator_flags(expr->op) & OP_ASSIGN) {
             store_value(left_value, intermediate, expr->location);
         }
 
