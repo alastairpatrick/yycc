@@ -73,11 +73,15 @@ TokenKind Preprocessor::next_pp_token() {
 
         lexer.pop_matcher();
 
-        auto location = include_stack.back();
-        include_stack.pop_back();
+        auto& context = include_stack.back();
 
-        lexer.lineno(location.line);
-        lexer.set_filename(location.filename);
+        lexer.lineno(context.location.line);
+        lexer.set_filename(context.location.filename);
+
+        current_namespace_prefix = move(context.current_namespace_prefix);
+        namespace_handles = move(context.namespace_handles);
+
+        include_stack.pop_back();
     }
 
     if (token == TOK_IDENTIFIER) {
@@ -237,7 +241,12 @@ void Preprocessor::handle_include_directive() {
         skip_to_eol();
     }
 
-    include_stack.push_back(lexer.location());
+    IncludeContext context;
+    context.location = lexer.location();
+    context.current_namespace_prefix = current_namespace_prefix;
+    context.namespace_handles = namespace_handles;
+
+    include_stack.push_back(context);
 
     auto matcher = lexer.new_matcher();
     matcher->buffer((char*) file->text.c_str(), file->text.length() + 1);

@@ -9,12 +9,18 @@
 #include "lex/Token.h"
 #include "TextStream.h"
 
+struct IncludeContext {
+    Location location;
+    string current_namespace_prefix;
+    unordered_map<InternedString, InternedString> namespace_handles;
+};
+
 struct Preprocessor {
     const bool preparse;
     TokenKind token;
     Fragment fragment;    
     Identifier identifier;
-    vector<Location> include_stack;
+    vector<IncludeContext> include_stack;
     string current_namespace_prefix;
     unordered_map<InternedString, InternedString> namespace_handles;
 
