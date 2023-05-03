@@ -93,7 +93,7 @@ struct ResolvePass: Visitor {
         return composite_type(type, ResolvedArrayType::of(ArrayKind::COMPLETE, type->element_type, size));
     }
 
-    void compose_entity(Declarator* primary, Entity* primary_entity, Declarator* secondary, Entity* secondary_entity) {
+    void composite_entity(Declarator* primary, Entity* primary_entity, Declarator* secondary, Entity* secondary_entity) {
         if (primary_entity->linkage == Linkage::NONE || secondary_entity->linkage == Linkage::NONE) {
             if (primary->is_member()) {
                 message(Severity::ERROR, secondary->location) << "duplicate member '" << primary->identifier << "'...\n";
@@ -157,7 +157,7 @@ struct ResolvePass: Visitor {
         auto secondary_entity = secondary->variable();
         assert(secondary_entity); //  TODO
 
-        compose_entity(primary, primary_entity, secondary, secondary_entity);
+        composite_entity(primary, primary_entity, secondary, secondary_entity);
 
         if (secondary_entity->initializer) {
             if (primary_entity->initializer) {
@@ -190,7 +190,7 @@ struct ResolvePass: Visitor {
         auto secondary_entity = secondary->function();
         assert(secondary_entity); //  TODO
 
-        compose_entity(primary, primary_entity, secondary, secondary_entity);
+        composite_entity(primary, primary_entity, secondary, secondary_entity);
     
         if (secondary_entity->body) {
             if (primary_entity->body) {
