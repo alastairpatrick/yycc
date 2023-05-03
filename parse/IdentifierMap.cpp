@@ -16,13 +16,6 @@ Declarator* IdentifierMap::lookup_declarator(const Identifier& identifier) const
     return nullptr;
 }
 
-const Type* IdentifierMap::lookup_type(const Identifier& identifier) const {
-    auto declarator = lookup_declarator(identifier);
-    if (!declarator) return nullptr;
-
-    return declarator->to_type();
-}
-
 Declarator* IdentifierMap::add_declarator(IdentifierScope add_scope, const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location, Declarator* primary) {
     if (identifier.empty()) return new Declarator(declaration, type, identifier, location);
 
