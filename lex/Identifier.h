@@ -4,22 +4,15 @@
 #include "InternedString.h"
 
 struct Identifier {
+    InternedString name{};
+
     Identifier() : name(empty_interned_string) {}
     explicit Identifier(string_view s): name(intern_string(s)) {}
     explicit Identifier(InternedString s): name(s) {}
-    InternedString name{};
+
+    const char* c_str() const;
 };
 
-inline bool operator==(const Identifier& a, const Identifier& b) {
-    return a.name == b.name;
-}
-
-inline bool operator!=(const Identifier& a, const Identifier& b) {
-    return a.name != b.name;
-}
-
 ostream& operator<<(ostream& stream, const Identifier& identifier);
-
-const char* identifier_name(const Identifier& identifier);
 
 #endif

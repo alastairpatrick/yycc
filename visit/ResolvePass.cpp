@@ -315,7 +315,7 @@ struct ResolvePass: Visitor {
                         auto a_declarator = a_declaration->declarators[i];
                         auto b_declarator = b_declaration->declarators[i];
 
-                        if (a_declarator->identifier != b_declarator->identifier) return nullptr;
+                        if (a_declarator->identifier.name != b_declarator->identifier.name) return nullptr;
                         if (!compare_types(a_declarator->type, b_declarator->type)) return nullptr;
 
                         // TODO bitfield size, etc

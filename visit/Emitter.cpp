@@ -150,7 +150,7 @@ struct Emitter: Visitor {
     LLVMBasicBlockRef lookup_label(const Identifier& identifier) {
         auto& block = goto_labels[identifier.name];
         if (!block) {
-            block = append_block(identifier_name(identifier));
+            block = append_block(identifier.c_str());
         }
         return block;
     }
@@ -249,7 +249,7 @@ struct Emitter: Visitor {
             auto param = entity->parameters[i];
             auto param_entity = param->entity();
 
-            auto storage = LLVMBuildAlloca(builder, param->type->llvm_type(), identifier_name(param->identifier));
+            auto storage = LLVMBuildAlloca(builder, param->type->llvm_type(), param->identifier.c_str());
             param_entity->value = Value(ValueKind::LVALUE, param->type, storage);
             LLVMBuildStore(builder, LLVMGetParam(function, i), storage);
         }
@@ -370,7 +370,7 @@ struct Emitter: Visitor {
             } else {
                 LLVMPositionBuilderAtEnd(temp_builder, entry_block);
             }
-            auto storage = LLVMBuildAlloca(temp_builder, llvm_type, identifier_name(declarator->identifier));
+            auto storage = LLVMBuildAlloca(temp_builder, llvm_type, declarator->identifier.c_str());
 
             entity->value = Value(ValueKind::LVALUE, type, storage);
 

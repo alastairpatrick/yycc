@@ -21,8 +21,8 @@ struct EntityPass: Visitor {
 
         if (entity->value.kind == ValueKind::LVALUE) return VisitDeclaratorOutput();
 
-        auto name = identifier_name(primary->identifier);
-        auto prefixed_name = prefix + name;
+        auto prefixed_name(prefix);
+        prefixed_name += *primary->identifier.name;
 
         auto global = LLVMAddGlobal(llvm_module, primary->type->llvm_type(), prefixed_name.c_str());
         entity->value = Value(ValueKind::LVALUE, primary->type, global);
@@ -42,8 +42,8 @@ struct EntityPass: Visitor {
         
         if (entity->value.kind == ValueKind::LVALUE) return VisitDeclaratorOutput();
 
-        auto name = identifier_name(primary->identifier);
-        auto prefixed_name = prefix + name;
+        auto prefixed_name(prefix);
+        prefixed_name += *primary->identifier.name;
 
         auto llvm_function = LLVMAddFunction(llvm_module, prefixed_name.c_str(), primary->type->llvm_type());
         entity->value = Value(ValueKind::LVALUE, primary->type, llvm_function);
