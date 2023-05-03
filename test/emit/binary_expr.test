@@ -60,6 +60,52 @@ define i32 @f(i32 %0) {
 END
 
 
+BEGIN Integer bitwise AND
+int f(int x) {
+    return x & 1;
+}
+EXPECT_IR
+define i32 @f(i32 %0) {
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %2 = load i32, ptr %x, align 4
+  %3 = and i32 %2, 1
+  ret i32 %3
+}
+END
+
+
+BEGIN Integer bitwise OR
+int f(int x) {
+    return x | 1;
+}
+EXPECT_IR
+define i32 @f(i32 %0) {
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %2 = load i32, ptr %x, align 4
+  %3 = or i32 %2, 1
+  ret i32 %3
+}
+END
+
+
+BEGIN Integer bitwise XOR
+int f(int x) {
+    return x ^ 1;
+}
+EXPECT_IR
+define i32 @f(i32 %0) {
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %2 = load i32, ptr %x, align 4
+  %3 = x    or i32 %2, 1
+  ret i32 %3
+}
+END
+
+
+
 BEGIN Integer left shift
 int f(int x) {
     return x << 1;

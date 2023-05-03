@@ -855,9 +855,20 @@ struct Emitter: Visitor {
                 } else {
                     return Value(result_type, LLVMBuildUDiv(builder, get_rvalue(left_value), get_rvalue(right_value), ""));
                 }
+              case '&':
+              case TOK_AND_ASSIGN:
+                return Value(result_type, LLVMBuildAnd(builder, get_rvalue(left_value), get_rvalue(right_value), ""));
+              case '|':
+              case TOK_OR_ASSIGN:
+                return Value(result_type, LLVMBuildOr(builder, get_rvalue(left_value), get_rvalue(right_value), ""));
+              case '^':
+              case TOK_XOR_ASSIGN:
+                return Value(result_type, LLVMBuildXor(builder, get_rvalue(left_value), get_rvalue(right_value), ""));
               case TOK_LEFT_OP:
+              case TOK_LEFT_ASSIGN:
                 return Value(result_type, LLVMBuildShl(builder, get_rvalue(left_value), get_rvalue(right_value), ""));
               case TOK_RIGHT_OP:
+              case TOK_RIGHT_ASSIGN:
                 if (as_int->is_signed()) {
                   return Value(result_type, LLVMBuildAShr(builder, get_rvalue(left_value), get_rvalue(right_value), ""));
                 } else {

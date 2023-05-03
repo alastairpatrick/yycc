@@ -222,6 +222,36 @@ EXPECT_AST
 ["!=", 1, 2]
 
 
+BEGIN Bitwise and
+1 & 2
+EXPECT_AST
+["&", 1, 2]
+
+
+BEGIN Bitwise or
+1 | 2
+EXPECT_AST
+["|", 1, 2]
+
+
+BEGIN Bitwise xor
+1 ^ 2
+EXPECT_AST
+["^", 1, 2]
+
+
+BEGIN Logical and
+1 && 2
+EXPECT_AST
+["&&", 1, 2]
+
+
+BEGIN Logical or
+1 || 2
+EXPECT_AST
+["||", 1, 2]
+
+
 BEGIN Assignment expression
 1 = 2
 EXPECT_AST
