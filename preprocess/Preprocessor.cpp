@@ -28,15 +28,24 @@ TokenKind Preprocessor::next_token() {
 
         switch (token) {
             default: {
-              return commit_token(token, text());
+              commit_token();
+              return token;
           } case TOK_IDENTIFIER: {
               id_lexer.buffer(text());
               token = id_lexer.next_token();
-              return commit_token(id_lexer.size() == lexer.fragment().length ? token : TOK_IDENTIFIER, text());
+              if (id_lexer.size() != lexer.fragment().length) {
+                  token = TOK_IDENTIFIER;
+              }
+              commit_token();
+              return token;
           } case TOK_PP_NUMBER: {
               num_lexer.buffer(text());
               token = num_lexer.next_token();
-              return commit_token(num_lexer.size() == lexer.fragment().length ? token : TOK_PP_NUMBER, text());
+              if (num_lexer.size() != lexer.fragment().length) {
+                  token = TOK_PP_NUMBER;
+              }
+              commit_token();
+              return token;
           } case '\n': {
               continue;
           } case '#': {
@@ -68,6 +77,11 @@ TokenKind Preprocessor::next_pp_token() {
         lexer.lineno(location.line);
         lexer.set_filename(location.filename);
     }
+
+    if (token == TOK_IDENTIFIER) {
+        identifier = Identifier(evaluate_identifier(lexer.text()));
+    }
+
     return token;
 }
 
@@ -107,10 +121,6 @@ bool Preprocessor::handle_directive() {
     return true;
 }
 
-Identifier Preprocessor::identifier() const {
-    return Identifier(evaluate_identifier(lexer.text()));
-}
-
 void Preprocessor::skip_to_eol() {
     while (token && token != '\n') {
         next_pp_token();
@@ -133,18 +143,16 @@ void Preprocessor::unexpected_directive_token() {
     }
 }
 
-TokenKind Preprocessor::commit_token(TokenKind token, string_view text) {
+void Preprocessor::commit_token() {
     if (preparse) {
         text_stream.locate(lexer.location());
         auto begin = string_stream.pcount();
-        text_stream.write(text);
+        text_stream.write(text());
         auto end = string_stream.pcount();
         fragment = Fragment(begin, end - begin);
     } else {
         fragment = lexer.fragment();
     }
-
-    return token;
 }
 
 string_view Preprocessor::output() {

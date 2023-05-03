@@ -31,7 +31,7 @@ Statement* Parser::parse_standalone_statement() {
 void Parser::consume() {
     while (token) {
         if (token == TOK_IDENTIFIER && preparse) {
-            identifier_tokens.insert(preprocessor.identifier().name);
+            identifier_tokens.insert(preprocessor.identifier.name);
         }
 
         token = preprocessor.next_token();
@@ -56,7 +56,7 @@ void Parser::handle_declaration_directive() {
 
     while (pp_token && pp_token != '\n') {
         if (pp_token == TOK_IDENTIFIER) {
-            auto id = preprocessor.identifier();
+            auto id = preprocessor.identifier;
 
             auto declarator = identifiers.add_declarator(AddDeclaratorScope::CURRENT, nullptr, nullptr, id, preprocessor.location());
             if (token == TOK_PP_TYPE) {
@@ -297,9 +297,9 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
               if ((specifier_set & SPECIFIER_MASK_TYPE) == 0) {
                   const Type* typedef_type{};
                   if (preparse) {
-                      typedef_type = UnboundType::of(preprocessor.identifier());
+                      typedef_type = UnboundType::of(preprocessor.identifier);
                   } else {
-                      auto declarator = identifiers.lookup_declarator(preprocessor.identifier());
+                      auto declarator = identifiers.lookup_declarator(preprocessor.identifier);
                       if (declarator) {
                           typedef_type = declarator->to_type();
                       }
@@ -308,7 +308,7 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
                           // No error in scopes where something other than a type would be valid, i.e. a statement or expression.
                           if (scope == IdentifierScope::BLOCK || scope == IdentifierScope::EXPRESSION) break;
 
-                          message(Severity::ERROR, preprocessor.location()) << "type \'" << preprocessor.identifier() << "' undefined\n";
+                          message(Severity::ERROR, preprocessor.location()) << "type \'" << preprocessor.identifier << "' undefined\n";
                           typedef_type = IntegerType::default_type();
                       }
                   }
@@ -481,7 +481,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
     Identifier identifier;
     if (token == TOK_IDENTIFIER) {
-        identifier = preprocessor.identifier();
+        identifier = preprocessor.identifier;
         consume();
     }
 
@@ -569,7 +569,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
                 Identifier identifier;
                 if (require(TOK_IDENTIFIER)) {
-                    identifier = preprocessor.identifier();
+                    identifier = preprocessor.identifier;
                     consume();
                 }
 
@@ -754,7 +754,7 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, Pa
     } else {
         if (flags.allow_identifier) {
             if (token == TOK_IDENTIFIER) {
-                declarator.identifier = preprocessor.identifier();
+                declarator.identifier = preprocessor.identifier;
                 consume();
             } else if (!allow_abstract_declarator(scope)) {
                 message(Severity::ERROR, preprocessor.location()) << "expected identifier but got '" << preprocessor.text() << "'\n";
@@ -1003,7 +1003,7 @@ Statement* Parser::parse_statement() {
           Identifier identifier;
           if (kind == TOK_GOTO) {
               if (require(TOK_IDENTIFIER)) {
-                  identifier = preprocessor.identifier();
+                  identifier = preprocessor.identifier;
                   consume();
               }
           }
@@ -1170,7 +1170,7 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
           break;
 
       } case TOK_IDENTIFIER: {
-          Identifier identifier = preprocessor.identifier();
+          Identifier identifier = preprocessor.identifier;
           consume();
 
           // This is a hack to parse labels without adding an additional token of lookahead.
@@ -1280,7 +1280,7 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
             auto op = token;
             consume();
             if (require(TOK_IDENTIFIER)) {
-                result = new MemberExpr(op, result, preprocessor.identifier(), location);
+                result = new MemberExpr(op, result, preprocessor.identifier, location);
                 consume();
             }
         } else if (token == TOK_INC_OP || token == TOK_DEC_OP) {
