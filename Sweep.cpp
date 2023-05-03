@@ -24,7 +24,9 @@ struct DeclarationMarker {
             auto declaration = *it;
 
             for (auto name: declaration->identifier_tokens) {
-                lookup(Identifier(name));
+                Identifier identifier;
+                identifier.name = name;  // todo should be file_scope_name
+                lookup(identifier);
             }
 
             todo.erase(it);
