@@ -4,9 +4,9 @@
 #include "InternedString.h"
 
 struct Identifier {
-    InternedString name{};
+    InternedString name = empty_interned_string;
 
-    Identifier() : name(empty_interned_string) {}
+    Identifier() = default;
     explicit Identifier(string_view s): name(intern_string(s)) {}
     explicit Identifier(InternedString s): name(s) {}
 
