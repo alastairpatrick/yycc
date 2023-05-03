@@ -296,10 +296,11 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
           } case TOK_IDENTIFIER: {
               if ((specifier_set & SPECIFIER_MASK_TYPE) == 0) {
                   const Type* typedef_type{};
+                  auto identifier = preprocessor.identifier;
                   if (preparse) {
-                      typedef_type = UnboundType::of(preprocessor.identifier);
+                      typedef_type = UnboundType::of(identifier);
                   } else {
-                      auto declarator = identifiers.lookup_declarator(preprocessor.identifier);
+                      auto declarator = identifiers.lookup_declarator(identifier);
                       if (declarator) {
                           typedef_type = declarator->to_type();
                       }
@@ -308,7 +309,12 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
                           // No error in scopes where something other than a type would be valid, i.e. a statement or expression.
                           if (scope == IdentifierScope::BLOCK || scope == IdentifierScope::EXPRESSION) break;
 
-                          message(Severity::ERROR, preprocessor.location()) << "type \'" << preprocessor.identifier << "' undefined\n";
+                          auto& stream = message(Severity::ERROR, preprocessor.location()) << "type \'" << *identifier.text << "' ";
+                          if (identifier.text != identifier.at_file_scope) {
+                              stream << "(aka '" << *identifier.at_file_scope << "') ";
+                          }
+                          stream << "undefined\n";
+
                           typedef_type = IntegerType::default_type();
                       }
                   }
@@ -1186,7 +1192,12 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
           if (declarator) {
               result = new EntityExpr(declarator, location);
           } else {
-              message(Severity::ERROR, location) << '\'' << identifier << "' undeclared\n";
+              auto& stream = message(Severity::ERROR, location) << "identifier '" << *identifier.text << "' ";
+              if (identifier.text != identifier.at_file_scope) {
+                  stream << "(aka '" << *identifier.at_file_scope << "') ";
+              }
+              stream << "undeclared\n";
+
               result = IntegerConstant::default_expr(location);
           }
           break;

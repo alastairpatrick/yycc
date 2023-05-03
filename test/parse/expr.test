@@ -1,7 +1,7 @@
 BEGIN Variable
 x
 EXPECT_MESSAGE
-:1:1: error 'x' undeclared
+:1:1: error identifier 'x' undeclared
 EXPECT_AST
 0
 

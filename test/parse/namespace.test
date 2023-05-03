@@ -237,3 +237,23 @@ BEGIN Can alias keywords with using directive within namespace
 my_int x;
 EXPECT_AST
 [["var","ES","Si","X::Y::Z::x"]]
+
+
+BEGIN Error on undefined identifier reports file scope identifier rather than lexer text (1)
+#using A = foo
+A x;
+PARSE
+EXPECT_MESSAGE
+:2:1: error type 'A' (aka 'foo') undefined
+END
+
+
+BEGIN Error on undefined identifier reports file scope identifier rather than lexer text (2)
+#using A = foo
+void f() {
+    A;
+}
+PARSE
+EXPECT_MESSAGE
+:3:5: error identifier 'A' (aka 'foo') undeclared
+END
