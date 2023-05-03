@@ -31,7 +31,7 @@ Statement* Parser::parse_standalone_statement() {
 void Parser::consume() {
     while (token) {
         if (token == TOK_IDENTIFIER && preparse) {
-            identifier_tokens.insert(preprocessor.identifier.name);
+            identifier_tokens.insert(preprocessor.identifier.text);
         }
 
         token = preprocessor.next_token();
@@ -218,7 +218,7 @@ Declaration* Parser::parse_declaration(IdentifierScope scope) {
             ParseDeclaratorFlags flags = { .allow_identifier = true, .allow_initializer = true };
             if (declarator_count == 0) flags.allow_function_definition = true;
             auto declarator = parse_declarator(declaration, base_type, specifiers, flags, &last_declarator);
-            if (!declarator->identifier.name->empty() || allow_abstract_declarator(scope)) {
+            if (!declarator->identifier.empty() || allow_abstract_declarator(scope)) {
                 declaration->declarators.push_back(declarator);
                 ++declarator_count;
             }
@@ -487,14 +487,14 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
     // C99 6.7.2.3p9
     Declarator* tag_declarator{};
-    if (token != ';' && token != '{' && !identifier.name->empty()) {
+    if (token != ';' && token != '{' && !identifier.empty()) {
         tag_declarator = identifiers.lookup_declarator(identifier);
         if (tag_declarator) {
             return tag_declarator->type;
         }
     }
 
-    bool anonymous = declaration->scope == IdentifierScope::STRUCTURED && identifier.name->empty();
+    bool anonymous = declaration->scope == IdentifierScope::STRUCTURED && identifier.empty();
 
     TagType* type{};
 
@@ -512,7 +512,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
             oi_scope.position = position();
 
             // C99 6.7.2.3p6
-            if (!identifier.name->empty()) tag_declarator = declare_tag_type(AddDeclaratorScope::CURRENT, declaration, identifier, type, specifier_location);
+            if (!identifier.empty()) tag_declarator = declare_tag_type(AddDeclaratorScope::CURRENT, declaration, identifier, type, specifier_location);
 
             structured_type->complete = true;
 
@@ -560,7 +560,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
         if (consume('{')) {
             // C99 6.7.2.3p6
-            if (!identifier.name->empty()) tag_declarator = declare_tag_type(AddDeclaratorScope::CURRENT, declaration, identifier, type, specifier_location);
+            if (!identifier.empty()) tag_declarator = declare_tag_type(AddDeclaratorScope::CURRENT, declaration, identifier, type, specifier_location);
 
             enum_type->complete = true;
             while (token && token != '}') {
@@ -597,7 +597,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
         }
     }
 
-    if (!tag_declarator && !identifier.name->empty()) {
+    if (!tag_declarator && !identifier.empty()) {
         if (token == ';') {
             // C99 6.7.2.3p7
             tag_declarator = declare_tag_type(AddDeclaratorScope::CURRENT, declaration, identifier, type, specifier_location);
@@ -641,7 +641,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     auto begin = position();
 
     auto declarator_transform = parse_declarator_transform(declaration->scope, flags);
-    if (declarator_transform.identifier.name->empty()) location = declaration->location;
+    if (declarator_transform.identifier.empty()) location = declaration->location;
 
     type = declarator_transform.apply(type);
 
@@ -1016,7 +1016,7 @@ Statement* Parser::parse_statement() {
           Label label;
           Statement* statement = parse_expr(SEQUENCE_PRECEDENCE, &label.identifier);
 
-          if (!label.identifier.name->empty()) {
+          if (!label.identifier.empty()) {
               consume_required(':');
 
               statement = parse_statement();

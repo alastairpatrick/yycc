@@ -80,7 +80,7 @@ TokenKind Preprocessor::next_pp_token() {
 
     if (token == TOK_IDENTIFIER) {
         identifier = Identifier();
-        identifier.name = evaluate_identifier(lexer.text());
+        identifier.text = evaluate_identifier(lexer.text());
     }
 
     return token;

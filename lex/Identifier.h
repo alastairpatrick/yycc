@@ -4,8 +4,9 @@
 #include "InternedString.h"
 
 struct Identifier {
-    InternedString name = empty_interned_string;
+    InternedString text = empty_interned_string;
     const char* c_str() const;
+    bool empty() const { return text->empty(); }
 };
 
 ostream& operator<<(ostream& stream, const Identifier& identifier);

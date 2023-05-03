@@ -46,7 +46,7 @@ const FunctionType* TypeContext::get_function_type(const Type* return_type, vect
 }
 
 const UnboundType* TypeContext::get_unbound_type(const Identifier& identifier) {
-    auto& unbound = unbound_types[identifier.name];
+    auto& unbound = unbound_types[identifier.text];
     if (!unbound) unbound.reset(new UnboundType(identifier));
     return unbound.get();
 }

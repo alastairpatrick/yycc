@@ -233,13 +233,13 @@ struct ResolvePass: Visitor {
         unordered_map<InternedString, Declarator*> a_members;
         for (auto a_declaration: a_union->declarations) {
             for (auto a_member: a_declaration->declarators) {
-                a_members.insert(make_pair(a_member->identifier.name, a_member));
+                a_members.insert(make_pair(a_member->identifier.text, a_member));
             }
         }
 
         for (auto b_declaration: b_union->declarations) {
             for (auto b_member: b_declaration->declarators) {
-                auto it = a_members.find(b_member->identifier.name);
+                auto it = a_members.find(b_member->identifier.text);
                 if (it == a_members.end()) return false;
                 if (!compare_types(it->second->type, b_member->type)) return false;
             }
@@ -253,11 +253,11 @@ struct ResolvePass: Visitor {
         
         unordered_map<InternedString, Declarator*> a_constants;
         for (auto declarator: a_enum->constants) {
-            a_constants.insert(make_pair(declarator->identifier.name, declarator));
+            a_constants.insert(make_pair(declarator->identifier.text, declarator));
         }
 
         for (auto b_declarator: b_enum->constants) {
-            auto it = a_constants.find(b_declarator->identifier.name);
+            auto it = a_constants.find(b_declarator->identifier.text);
             if (it == a_constants.end()) {
                 message(Severity::ERROR, b_declarator->location) << "enum constant '" << b_declarator->identifier << "'...\n";
                 message(Severity::INFO, a_enum->location) << "...missing from other definition\n";
@@ -284,7 +284,7 @@ struct ResolvePass: Visitor {
         bool b_has_tag = b_type->tag;
         if (a_has_tag != b_has_tag) return false;
         
-        if (a_has_tag && b_has_tag && a_type->tag->identifier.name != b_type->tag->identifier.name) return false;
+        if (a_has_tag && b_has_tag && a_type->tag->identifier.text != b_type->tag->identifier.text) return false;
 
         return true;
     }
@@ -315,7 +315,7 @@ struct ResolvePass: Visitor {
                         auto a_declarator = a_declaration->declarators[i];
                         auto b_declarator = b_declaration->declarators[i];
 
-                        if (a_declarator->identifier.name != b_declarator->identifier.name) return nullptr;
+                        if (a_declarator->identifier.text != b_declarator->identifier.text) return nullptr;
                         if (!compare_types(a_declarator->type, b_declarator->type)) return nullptr;
 
                         // TODO bitfield size, etc

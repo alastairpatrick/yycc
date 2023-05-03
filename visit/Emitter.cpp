@@ -148,7 +148,7 @@ struct Emitter: Visitor {
     }
 
     LLVMBasicBlockRef lookup_label(const Identifier& identifier) {
-        auto& block = goto_labels[identifier.name];
+        auto& block = goto_labels[identifier.text];
         if (!block) {
             block = append_block(identifier.c_str());
         }
@@ -305,7 +305,7 @@ struct Emitter: Visitor {
                         if (auto member_variable = member->variable()) {
                             LLVMValueRef dest_element = LLVMBuildInBoundsGEP2(builder, struct_type->llvm_type(), dest.get_lvalue(),
                                                                               member_variable->member->gep_indices.data(), member_variable->member->gep_indices.size(),
-                                                                              member->identifier.name->data());
+                                                                              member->identifier.c_str());
                             emit_auto_initializer(Value(ValueKind::LVALUE, member->type, dest_element), initializer->elements[initializer_idx++]);
                         }
                     }
@@ -1156,7 +1156,7 @@ struct Emitter: Visitor {
         }
 
         if (auto struct_type = type_cast<StructuredType>(object_type)) {
-            auto it = struct_type->scope.declarator_map.find(expr->identifier.name);
+            auto it = struct_type->scope.declarator_map.find(expr->identifier.text);
             if (it == struct_type->scope.declarator_map.end()) {
                 message(Severity::ERROR, expr->location) << "no member named '" << expr->identifier << "' in '" << PrintType(struct_type) << "'\n";
                 pause_messages();
@@ -1185,7 +1185,7 @@ struct Emitter: Visitor {
 
                 Value value(ValueKind::LVALUE, result_type, LLVMBuildInBoundsGEP2(builder, llvm_struct_type, object.get_lvalue(),
                                                                                   member_variable->member->gep_indices.data(), member_variable->member->gep_indices.size(),
-                                                                                  expr->identifier.name->data()));
+                                                                                  expr->identifier.c_str()));
                 value.bit_field = member_variable->member->bit_field.get();
                 return VisitStatementOutput(value);
             }

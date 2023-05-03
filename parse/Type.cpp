@@ -504,7 +504,7 @@ void TagType::message_print(ostream& stream, int section) const {
     if (section != 0) return;
 
     if (tag) {
-        stream << *tag->identifier.name;
+        stream << *tag->identifier.text;
     } else {
         stream << "anon";
     }
@@ -517,7 +517,7 @@ StructuredType::StructuredType(const Location& location)
 }
 
 const Declarator* StructuredType::lookup_member(const Identifier& identifier) const {
-    auto it = scope.declarator_map.find(identifier.name);
+    auto it = scope.declarator_map.find(identifier.text);
     if (it == scope.declarator_map.end()) return nullptr;
     return it->second;
 }
@@ -666,7 +666,7 @@ LLVMTypeRef StructuredType::build_llvm_struct_type(const vector<LLVMValueRef>& g
             
             // Anonymous struct or union?
             LLVMTypeRef llvm_member_type{};
-            if (member->identifier.name->empty()) {
+            if (member->identifier.empty()) {
                 if (auto structured_member_type = dynamic_cast<const StructuredType*>(member->type)) {
                     llvm_member_type = structured_member_type->build_llvm_struct_type(member_variable->member->gep_indices, nullptr);
                 }
@@ -712,7 +712,7 @@ LLVMTypeRef StructuredType::build_llvm_struct_type(const vector<LLVMValueRef>& g
 
 LLVMTypeRef StructuredType::cache_llvm_type() const {
     const char* name{};
-    if (tag && !tag->identifier.name->empty()) name = tag->identifier.name->data();
+    if (tag && !tag->identifier.empty()) name = tag->identifier.c_str();
     if (!name) name = "anon";
 
     return build_llvm_struct_type({TranslationUnitContext::it->zero_int}, name);
@@ -881,7 +881,7 @@ LLVMTypeRef TypeDefType::llvm_type() const {
 }
 
 void TypeDefType::message_print(ostream& stream, int section) const {
-    if (section == 0) stream << *declarator->identifier.name;
+    if (section == 0) stream << *declarator->identifier.text;
 }
 
 void TypeDefType::print(ostream& stream) const {

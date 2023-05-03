@@ -4,7 +4,7 @@
 
 Declarator* IdentifierMap::lookup_declarator(const Identifier& identifier) const {
     for (auto& scope : scopes) {
-        auto it = scope.declarator_map.find(identifier.name);
+        auto it = scope.declarator_map.find(identifier.text);
         if (it != scope.declarator_map.end()) {
             // Note that this intentionally does _not_ always return the primary. For reporting errors
             // it is better to return a declarator that is currently in scope. The primary declarator
@@ -37,7 +37,7 @@ Declarator* IdentifierMap::add_declarator(AddDeclaratorScope add_scope, const De
 
     declarator = new Declarator(declaration, type, identifier, location);
 
-    if (identifier.name->empty()) return declarator;
+    if (identifier.empty()) return declarator;
 
     Declarator* primary{};
     if (add_scope != AddDeclaratorScope::CURRENT) {
@@ -66,12 +66,12 @@ Declarator* IdentifierMap::add_declarator(AddDeclaratorScope add_scope, const De
 }
 
 Declarator* IdentifierMap::find_placeholder(Scope& scope, const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location) {
-    if (!identifier.name->empty()) {
-        auto it = scopes.back().declarator_map.find(identifier.name);
+    if (!identifier.empty()) {
+        auto it = scopes.back().declarator_map.find(identifier.text);
         if (it != scopes.back().declarator_map.end()) {
             auto declarator = it->second;
             if (!declarator->type) {
-                assert(declarator->identifier.name == identifier.name);
+                assert(declarator->identifier.text == identifier.text);
                 declarator->declaration = declaration;
                 declarator->type = type;
                 declarator->location = location;
@@ -88,9 +88,9 @@ Declarator* IdentifierMap::find_placeholder(Scope& scope, const Declaration* dec
 }
 
 Declarator* IdentifierMap::add_declarator_to_scope(Scope& scope, Declarator* declarator) {
-    auto it = scope.declarator_map.find(declarator->identifier.name);
+    auto it = scope.declarator_map.find(declarator->identifier.text);
     if (it == scope.declarator_map.end()) {
-        scope.declarator_map[declarator->identifier.name] = declarator;
+        scope.declarator_map[declarator->identifier.text] = declarator;
         if (declarator->type) {
             scope.declarators.push_back(declarator);
         }
