@@ -125,14 +125,11 @@ IntegerConstant* IntegerConstant::of(const IntegerType* type, unsigned long long
 
 IntegerConstant::IntegerConstant(const Value& value, const Location& location)
     : Constant(location), value(value) {
+    this->value.is_null_literal = LLVMIsNull(value.get_const());
 }
 
 VisitStatementOutput IntegerConstant::accept(Visitor& visitor, const VisitStatementInput& input) {
     return visitor.visit(this, input);
-}
-
-bool IntegerConstant::is_null_literal() const {
-    return value.get_const() == LLVMConstInt(value.type->llvm_type(), 0, false);
 }
 
 void IntegerConstant::print(ostream& stream) const {

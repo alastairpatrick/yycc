@@ -20,7 +20,6 @@ struct IntegerConstant: Constant {
 
     IntegerConstant(const Value& value, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
-    virtual bool is_null_literal() const override;
     virtual void print(ostream& stream) const override;
 };
 

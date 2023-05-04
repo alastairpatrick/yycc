@@ -445,6 +445,72 @@ define ptr @f() {
 END
 
 
+BEGIN Pointer < comparison
+_Bool f(int* p, const int* q) {
+    return p < q;
+}
+EXPECT_IR
+define i1 @f(ptr %0, ptr %1) {
+  %p = alloca ptr, align 8
+  store ptr %0, ptr %p, align 8
+  %q = alloca ptr, align 8
+  store ptr %1, ptr %q, align 8
+  %3 = load ptr, ptr %q, align 8
+  %4 = load ptr, ptr %p, align 8
+  %5 = icmp ult ptr %4, %3
+  ret i1 %5
+}
+END
+
+
+BEGIN Pointer == comparison
+_Bool f(int* p, const int* q) {
+    return p == q;
+}
+EXPECT_IR
+define i1 @f(ptr %0, ptr %1) {
+  %p = alloca ptr, align 8
+  store ptr %0, ptr %p, align 8
+  %q = alloca ptr, align 8
+  store ptr %1, ptr %q, align 8
+  %3 = load ptr, ptr %q, align 8
+  %4 = load ptr, ptr %p, align 8
+  %5 = icmp eq ptr %4, %3
+  ret i1 %5
+}
+END
+
+
+BEGIN Pointer == 0 comparison
+_Bool f(int* p) {
+    return p == 0;
+}
+EXPECT_IR
+define i1 @f(ptr %0) {
+  %p = alloca ptr, align 8
+  store ptr %0, ptr %p, align 8
+  %2 = load ptr, ptr %p, align 8
+  %3 = icmp eq ptr %2, null
+  ret i1 %3
+}
+END
+
+
+BEGIN Pointer != 0 comparison
+_Bool f(int* p) {
+    return 0 != p;
+}
+EXPECT_IR
+define i1 @f(ptr %0) {
+  %p = alloca ptr, align 8
+  store ptr %0, ptr %p, align 8
+  %2 = load ptr, ptr %p, align 8
+  %3 = icmp ne ptr %2, null
+  ret i1 %3
+}
+END
+
+
 REM ******** Void ********
 
 BEGIN Cannot apply binary operation to void (1)

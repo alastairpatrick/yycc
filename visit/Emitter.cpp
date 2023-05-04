@@ -186,10 +186,6 @@ struct Emitter: Visitor {
     }
 
     Value convert_to_type(Expr* expr, const Type* dest_type, ConvKind kind) {
-        if (expr->is_null_literal() && type_cast<PointerType>(dest_type->unqualified())) {
-            return Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
-        }
-
         auto value = emit(expr).unqualified();
         return convert_to_type(value, dest_type, kind, expr->location);
     }
@@ -199,7 +195,14 @@ struct Emitter: Visitor {
         
         dest_type = dest_type->unqualified();
 
-        if (value.type == dest_type) return value;
+        if (value.is_null_literal && kind == ConvKind::IMPLICIT && type_cast<PointerType>(dest_type)) {
+            return Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
+        }
+
+        if (value.type == dest_type) {
+            if (kind == ConvKind::EXPLICIT) value.is_null_literal = false;
+            return value;
+        }
 
         const EnumType* dest_enum_type{};
         if (dest_enum_type = type_cast<EnumType>(dest_type)) {
@@ -923,6 +926,8 @@ struct Emitter: Visitor {
 
     Value emit_pointer_binary_operation(BinaryExpr* expr, Value left_value, Value right_value, Location left_location, Location right_location) {
         auto op = expr->op;
+        auto op_flags = operator_flags(op);
+
         auto llvm_target_data = TranslationUnitContext::it->llvm_target_data;
         auto left_pointer_type = type_cast<PointerType>(left_value.type);
         auto right_pointer_type = type_cast<PointerType>(right_value.type);
@@ -941,10 +946,36 @@ struct Emitter: Visitor {
             }
         }
 
-        if ((op == '+' || op == TOK_ADD_ASSIGN) && !left_pointer_type) {
+        if ((op_flags & OP_COMMUTATIVE) && !left_pointer_type) {
             swap(left_value, right_value);
             swap(left_location, right_location);
             swap(left_pointer_type, right_pointer_type);
+        }
+
+        if (op_flags & OP_COMPARISON) {
+            bool valid = false;
+            if (left_pointer_type && right_pointer_type) {
+                valid = check_pointer_conversion(left_pointer_type->base_type, right_pointer_type->base_type) == ConvKind::IMPLICIT
+                     || check_pointer_conversion(right_pointer_type->base_type, left_pointer_type->base_type) == ConvKind::IMPLICIT;
+            }
+
+            if (op == TOK_EQ_OP || op == TOK_NE_OP) {
+                if (right_value.is_null_literal) {
+                    right_value = Value(left_pointer_type, LLVMConstNull(left_pointer_type->llvm_type()));
+                    valid = true;
+                }
+            }
+
+            if (!valid) return Value();
+
+            auto result_type = IntegerType::of_bool();
+                
+            if (outcome == EmitOutcome::TYPE) return Value(result_type);
+
+            return Value(result_type, LLVMBuildICmp(builder,
+                                                    llvm_int_predicate(false, op),
+                                                    get_rvalue(left_value), get_rvalue(right_value),
+                                                    ""));
         }
 
         if (op == '+'|| op == TOK_ADD_ASSIGN || op == '-' || op == TOK_SUB_ASSIGN) {

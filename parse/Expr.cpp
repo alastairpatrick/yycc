@@ -7,10 +7,6 @@
 Expr::Expr(const Location& location): Statement(location) {
 }
 
-bool Expr::is_null_literal() const {
-    return false;
-}
-
 AddressExpr::AddressExpr(Expr* expr, const Location& location)
     : Expr(location), expr(expr) {
 }

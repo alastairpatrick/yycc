@@ -9,8 +9,10 @@ extern "C" {
 
 typedef enum {
     OP_ASSIGN             = 0x01,
-    OP_BOOL_RESULT        = 0x02,
-    OP_AS_LEFT_RESULT     = 0x04,
+    OP_COMPARISON         = 0x02,
+    OP_BOOL_RESULT        = 0x04,
+    OP_AS_LEFT_RESULT     = 0x08,
+    OP_COMMUTATIVE        = 0x100,
 
 } OperatorFlags;
 

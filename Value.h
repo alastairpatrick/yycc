@@ -13,6 +13,7 @@ struct BitField;
 
 struct Value {
     ValueKind kind = ValueKind::TYPE_ONLY;
+    bool is_null_literal{};
     QualifierSet qualifiers{};
     const Type* type{};
     BitField* bit_field{};
