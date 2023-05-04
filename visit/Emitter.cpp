@@ -471,10 +471,6 @@ struct Emitter: Visitor {
         }
 
         if (auto pointer_type = type_cast<PointerType>(dest_type)) {
-            if (value.kind == ValueKind::LVALUE) {
-                return VisitTypeOutput(dest_type, value.get_lvalue(), check_pointer_conversion(source_type->element_type, pointer_type->base_type));
-            }
-
             if (value.is_const()) {
                 auto& global = module->reified_constants[value.get_const()];
                 if (!global) {
@@ -485,6 +481,12 @@ struct Emitter: Visitor {
                 }
                 return VisitTypeOutput(dest_type, global);
             }
+        }
+
+        if (value.kind == ValueKind::LVALUE) {
+            auto pointer_type = source_type->element_type->pointer_to();
+            Value pointer_value(pointer_type, value.get_lvalue());
+            return visit(pointer_type, VisitTypeInput(pointer_value, dest_type));
         }
 
         return VisitTypeOutput(); 
@@ -555,8 +557,9 @@ struct Emitter: Visitor {
             return VisitTypeOutput(value.bit_cast(dest_type), check_pointer_conversion(source_type->base_type, dest_pointer_type->base_type));
         }
 
-        if (type_cast<IntegerType>(dest_type)) {
-            return VisitTypeOutput(dest_type, LLVMBuildPtrToInt(builder, get_rvalue(value), dest_type->llvm_type(), ""));
+        if (auto dest_int_type = type_cast<IntegerType>(dest_type)) {
+            auto kind = dest_int_type->size == IntegerSize::BOOL ? ConvKind::IMPLICIT : ConvKind::EXPLICIT;
+            return VisitTypeOutput(dest_type, LLVMBuildPtrToInt(builder, get_rvalue(value), dest_type->llvm_type(), ""), kind);
         }
 
         return VisitTypeOutput();
@@ -726,6 +729,35 @@ struct Emitter: Visitor {
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
         return VisitStatementOutput(result_type, value.get_lvalue());
+    }
+
+    Value emit_logical_binary_operation(BinaryExpr* expr, const Value& left_value, const Location& left_location) {
+        auto result_type = IntegerType::of_bool();
+        if (outcome == EmitOutcome::TYPE) return Value(result_type);
+
+        LLVMBasicBlockRef alt_blocks[2] = {
+            LLVMGetInsertBlock(builder),
+            append_block(""),
+        };
+        auto merge_block = append_block("");
+
+        LLVMValueRef alt_values[2];
+        auto condition_value = convert_to_type(left_value, IntegerType::of_bool(), ConvKind::IMPLICIT, left_location);
+        alt_values[0] = get_rvalue(condition_value);
+
+        LLVMBasicBlockRef then_block = expr->op == TOK_AND_OP ? alt_blocks[1] : merge_block;
+        LLVMBasicBlockRef else_block = expr->op == TOK_AND_OP ? merge_block : alt_blocks[1];
+        LLVMBuildCondBr(builder, alt_values[0], then_block, else_block);
+
+        LLVMPositionBuilderAtEnd(builder, alt_blocks[1]);
+        alt_values[1] = get_rvalue(convert_to_type(expr->right, result_type, ConvKind::IMPLICIT));
+        LLVMBuildBr(builder, merge_block);
+
+        LLVMPositionBuilderAtEnd(builder, merge_block);
+        Value result;
+        auto phi_value = LLVMBuildPhi(builder, result_type->llvm_type(), "");
+        LLVMAddIncoming(phi_value, alt_values, alt_blocks, 2);
+        return Value(result_type, phi_value);
     }
 
     const Type* promote_integer(const Type* type) {
@@ -1012,24 +1044,32 @@ struct Emitter: Visitor {
     }
 
     virtual VisitStatementOutput visit(BinaryExpr* expr, const VisitStatementInput& input) override {
-        auto left_value = emit(expr->left).unqualified();
-        left_value = convert_array_to_pointer(left_value);
-        auto left_pointer_type = type_cast<PointerType>(left_value.type);
-
-        auto right_value = emit(expr->right).unqualified();
-        right_value = convert_array_to_pointer(right_value);
-        auto right_pointer_type = type_cast<PointerType>(right_value.type);
-
+        auto op = expr->op;
         Value intermediate;
-        if (left_pointer_type || right_pointer_type) {
-            intermediate = emit_pointer_binary_operation(expr, left_value, right_value, expr->left->location, expr->right->location);
+        Value left_value = emit(expr->left).unqualified();
+
+        if (op == TOK_AND_OP || op == TOK_OR_OP) {
+            intermediate = emit_logical_binary_operation(expr, left_value, expr->left->location);
         } else {
-            intermediate = emit_scalar_binary_operation(expr, left_value, right_value, expr->left->location, expr->right->location);
+            left_value = convert_array_to_pointer(left_value);
+            auto left_pointer_type = type_cast<PointerType>(left_value.type);
+
+            auto right_value = emit(expr->right).unqualified();
+            right_value = convert_array_to_pointer(right_value);
+            auto right_pointer_type = type_cast<PointerType>(right_value.type);
+
+            if (left_pointer_type || right_pointer_type) {
+                intermediate = emit_pointer_binary_operation(expr, left_value, right_value, expr->left->location, expr->right->location);
+            } else {
+                intermediate = emit_scalar_binary_operation(expr, left_value, right_value, expr->left->location, expr->right->location);
+            }
         }
 
         if (!intermediate.is_valid()) {
+            auto left_type = get_expr_type(expr->left);
+            auto right_type = get_expr_type(expr->right);
             auto& stream = message(Severity::ERROR, expr->location) << "'" << expr->message_kind() << "' operation may not be evaluated with operands of types '"
-                                                                           << PrintType(left_value.type) << "' and '" << PrintType(right_value.type) << "'\n";
+                                                                           << PrintType(left_type) << "' and '" << PrintType(right_type) << "'\n";
             pause_messages();
             intermediate = Value::of_zero_int();
         }

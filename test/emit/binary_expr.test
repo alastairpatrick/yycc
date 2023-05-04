@@ -282,6 +282,56 @@ define i1 @f(float %0) {
 END
 
 
+BEGIN Logical AND
+_Bool f(float x, float y) {
+    return x && y;
+}
+EXPECT_IR
+define i1 @f(float %0, float %1) {
+  %x = alloca float, align 4
+  store float %0, ptr %x, align 4
+  %y = alloca float, align 4
+  store float %1, ptr %y, align 4
+  %3 = load float, ptr %x, align 4
+  %4 = fptoui float %3 to i1
+  br i1 %4, label %5, label %8
+
+5:                                                ; preds = %2
+  %6 = load float, ptr %y, align 4
+  %7 = fptoui float %6 to i1
+  br label %8
+
+8:                                                ; preds = %5, %2
+  %9 = phi i1 [ %4, %2 ], [ %7, %5 ]
+  ret i1 %9
+}
+END
+
+
+BEGIN Logical OR
+_Bool f(int* x) {
+    float y[1];
+    return x || y;
+}
+EXPECT_IR
+define i1 @f(ptr %0) {
+  %y = alloca [1 x float], align 4
+  %x = alloca ptr, align 8
+  store ptr %0, ptr %x, align 8
+  %2 = load ptr, ptr %x, align 8
+  %3 = ptrtoint ptr %2 to i1
+  br i1 %3, label %6, label %4
+
+4:                                                ; preds = %1
+  %5 = ptrtoint ptr %y to i1
+  br label %6
+
+6:                                                ; preds = %4, %1
+  %7 = phi i1 [ %3, %1 ], [ %5, %4 ]
+  ret i1 %7
+}
+END
+
 
 REM ******** Pointer arithmetic ********
 

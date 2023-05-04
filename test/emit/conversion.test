@@ -306,7 +306,7 @@ END
 
 BEGIN Pointer to integer conversion
 short f(int* x) {
-    return x;
+    return (short) x;
 }
 EXPECT_IR
 define i16 @f(ptr %0) {
@@ -377,11 +377,11 @@ define i32 @f(i16 %0) {
 END
 
 
-BEGIN Cannot convert array to integer
+BEGIN Cannot convert array to integer without explicit cast
 char a[10];
 int x = a;
 EXPECT_MESSAGE
-:2:9: error cannot convert from type 'char[10]' to type 'int'
+:2:9: error conversion from type 'char[10]' to type 'int' requires explicit cast
 END
 
 
