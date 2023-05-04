@@ -921,12 +921,34 @@ struct Emitter: Visitor {
         return Value();
     }
 
-    Value emit_pointer_binary_operation(BinaryExpr* expr, Value left_value, Value right_value, const Location &left_location, const Location& right_location) {
+    Value emit_pointer_binary_operation(BinaryExpr* expr, Value left_value, Value right_value, Location left_location, Location right_location) {
+        auto op = expr->op;
         auto llvm_target_data = TranslationUnitContext::it->llvm_target_data;
         auto left_pointer_type = type_cast<PointerType>(left_value.type);
         auto right_pointer_type = type_cast<PointerType>(right_value.type);
 
-        if (expr->op == '+' || expr->op == TOK_ADD_ASSIGN) {
+        if (left_pointer_type && right_pointer_type) {
+            if (op == '-') {
+                // todo check right hand side has appropriate pointer type
+                auto result_type = IntegerType::of_size(IntegerSignedness::SIGNED);
+                if (outcome == EmitOutcome::TYPE) return Value(result_type);
+            
+                auto left_int = LLVMBuildPtrToInt(builder, get_rvalue(left_value), result_type->llvm_type(), "");
+                auto right_int = LLVMBuildPtrToInt(builder, get_rvalue(right_value), result_type->llvm_type(), "");
+                auto byte_diff = LLVMBuildSub(builder, left_int, right_int, "");
+                auto size_of_base_type = LLVMStoreSizeOfType(llvm_target_data, left_pointer_type->base_type->llvm_type());
+                auto result = LLVMBuildSDiv(builder, byte_diff, LLVMConstInt(result_type->llvm_type(), size_of_base_type, true), "");
+                return Value(result_type, result);
+            }
+        }
+
+        if ((op == '+' || op == TOK_ADD_ASSIGN) && !left_pointer_type) {
+            swap(left_value, right_value);
+            swap(left_location, right_location);
+            swap(left_pointer_type, right_pointer_type);
+        }
+
+        if (op == '+'|| op == TOK_ADD_ASSIGN || op == '-' || op == TOK_SUB_ASSIGN) {
             right_value = convert_to_type(right_value, promote_integer(right_value.type), ConvKind::IMPLICIT, right_location);
             if (!type_cast<IntegerType>(right_value.type)) return Value();
 
@@ -934,20 +956,11 @@ struct Emitter: Visitor {
 
             LLVMValueRef index = get_rvalue(right_value);
 
-            return Value(left_pointer_type, LLVMBuildGEP2(builder, left_pointer_type->base_type->llvm_type(), get_rvalue(left_value), &index, 1, ""));
+            if (op == '-' || op == TOK_SUB_ASSIGN) {
+                index = LLVMBuildNeg(builder, index, "");
+            }
 
-        } else if (expr->op == '-') {
-            // todo check right hand side has appropriate pointer type
-            // todo support subtraction of integer from pointer
-            auto result_type = IntegerType::of_size(IntegerSignedness::SIGNED);
-            if (outcome == EmitOutcome::TYPE) return Value(result_type);
-            
-            auto left_int = LLVMBuildPtrToInt(builder, get_rvalue(left_value), result_type->llvm_type(), "");
-            auto right_int = LLVMBuildPtrToInt(builder, get_rvalue(right_value), result_type->llvm_type(), "");
-            auto byte_diff = LLVMBuildSub(builder, left_int, right_int, "");
-            auto size_of_base_type = LLVMStoreSizeOfType(llvm_target_data, left_pointer_type->base_type->llvm_type());
-            auto result = LLVMBuildSDiv(builder, byte_diff, LLVMConstInt(result_type->llvm_type(), size_of_base_type, true), "");
-            return Value(result_type, result);
+            return Value(left_pointer_type, LLVMBuildGEP2(builder, left_pointer_type->base_type->llvm_type(), get_rvalue(left_value), &index, 1, ""));
         }
 
         return Value();
@@ -978,10 +991,8 @@ struct Emitter: Visitor {
         auto right_pointer_type = type_cast<PointerType>(right_value.type);
 
         Value intermediate;
-        if (left_pointer_type) {
+        if (left_pointer_type || right_pointer_type) {
             intermediate = emit_pointer_binary_operation(expr, left_value, right_value, expr->left->location, expr->right->location);
-        } else if (right_pointer_type) {
-            intermediate = emit_pointer_binary_operation(expr, right_value, left_value, expr->right->location, expr->left->location);
         } else {
             intermediate = emit_scalar_binary_operation(expr, left_value, right_value, expr->left->location, expr->right->location);
         }
