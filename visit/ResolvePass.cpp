@@ -530,6 +530,7 @@ struct ResolvePass: Visitor {
 
     virtual VisitStatementOutput visit(MemberExpr* member_expr, const VisitStatementInput& input) override {
         auto object_type = get_expr_type(member_expr->object)->unqualified();
+        object_type = resolve(object_type);
         auto message_type = object_type;
 
         bool dereferenced{};
