@@ -520,7 +520,8 @@ struct Emitter: Visitor {
         auto value = input.value;
 
         if (auto pointer_type = type_cast<PointerType>(dest_type)) {
-            return VisitTypeOutput(dest_type, value.get_lvalue());
+            ConvKind kind = pointer_type->base_type->unqualified() == source_type ? ConvKind::IMPLICIT : ConvKind::EXPLICIT;
+            return VisitTypeOutput(dest_type, value.get_lvalue(), kind);
         }
 
         return VisitTypeOutput();

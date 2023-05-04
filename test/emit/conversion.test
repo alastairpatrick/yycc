@@ -441,3 +441,11 @@ void (*p)() = &x;
 EXPECT_MESSAGE
 :2:15: error conversion from type 'int*' to type 'void(*)()' requires explicit cast
 END
+
+
+BEGIN Cannot implicitly convert function to pointer to other type
+void f() {}
+void (*fp)(int) = f;
+EXPECT_MESSAGE
+:2:19: error conversion from type 'void()' to type 'void(*)(int)' requires explicit cast
+END

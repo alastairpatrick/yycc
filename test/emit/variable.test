@@ -537,7 +537,7 @@ END
 BEGIN Global initialized function pointer variable (3)
 void f() {
 }
-void *fp = f;
+void *fp = (void*) f;
 EXPECT_IR
 @fp = global ptr @f
 
