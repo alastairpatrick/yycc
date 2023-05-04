@@ -1282,41 +1282,22 @@ struct Emitter: Visitor {
     }
 
     virtual VisitStatementOutput visit(MemberExpr* expr, const VisitStatementInput& input) override {
-        auto object_type = get_expr_type(expr->object)->unqualified();
-        auto message_type = object_type;
+        if (!expr->member) return VisitStatementOutput(Value::of_zero_int());
 
-        bool dereferenced{};
+        auto object_type = get_expr_type(expr->object)->unqualified();
+
         if (auto pointer_type = type_cast<PointerType>(object_type)) {
-            dereferenced = true;
             object_type = pointer_type->base_type->unqualified();
         }
 
         if (auto struct_type = type_cast<StructuredType>(object_type)) {
-            auto it = struct_type->scope.declarator_map.find(expr->identifier.text);
-            if (it == struct_type->scope.declarator_map.end()) {
-                message(Severity::ERROR, expr->location) << "no member named '" << expr->identifier << "' in '" << PrintType(struct_type) << "'\n";
-                pause_messages();
-                return VisitStatementOutput(Value::of_zero_int());
-            }
-
-            if (dereferenced) {
-                if (expr->op == '.') {
-                    message(Severity::ERROR, expr->location) << "type '" << PrintType(message_type) << "' is a pointer; consider using the '->' operator instead of '.'\n";
-                }
-            } else {
-                if (expr->op == TOK_PTR_OP) {
-                    message(Severity::ERROR, expr->location) << "type '" << PrintType(message_type) << "' is not a pointer; consider using the '.' operator instead of '->'\n";
-                }
-            }
-
             VisitStatementOutput output;
-            auto member = it->second;
-            output.ast_node = member;
+            output.ast_node = expr->member;
 
-            auto result_type = member->type;
+            auto result_type = expr->member->type;
             if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
-            if (auto member_variable = member->variable()) {
+            if (auto member_variable = expr->member->variable()) {
                 auto object = emit_object_of_member_expr(expr);
                 
                 auto llvm_struct_type = struct_type->llvm_type();
@@ -1328,15 +1309,13 @@ struct Emitter: Visitor {
                 return output;
             }
             
-            if (auto member_entity = member->entity()) {
+            if (auto member_entity = expr->member->entity()) {
                 assert(member_entity->value.is_valid());
                 output.value = member_entity->value;
                 return output;
             }
         }
 
-        message(Severity::ERROR, expr->object->location) << "type '" << PrintType(object_type) << "' does not have members\n";
-        pause_messages();
         return VisitStatementOutput(Value::of_zero_int());
     }
 

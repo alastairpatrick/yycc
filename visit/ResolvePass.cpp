@@ -528,6 +528,44 @@ struct ResolvePass: Visitor {
         return VisitStatementOutput();
     }
 
+    virtual VisitStatementOutput visit(MemberExpr* member_expr, const VisitStatementInput& input) override {
+        auto object_type = get_expr_type(member_expr->object)->unqualified();
+        auto message_type = object_type;
+
+        bool dereferenced{};
+        if (auto pointer_type = dynamic_cast<const PointerType*>(object_type)) {
+            dereferenced = true;
+            object_type = pointer_type->base_type->unqualified();
+        }
+
+        if (auto struct_type = dynamic_cast<const StructuredType*>(object_type)) {
+            auto it = struct_type->scope.declarator_map.find(member_expr->identifier.text);
+            if (it == struct_type->scope.declarator_map.end()) {
+                message(Severity::ERROR, member_expr->location) << "no member named '" << member_expr->identifier << "' in '" << PrintType(struct_type) << "'\n";
+                pause_messages();
+                return VisitStatementOutput(Value::of_zero_int());
+            }
+
+            if (dereferenced) {
+                if (member_expr->op == '.') {
+                    message(Severity::ERROR, member_expr->location) << "type '" << PrintType(message_type) << "' is a pointer; consider using the '->' operator instead of '.'\n";
+                }
+            } else {
+                if (member_expr->op == TOK_PTR_OP) {
+                    message(Severity::ERROR, member_expr->location) << "type '" << PrintType(message_type) << "' is not a pointer; consider using the '.' operator instead of '->'\n";
+                }
+            }
+
+            member_expr->member = it->second->primary;
+            return VisitStatementOutput();
+        }
+
+        // todo error
+        message(Severity::ERROR, member_expr->object->location) << "type '" << PrintType(object_type) << "' does not have members\n";
+        pause_messages();
+        return VisitStatementOutput();
+    }
+
     virtual VisitStatementOutput visit(SizeOfExpr* size_of_expr, const VisitStatementInput& input) override {
         size_of_expr->type = resolve(size_of_expr->type);
         if (size_of_expr->type->partition() == TypePartition::INCOMPLETE) {

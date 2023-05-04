@@ -90,6 +90,7 @@ struct MemberExpr: Expr {
     TokenKind op;
     Expr* object;
     Identifier identifier;
+    Declarator* member{};
 
     MemberExpr(TokenKind op, Expr* object, const Identifier& identifier, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
