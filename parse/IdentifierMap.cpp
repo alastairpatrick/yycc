@@ -68,6 +68,8 @@ Declarator* IdentifierMap::add_declarator(IdentifierScope add_scope, const Decla
 
             if (primary) {
                 new_declarator->primary = primary;
+                new_declarator->next = primary->next;
+                primary->next = new_declarator;
             }
         }
     }

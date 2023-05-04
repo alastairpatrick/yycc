@@ -165,6 +165,28 @@ EXPECT_AST
 ]]
 
 
+BEGIN Error if redeclaration of external linkage variable is not compatible (1)
+int x;
+void f() {
+    extern float x;
+}
+EXPECT_MESSAGE
+:3:18: error redeclaration of variable 'x' with incompatible type...
+:1:5: ...see other
+END
+
+
+BEGIN Error if redeclaration of external linkage variable is not compatible (2)
+void f() {
+    extern float x;
+}
+int x;
+EXPECT_MESSAGE
+:4:5: error redeclaration of variable 'x' with incompatible type...
+:2:18: ...see other
+END
+
+
 BEGIN Resolves tag type declarators declared in function prototype scope
 void f(enum E { A } a, enum E { B } b) {
 }

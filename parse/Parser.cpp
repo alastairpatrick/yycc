@@ -663,8 +663,6 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     if (flags.allow_initializer && consume('=')) {
         initializer = parse_initializer();
     }
-
-    auto declarator = identifiers.add_declarator(declaration->scope, declaration, type, declarator_transform.identifier, location);
     
     auto storage_class = declaration->storage_class;
     auto scope = declaration->scope;
@@ -677,6 +675,15 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     } else {
         linkage = Linkage::NONE;
     }
+
+    Declarator* file_declarator{};  // an additional declarator at file scope if appropriate
+    Declarator* primary_declarator{};
+    if (declaration->scope == IdentifierScope::BLOCK && declaration->storage_class == StorageClass::EXTERN) {
+        file_declarator = identifiers.add_declarator(IdentifierScope::FILE, declaration, type, declarator_transform.identifier, location);
+        primary_declarator = file_declarator->primary;
+    }
+
+    auto declarator = identifiers.add_declarator(declaration->scope, declaration, type, declarator_transform.identifier, location, primary_declarator);
 
     if (is_function && declaration->storage_class != StorageClass::TYPEDEF) {
         CompoundStatement* body{};
@@ -725,8 +732,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         }
     }
 
-    if (declaration->scope == IdentifierScope::BLOCK && declaration->storage_class == StorageClass::EXTERN) {
-        auto file_declarator = identifiers.add_declarator(IdentifierScope::FILE, declaration, type, declarator_transform.identifier, location);
+    if (file_declarator) {
         file_declarator->delegate = declarator->delegate;
     }
 
