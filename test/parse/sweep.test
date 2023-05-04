@@ -127,7 +127,6 @@ FILE "a.h"
 typedef int T;
 EXPECT_TEXT
 #var x
-#line 2 ""
 int x;
 END
 

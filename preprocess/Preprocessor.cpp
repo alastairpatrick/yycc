@@ -389,14 +389,8 @@ InternedString Preprocessor::evaluate_identifier(string_view text) const {
 
     auto it = namespace_handles.find(intern_string(handle_name));
     if (it != namespace_handles.end()) {
-        string appended(*it->second);
-        appended += suffix;
-        return intern_string(appended);
+        return intern_string(*it->second, suffix);
     }
 
-    if (current_namespace_prefix.empty()) return intern_string(text);
-
-    string appended(current_namespace_prefix);
-    appended += text;
-    return intern_string(appended);    
+    return intern_string(current_namespace_prefix, text);
 }

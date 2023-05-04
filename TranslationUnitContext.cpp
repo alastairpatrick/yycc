@@ -23,8 +23,6 @@ TranslationUnitContext::TranslationUnitContext(ostream& message_stream): message
     zero_int = LLVMConstInt(IntegerType::default_type()->llvm_type(), 0, false);
 
     null_message_stream.setstate(ios_base::badbit);
-
-    interned_views.insert(*empty_interned_string);
 }
 
 TranslationUnitContext::~TranslationUnitContext() {

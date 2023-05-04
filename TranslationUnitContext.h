@@ -24,7 +24,7 @@ struct TranslationUnitContext {
     TypeContext type;
 
     list<string> interned_strings; // TODO: bump allocator
-    unordered_set<string_view> interned_views;
+    unordered_set<pair<string_view, string_view>, InternedStringPairHash, InternedStringPairKeyEqual> interned_views;
 
     ASTNode* ast_nodes{};
 
