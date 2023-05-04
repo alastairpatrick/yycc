@@ -4,6 +4,7 @@
 #include "parse/Type.h"
 
 enum class ValueKind: uint8_t {
+    INVALID,
     TYPE_ONLY,
     RVALUE,
     LVALUE,
@@ -12,7 +13,7 @@ enum class ValueKind: uint8_t {
 struct BitField;
 
 struct Value {
-    ValueKind kind = ValueKind::TYPE_ONLY;
+    ValueKind kind = ValueKind::INVALID;
     bool is_null_literal{};
     QualifierSet qualifiers{};
     const Type* type{};
@@ -38,7 +39,7 @@ struct Value {
     static Value of_zero_int();
 
     bool is_valid() const {
-        return type;
+        return kind != ValueKind::INVALID;
     }
 
     bool is_const() const {
