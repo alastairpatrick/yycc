@@ -42,6 +42,8 @@ struct Value {
 
     static Value of_zero_int();
 
+    static Value of_recover(const Type* type);
+
     bool is_valid() const {
         return kind != ValueKind::INVALID;
     }
@@ -81,6 +83,10 @@ struct Value {
     }
 
     void store(LLVMBuilderRef builder, const Value& new_value) const;
+
+    Value address_of() const {
+        return Value(type->pointer_to(), get_lvalue());
+    }
 
 private:
     LLVMValueRef llvm{};

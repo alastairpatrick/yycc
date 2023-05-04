@@ -43,6 +43,7 @@ struct VisitStatementInput {
 
 struct VisitStatementOutput {
     Value value;
+    LocationNode* ast_node{};
 
     VisitStatementOutput() = default;
     explicit VisitStatementOutput(Value value): value(value) {}

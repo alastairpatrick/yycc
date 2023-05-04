@@ -227,6 +227,17 @@ define void @g() {
 END
 
 
+BEGIN Error if number of parameters do not match in function call
+void f(short) {}
+void g() {
+    f(7, 8);
+}
+EXPECT_MESSAGE
+:3:6: error expected 1 parameter(s) but got 2
+:1:6: see declaration of called function
+END
+
+
 BEGIN Function call returns result
 int f() {
     return 7;
@@ -319,6 +330,35 @@ define i32 @f(ptr %0) {
   store ptr %0, ptr %this, align 8
   ret i32 7
 }
+END
+
+
+BEGIN Member function must have object instance parameter
+struct S {
+  int f() {
+    return 7;
+  }
+};
+int g(S* p) {
+  return p->f();
+}
+EXPECT_MESSAGE
+:7:11: error called member function has no parameters
+:2:7: see declaration of called member function
+END
+
+
+BEGIN Error if cannot convert instance parameter in member function call
+struct S {
+  int f(S*) {
+    return 7;
+  }
+};
+int g(const S* p) {
+  return p->f();
+}
+EXPECT_MESSAGE
+:7:11: contextual error conversion from type 'struct S const*' to type 'struct S*' requires explicit cast
 END
 
 

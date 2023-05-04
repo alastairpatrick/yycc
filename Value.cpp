@@ -7,6 +7,14 @@ Value Value::of_zero_int() {
     return Value(IntegerType::default_type(), context->zero_int);
 }
 
+Value Value::of_recover(const Type* type) {
+    if (type->unqualified() == &VoidType::it) {
+        return Value(type);
+    } else {
+        return of_null(type);
+    }
+}
+
 LLVMValueRef Value::get_rvalue(LLVMBuilderRef builder) const {
     assert(llvm);
     if (kind == ValueKind::RVALUE) return llvm;
