@@ -257,3 +257,33 @@ PARSE
 EXPECT_MESSAGE
 :3:5: error identifier 'A' (aka 'foo') undeclared
 END
+
+
+BEGIN Member of struct may not have a qualified identifier
+struct S {
+    int S::x;
+};
+EXPECT_MESSAGE
+:2:9: error qualified identifier not valid at this scope at file scope; did you mean 'x'?
+END
+
+
+BEGIN Local variable may not have a qualified identifier
+void f() {
+    int f::x;
+}
+PARSE
+EXPECT_MESSAGE
+:2:9: error qualified identifier not valid at this scope at file scope; did you mean 'x'?
+END
+
+
+BEGIN Enum constants may have qualified identifiers
+enum E {
+    E::A,
+    E::B,
+} z;
+EXPECT_AST
+[["var","ES",["ENUM",[["ec","E::A"],["ec","E::B"]]],"z"]]
+
+

@@ -19,16 +19,28 @@ Declarator* IdentifierMap::lookup_declarator(const Identifier& identifier) const
 }
 
 Declarator* IdentifierMap::add_declarator(IdentifierScope add_scope, const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location, Declarator* primary) {
-    InternedString identifier_string = add_scope == IdentifierScope::FILE ? identifier.at_file_scope : identifier.text;
-    if (identifier_string->empty()) return new Declarator(declaration, type, identifier_string, location);
+    InternedString identifier_string{};
+    Scope* scope{};
+    if (add_scope == IdentifierScope::FILE) {
+        identifier_string = identifier.at_file_scope;
+        scope = &scopes.back();
+    } else {
+        identifier_string = identifier.text;
+        scope = &scopes.front();
 
-    Scope& scope = add_scope == IdentifierScope::FILE ? scopes.back() : scopes.front();
+        auto idx = identifier_string->rfind(':');
+        if (idx != identifier_string->npos) {
+            message(Severity::ERROR, location) << "qualified identifier not valid at this scope at file scope; did you mean '" << identifier_string->substr(idx + 1) << "'?\n";
+        }
+    }
+
+    if (identifier_string->empty()) return new Declarator(declaration, type, identifier_string, location);
 
     Declarator* new_declarator{};
     Declarator* existing_declarator{};
 
-    auto it = scope.declarator_map.find(identifier_string);
-    if (it != scope.declarator_map.end()) {
+    auto it = scope->declarator_map.find(identifier_string);
+    if (it != scope->declarator_map.end()) {
         existing_declarator = it->second;
         if (!existing_declarator->type) {
             new_declarator = existing_declarator;
@@ -52,7 +64,7 @@ Declarator* IdentifierMap::add_declarator(IdentifierScope add_scope, const Decla
 
         } else {
             existing_declarator = new_declarator;
-            scope.declarator_map[identifier_string] = new_declarator;
+            scope->declarator_map[identifier_string] = new_declarator;
 
             if (primary) {
                 new_declarator->primary = primary;
@@ -61,7 +73,7 @@ Declarator* IdentifierMap::add_declarator(IdentifierScope add_scope, const Decla
     }
 
     if (new_declarator->type) {
-        scope.declarators.push_back(new_declarator);
+        scope->declarators.push_back(new_declarator);
     }
 
     return new_declarator;
