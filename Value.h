@@ -32,6 +32,10 @@ struct Value {
         assert(kind == ValueKind::TYPE_ONLY || llvm);
     }
 
+    static Value of_null(const Type* type) {
+        return Value(type, LLVMConstNull(type->llvm_type()));
+    }
+
     static Value of_int(const IntegerType* type, unsigned long long int_value) {
         return Value(type, LLVMConstInt(type->llvm_type(), int_value, type->is_signed()));
     }

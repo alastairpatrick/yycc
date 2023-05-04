@@ -155,6 +155,12 @@ struct Emitter: Visitor {
         return block;
     }
 
+    Value emit(Expr* expr) {
+        auto value = accept(expr, VisitStatementInput()).value;
+        assert(value.is_valid());
+        return value;
+    }
+
     Value emit(Statement* statement) {
         return accept(statement, VisitStatementInput()).value;
     }
