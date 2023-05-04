@@ -371,7 +371,7 @@ END
 
 
 BEGIN Pointer subtraction
-long long f(int* p, int* q) {
+long long f(int* p, const int* q) {
     return p - q;
 }
 EXPECT_IR
@@ -388,6 +388,15 @@ define i64 @f(ptr %0, ptr %1) {
   %8 = sdiv i64 %7, 4
   ret i64 %8
 }
+END
+
+
+BEGIN Error on subtraction of different types
+long long f(int* p, float* q) {
+    return p - q;
+}
+EXPECT_MESSAGE
+:2:14: error '-' operation may not be evaluated with operands of types 'int*' and 'float*'
 END
 
 

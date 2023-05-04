@@ -928,8 +928,7 @@ struct Emitter: Visitor {
         auto right_pointer_type = type_cast<PointerType>(right_value.type);
 
         if (left_pointer_type && right_pointer_type) {
-            if (op == '-') {
-                // todo check right hand side has appropriate pointer type
+            if (op == '-' && left_pointer_type->base_type->unqualified() == right_pointer_type->base_type->unqualified()) {
                 auto result_type = IntegerType::of_size(IntegerSignedness::SIGNED);
                 if (outcome == EmitOutcome::TYPE) return Value(result_type);
             
