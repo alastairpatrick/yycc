@@ -73,15 +73,15 @@ private:
 
     void handle_declaration_directive();
 
-    LocationNode* parse_declaration_or_statement(ScopeKind scope);
-    Declaration* parse_declaration(ScopeKind scope);
-    Declaration* parse_declaration_specifiers(ScopeKind scope, const Type*& type, SpecifierSet& specifiers);
+    LocationNode* parse_declaration_or_statement(bool expression_valid);
+    Declaration* parse_declaration(bool expression_valid);
+    Declaration* parse_declaration_specifiers(bool expression_valid, const Type*& type, SpecifierSet& specifiers);
     const Type* parse_structured_type(Declaration* declaration);
     Declarator* declare_tag_type(ScopeKind scope, Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location);
     const Type* parse_typeof();
     Declarator* parse_enum_constant(Declaration* declaration, const EnumType* type);
     Declarator* parse_declarator(Declaration* declaration, const Type* type, SpecifierSet specifiers, ParseDeclaratorFlags flags, bool* last);
-    DeclaratorTransform parse_declarator_transform(ScopeKind scope, ParseDeclaratorFlags flags);
+    DeclaratorTransform parse_declarator_transform(ParseDeclaratorFlags flags);
     Declarator* parse_parameter_declarator();
     Statement* parse_statement();
     CompoundStatement* parse_compound_statement();
@@ -90,7 +90,7 @@ private:
     Expr* parse_initializer();
     OperatorAssoc assoc();
     OperatorPrec prec();
-    const Type* parse_type();
+    const Type* parse_type(bool expression_valid);
 };
 
 #endif

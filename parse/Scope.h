@@ -11,7 +11,6 @@ enum class ScopeKind {
     BLOCK,
     PROTOTYPE,
     STRUCTURED,
-    EXPRESSION,  // e.g. sizeof, typeof
 };
 
 struct Scope {
