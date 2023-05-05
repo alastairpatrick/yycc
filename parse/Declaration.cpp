@@ -31,11 +31,11 @@ ostream& operator<<(ostream& stream, StorageDuration duration) {
     return stream;
 }
 
-Declaration::Declaration(IdentifierScope scope, StorageClass storage_class, const Type* type, const Location& location)
+Declaration::Declaration(ScopeKind scope, StorageClass storage_class, const Type* type, const Location& location)
     : LocationNode(location), scope(scope), storage_class(storage_class), type(type) {
 }
 
-Declaration::Declaration(IdentifierScope scope, const Location& location)
+Declaration::Declaration(ScopeKind scope, const Location& location)
     : LocationNode(location), scope(scope) {
 }
 
@@ -97,7 +97,7 @@ const Type* Declarator::to_type() const {
 }
 
 bool Declarator::is_member() const {
-    return declaration ? declaration->scope == IdentifierScope::STRUCTURED : false;
+    return declaration ? declaration->scope == ScopeKind::STRUCTURED : false;
 }
 
 VisitDeclaratorOutput Declarator::accept(Visitor& visitor, const VisitDeclaratorInput& input) {

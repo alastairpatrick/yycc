@@ -18,10 +18,10 @@ Declarator* IdentifierMap::lookup_declarator(const Identifier& identifier) const
     return nullptr;
 }
 
-Declarator* IdentifierMap::add_declarator(IdentifierScope add_scope, const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location, Declarator* primary) {
+Declarator* IdentifierMap::add_declarator(ScopeKind add_scope, const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location, Declarator* primary) {
     InternedString identifier_string{};
     Scope* scope{};
-    if (add_scope == IdentifierScope::FILE) {
+    if (add_scope == ScopeKind::FILE) {
         identifier_string = identifier.at_file_scope;
         scope = &scopes.back();
     } else {

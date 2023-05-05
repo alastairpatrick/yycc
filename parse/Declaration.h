@@ -13,7 +13,7 @@ enum class DeclaratorKind {
     TYPE_DEF,
 };
 
-enum class IdentifierScope {
+enum class ScopeKind {
     FILE,
     BLOCK,
     PROTOTYPE,
@@ -48,14 +48,14 @@ ostream& operator<<(ostream& stream, StorageDuration duration);
 
 struct Declaration: LocationNode {
     Fragment fragment;
-    IdentifierScope scope{};
+    ScopeKind scope{};
     StorageClass storage_class = StorageClass::NONE;
     const Type* type{};
     vector<Declarator*> declarators;
     unordered_set<InternedString> identifier_tokens;  // all identifier tokens encountered parsing this declaration
 
-    Declaration(IdentifierScope scope, StorageClass storage_class, const Type* type, const Location& location);
-    Declaration(IdentifierScope scope, const Location& location);
+    Declaration(ScopeKind scope, StorageClass storage_class, const Type* type, const Location& location);
+    Declaration(ScopeKind scope, const Location& location);
 
     virtual void print(ostream& stream) const override;
 };

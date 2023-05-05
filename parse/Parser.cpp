@@ -58,7 +58,7 @@ void Parser::handle_declaration_directive() {
         if (pp_token == TOK_IDENTIFIER) {
             auto id = preprocessor.identifier;
 
-            auto declarator = identifiers.add_declarator(IdentifierScope::BLOCK, nullptr, nullptr, id, preprocessor.location());
+            auto declarator = identifiers.add_declarator(ScopeKind::BLOCK, nullptr, nullptr, id, preprocessor.location());
             if (token == TOK_PP_TYPE) {
                 declarator->delegate = new TypeDef(declarator);
                 declarator->type = declarator->to_type();
@@ -189,7 +189,7 @@ bool Parser::check_eof() {
     return false;
 }
 
-LocationNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
+LocationNode* Parser::parse_declaration_or_statement(ScopeKind scope) {
     resume_messages();
 
     LocationNode* node = parse_declaration(scope);
@@ -199,15 +199,15 @@ LocationNode* Parser::parse_declaration_or_statement(IdentifierScope scope) {
     return node;
 }
 
-bool allow_abstract_declarator(IdentifierScope scope) {
-    return scope == IdentifierScope::PROTOTYPE || scope == IdentifierScope::STRUCTURED;
+bool allow_abstract_declarator(ScopeKind scope) {
+    return scope == ScopeKind::PROTOTYPE || scope == ScopeKind::STRUCTURED;
 }
 
-Declaration* Parser::parse_declaration(IdentifierScope scope) {
+Declaration* Parser::parse_declaration(ScopeKind scope) {
     auto location = preprocessor.location();
     auto begin = position();
 
-    assert(scope != IdentifierScope::FILE || identifier_tokens.empty());
+    assert(scope != ScopeKind::FILE || identifier_tokens.empty());
 
     const Type* base_type{};
     SpecifierSet specifiers;
@@ -231,7 +231,7 @@ Declaration* Parser::parse_declaration(IdentifierScope scope) {
 
         if (!last_declarator) consume_required(';');
 
-        if (scope == IdentifierScope::FILE) {
+        if (scope == ScopeKind::FILE) {
             declaration->identifier_tokens = move(identifier_tokens);
             identifier_tokens.clear();
         }
@@ -240,11 +240,11 @@ Declaration* Parser::parse_declaration(IdentifierScope scope) {
         return declaration;
     }
 
-    if (scope == IdentifierScope::FILE) identifier_tokens.clear();
+    if (scope == ScopeKind::FILE) identifier_tokens.clear();
     return nullptr;
 }
 
-Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const Type*& type, SpecifierSet& specifiers) {
+Declaration* Parser::parse_declaration_specifiers(ScopeKind scope, const Type*& type, SpecifierSet& specifiers) {
     Declaration* declaration{};
     Location declaration_location = preprocessor.location();
     StorageClass storage_class;
@@ -307,7 +307,7 @@ Declaration* Parser::parse_declaration_specifiers(IdentifierScope scope, const T
 
                       if (!typedef_type) {
                           // No error in scopes where something other than a type would be valid, i.e. a statement or expression.
-                          if (scope == IdentifierScope::BLOCK || scope == IdentifierScope::EXPRESSION) break;
+                          if (scope == ScopeKind::BLOCK || scope == ScopeKind::EXPRESSION) break;
 
                           auto& stream = message(Severity::ERROR, preprocessor.location()) << "type \'" << *identifier.text << "' ";
                           if (identifier.text != identifier.at_file_scope) {
@@ -500,7 +500,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
         }
     }
 
-    bool anonymous = declaration->scope == IdentifierScope::STRUCTURED && identifier.empty();
+    bool anonymous = declaration->scope == ScopeKind::STRUCTURED && identifier.empty();
 
     TagType* type{};
 
@@ -526,7 +526,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
             oi_scope.position = position();
 
             while (token && token != '}') {
-                auto member_declaration = dynamic_cast<Declaration*>(parse_declaration_or_statement(IdentifierScope::STRUCTURED));
+                auto member_declaration = dynamic_cast<Declaration*>(parse_declaration_or_statement(ScopeKind::STRUCTURED));
                 if (!member_declaration) continue;
 
                 // C11 6.7.2.1p13 anonymous structs and unions
@@ -559,7 +559,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
         if (consume(':')) {
             const Type* base_type{};
             SpecifierSet specifiers{};
-            parse_declaration_specifiers(IdentifierScope::EXPRESSION, base_type, specifiers);
+            parse_declaration_specifiers(ScopeKind::EXPRESSION, base_type, specifiers);
 
             enum_type->base_type = base_type;
             enum_type->explicit_base_type = true;
@@ -610,14 +610,14 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
             tag_declarator = declare_tag_type(declaration->scope, declaration, identifier, type, specifier_location);
         } else {
             // C99 6.7.2.3p8
-            tag_declarator = declare_tag_type(IdentifierScope::FILE, declaration, identifier, type, specifier_location);
+            tag_declarator = declare_tag_type(ScopeKind::FILE, declaration, identifier, type, specifier_location);
         }
     }
 
     return type;
 }
 
-Declarator* Parser::declare_tag_type(IdentifierScope scope, Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location) {
+Declarator* Parser::declare_tag_type(ScopeKind scope, Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location) {
     auto declarator = identifiers.add_declarator(scope, declaration, type, identifier, location);
     declarator->delegate = new TypeDef(declarator);
     type->tag = declarator;
@@ -652,10 +652,10 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
 
     type = declarator_transform.apply(type);
 
-    bool is_function = declaration->scope != IdentifierScope::PROTOTYPE && dynamic_cast<const FunctionType*>(type);
+    bool is_function = declaration->scope != ScopeKind::PROTOTYPE && dynamic_cast<const FunctionType*>(type);
 
     Expr* bit_field_size{};
-    if (declaration->scope == IdentifierScope::STRUCTURED && consume(':')) {
+    if (declaration->scope == ScopeKind::STRUCTURED && consume(':')) {
         bit_field_size = parse_expr(CONDITIONAL_PRECEDENCE);
     }
 
@@ -668,9 +668,9 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     auto scope = declaration->scope;
 
     Linkage linkage{};
-    if (storage_class == StorageClass::STATIC && scope == IdentifierScope::FILE) {
+    if (storage_class == StorageClass::STATIC && scope == ScopeKind::FILE) {
         linkage = Linkage::INTERNAL;
-    } else if (storage_class == StorageClass::EXTERN || scope == IdentifierScope::FILE) {
+    } else if (storage_class == StorageClass::EXTERN || scope == ScopeKind::FILE) {
         linkage = Linkage::EXTERNAL;
     } else {
         linkage = Linkage::NONE;
@@ -678,8 +678,8 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
 
     Declarator* file_declarator{};  // an additional declarator at file scope if appropriate
     Declarator* primary_declarator{};
-    if (declaration->scope == IdentifierScope::BLOCK && declaration->storage_class == StorageClass::EXTERN) {
-        file_declarator = identifiers.add_declarator(IdentifierScope::FILE, declaration, type, declarator_transform.identifier, location);
+    if (declaration->scope == ScopeKind::BLOCK && declaration->storage_class == StorageClass::EXTERN) {
+        file_declarator = identifiers.add_declarator(ScopeKind::FILE, declaration, type, declarator_transform.identifier, location);
         primary_declarator = file_declarator->primary;
     }
 
@@ -695,7 +695,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         }
 
         if ((storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) ||
-            (storage_class == StorageClass::STATIC && scope != IdentifierScope::FILE)) {
+            (storage_class == StorageClass::STATIC && scope != ScopeKind::FILE)) {
             message(Severity::ERROR, declarator->location) << "invalid storage class\n";
         }
 
@@ -715,9 +715,9 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
             declarator->delegate = new TypeDef(declarator);
         } else {
             StorageDuration storage_duration{};
-            if (storage_class == StorageClass::EXTERN || storage_class == StorageClass::STATIC || scope == IdentifierScope::FILE) {
+            if (storage_class == StorageClass::EXTERN || storage_class == StorageClass::STATIC || scope == ScopeKind::FILE) {
                 storage_duration = StorageDuration::STATIC;
-            } else if (scope == IdentifierScope::STRUCTURED) {
+            } else if (scope == ScopeKind::STRUCTURED) {
                 storage_duration = StorageDuration::AGGREGATE;
             } else {
                 storage_duration = StorageDuration::AUTO;
@@ -726,7 +726,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
             auto variable = new Variable(declarator, linkage, storage_duration, initializer);
             declarator->delegate = variable;
 
-            if (scope == IdentifierScope::STRUCTURED && storage_duration == StorageDuration::AGGREGATE) {
+            if (scope == ScopeKind::STRUCTURED && storage_duration == StorageDuration::AGGREGATE) {
                 if (bit_field_size) variable->member->bit_field.reset(new BitField(bit_field_size));
             }
         }
@@ -740,7 +740,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     return declarator;
 }
 
-DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, ParseDeclaratorFlags flags) {
+DeclaratorTransform Parser::parse_declarator_transform(ScopeKind scope, ParseDeclaratorFlags flags) {
     function<const Type*(const Type*)> left_transform;
     while (consume('*')) {
         left_transform = [left_transform](const Type* type) {
@@ -784,7 +784,7 @@ DeclaratorTransform Parser::parse_declarator_transform(IdentifierScope scope, Pa
         if (consume('[')) {
             // C99 6.7.5.3p7
             SpecifierSet array_qualifier_set{};
-            if (depth == 0 && scope == IdentifierScope::PROTOTYPE) {
+            if (depth == 0 && scope == ScopeKind::PROTOTYPE) {
                 while (token == TOK_CONST || token == TOK_RESTRICT || token == TOK_VOLATILE || token == TOK_STATIC) {
                     if (token != TOK_STATIC) {
                         array_qualifier_set |= token_to_specifier(token);
@@ -867,7 +867,7 @@ Declarator* Parser::parse_parameter_declarator() {
 
     const Type* base_type{};
     SpecifierSet specifiers{};
-    auto declaration = parse_declaration_specifiers(IdentifierScope::PROTOTYPE, base_type, specifiers);
+    auto declaration = parse_declaration_specifiers(ScopeKind::PROTOTYPE, base_type, specifiers);
     if (!declaration) {
         return nullptr;
     }
@@ -907,7 +907,7 @@ Statement* Parser::parse_statement() {
           Expr* iterate{};
           if (kind == TOK_FOR) {
               if (!consume(';')) {
-                  declaration = parse_declaration(IdentifierScope::BLOCK);
+                  declaration = parse_declaration(ScopeKind::BLOCK);
                   if (!declaration) {
                       initialize = parse_expr(SEQUENCE_PRECEDENCE);
                       consume_required(';');
@@ -1068,7 +1068,7 @@ CompoundStatement* Parser::parse_compound_statement() {
 
         ASTNodeVector nodes;
         while (token && token != '}') {
-            auto node = parse_declaration_or_statement(IdentifierScope::BLOCK);
+            auto node = parse_declaration_or_statement(ScopeKind::BLOCK);
             nodes.push_back(node);
         }
 
@@ -1342,7 +1342,7 @@ vector<Declaration*> Parser::parse() {
     vector<Declaration*> declarations;
     while (token) {
         auto keep = !preparse || preprocessor.include_stack.empty();
-        auto node = parse_declaration_or_statement(IdentifierScope::FILE);
+        auto node = parse_declaration_or_statement(ScopeKind::FILE);
         auto declaration = dynamic_cast<Declaration*>(node);
 
         if (declaration) {
@@ -1370,11 +1370,11 @@ OperatorPrec Parser::prec() {
 const Type* Parser::parse_type() {
     const Type* type{};
     SpecifierSet specifiers{};
-    auto declaration = parse_declaration_specifiers(IdentifierScope::EXPRESSION, type, specifiers);
+    auto declaration = parse_declaration_specifiers(ScopeKind::EXPRESSION, type, specifiers);
     if (!declaration) return nullptr;
 
     if (token && token != ')') {
-        auto transform = parse_declarator_transform(IdentifierScope::EXPRESSION, {});
+        auto transform = parse_declarator_transform(ScopeKind::EXPRESSION, {});
         type = transform.apply(type);
     }
 

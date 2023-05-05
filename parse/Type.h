@@ -14,7 +14,7 @@ struct Declaration;
 struct EnumConstant;
 struct Expr;
 struct IdentifierMap;
-enum class IdentifierScope;
+enum class ScopeKind;
 struct PointerType;
 struct TypeDef;
 struct Visitor;
