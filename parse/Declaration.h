@@ -40,14 +40,13 @@ ostream& operator<<(ostream& stream, StorageDuration duration);
 
 struct Declaration: LocationNode {
     Fragment fragment;
-    ScopeKind scope{};
     StorageClass storage_class = StorageClass::NONE;
     const Type* type{};
     vector<Declarator*> declarators;
     unordered_set<InternedString> identifier_tokens;  // all identifier tokens encountered parsing this declaration
 
-    Declaration(ScopeKind scope, StorageClass storage_class, const Type* type, const Location& location);
-    Declaration(ScopeKind scope, const Location& location);
+    Declaration(StorageClass storage_class, const Type* type, const Location& location);
+    Declaration(const Location& location);
 
     virtual void print(ostream& stream) const override;
 };

@@ -31,12 +31,12 @@ ostream& operator<<(ostream& stream, StorageDuration duration) {
     return stream;
 }
 
-Declaration::Declaration(ScopeKind scope, StorageClass storage_class, const Type* type, const Location& location)
-    : LocationNode(location), scope(scope), storage_class(storage_class), type(type) {
+Declaration::Declaration(StorageClass storage_class, const Type* type, const Location& location)
+    : LocationNode(location), storage_class(storage_class), type(type) {
 }
 
-Declaration::Declaration(ScopeKind scope, const Location& location)
-    : LocationNode(location), scope(scope) {
+Declaration::Declaration(const Location& location)
+    : LocationNode(location) {
 }
 
 void Declaration::print(ostream& stream) const {
@@ -75,19 +75,19 @@ EnumConstant* Declarator::enum_constant() {
     return dynamic_cast<EnumConstant*>(delegate);
 }
 
-Entity* Declarator::entity() {
+Entity* Declarator::entity() const {
     return dynamic_cast<Entity*>(delegate);
 }
 
-Variable* Declarator::variable() {
+Variable* Declarator::variable() const {
     return dynamic_cast<Variable*>(delegate);
 }
 
-Function* Declarator::function() {
+Function* Declarator::function() const {
     return dynamic_cast<Function*>(delegate);
 }
 
-TypeDef* Declarator::type_def() {
+TypeDef* Declarator::type_def() const {
     return dynamic_cast<TypeDef*>(delegate);
 }
 
@@ -97,7 +97,10 @@ const Type* Declarator::to_type() const {
 }
 
 bool Declarator::is_member() const {
-    return declaration ? declaration->scope == ScopeKind::STRUCTURED : false;
+    if (auto delegate = variable()) {
+        return delegate->storage_duration == StorageDuration::AGGREGATE;
+    }
+    return false;
 }
 
 VisitDeclaratorOutput Declarator::accept(Visitor& visitor, const VisitDeclaratorInput& input) {

@@ -67,10 +67,10 @@ struct Declarator: LocationNode {
     Declarator(const Declaration* declaration, InternedString identifier, const Location& location);
 
     EnumConstant* enum_constant();
-    Entity* entity();
-    Variable* variable();
-    Function* function();
-    TypeDef* type_def();
+    Entity* entity() const;
+    Variable* variable() const;
+    Function* function() const;
+    TypeDef* type_def() const;
 
     const Type* to_type() const;
     bool is_member() const;

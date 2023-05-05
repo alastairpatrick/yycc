@@ -334,7 +334,7 @@ Declaration* Parser::parse_declaration_specifiers(bool expression_valid, const T
             case TOK_UNION: {
               found_specifier_token = token;
               type_specifier_location = preprocessor.location();
-              if (!declaration) declaration = new Declaration(scope, declaration_location);
+              if (!declaration) declaration = new Declaration(declaration_location);
               type = parse_structured_type(declaration);
               break;
 
@@ -365,7 +365,7 @@ Declaration* Parser::parse_declaration_specifiers(bool expression_valid, const T
 
         if (found_specifier_token) {
             assert(found_specifier_token >= TOK_BEGIN_SPECIFIER_LIKE && found_specifier_token < TOK_END_SPECIFIER_LIKE);
-            if (!declaration) declaration = new Declaration(scope, declaration_location);
+            if (!declaration) declaration = new Declaration(declaration_location);
             if (specifier_set & token_to_specifier(found_specifier_token)) {
                 message(Severity::ERROR, specifier_location) << "invalid declaration specifier or type qualifier combination\n";
             }
@@ -485,7 +485,6 @@ Declaration* Parser::parse_declaration_specifiers(bool expression_valid, const T
 
 const Type* Parser::parse_structured_type(Declaration* declaration) {
     ScopeKind scope = identifiers.scope_kind();
-    assert(scope == declaration->scope);
 
     auto specifier = token;
     auto specifier_location = preprocessor.location();
@@ -597,7 +596,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                     }
                 }
 
-                auto declarator = identifiers.add_declarator(declaration->scope, declaration, enum_type, identifier, location);
+                auto declarator = identifiers.add_declarator(scope, declaration, enum_type, identifier, location);
                 auto enum_constant = new EnumConstant(declarator, enum_type, constant);
                 declarator->delegate = enum_constant;
 
@@ -650,6 +649,8 @@ const Type* Parser::parse_typeof() {
 }
 
 Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type, SpecifierSet specifiers, ParseDeclaratorFlags flags, bool* last) {
+    ScopeKind scope = identifiers.scope_kind();
+
     auto location = preprocessor.location();
     auto begin = position();
 
@@ -658,10 +659,10 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
 
     type = declarator_transform.apply(type);
 
-    bool is_function = declaration->scope != ScopeKind::PROTOTYPE && dynamic_cast<const FunctionType*>(type);
+    bool is_function = scope != ScopeKind::PROTOTYPE && dynamic_cast<const FunctionType*>(type);
 
     Expr* bit_field_size{};
-    if (declaration->scope == ScopeKind::STRUCTURED && consume(':')) {
+    if (scope == ScopeKind::STRUCTURED && consume(':')) {
         bit_field_size = parse_expr(CONDITIONAL_PRECEDENCE);
     }
 
@@ -671,7 +672,6 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     }
     
     auto storage_class = declaration->storage_class;
-    auto scope = declaration->scope;
 
     Linkage linkage{};
     if (storage_class == StorageClass::STATIC && scope == ScopeKind::FILE) {
@@ -684,12 +684,12 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
 
     Declarator* file_declarator{};  // an additional declarator at file scope if appropriate
     Declarator* primary_declarator{};
-    if (declaration->scope == ScopeKind::BLOCK && declaration->storage_class == StorageClass::EXTERN) {
+    if (scope == ScopeKind::BLOCK && declaration->storage_class == StorageClass::EXTERN) {
         file_declarator = identifiers.add_declarator(ScopeKind::FILE, declaration, type, declarator_transform.identifier, location);
         primary_declarator = file_declarator->primary;
     }
 
-    auto declarator = identifiers.add_declarator(declaration->scope, declaration, type, declarator_transform.identifier, location, primary_declarator);
+    auto declarator = identifiers.add_declarator(scope, declaration, type, declarator_transform.identifier, location, primary_declarator);
 
     if (is_function && declaration->storage_class != StorageClass::TYPEDEF) {
         CompoundStatement* body{};
