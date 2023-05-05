@@ -77,7 +77,7 @@ private:
     Declaration* parse_declaration(bool expression_valid);
     Declaration* parse_declaration_specifiers(bool expression_valid, const Type*& type, SpecifierSet& specifiers);
     const Type* parse_structured_type(Declaration* declaration);
-    Declarator* declare_tag_type(ScopeKind scope, Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location);
+    Declarator* declare_tag_type(AddScope add_scope, Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location);
     const Type* parse_typeof();
     Declarator* parse_declarator(Declaration* declaration, const Type* type, SpecifierSet specifiers, ParseDeclaratorFlags flags, bool* last);
     DeclaratorTransform parse_declarator_transform(ParseDeclaratorFlags flags);

@@ -58,7 +58,7 @@ void Parser::handle_declaration_directive() {
         if (pp_token == TOK_IDENTIFIER) {
             auto id = preprocessor.identifier;
 
-            auto declarator = identifiers.add_declarator(ScopeKind::BLOCK, nullptr, nullptr, id, preprocessor.location());
+            auto declarator = identifiers.add_declarator(AddScope::TOP, nullptr, nullptr, id, preprocessor.location());
             if (token == TOK_PP_TYPE) {
                 declarator->delegate = new TypeDef(declarator);
                 declarator->type = declarator->to_type();
@@ -520,7 +520,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
         if (token == '{') {
             // C99 6.7.2.3p6
-            if (!identifier.empty()) tag_declarator = declare_tag_type(scope, declaration, identifier, type, specifier_location);
+            if (!identifier.empty()) tag_declarator = declare_tag_type(AddScope::TOP, declaration, identifier, type, specifier_location);
 
             structured_type->complete = true;
 
@@ -572,7 +572,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
         if (consume('{')) {
             // C99 6.7.2.3p6
-            if (!identifier.empty()) tag_declarator = declare_tag_type(scope, declaration, identifier, type, specifier_location);
+            if (!identifier.empty()) tag_declarator = declare_tag_type(AddScope::TOP, declaration, identifier, type, specifier_location);
 
             enum_type->complete = true;
             while (token && token != '}') {
@@ -596,7 +596,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                     }
                 }
 
-                auto declarator = identifiers.add_declarator(scope, declaration, enum_type, identifier, location);
+                auto declarator = identifiers.add_declarator(AddScope::TOP, declaration, enum_type, identifier, location);
                 auto enum_constant = new EnumConstant(declarator, enum_type, constant);
                 declarator->delegate = enum_constant;
 
@@ -612,18 +612,18 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
     if (!tag_declarator && !identifier.empty()) {
         if (token == ';') {
             // C99 6.7.2.3p7
-            tag_declarator = declare_tag_type(scope, declaration, identifier, type, specifier_location);
+            tag_declarator = declare_tag_type(AddScope::TOP, declaration, identifier, type, specifier_location);
         } else {
             // C99 6.7.2.3p8
-            tag_declarator = declare_tag_type(ScopeKind::FILE, declaration, identifier, type, specifier_location);
+            tag_declarator = declare_tag_type(AddScope::FILE, declaration, identifier, type, specifier_location);
         }
     }
 
     return type;
 }
 
-Declarator* Parser::declare_tag_type(ScopeKind scope, Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location) {
-    auto declarator = identifiers.add_declarator(scope, declaration, type, identifier, location);
+Declarator* Parser::declare_tag_type(AddScope add_scope, Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location) {
+    auto declarator = identifiers.add_declarator(add_scope, declaration, type, identifier, location);
     declarator->delegate = new TypeDef(declarator);
     type->tag = declarator;
     return declarator;
@@ -685,11 +685,11 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     Declarator* file_declarator{};  // an additional declarator at file scope if appropriate
     Declarator* primary_declarator{};
     if (scope == ScopeKind::BLOCK && declaration->storage_class == StorageClass::EXTERN) {
-        file_declarator = identifiers.add_declarator(ScopeKind::FILE, declaration, type, declarator_transform.identifier, location);
+        file_declarator = identifiers.add_declarator(AddScope::FILE, declaration, type, declarator_transform.identifier, location);
         primary_declarator = file_declarator->primary;
     }
 
-    auto declarator = identifiers.add_declarator(scope, declaration, type, declarator_transform.identifier, location, primary_declarator);
+    auto declarator = identifiers.add_declarator(AddScope::TOP, declaration, type, declarator_transform.identifier, location, primary_declarator);
 
     if (is_function && declaration->storage_class != StorageClass::TYPEDEF) {
         CompoundStatement* body{};

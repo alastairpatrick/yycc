@@ -18,15 +18,14 @@ Declarator* IdentifierMap::lookup_declarator(const Identifier& identifier) const
     return nullptr;
 }
 
-Declarator* IdentifierMap::add_declarator(ScopeKind add_scope, const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location, Declarator* primary) {
+Declarator* IdentifierMap::add_declarator(AddScope add_scope, const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location, Declarator* primary) {
+    Scope* scope = add_scope == AddScope::FILE ? &scopes.back() : &scopes.front();
+
     InternedString identifier_string{};
-    Scope* scope{};
-    if (add_scope == ScopeKind::FILE) {
+    if (scope == &scopes.back()) {
         identifier_string = identifier.at_file_scope;
-        scope = &scopes.back();
     } else {
         identifier_string = identifier.text;
-        scope = &scopes.front();
 
         auto idx = identifier_string->rfind(':');
         if (idx != identifier_string->npos) {
