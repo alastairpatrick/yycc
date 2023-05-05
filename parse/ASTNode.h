@@ -63,8 +63,7 @@ struct Declarator: LocationNode {
     Declarator* next{};
     DeclaratorStatus status = DeclaratorStatus::UNRESOLVED;
     
-    Declarator(const Declaration* declaration, const Type* type, InternedString identifier, const Location& location);
-    Declarator(const Declaration* declaration, InternedString identifier, const Location& location);
+    Declarator(const Declaration* declaration, const Type* type, InternedString identifier, DeclaratorDelegate* delegate, const Location& location);
 
     EnumConstant* enum_constant();
     Entity* entity() const;

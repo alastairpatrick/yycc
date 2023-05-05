@@ -18,7 +18,14 @@ Declarator* IdentifierMap::lookup_declarator(const Identifier& identifier) const
     return nullptr;
 }
 
-Declarator* IdentifierMap::add_declarator(AddScope add_scope, const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location, Declarator* primary) {
+Declarator* IdentifierMap::add_declarator(AddScope add_scope,
+                                          const Declaration* declaration,
+                                          const Type* type,
+                                          const Identifier& identifier,
+                                          DeclaratorDelegate* delegate,
+                                          const Location& location,
+                                          Declarator* primary) {
+
     Scope* scope = add_scope == AddScope::FILE ? &scopes.back() : &scopes.front();
 
     InternedString identifier_string{};
@@ -33,7 +40,7 @@ Declarator* IdentifierMap::add_declarator(AddScope add_scope, const Declaration*
         }
     }
 
-    if (identifier_string->empty()) return new Declarator(declaration, type, identifier_string, location);
+    if (identifier_string->empty()) return new Declarator(declaration, type, identifier_string, delegate, location);
 
     Declarator* new_declarator{};
     Declarator* existing_declarator{};
@@ -47,12 +54,13 @@ Declarator* IdentifierMap::add_declarator(AddScope add_scope, const Declaration*
 
             new_declarator->declaration = declaration;
             new_declarator->type = type;
+            new_declarator->delegate = delegate;
             new_declarator->location = location;
         }
     }
 
     if (!new_declarator) {
-        new_declarator = new Declarator(declaration, type, identifier_string, location);
+        new_declarator = new Declarator(declaration, type, identifier_string, delegate, location);
 
         if (existing_declarator) {
             assert(!primary || existing_declarator->primary == primary);

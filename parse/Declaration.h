@@ -120,7 +120,7 @@ struct Function: Entity {
 struct TypeDef: DeclaratorDelegate {
     TypeDefType type_def_type;
 
-    explicit TypeDef(Declarator* declarator);
+    TypeDef() = default;
 
     virtual DeclaratorKind kind() const override;
     virtual const char* error_kind() const override;

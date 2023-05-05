@@ -58,9 +58,12 @@ void Parser::handle_declaration_directive() {
         if (pp_token == TOK_IDENTIFIER) {
             auto id = preprocessor.identifier;
 
-            auto declarator = identifiers.add_declarator(AddScope::TOP, nullptr, nullptr, id, preprocessor.location());
+            auto declarator = identifiers.add_declarator(AddScope::TOP, nullptr, nullptr, id, nullptr, preprocessor.location());
             if (token == TOK_PP_TYPE) {
-                declarator->delegate = new TypeDef(declarator);
+                TypeDef* type_def = new TypeDef;
+                type_def->type_def_type.declarator = declarator->primary;
+                declarator->delegate = type_def;
+
                 declarator->type = declarator->to_type();
             }
         } else {
@@ -536,8 +539,8 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
                 // C11 6.7.2.1p13 anonymous structs and unions
                 if (dynamic_cast<const StructuredType*>(member_declaration->type) && member_declaration->declarators.empty()) {
-                    auto member_declarator = new Declarator(member_declaration, member_declaration->type, empty_interned_string, member_declaration->location);
-                    member_declarator->delegate = new Variable(Linkage::NONE, StorageDuration::AGGREGATE);
+                    auto variable = new Variable(Linkage::NONE, StorageDuration::AGGREGATE);
+                    auto member_declarator = new Declarator(member_declaration, member_declaration->type, empty_interned_string, variable, member_declaration->location);
                     member_declaration->declarators.push_back(member_declarator);
                 }
 
@@ -596,9 +599,8 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                     }
                 }
 
-                auto declarator = identifiers.add_declarator(AddScope::TOP, declaration, enum_type, identifier, location);
                 auto enum_constant = new EnumConstant(enum_type, constant);
-                declarator->delegate = enum_constant;
+                auto declarator = identifiers.add_declarator(AddScope::TOP, declaration, enum_type, identifier, enum_constant, location);
 
                 if (declarator) {
                     enum_type->constants.push_back(declarator);
@@ -623,8 +625,9 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 }
 
 Declarator* Parser::declare_tag_type(AddScope add_scope, Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location) {
-    auto declarator = identifiers.add_declarator(add_scope, declaration, type, identifier, location);
-    declarator->delegate = new TypeDef(declarator);
+    auto type_def = new TypeDef;
+    auto declarator = identifiers.add_declarator(add_scope, declaration, type, identifier, type_def, location);
+    type_def->type_def_type.declarator = declarator->primary;
     type->tag = declarator;
     return declarator;
 }
@@ -682,15 +685,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         linkage = Linkage::NONE;
     }
 
-    Declarator* file_declarator{};  // an additional declarator at file scope if appropriate
-    Declarator* primary_declarator{};
-    if (scope == ScopeKind::BLOCK && declaration->storage_class == StorageClass::EXTERN) {
-        file_declarator = identifiers.add_declarator(AddScope::FILE, declaration, type, declarator_transform.identifier, location);
-        primary_declarator = file_declarator->primary;
-    }
-
-    auto declarator = identifiers.add_declarator(AddScope::TOP, declaration, type, declarator_transform.identifier, location, primary_declarator);
-
+    DeclaratorDelegate* delegate{};
     if (is_function && declaration->storage_class != StorageClass::TYPEDEF) {
         CompoundStatement* body{};
         if (flags.allow_function_definition && token == '{') {
@@ -702,12 +697,12 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
 
         if ((storage_class != StorageClass::STATIC && storage_class != StorageClass::EXTERN && storage_class != StorageClass::NONE) ||
             (storage_class == StorageClass::STATIC && scope != ScopeKind::FILE)) {
-            message(Severity::ERROR, declarator->location) << "invalid storage class\n";
+            message(Severity::ERROR, location) << "invalid storage class\n";
         }
 
         bool inline_definition = (linkage == Linkage::EXTERNAL) && (specifiers & SPECIFIER_INLINE) && (storage_class != StorageClass::EXTERN);
 
-        declarator->delegate = new Function(linkage,
+        delegate = new Function(linkage,
                                             inline_definition,
                                             move(declarator_transform.parameters),
                                             body);
@@ -717,7 +712,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         }
 
         if (storage_class == StorageClass::TYPEDEF) {
-            declarator->delegate = new TypeDef(declarator);
+            delegate = new TypeDef;
         } else {
             StorageDuration storage_duration{};
             if (storage_class == StorageClass::EXTERN || storage_class == StorageClass::STATIC || scope == ScopeKind::FILE) {
@@ -729,7 +724,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
             }
 
             auto variable = new Variable(linkage, storage_duration, initializer);
-            declarator->delegate = variable;
+            delegate = variable;
 
             if (scope == ScopeKind::STRUCTURED && storage_duration == StorageDuration::AGGREGATE) {
                 if (bit_field_size) variable->member->bit_field.reset(new BitField(bit_field_size));
@@ -737,8 +732,19 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         }
     }
 
-    if (file_declarator) {
-        file_declarator->delegate = declarator->delegate;
+    assert(delegate);
+
+    Declarator* file_declarator{};  // an additional declarator at file scope if appropriate
+    Declarator* primary_declarator{};
+    if (scope == ScopeKind::BLOCK && declaration->storage_class == StorageClass::EXTERN) {
+        file_declarator = identifiers.add_declarator(AddScope::FILE, declaration, type, declarator_transform.identifier, delegate, location);
+        primary_declarator = file_declarator->primary;
+    }
+
+    auto declarator = identifiers.add_declarator(AddScope::TOP, declaration, type, declarator_transform.identifier, delegate, location, primary_declarator);
+
+    if (auto type_def = dynamic_cast<TypeDef*>(delegate)) {
+        type_def->type_def_type.declarator = declarator->primary;
     }
 
     declarator->fragment = end_fragment(begin);

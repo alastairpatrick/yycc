@@ -18,7 +18,13 @@ struct IdentifierMap {
     void operator=(const IdentifierMap&) = delete;
 
     Declarator* lookup_declarator(const Identifier& identifier) const;
-    Declarator* add_declarator(AddScope add_scope, const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location, Declarator* primary = nullptr);
+    Declarator* add_declarator(AddScope add_scope,
+                               const Declaration* declaration,
+                               const Type* type,
+                               const Identifier& identifier,
+                               DeclaratorDelegate* delegate,
+                               const Location& location,
+                               Declarator* primary = nullptr);
 
     void push_scope(ScopeKind kind);
     void push_scope(Scope&& scope);

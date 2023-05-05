@@ -281,9 +281,8 @@ private:
 };
 
 struct TypeDefType: Type {
-    Declarator* const declarator;
+    Declarator* declarator;
 
-    TypeDefType(Declarator* declarator);
     virtual const Type* unqualified() const override;
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual LLVMTypeRef llvm_type() const override;

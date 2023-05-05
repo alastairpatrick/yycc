@@ -862,9 +862,6 @@ UnboundType::UnboundType(const Identifier& identifier)
 
 
 
-TypeDefType::TypeDefType(Declarator* declarator): declarator(declarator) {
-}
-
 const Type* TypeDefType::unqualified() const {
     // May only be called on resolved types.
     assert(false);
