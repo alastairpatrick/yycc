@@ -13,14 +13,6 @@ enum class DeclaratorKind {
     TYPE_DEF,
 };
 
-enum class ScopeKind {
-    FILE,
-    BLOCK,
-    PROTOTYPE,
-    STRUCTURED,
-    EXPRESSION,  // e.g. sizeof, typeof
-};
-
 enum class StorageClass {
     NONE,
     TYPEDEF,

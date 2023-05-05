@@ -14,7 +14,7 @@ struct DeclaratorTransform {
     function<const Type*(const Type*)> type_transform;
     Identifier identifier;
     vector<Declarator*> parameters;
-    Scope prototype_scope;
+    Scope prototype_scope = Scope(ScopeKind::PROTOTYPE);
 
     const Type* apply(const Type* type);
 };

@@ -519,7 +519,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
             structured_type->complete = true;
 
-            if (!anonymous) identifiers.push_scope();
+            if (!anonymous) identifiers.push_scope(ScopeKind::STRUCTURED);
             consume();
 
             OrderIndependentScope oi_scope;
@@ -806,7 +806,7 @@ DeclaratorTransform Parser::parse_declarator_transform(ScopeKind scope, ParseDec
             };
 
         } else if (consume('(')) {
-            identifiers.push_scope();
+            identifiers.push_scope(ScopeKind::PROTOTYPE);
 
             vector<const Type*> param_types;
             bool seen_void = false;
@@ -899,7 +899,7 @@ Statement* Parser::parse_statement() {
           consume();
           consume_required('(');
 
-          identifiers.push_scope();
+          identifiers.push_scope(ScopeKind::BLOCK);
 
           Declaration* declaration{};
           Expr* initialize{};
@@ -1060,7 +1060,7 @@ CompoundStatement* Parser::parse_compound_statement() {
 
         statement = new CompoundStatement(ASTNodeVector(), location);
     } else {
-        identifiers.push_scope();
+        identifiers.push_scope(ScopeKind::BLOCK);
 
         require('{');
         location = preprocessor.location();

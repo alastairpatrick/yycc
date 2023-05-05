@@ -16,8 +16,11 @@ struct IdentifierMap {
     Declarator* lookup_declarator(const Identifier& identifier) const;
     Declarator* add_declarator(ScopeKind scope, const Declaration* declaration, const Type* type, const Identifier& identifier, const Location& location, Declarator* primary = nullptr);
 
-    void push_scope(Scope&& scope = Scope());
+    void push_scope(ScopeKind kind);
+    void push_scope(Scope&& scope);
     Scope pop_scope();
+
+    ScopeKind scope_kind() const;
 };
 
 #endif

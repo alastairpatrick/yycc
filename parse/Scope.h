@@ -6,10 +6,21 @@
 struct Declarator;
 struct StructuredType;
 
+enum class ScopeKind {
+    FILE,
+    BLOCK,
+    PROTOTYPE,
+    STRUCTURED,
+    EXPRESSION,  // e.g. sizeof, typeof
+};
+
 struct Scope {
+    ScopeKind kind;
     const StructuredType* type{};
     vector<Declarator*> declarators;
     unordered_map<InternedString, Declarator*> declarator_map;
+
+    explicit Scope(ScopeKind kind): kind(kind) {}
 };
 
 #endif

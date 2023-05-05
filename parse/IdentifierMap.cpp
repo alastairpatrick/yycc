@@ -81,6 +81,10 @@ Declarator* IdentifierMap::add_declarator(ScopeKind add_scope, const Declaration
     return new_declarator;
 }
 
+void IdentifierMap::push_scope(ScopeKind kind) {
+    scopes.push_front(Scope(kind));
+}
+
 void IdentifierMap::push_scope(Scope&& scope) {
     scopes.push_front(move(scope));
 }
@@ -92,5 +96,9 @@ Scope IdentifierMap::pop_scope() {
 }
 
 IdentifierMap::IdentifierMap(bool preparse): preparse(preparse) {
-    push_scope();
+    push_scope(Scope(ScopeKind::FILE));
+}
+
+ScopeKind IdentifierMap::scope_kind() const {
+    return scopes.front().kind;
 }

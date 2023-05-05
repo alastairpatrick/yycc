@@ -513,7 +513,7 @@ void TagType::message_print(ostream& stream, int section) const {
 
 
 StructuredType::StructuredType(const Location& location)
-    : TagType(location) {
+    : TagType(location), scope(ScopeKind::STRUCTURED) {
 }
 
 const Declarator* StructuredType::lookup_member(const Identifier& identifier) const {
