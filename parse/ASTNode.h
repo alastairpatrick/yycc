@@ -73,6 +73,7 @@ struct Declarator: LocationNode {
     TypeDef* type_def() const;
 
     const Type* to_type() const;
+    const char* error_kind() const;
     bool is_member() const;
     VisitDeclaratorOutput accept(Visitor& visitor, const VisitDeclaratorInput& input);
     void print(ostream& stream) const;

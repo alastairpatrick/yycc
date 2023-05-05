@@ -41,7 +41,7 @@ struct ResolvePass: Visitor {
             stream << "redeclaration";
         }
         
-        stream << " of " << secondary->delegate->error_kind() << " '" << *secondary->identifier << "'";
+        stream << " of " << secondary->error_kind() << " '" << *secondary->identifier << "'";
         
         if (problem) {
             stream << ' ' << problem;
@@ -149,7 +149,7 @@ struct ResolvePass: Visitor {
             }
 
             if (primary->type->partition() == TypePartition::INCOMPLETE) {
-                message(Severity::ERROR, primary->location) << primary_entity->error_kind() << " '" << *primary->identifier << "' has incomplete type\n";
+                message(Severity::ERROR, primary->location) << primary->error_kind() << " '" << *primary->identifier << "' has incomplete type\n";
                 primary->type = IntegerType::default_type();
             }
 
@@ -600,7 +600,7 @@ struct ResolvePass: Visitor {
             if (variable->member->bit_field) return;
         }
 
-        declarator->delegate = new Function(declarator, variable->linkage);
+        declarator->delegate = new Function(variable->linkage);
     }
 
     const Type* resolve(Declarator* primary) {
@@ -617,7 +617,7 @@ struct ResolvePass: Visitor {
         if (!primary->type) {
             message(Severity::ERROR, primary->location) << "declaration directive not matched with a proper declaration of '" << *primary->identifier << "'\n";
             primary->type = IntegerType::default_type();
-            primary->delegate = new Variable(primary, Linkage::NONE, StorageDuration::STATIC);
+            primary->delegate = new Variable(Linkage::NONE, StorageDuration::STATIC);
         }
 
         Declarator* acyclic_declarator{};

@@ -537,7 +537,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 // C11 6.7.2.1p13 anonymous structs and unions
                 if (dynamic_cast<const StructuredType*>(member_declaration->type) && member_declaration->declarators.empty()) {
                     auto member_declarator = new Declarator(member_declaration, member_declaration->type, empty_interned_string, member_declaration->location);
-                    member_declarator->delegate = new Variable(member_declarator, Linkage::NONE, StorageDuration::AGGREGATE);
+                    member_declarator->delegate = new Variable(Linkage::NONE, StorageDuration::AGGREGATE);
                     member_declaration->declarators.push_back(member_declarator);
                 }
 
@@ -597,7 +597,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 }
 
                 auto declarator = identifiers.add_declarator(AddScope::TOP, declaration, enum_type, identifier, location);
-                auto enum_constant = new EnumConstant(declarator, enum_type, constant);
+                auto enum_constant = new EnumConstant(enum_type, constant);
                 declarator->delegate = enum_constant;
 
                 if (declarator) {
@@ -707,8 +707,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
 
         bool inline_definition = (linkage == Linkage::EXTERNAL) && (specifiers & SPECIFIER_INLINE) && (storage_class != StorageClass::EXTERN);
 
-        declarator->delegate = new Function(declarator,
-                                            linkage,
+        declarator->delegate = new Function(linkage,
                                             inline_definition,
                                             move(declarator_transform.parameters),
                                             body);
@@ -729,7 +728,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
                 storage_duration = StorageDuration::AUTO;
             }
 
-            auto variable = new Variable(declarator, linkage, storage_duration, initializer);
+            auto variable = new Variable(linkage, storage_duration, initializer);
             declarator->delegate = variable;
 
             if (scope == ScopeKind::STRUCTURED && storage_duration == StorageDuration::AGGREGATE) {

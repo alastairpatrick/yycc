@@ -96,6 +96,10 @@ const Type* Declarator::to_type() const {
     return delegate->to_type();
 }
 
+const char* Declarator::error_kind() const {
+    return delegate->error_kind();
+}
+
 bool Declarator::is_member() const {
     if (auto delegate = variable()) {
         return delegate->storage_duration == StorageDuration::AGGREGATE;
@@ -104,26 +108,28 @@ bool Declarator::is_member() const {
 }
 
 VisitDeclaratorOutput Declarator::accept(Visitor& visitor, const VisitDeclaratorInput& input) {
-    return delegate->accept(visitor, input);
+    return delegate->accept(this, visitor, input);
 }
 
 void Declarator::print(ostream& stream) const {
     if (delegate) {
-        delegate->print(stream);
+        delegate->print(this, stream);
     } else {
         stream << "\"placeholder\"";
     }
-}
-
-DeclaratorDelegate::DeclaratorDelegate(Declarator* declarator): declarator(declarator) {
 }
 
 const Type* DeclaratorDelegate::to_type() const {
     return nullptr;
 }
 
-Entity::Entity(Declarator* declarator, Linkage linkage)
-    : DeclaratorDelegate(declarator), linkage(linkage) {
+void DeclaratorDelegate::print(ostream& stream) const {
+    assert(false);
+}
+
+
+
+Entity::Entity(Linkage linkage): linkage(linkage) {
 
 }
 
@@ -134,8 +140,8 @@ void BitField::print(ostream& stream) const {
     stream << expr;
 }
 
-Variable::Variable(Declarator* declarator, Linkage linkage, StorageDuration storage_duration, Expr* initializer)
-    : Entity(declarator, linkage), storage_duration(storage_duration), initializer(initializer) {
+Variable::Variable(Linkage linkage, StorageDuration storage_duration, Expr* initializer)
+    : Entity(linkage), storage_duration(storage_duration), initializer(initializer) {
     if (storage_duration == StorageDuration::AGGREGATE) {
         member.reset(new MemberVariable);
     }
@@ -146,7 +152,7 @@ DeclaratorKind Variable::kind() const {
 }
 
 const char* Variable::error_kind() const {
-    if (declarator->is_member()) {
+    if (storage_duration == StorageDuration::AGGREGATE) {
         return "member";
     } else {
         return "variable";
@@ -157,11 +163,11 @@ bool Variable::is_definition() const {
     return initializer;
 }
 
-VisitDeclaratorOutput Variable::accept(Visitor& visitor, const VisitDeclaratorInput& input) {
+VisitDeclaratorOutput Variable::accept(Declarator* declarator, Visitor& visitor, const VisitDeclaratorInput& input) {
     return visitor.visit(declarator, this, input);
 }
 
-void Variable::print(ostream& stream) const {
+void Variable::print(const Declarator* declarator, ostream& stream) const {
     stream << "[\"var\", \"" << linkage << storage_duration;
 
     stream << "\", " << declarator->type << ", \"" << *declarator->identifier  << "\"";
@@ -171,11 +177,11 @@ void Variable::print(ostream& stream) const {
     stream << ']';
 }
 
-Function::Function(Declarator* declarator, Linkage linkage, bool inline_definition, vector<Declarator*>&& parameters, Statement* body)
-    : Entity(declarator, linkage), inline_definition(inline_definition), parameters(move(parameters)), body(body) {
+Function::Function(Linkage linkage, bool inline_definition, vector<Declarator*>&& parameters, Statement* body)
+    : Entity(linkage), inline_definition(inline_definition), parameters(move(parameters)), body(body) {
 }
 
-Function::Function(Declarator* declarator, Linkage linkage): Entity(declarator, linkage) {
+Function::Function(Linkage linkage): Entity(linkage) {
 }
 
 DeclaratorKind Function::kind() const {
@@ -190,11 +196,11 @@ bool Function::is_definition() const {
     return body;
 }
 
-VisitDeclaratorOutput Function::accept(Visitor& visitor, const VisitDeclaratorInput& input) {
+VisitDeclaratorOutput Function::accept(Declarator* declarator, Visitor& visitor, const VisitDeclaratorInput& input) {
     return visitor.visit(declarator, this, input);
 }
 
-void Function::print(ostream& stream) const {
+void Function::print(const Declarator* declarator, ostream& stream) const {
     stream << "[\"fun\", \"" << linkage;
 
     if (inline_definition) {
@@ -214,8 +220,7 @@ void Function::print(ostream& stream) const {
     stream << ']';
 }
 
-TypeDef::TypeDef(Declarator* declarator)
-    : DeclaratorDelegate(declarator), type_def_type(declarator) {
+TypeDef::TypeDef(Declarator* declarator): type_def_type(declarator) {
     
 }
 
@@ -242,20 +247,15 @@ bool TypeDef::is_definition() const {
     return true;
 }
 
-VisitDeclaratorOutput TypeDef::accept(Visitor& visitor, const VisitDeclaratorInput& input) {
+VisitDeclaratorOutput TypeDef::accept(Declarator* declarator, Visitor& visitor, const VisitDeclaratorInput& input) {
     return visitor.visit(declarator, this, input);
 }
 
-void TypeDef::print(ostream& stream) const {
+void TypeDef::print(const Declarator* declarator, ostream& stream) const {
     stream << "[\"typedef\", " << declarator->type << ", \"" << *declarator->identifier  << "\"]";
 }
 
-EnumConstant::EnumConstant(Declarator* declarator)
-    : DeclaratorDelegate(declarator) {
-}
-
-EnumConstant::EnumConstant(Declarator* declarator, const EnumType* type, Expr* constant)
-    : DeclaratorDelegate(declarator), type(type), expr(constant) {
+EnumConstant::EnumConstant(const EnumType* type, Expr* constant): type(type), expr(constant) {
 }
 
 DeclaratorKind EnumConstant::kind() const {
@@ -270,11 +270,11 @@ bool EnumConstant::is_definition() const {
     return true;
 }
 
-VisitDeclaratorOutput EnumConstant::accept(Visitor& visitor, const VisitDeclaratorInput& input) {
+VisitDeclaratorOutput EnumConstant::accept(Declarator* declarator, Visitor& visitor, const VisitDeclaratorInput& input) {
     return visitor.visit(declarator, this, input);
 }
 
-void EnumConstant::print(ostream& stream) const {
+void EnumConstant::print(const Declarator* declarator, ostream& stream) const {
     stream << "[\"ec\", \"" << *declarator->identifier << '"';
     if (ready) {
         stream << ", " << value;
