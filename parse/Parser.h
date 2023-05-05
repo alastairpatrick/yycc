@@ -79,7 +79,6 @@ private:
     const Type* parse_structured_type(Declaration* declaration);
     Declarator* declare_tag_type(ScopeKind scope, Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location);
     const Type* parse_typeof();
-    Declarator* parse_enum_constant(Declaration* declaration, const EnumType* type);
     Declarator* parse_declarator(Declaration* declaration, const Type* type, SpecifierSet specifiers, ParseDeclaratorFlags flags, bool* last);
     DeclaratorTransform parse_declarator_transform(ParseDeclaratorFlags flags);
     Declarator* parse_parameter_declarator();
