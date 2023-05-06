@@ -1354,15 +1354,12 @@ Expr* Parser::parse_initializer() {
 vector<Declaration*> Parser::parse() {
     vector<Declaration*> declarations;
     while (token) {
-        auto keep = !preparse || preprocessor.include_stack.empty();
         auto node = parse_declaration_or_statement(false);
         auto declaration = dynamic_cast<Declaration*>(node);
 
         if (declaration) {
-            if (keep) {
-                declarations.push_back(declaration);
-                auto& declarators = identifiers.scopes.back().declarators;
-            }
+            declarations.push_back(declaration);
+            auto& declarators = identifiers.scopes.back().declarators;
         } else {
             message(Severity::ERROR, node->location) << "expected declaration; statements may occur at block scope but not file scope\n";
         }
