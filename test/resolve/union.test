@@ -10,15 +10,11 @@ EXPECT_GLOBALS
 BEGIN Tagged union with multiple compatible definitions
 union S { int x; int y; };
 union S { int x; int y; };
+EXPECT_MESSAGE
+:2:1: error redefinition of union 'S' with incompatible type...
+:1:1: ...see other
 EXPECT_GLOBALS
 [["typedef",["UNION",[["x","Si"],["y","Si"]]],"S"]]
-
-
-BEGIN Order of members does not matter for compatible unions
-union S { int y; int x; };
-union S { int x; int y; };
-EXPECT_GLOBALS
-[["typedef",["UNION",[["y","Si"],["x","Si"]]],"S"]]
 
 
 BEGIN Complete union must contain all members of compatible union

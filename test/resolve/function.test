@@ -188,22 +188,26 @@ END
 
 
 BEGIN Resolves tag type declarators declared in function prototype scope
-void f(enum E { A } a, enum E { B } b) {
+void f(enum E { A } a, enum E { A } b) {
 }
 EXPECT_MESSAGE
-:1:33: error enum constant 'B'...
-:1:8: ...missing from other definition
+:1:24: error redefinition of typedef 'E' with incompatible type...
+:1:8: ...see other
+:1:33: error redefinition of enum constant 'A'...
+:1:17: ...see other
 END
 
 
 BEGIN Resolves tag type declarators declared in function block scope
 void f() {
     enum E { A };
-    enum E { B };
+    enum E { A };
 }
 EXPECT_MESSAGE
-:3:14: error enum constant 'B'...
-:2:5: ...missing from other definition
+:3:5: error redefinition of typedef 'E' with incompatible type...
+:2:5: ...see other
+:3:14: error redefinition of enum constant 'A'...
+:2:14: ...see other
 END
 
 

@@ -215,70 +215,9 @@ struct ResolvePass: Visitor {
             return VisitDeclaratorOutput();
         }
 
-        auto secondary_enum_constant = secondary->enum_constant();
-        assert(secondary_enum_constant); //  TODO
-
-        if (!primary_enum_constant->type->tag ||                                                        // enum { A }; enum E { A };
-            !secondary_enum_constant->type->tag ||                                                      // enum E { A }; enum { A };
-            primary_enum_constant->type->tag == secondary_enum_constant->type->tag ||                   // enum E { A, A };
-            primary_enum_constant->type->tag->primary != secondary_enum_constant->type->tag->primary    // enum E1 { A }; enum E2 { A };
-        ) {
-            redeclaration_message(Severity::ERROR, secondary, primary->location, nullptr);
-        }
+        redeclaration_message(Severity::ERROR, secondary, primary->location, nullptr);
         
         return VisitDeclaratorOutput();
-    }
-
-    bool compare_union_types(const UnionType* a_union, const UnionType* b_union) {
-        if (!a_union->complete) return true;
-
-        unordered_map<InternedString, Declarator*> a_members;
-        for (auto a_declaration: a_union->declarations) {
-            for (auto a_member: a_declaration->declarators) {
-                a_members.insert(make_pair(a_member->identifier, a_member));
-            }
-        }
-
-        for (auto b_declaration: b_union->declarations) {
-            for (auto b_member: b_declaration->declarators) {
-                auto it = a_members.find(b_member->identifier);
-                if (it == a_members.end()) return false;
-                if (!compare_types(it->second->type, b_member->type)) return false;
-            }
-        }
-
-        return true;
-    }
-
-    bool compare_enum_types(const EnumType* a_enum, const EnumType* b_enum) {
-        if (!a_enum->complete) return true;
-        
-        unordered_map<InternedString, Declarator*> a_constants;
-        for (auto declarator: a_enum->constants) {
-            a_constants.insert(make_pair(declarator->identifier, declarator));
-        }
-
-        for (auto b_declarator: b_enum->constants) {
-            auto it = a_constants.find(b_declarator->identifier);
-            if (it == a_constants.end()) {
-                message(Severity::ERROR, b_declarator->location) << "enum constant '" << *b_declarator->identifier << "'...\n";
-                message(Severity::INFO, a_enum->location) << "...missing from other definition\n";
-                pause_messages();
-                return false;
-            }
-
-            auto a_declarator = it->second;
-            auto b_enum_constant = b_declarator->enum_constant();
-            auto a_enum_constant = a_declarator->enum_constant();
-            if (b_enum_constant->value != a_enum_constant->value) {
-                message(Severity::ERROR, b_declarator->location) << "incompatible enum constant '" << *b_declarator->identifier << "' value " << b_enum_constant->value << "...\n";
-                message(Severity::INFO, a_declarator->location) << "...versus " << a_enum_constant->value << " here\n";
-                pause_messages();
-                return false;
-            }
-        }
-
-        return true;
     }
 
     bool compare_tags(const TagType* a_type, const TagType* b_type) {
@@ -299,44 +238,16 @@ struct ResolvePass: Visitor {
         if (auto a_tagged = dynamic_cast<const TagType*>(a)) {
             auto b_tagged = static_cast<const TagType*>(b);
             if (!compare_tags(a_tagged, b_tagged)) return nullptr;
+
+            auto a_partition = a->partition();
+            auto b_partition = b->partition();
+
+            if (a_partition == TypePartition::OBJECT && b_partition == TypePartition::OBJECT) return nullptr;
+
+            return (a_partition == TypePartition::OBJECT || b_partition != TypePartition::OBJECT) ? a : b;
         }
 
-        if (auto a_struct = dynamic_cast<const StructType*>(a)) {
-            auto b_struct = static_cast<const StructType*>(b);
-
-            if (a_struct->complete && b_struct->complete) {
-                if (a_struct->declarations.size() != b_struct->declarations.size()) return nullptr;
-
-                for (size_t j = 0; j < a_struct->declarations.size(); ++j) {
-                    auto a_declaration = a_struct->declarations[j];
-                    auto b_declaration = b_struct->declarations[j];
-
-                    if (a_declaration->declarators.size() != b_declaration->declarators.size()) return nullptr;
-
-                    for (size_t i = 0; i < a_declaration->declarators.size(); ++i) {
-                        auto a_declarator = a_declaration->declarators[i];
-                        auto b_declarator = b_declaration->declarators[i];
-
-                        if (a_declarator->identifier != b_declarator->identifier) return nullptr;
-                        if (!compare_types(a_declarator->type, b_declarator->type)) return nullptr;
-
-                        // TODO bitfield size, etc
-                    }
-                }
-            }
-        } else if (auto a_union = dynamic_cast<const UnionType*>(a)) {
-            auto b_union = static_cast<const UnionType*>(b);
-            if (!compare_union_types(a_union, b_union)) return nullptr;
-            if (!compare_union_types(b_union, a_union)) return nullptr;
-        } else if (auto a_enum = dynamic_cast<const EnumType*>(a)) {
-            auto b_enum = static_cast<const EnumType*>(b);
-            if (!compare_enum_types(a_enum, b_enum)) return nullptr;
-            if (!compare_enum_types(b_enum, a_enum)) return nullptr;
-        } else {
-            return nullptr;
-        }
-
-        return (a->partition() != TypePartition::INCOMPLETE || b->partition() == TypePartition::INCOMPLETE) ? a : b;
+        return nullptr;
     }
 
     virtual VisitDeclaratorOutput visit(Declarator* primary, TypeDef* primary_type_def, const VisitDeclaratorInput& input) override {

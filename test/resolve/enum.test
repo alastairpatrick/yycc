@@ -20,33 +20,28 @@ EXPECT_GLOBALS
 ,["typedef",["ENUM",[["ec","A",0],["ec","A",1]]],"E"]]
 
 
-BEGIN Tagged union with multiple compatible definitions
-enum E { A, B };
-enum E { A, B };
-EXPECT_GLOBALS
-[["ec","A",0]
-,["ec","B",1]
-,["typedef",["ENUM",[["ec","A",0],["ec","B",1]]],"E"]]
-
-
-BEGIN Order of members does not matter for compatible enums
-enum E { B=2, A=1 };
-enum E { A=1, B=2 };
-EXPECT_GLOBALS
-[["ec","A",1]
-,["ec","B",2]
-,["typedef",["ENUM",[["ec","B",2], ["ec","A",1]]],"E"]]
-
-
-BEGIN Complete enum must contain all members of compatible enum
+BEGIN Tagged enum with multiple incompatible definitions
 enum E { A };
 enum E { B };
 EXPECT_MESSAGE
-:2:10: error enum constant 'B'...
-:1:1: ...missing from other definition
+:2:1: error redefinition of typedef 'E' with incompatible type...
+:1:1: ...see other
 EXPECT_GLOBALS
 [["ec","A",0]
 ,["ec","B",0]
+,["typedef",["ENUM",[["ec","A",0]]],"E"]]
+
+
+BEGIN Tagged enum with multiple compatible definitions
+enum E { A, };
+enum E { A };
+EXPECT_MESSAGE
+:2:1: error redefinition of typedef 'E' with incompatible type...
+:1:1: ...see other
+:2:10: error redefinition of enum constant 'A'...
+:1:10: ...see other
+EXPECT_GLOBALS
+[["ec","A",0]
 ,["typedef",["ENUM",[["ec","A",0]]],"E"]]
 
 
@@ -161,16 +156,6 @@ enum E { A = A };
 EXPECT_MESSAGE
 :2:14: error enum constant 'A' not yet available
 END
-
-
-BEGIN Compatible enum definitions must have same constant values
-enum E { A = 1 };
-enum E { A = 2 };
-EXPECT_MESSAGE
-:2:10: error incompatible enum constant 'A' value 2...
-:1:10: ...versus 1 here
-EXPECT_GLOBALS
-[["ec","A",1],["typedef",["ENUM",[["ec","A",1]]],"E"]]
 
 
 BEGIN Enum declaration without tag or declarators
