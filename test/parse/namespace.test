@@ -259,25 +259,6 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN Member of struct may not have a qualified identifier
-struct S {
-    int S::x;
-};
-EXPECT_MESSAGE
-:2:9: error qualified identifier not valid at this scope at file scope; did you mean 'x'?
-END
-
-
-BEGIN Local variable may not have a qualified identifier
-void f() {
-    int f::x;
-}
-PARSE
-EXPECT_MESSAGE
-:2:9: error qualified identifier not valid at this scope at file scope; did you mean 'x'?
-END
-
-
 BEGIN Enum constants may have qualified identifiers
 enum E {
     E::A,
@@ -287,3 +268,82 @@ EXPECT_AST
 [["var","ES",["ENUM",[["ec","E::A"],["ec","E::B"]]],"z"]]
 
 
+BEGIN Qualified identifier of nested structure added to enclosing scope (1)
+struct S {
+    struct T {};
+};
+S::T x;
+PARSE
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["",["STRUCT",[]]]]],"S"]
+,["typedef",["STRUCT",[]],"S::T"]
+,["var","ES",["STRUCT",[]],"x"]]
+
+
+BEGIN Qualified identifier of nested structure added to enclosing scope (2)
+void f() {
+    struct S {
+        struct T {};
+    };
+    S::T x;
+}
+PARSE
+EXPECT_AST
+[["fun","E",["F","V"],"f",[],["block",[
+    []
+   ,["var","",["STRUCT",[]],"x"]
+]]]]
+
+
+BEGIN Qualified identifier of nested structure added to enclosing scope (3)
+struct S {
+    struct T {
+        struct U {
+        };
+    };
+    S::T::U x;
+    T::U y;
+};
+S::T::U z;
+PARSE
+EXPECT_AST
+[[],["var","ES",["STRUCT",[]],"z"]]
+
+
+BEGIN Qualified identifier of nested structure added to enclosing scope (4)
+struct S {
+    struct T;
+};
+S::T* z;
+PARSE
+EXPECT_AST
+[[],["var","ES",["P",["STRUCT",["?"]]],"z"]]
+
+
+BEGIN Qualified identifier of nested structure added to enclosing scope (5)
+struct S {
+    struct T {
+        struct U {
+        };
+    };
+    U y;
+};
+PARSE
+EXPECT_MESSAGE
+:6:5: error type 'U' undefined
+END
+
+
+BEGIN Qualified identifier of nested enum added to enclosing scope
+void f() {
+    struct S {
+        enum E { E::A };
+    };
+    S::E x = S::E::A;
+}
+PARSE
+EXPECT_AST
+[["fun","E",["F","V"],"f",[],["block",[
+    []
+   ,["var","",["ENUM",[["ec","E::A"]]],"x","NS::E::A"]
+]]]]

@@ -231,8 +231,8 @@ struct S {
     char a[A];
 };
 EXPECT_GLOBALS
-[["typedef",["STRUCT",[["a",["A","C",2]]]],"S"]]
-END
+[["typedef",["STRUCT",[["a",["A","C",2]]]],"S"]
+,["ec","S::A",2]]
 
 
 BEGIN #var in struct definition

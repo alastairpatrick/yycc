@@ -7,6 +7,7 @@
 
 enum class AddScope {
     FILE,
+    NESTED,
     TOP,
 };
 
@@ -26,7 +27,14 @@ struct IdentifierMap {
                                const Location& location,
                                Declarator* primary = nullptr);
 
-    void push_scope(ScopeKind kind);
+    Declarator* add_declarator_internal(Scope& scope,
+                                        const Declaration* declaration,
+                                        const Type* type,
+                                        InternedString identifier,
+                                        DeclaratorDelegate* delegate,
+                                        const Location& location,
+                                        Declarator* primary = nullptr);
+
     void push_scope(Scope&& scope);
     Scope pop_scope();
 

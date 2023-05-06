@@ -523,11 +523,11 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
         if (token == '{') {
             // C99 6.7.2.3p6
-            if (!identifier.empty()) tag_declarator = declare_tag_type(AddScope::TOP, declaration, identifier, type, specifier_location);
+            if (!identifier.empty()) tag_declarator = declare_tag_type(AddScope::NESTED, declaration, identifier, type, specifier_location);
 
             structured_type->complete = true;
 
-            if (!anonymous) identifiers.push_scope(ScopeKind::STRUCTURED);
+            if (!anonymous) identifiers.push_scope(Scope(ScopeKind::STRUCTURED, *identifier.text));
             consume();
 
             OrderIndependentScope oi_scope;
@@ -575,7 +575,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
         if (consume('{')) {
             // C99 6.7.2.3p6
-            if (!identifier.empty()) tag_declarator = declare_tag_type(AddScope::TOP, declaration, identifier, type, specifier_location);
+            if (!identifier.empty()) tag_declarator = declare_tag_type(AddScope::NESTED, declaration, identifier, type, specifier_location);
 
             enum_type->complete = true;
             while (token && token != '}') {
@@ -600,7 +600,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 }
 
                 auto enum_constant = new EnumConstant(enum_type, constant);
-                auto declarator = identifiers.add_declarator(AddScope::TOP, declaration, enum_type, identifier, enum_constant, location);
+                auto declarator = identifiers.add_declarator(AddScope::NESTED, declaration, enum_type, identifier, enum_constant, location);
 
                 if (declarator) {
                     enum_type->constants.push_back(declarator);
@@ -614,7 +614,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
     if (!tag_declarator && !identifier.empty()) {
         if (token == ';') {
             // C99 6.7.2.3p7
-            tag_declarator = declare_tag_type(AddScope::TOP, declaration, identifier, type, specifier_location);
+            tag_declarator = declare_tag_type(AddScope::NESTED, declaration, identifier, type, specifier_location);
         } else {
             // C99 6.7.2.3p8
             tag_declarator = declare_tag_type(AddScope::FILE, declaration, identifier, type, specifier_location);
@@ -819,7 +819,7 @@ DeclaratorTransform Parser::parse_declarator_transform(ParseDeclaratorFlags flag
             };
 
         } else if (consume('(')) {
-            identifiers.push_scope(ScopeKind::PROTOTYPE);
+            identifiers.push_scope(Scope(ScopeKind::PROTOTYPE));
 
             vector<const Type*> param_types;
             bool seen_void = false;
@@ -912,7 +912,7 @@ Statement* Parser::parse_statement() {
           consume();
           consume_required('(');
 
-          identifiers.push_scope(ScopeKind::BLOCK);
+          identifiers.push_scope(Scope(ScopeKind::BLOCK));
 
           Declaration* declaration{};
           Expr* initialize{};
@@ -1073,7 +1073,7 @@ CompoundStatement* Parser::parse_compound_statement() {
 
         statement = new CompoundStatement(ASTNodeVector(), location);
     } else {
-        identifiers.push_scope(ScopeKind::BLOCK);
+        identifiers.push_scope(Scope(ScopeKind::BLOCK));
 
         require('{');
         location = preprocessor.location();

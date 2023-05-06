@@ -18,8 +18,13 @@ struct Scope {
     const StructuredType* type{};
     vector<Declarator*> declarators;
     unordered_map<InternedString, Declarator*> declarator_map;
+    InternedString prefix = empty_interned_string;
 
     explicit Scope(ScopeKind kind): kind(kind) {}
+
+    Scope(ScopeKind kind, string_view identifier)
+        : kind(kind), prefix(intern_string(identifier, "::")) {
+    }
 };
 
 #endif
