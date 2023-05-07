@@ -41,25 +41,34 @@ Declarator* IdentifierMap::add_declarator(AddScope add_scope,
         return add_declarator_internal(top_scope, declaration, type, identifier_string, delegate, location, primary);
     } else {
         InternedString qualified_identifier = identifier_string;
-        auto scope = top_scope;
-        for (; scope; scope = scope->parent) {
-            if (scope->kind != ScopeKind::STRUCTURED) {
+        auto deepest_scope = top_scope;
+        for (; deepest_scope; deepest_scope = deepest_scope->parent) {
+            if (deepest_scope->kind != ScopeKind::STRUCTURED) {
                 break;
             }
 
             if (add_scope == AddScope::FILE_OR_BLOCK_QUALIFIED) {
-                qualified_identifier = intern_string(*scope->prefix, *qualified_identifier);
+                qualified_identifier = intern_string(*deepest_scope->prefix, *qualified_identifier);
             }
         }
 
-        Declarator* declarator = add_declarator_internal(scope, declaration, type, qualified_identifier, delegate, location, primary);
-        primary = declarator->primary;
+        Declarator* result_declarator = add_declarator_internal(deepest_scope, declaration, type, qualified_identifier, delegate, location, primary);
+        primary = result_declarator->primary;
 
-        if (add_scope == AddScope::FILE_OR_BLOCK_QUALIFIED && scope != top_scope) {
-            declarator = add_declarator_internal(top_scope, declaration, type, identifier_string, delegate, location, primary);
+
+        if (add_scope == AddScope::FILE_OR_BLOCK_UNQUALIFIED) {
+            return result_declarator;
         }
 
-        return declarator;
+        qualified_identifier = identifier_string;
+        for (auto scope = top_scope; scope != deepest_scope; scope = scope->parent) {
+            auto declarator = add_declarator_internal(scope, declaration, type, qualified_identifier, delegate, location, primary);
+            if (scope == top_scope) result_declarator = declarator;
+
+            qualified_identifier = intern_string(*scope->prefix, *qualified_identifier);
+        }
+
+        return result_declarator;
     }
 }
 

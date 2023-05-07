@@ -327,3 +327,18 @@ struct S {
 PARSE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["f",["F","V"]]]],"S"],["fun","",["F","V"],"S::f",[],["block",[]]]]
+
+
+BEGIN Bind to member function through intemediate scope
+struct S {
+    struct T {
+        void f() {}
+    };
+
+    void g() {
+        T::f();
+    }
+};
+PARSE
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["",["STRUCT",[["f",["F","V"]]]]],["g",["F","V"]]]],"S"],["fun","",["F","V"],"S::T::f",[],["block",[]]],["fun","",["F","V"],"S::g",[],["block",[["call","NT::f"]]]],["typedef",["STRUCT",[["f",["F","V"]]]],"T"]]
