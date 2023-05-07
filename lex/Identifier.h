@@ -4,8 +4,8 @@
 #include "InternedString.h"
 
 struct Identifier {
-    InternedString at_file_scope = empty_interned_string;
-    InternedString text = empty_interned_string;
+    InternedString usage_at_file_scope = empty_interned_string;   //  result to handle expansion during preprocessing
+    InternedString text = empty_interned_string;                  // unmodified text of identifier token
     const char* c_str() const;
     bool empty() const { return text->empty(); }
 };

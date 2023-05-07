@@ -33,9 +33,9 @@ TokenKind Preprocessor::next_token() {
               commit_token();
               return token;
           } case TOK_IDENTIFIER: {
-              id_lexer.buffer(*identifier.at_file_scope);
+              id_lexer.buffer(*identifier.usage_at_file_scope);
               token = id_lexer.next_token();
-              if (id_lexer.size() != identifier.at_file_scope->size()) {
+              if (id_lexer.size() != identifier.usage_at_file_scope->size()) {
                   token = TOK_IDENTIFIER;
               }
               commit_token();
@@ -87,7 +87,7 @@ TokenKind Preprocessor::next_pp_token() {
     if (token == TOK_IDENTIFIER) {
         identifier = Identifier();
         identifier.text = intern_string(lexer.text());
-        identifier.at_file_scope = evaluate_identifier(lexer.text());
+        identifier.usage_at_file_scope = evaluate_identifier(lexer.text());
     }
 
     return token;

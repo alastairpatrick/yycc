@@ -4,7 +4,7 @@
 
 Declarator* IdentifierMap::lookup_declarator(const Identifier& identifier) const {
     for (auto scope: scopes) {
-        InternedString identifier_string = scope == scopes.back() ? identifier.at_file_scope : identifier.text;
+        InternedString identifier_string = scope == scopes.back() ? identifier.usage_at_file_scope : identifier.text;
 
         auto it = scope->declarator_map.find(identifier_string);
         if (it != scope->declarator_map.end()) {

@@ -30,7 +30,7 @@ Statement* Parser::parse_standalone_statement() {
 void Parser::consume() {
     while (token) {
         if (token == TOK_IDENTIFIER && preparse) {
-            identifier_tokens.insert(preprocessor.identifier.at_file_scope);
+            identifier_tokens.insert(preprocessor.identifier.usage_at_file_scope);
         }
 
         token = preprocessor.next_token();
@@ -315,8 +315,8 @@ Declaration* Parser::parse_declaration_specifiers(bool expression_valid, const T
                           if (expression_valid) break;
 
                           auto& stream = message(Severity::ERROR, preprocessor.location()) << "type \'" << *identifier.text << "' ";
-                          if (identifier.text != identifier.at_file_scope) {
-                              stream << "(aka '" << *identifier.at_file_scope << "') ";
+                          if (identifier.text != identifier.usage_at_file_scope) {
+                              stream << "(aka '" << *identifier.usage_at_file_scope << "') ";
                           }
                           stream << "undefined\n";
 
@@ -1214,8 +1214,8 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
               result = new EntityExpr(declarator, location);
           } else {
               auto& stream = message(Severity::ERROR, location) << "identifier '" << *identifier.text << "' ";
-              if (identifier.text != identifier.at_file_scope) {
-                  stream << "(aka '" << *identifier.at_file_scope << "') ";
+              if (identifier.text != identifier.usage_at_file_scope) {
+                  stream << "(aka '" << *identifier.usage_at_file_scope << "') ";
               }
               stream << "undeclared\n";
 
