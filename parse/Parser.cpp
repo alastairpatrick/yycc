@@ -58,7 +58,7 @@ void Parser::handle_declaration_directive() {
         if (pp_token == TOK_IDENTIFIER) {
             auto id = preprocessor.identifier;
 
-            auto declarator = identifiers.add_declarator(AddScope::TOP, nullptr, nullptr, id, nullptr, preprocessor.location());
+            auto declarator = identifiers.add_declarator(AddScope::TOP, nullptr, nullptr, preprocessor.current_namespace_prefix, id, nullptr, preprocessor.location());
             if (token == TOK_PP_TYPE) {
                 TypeDef* type_def = new TypeDef;
                 type_def->type_def_type.declarator = declarator->primary;
@@ -599,7 +599,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 }
 
                 auto enum_constant = new EnumConstant(enum_type, constant);
-                auto declarator = identifiers.add_declarator(AddScope::FILE_OR_BLOCK_UNQUALIFIED, declaration, enum_type, identifier, enum_constant, location);
+                auto declarator = identifiers.add_declarator(AddScope::FILE_OR_BLOCK_UNQUALIFIED, declaration, enum_type, preprocessor.current_namespace_prefix, identifier, enum_constant, location);
 
                 if (declarator) {
                     enum_type->constants.push_back(declarator);
@@ -625,7 +625,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
 Declarator* Parser::declare_tag_type(AddScope add_scope, Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location) {
     auto type_def = new TypeDef;
-    auto declarator = identifiers.add_declarator(add_scope, declaration, type, identifier, type_def, location);
+    auto declarator = identifiers.add_declarator(add_scope, declaration, type, preprocessor.current_namespace_prefix, identifier, type_def, location);
     type_def->type_def_type.declarator = declarator->primary;
     type->tag = declarator;
     return declarator;
@@ -740,11 +740,11 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     Declarator* file_declarator{};  // an additional declarator at file scope if appropriate
     Declarator* primary_declarator{};
     if (scope == ScopeKind::BLOCK && declaration->storage_class == StorageClass::EXTERN) {
-        file_declarator = identifiers.add_declarator(AddScope::FILE, declaration, type, declarator_transform.identifier, delegate, location);
+        file_declarator = identifiers.add_declarator(AddScope::FILE, declaration, type, preprocessor.current_namespace_prefix, declarator_transform.identifier, delegate, location);
         primary_declarator = file_declarator->primary;
     }
 
-    auto declarator = identifiers.add_declarator(add_scope, declaration, type, declarator_transform.identifier, delegate, location, primary_declarator);
+    auto declarator = identifiers.add_declarator(add_scope, declaration, type, preprocessor.current_namespace_prefix, declarator_transform.identifier, delegate, location, primary_declarator);
 
     if (auto type_def = dynamic_cast<TypeDef*>(delegate)) {
         type_def->type_def_type.declarator = declarator->primary;
@@ -1362,7 +1362,7 @@ vector<Declaration*> Parser::parse() {
 
         if (declaration) {
             declarations.push_back(declaration);
-            auto& declarators = identifiers.file_scope->declarators;
+            auto& declarators = identifiers.file_scope()->declarators;
         } else {
             message(Severity::ERROR, node->location) << "expected declaration; statements may occur at block scope but not file scope\n";
         }

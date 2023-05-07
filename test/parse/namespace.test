@@ -1,40 +1,42 @@
-BEGIN Outside namespace, unqualified identifier
+BEGIN Outside namespace, unqualified identifier declaration
 int a;
 EXPECT_AST
 [["var","ES","Si","a"]]
 
-BEGIN Outside namespace, :: prefixed identifier
+
+BEGIN Outside namespace, :: prefixed identifier declaration
 int ::a;
 EXPECT_AST
 [["var","ES","Si","a"]]
 
-BEGIN Outside namespace, qualified identifier
+
+BEGIN Outside namespace, qualified identifier declaration
 int a::b::c;
 EXPECT_AST
 [["var","ES","Si","a::b::c"]]
 
-BEGIN Outside namespace, :: prefixed and qualified identifier
+
+BEGIN Outside namespace, :: prefixed and qualified identifier declaration
 int ::a::b::c;
 EXPECT_AST
 [["var","ES","Si","a::b::c"]]
 
 
-
-BEGIN In namespace, :: prefixed identifier is always relative to root namespace
+BEGIN In namespace, :: prefixed identifier declaration is always relative to root namespace (1)
 #namespace X::Y
 int ::a;
 EXPECT_AST
 [["var","ES","Si","a"]]
 
 
-BEGIN In namespace, :: prefixed identifier is always relative to root namespace (1)
+BEGIN In namespace, :: prefixed identifier declaration is always relative to root namespace (2)
 #namespace X::Y
 int ::X::a;
 EXPECT_AST
 [["var","ES","Si","X::a"]]
 
 
-BEGIN In namespace, :: prefixed identifier is always relative to root namespace (2)
+BEGIN In namespace, :: prefixed identifier declaration is always relative to root namespace (3)
 #namespace X::Y
 int ::Y::a;
 EXPECT_AST
@@ -42,46 +44,46 @@ EXPECT_AST
 
 
 
-BEGIN In namespace, unqualified identifier is always appended to namespace (1)
+BEGIN In namespace, unqualified identifier declaration is always appended to namespace (1)
 #namespace X::Y
 int a;
 EXPECT_AST
 [["var","ES","Si","X::Y::a"]]
 
 
-BEGIN In namespace, unqualified identifier is always appended to namespace (2)
+BEGIN In namespace, unqualified identifier declaration is always appended to namespace (2)
 #namespace X::Y
 int X;
 EXPECT_AST
-[["var","ES","Si","X"]]
+[["var","ES","Si","X::Y::X"]]
 
 
-BEGIN In namespace, unqualified identifier is always appended to namespace (3)
+BEGIN In namespace, unqualified identifier declaration is always appended to namespace (3)
 #namespace X::Y
 int Y;
 EXPECT_AST
-[["var","ES","Si","X::Y"]]
+[["var","ES","Si","X::Y::Y"]]
 
 
-BEGIN In namespace, qualified identifier with no leading :: and not matching handle is appended to namespace
+BEGIN In namespace, qualified identifier declaration with no leading :: is appended to namespace (1)
 #namespace X::Y
 int Z::a;
 EXPECT_AST
 [["var","ES","Si","X::Y::Z::a"]]
 
 
-BEGIN In namespace, qualified identifier with no leading :: and matching handle is relative to handle (1)
+BEGIN In namespace, qualified declaration with no leading :: is appended to namespace (2)
 #namespace X::Y
 int X::a;
 EXPECT_AST
-[["var","ES","Si","X::a"]]
+[["var","ES","Si","X::Y::X::a"]]
 
 
-BEGIN In namespace, qualified identifier with no leading :: and matching handle is relative to handle (2)
+BEGIN In namespace, qualified identifier declaration with no leading :: is appended to namespace (3)
 #namespace X::Y
 int Y::a;
 EXPECT_AST
-[["var","ES","Si","X::Y::a"]]
+[["var","ES","Si","X::Y::Y::a"]]
 
 
 BEGIN Reset namespace
@@ -92,7 +94,7 @@ EXPECT_AST
 [["var","ES","Si","a"]]
 
 
-BEGIN Namespace may be :: prefixed
+BEGIN Namespace directive may have redundant :: prefix
 #namespace ::X::Y
 int a;
 EXPECT_AST
@@ -104,6 +106,74 @@ BEGIN Error if namespace token is not identifier
 EXPECT_MESSAGE
 :1:12: error unexpected '7' token in directive
 END
+
+
+BEGIN Outside namespace, unqualified identifier usage
+int a;
+int *b = &a;
+PARSE
+EXPECT_AST
+[["var","ES","Si","a"],["var","ES",["P","Si"],"b",["address","Na"]]]
+
+
+BEGIN Outside namespace, :: prefixed identifier usage
+int a;
+int *b = &::a;
+PARSE
+EXPECT_AST
+[["var","ES","Si","a"],["var","ES",["P","Si"],"b",["address","Na"]]]
+
+
+BEGIN Outside namespace, qualified identifier usage
+int X::a;
+int *b = &X::a;
+PARSE
+EXPECT_AST
+[["var","ES","Si","X::a"],["var","ES",["P","Si"],"b",["address","NX::a"]]]
+
+
+BEGIN Outside namespace, :: prefixed and qualified identifier usage
+int X::a;
+int *b = &::X::a;
+PARSE
+EXPECT_AST
+[["var","ES","Si","X::a"],["var","ES",["P","Si"],"b",["address","NX::a"]]]
+
+
+BEGIN In namespace, unqualified identifier usage
+#namespace X::Y
+int a;
+int* b = &a;
+PARSE
+EXPECT_AST
+[["var","ES","Si","X::Y::a"],["var","ES",["P","Si"],"X::Y::b",["address","NX::Y::a"]]]
+
+
+BEGIN In namespace, :: prefixed identifier usage
+int a;
+#namespace X::Y
+int* b = &::a;
+PARSE
+EXPECT_AST
+[["var","ES","Si","a"],["var","ES",["P","Si"],"X::Y::b",["address","Na"]]]
+
+
+BEGIN In namespace, :: qualified identifier usage
+#namespace X::Y
+int a;
+int* b = &Y::a;
+PARSE
+EXPECT_AST
+[["var","ES","Si","X::Y::a"],["var","ES",["P","Si"],"X::Y::b",["address","NX::Y::a"]]]
+
+
+BEGIN In namespace, :: prefixed and qualified identifier usage
+#namespace X::Y
+int a;
+int* b = &::X::Y::a;
+PARSE
+EXPECT_AST
+[["var","ES","Si","X::Y::a"],["var","ES",["P","Si"],"X::Y::b",["address","NX::Y::a"]]]
 
 
 BEGIN Substitute unqualified identifier according to using directive (1)
@@ -287,6 +357,32 @@ struct S {
     };
     U y;
 };
+END
+
+
+BEGIN Unqualified identifier of nested structure added to enclosing file scope within namespace
+#namespace X::Y
+struct S {
+    struct T {};
+};
+::X::Y::T w;
+X::Y::T x;
+Y::T y;
+T z;
+END
+
+
+BEGIN Qualified identifier of member function added to enclosing file scope within namespace
+#namespace X::Y
+struct S {
+    void f() {}
+};
+void g() {
+    ::X::Y::S::f();
+    X::Y::S::f();
+    Y::S::f();
+    S::f();
+}
 END
 
 

@@ -14,8 +14,7 @@ enum class AddScope {
 
 struct IdentifierMap {
     const bool preparse;
-    Scope* top_scope{};
-    Scope* file_scope{};
+    list<Scope*> scopes;
 
     explicit IdentifierMap(bool preparse);
     void operator=(const IdentifierMap&) = delete;
@@ -24,6 +23,7 @@ struct IdentifierMap {
     Declarator* add_declarator(AddScope add_scope,
                                const Declaration* declaration,
                                const Type* type,
+                               string_view current_namespace_prefix,
                                const Identifier& identifier,
                                DeclaratorDelegate* delegate,
                                const Location& location,
@@ -32,6 +32,7 @@ struct IdentifierMap {
     Declarator* add_declarator_internal(Scope* scope,
                                         const Declaration* declaration,
                                         const Type* type,
+                                        string_view current_namespace_prefix,
                                         InternedString identifier,
                                         DeclaratorDelegate* delegate,
                                         const Location& location,
@@ -40,6 +41,8 @@ struct IdentifierMap {
     void push_scope(Scope* scope);
     Scope* pop_scope();
 
+    Scope* file_scope() const { return scopes.back(); }
+    Scope* top_scope() const { return scopes.front(); }
     ScopeKind scope_kind() const;
 };
 
