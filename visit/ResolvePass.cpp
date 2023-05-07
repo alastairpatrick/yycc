@@ -312,7 +312,9 @@ struct ResolvePass: Visitor {
 
         if (!type->complete) return VisitTypeOutput(type);
 
-        result.type_scopes.push_back(&type->scope);        
+        if (type->scope) {
+            result.type_scopes.push_back(type->scope);        
+        }
 
         // C99 6.7.2.3p4
         bool want_complete = type->complete;
@@ -451,8 +453,8 @@ struct ResolvePass: Visitor {
         }
 
         if (auto struct_type = dynamic_cast<const StructuredType*>(object_type)) {
-            auto it = struct_type->scope.declarator_map.find(member_expr->identifier.text);
-            if (it == struct_type->scope.declarator_map.end()) {
+            auto member = struct_type->lookup_member(member_expr->identifier);
+            if (!member) {
                 message(Severity::ERROR, member_expr->location) << "no member named '" << member_expr->identifier << "' in '" << PrintType(struct_type) << "'\n";
                 pause_messages();
                 return VisitStatementOutput(Value::of_zero_int());
@@ -468,7 +470,7 @@ struct ResolvePass: Visitor {
                 }
             }
 
-            member_expr->member = it->second->primary;
+            member_expr->member = member->primary;
             return VisitStatementOutput();
         }
 

@@ -44,7 +44,7 @@ int main(int argc, const char* argv[]) {
         declarations.insert(declarations.end(), parsed.begin(), parsed.end());
     }
 
-    auto resolved_module = resolve_pass(declarations, identifiers.scopes.back());
+    auto resolved_module = resolve_pass(declarations, *identifiers.file_scope);
 
     EmitOptions options;
     auto llvm_module = emit_pass(resolved_module, options);

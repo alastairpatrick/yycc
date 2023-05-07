@@ -7,13 +7,15 @@
 
 enum class AddScope {
     FILE,
-    NESTED,
     TOP,
+    FILE_OR_BLOCK_QUALIFIED,
+    FILE_OR_BLOCK_UNQUALIFIED,
 };
 
 struct IdentifierMap {
     const bool preparse;
-    list<Scope> scopes;
+    Scope* top_scope{};
+    Scope* file_scope{};
 
     explicit IdentifierMap(bool preparse);
     void operator=(const IdentifierMap&) = delete;
@@ -27,7 +29,7 @@ struct IdentifierMap {
                                const Location& location,
                                Declarator* primary = nullptr);
 
-    Declarator* add_declarator_internal(Scope& scope,
+    Declarator* add_declarator_internal(Scope* scope,
                                         const Declaration* declaration,
                                         const Type* type,
                                         InternedString identifier,
@@ -35,8 +37,8 @@ struct IdentifierMap {
                                         const Location& location,
                                         Declarator* primary = nullptr);
 
-    void push_scope(Scope&& scope);
-    Scope pop_scope();
+    void push_scope(Scope* scope);
+    Scope* pop_scope();
 
     ScopeKind scope_kind() const;
 };

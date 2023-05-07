@@ -59,7 +59,6 @@ struct DeclaratorDelegate: ASTNode {
     virtual bool is_definition() const = 0;
     virtual const Type* to_type() const;
     virtual VisitDeclaratorOutput accept(Declarator* declarator, Visitor& visitor, const VisitDeclaratorInput& input) = 0;
-    virtual void print(ostream& stream) const override;
     virtual void print(const Declarator* declarator, ostream& stream) const = 0;
 
     void operator=(const DeclaratorDelegate&) = delete;

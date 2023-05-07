@@ -1,6 +1,7 @@
 #ifndef PARSE_SCOPE_H
 #define PARSE_SCOPE_H
 
+#include "ASTNode.h"
 #include "InternedString.h"
 
 struct Declarator;
@@ -13,8 +14,9 @@ enum class ScopeKind {
     STRUCTURED,
 };
 
-struct Scope {
+struct Scope: ASTNode {
     ScopeKind kind;
+    Scope* parent{};
     const StructuredType* type{};
     vector<Declarator*> declarators;
     unordered_map<InternedString, Declarator*> declarator_map;

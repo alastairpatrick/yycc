@@ -63,7 +63,7 @@ void sweep(ostream& stream, const File& file) {
     
     TextStream text_stream(stream);
 
-    output_declaration_directives(text_stream, &identifiers.scopes.front());
+    output_declaration_directives(text_stream, identifiers.file_scope);
 
     auto& oi_scopes = parser.order_independent_scopes;
     auto oi_scope_it = oi_scopes.begin();

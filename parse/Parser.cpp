@@ -523,11 +523,11 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
         if (token == '{') {
             // C99 6.7.2.3p6
-            if (!identifier.empty()) tag_declarator = declare_tag_type(AddScope::NESTED, declaration, identifier, type, specifier_location);
+            if (!identifier.empty()) tag_declarator = declare_tag_type(AddScope::FILE_OR_BLOCK_UNQUALIFIED, declaration, identifier, type, specifier_location);
 
             structured_type->complete = true;
 
-            if (!anonymous) identifiers.push_scope(Scope(ScopeKind::STRUCTURED, *identifier.text));
+            if (!anonymous) identifiers.push_scope(new Scope(ScopeKind::STRUCTURED, *identifier.text));
             consume();
 
             OrderIndependentScope oi_scope;
@@ -549,14 +549,13 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
             if (!anonymous) {
                 structured_type->scope = identifiers.pop_scope();
+                structured_type->scope->type = structured_type;
 
                 if (preparse) {
-                    oi_scope.scope = &structured_type->scope;
+                    oi_scope.scope = structured_type->scope;
                     order_independent_scopes.push_back(oi_scope);
                 }
             }
-
-            structured_type->scope.type = structured_type;
 
             consume_required('}');
         }
@@ -575,7 +574,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
         if (consume('{')) {
             // C99 6.7.2.3p6
-            if (!identifier.empty()) tag_declarator = declare_tag_type(AddScope::NESTED, declaration, identifier, type, specifier_location);
+            if (!identifier.empty()) tag_declarator = declare_tag_type(AddScope::FILE_OR_BLOCK_UNQUALIFIED, declaration, identifier, type, specifier_location);
 
             enum_type->complete = true;
             while (token && token != '}') {
@@ -600,7 +599,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 }
 
                 auto enum_constant = new EnumConstant(enum_type, constant);
-                auto declarator = identifiers.add_declarator(AddScope::NESTED, declaration, enum_type, identifier, enum_constant, location);
+                auto declarator = identifiers.add_declarator(AddScope::FILE_OR_BLOCK_UNQUALIFIED, declaration, enum_type, identifier, enum_constant, location);
 
                 if (declarator) {
                     enum_type->constants.push_back(declarator);
@@ -614,7 +613,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
     if (!tag_declarator && !identifier.empty()) {
         if (token == ';') {
             // C99 6.7.2.3p7
-            tag_declarator = declare_tag_type(AddScope::NESTED, declaration, identifier, type, specifier_location);
+            tag_declarator = declare_tag_type(AddScope::FILE_OR_BLOCK_UNQUALIFIED, declaration, identifier, type, specifier_location);
         } else {
             // C99 6.7.2.3p8
             tag_declarator = declare_tag_type(AddScope::FILE, declaration, identifier, type, specifier_location);
@@ -686,10 +685,12 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     }
 
     DeclaratorDelegate* delegate{};
+    AddScope add_scope = AddScope::TOP;
     if (is_function && declaration->storage_class != StorageClass::TYPEDEF) {
         CompoundStatement* body{};
         if (flags.allow_function_definition && token == '{') {
-            identifiers.push_scope(move(declarator_transform.prototype_scope));
+            // todo check there is a prototype scope
+            identifiers.push_scope(declarator_transform.prototype_scope);
             body = parse_compound_statement();
             identifiers.pop_scope();
             *last = true;
@@ -703,9 +704,11 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         bool inline_definition = (linkage == Linkage::EXTERNAL) && (specifiers & SPECIFIER_INLINE) && (storage_class != StorageClass::EXTERN);
 
         delegate = new Function(linkage,
-                                            inline_definition,
-                                            move(declarator_transform.parameters),
-                                            body);
+                                inline_definition,
+                                move(declarator_transform.parameters),
+                                body);
+
+        add_scope = AddScope::FILE_OR_BLOCK_QUALIFIED;
     } else {
         if (specifiers & SPECIFIER_INLINE) {
             message(Severity::ERROR, location) << "'inline' may only appear on function\n";
@@ -741,7 +744,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         primary_declarator = file_declarator->primary;
     }
 
-    auto declarator = identifiers.add_declarator(AddScope::TOP, declaration, type, declarator_transform.identifier, delegate, location, primary_declarator);
+    auto declarator = identifiers.add_declarator(add_scope, declaration, type, declarator_transform.identifier, delegate, location, primary_declarator);
 
     if (auto type_def = dynamic_cast<TypeDef*>(delegate)) {
         type_def->type_def_type.declarator = declarator->primary;
@@ -819,7 +822,7 @@ DeclaratorTransform Parser::parse_declarator_transform(ParseDeclaratorFlags flag
             };
 
         } else if (consume('(')) {
-            identifiers.push_scope(Scope(ScopeKind::PROTOTYPE));
+            identifiers.push_scope(new Scope(ScopeKind::PROTOTYPE));
 
             vector<const Type*> param_types;
             bool seen_void = false;
@@ -912,7 +915,7 @@ Statement* Parser::parse_statement() {
           consume();
           consume_required('(');
 
-          identifiers.push_scope(Scope(ScopeKind::BLOCK));
+          identifiers.push_scope(new Scope(ScopeKind::BLOCK));
 
           Declaration* declaration{};
           Expr* initialize{};
@@ -1073,7 +1076,7 @@ CompoundStatement* Parser::parse_compound_statement() {
 
         statement = new CompoundStatement(ASTNodeVector(), location);
     } else {
-        identifiers.push_scope(Scope(ScopeKind::BLOCK));
+        identifiers.push_scope(new Scope(ScopeKind::BLOCK));
 
         require('{');
         location = preprocessor.location();
@@ -1085,7 +1088,7 @@ CompoundStatement* Parser::parse_compound_statement() {
             if (node) nodes.push_back(node);
         }
 
-        Scope scope = identifiers.pop_scope();
+        identifiers.pop_scope();
         statement = new CompoundStatement(move(nodes), location);
 
         consume_required('}');
@@ -1359,7 +1362,7 @@ vector<Declaration*> Parser::parse() {
 
         if (declaration) {
             declarations.push_back(declaration);
-            auto& declarators = identifiers.scopes.back().declarators;
+            auto& declarators = identifiers.file_scope->declarators;
         } else {
             message(Severity::ERROR, node->location) << "expected declaration; statements may occur at block scope but not file scope\n";
         }

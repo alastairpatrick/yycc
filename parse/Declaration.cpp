@@ -119,11 +119,6 @@ const Type* DeclaratorDelegate::to_type() const {
     return nullptr;
 }
 
-void DeclaratorDelegate::print(ostream& stream) const {
-    assert(false);
-}
-
-
 
 Entity::Entity(Linkage linkage): linkage(linkage) {
 

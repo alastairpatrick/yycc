@@ -3,11 +3,11 @@
 #include "Message.h"
 
 Declarator* IdentifierMap::lookup_declarator(const Identifier& identifier) const {
-    for (auto& scope : scopes) {
-        InternedString identifier_string = &scope == &scopes.back() ? identifier.at_file_scope : identifier.text;
+    for (auto scope = top_scope; scope; scope = scope->parent) {
+        InternedString identifier_string = scope == file_scope ? identifier.at_file_scope : identifier.text;
 
-        auto it = scope.declarator_map.find(identifier_string);
-        if (it != scope.declarator_map.end()) {
+        auto it = scope->declarator_map.find(identifier_string);
+        if (it != scope->declarator_map.end()) {
             // Note that this intentionally does _not_ always return the primary. For reporting errors
             // it is better to return a declarator that is currently in scope. The primary declarator
             // might not be in scope, e.g. it has extern storage class and block scope.
@@ -27,7 +27,7 @@ Declarator* IdentifierMap::add_declarator(AddScope add_scope,
                                           Declarator* primary) {
     
     InternedString identifier_string{};
-    if (add_scope == AddScope::FILE || scopes.size() == 1) {
+    if (add_scope == AddScope::FILE || top_scope == file_scope) {
         identifier_string = identifier.at_file_scope;
     } else {
         identifier_string = identifier.text;
@@ -36,38 +36,34 @@ Declarator* IdentifierMap::add_declarator(AddScope add_scope,
     if (identifier_string->empty()) return new Declarator(declaration, type, identifier_string, delegate, location);
 
     if (add_scope == AddScope::FILE) {
-        return add_declarator_internal(scopes.back(), declaration, type, identifier_string, delegate, location, primary);
+        return add_declarator_internal(file_scope, declaration, type, identifier_string, delegate, location, primary);
     } else if (add_scope == AddScope::TOP) {
-        return add_declarator_internal(scopes.front(), declaration, type, identifier_string, delegate, location, primary);
+        return add_declarator_internal(top_scope, declaration, type, identifier_string, delegate, location, primary);
     } else {
-        InternedString interned_prefix = empty_interned_string;
-
-        auto scope_it = scopes.begin();
-        for (; scope_it != scopes.end(); ++scope_it) {
-            if (scope_it->kind != ScopeKind::STRUCTURED) {
+        InternedString qualified_identifier = identifier_string;
+        auto scope = top_scope;
+        for (; scope; scope = scope->parent) {
+            if (scope->kind != ScopeKind::STRUCTURED) {
                 break;
             }
-            interned_prefix = intern_string(*scope_it->prefix, *interned_prefix);
+
+            if (add_scope == AddScope::FILE_OR_BLOCK_QUALIFIED) {
+                qualified_identifier = intern_string(*scope->prefix, *qualified_identifier);
+            }
         }
 
-        string_view prefix = *interned_prefix;
+        Declarator* declarator = add_declarator_internal(scope, declaration, type, qualified_identifier, delegate, location, primary);
+        primary = declarator->primary;
 
-        Declarator* declarator{};
-        for (;; --scope_it) {
-            declarator = add_declarator_internal(*scope_it, declaration, type, intern_string(prefix, *identifier_string), delegate, location, primary);
-            primary = declarator->primary;
-
-            if (scope_it == scopes.begin()) break;
-
-            auto colon_idx = prefix.find(':');
-            prefix = prefix.substr(colon_idx + 2);
+        if (add_scope == AddScope::FILE_OR_BLOCK_QUALIFIED && scope != top_scope) {
+            declarator = add_declarator_internal(top_scope, declaration, type, identifier_string, delegate, location, primary);
         }
 
         return declarator;
     }
 }
 
-Declarator* IdentifierMap::add_declarator_internal(Scope& scope,
+Declarator* IdentifierMap::add_declarator_internal(Scope* scope,
                                                    const Declaration* declaration,
                                                    const Type* type,
                                                    InternedString identifier,
@@ -78,8 +74,8 @@ Declarator* IdentifierMap::add_declarator_internal(Scope& scope,
     Declarator* new_declarator{};
     Declarator* existing_declarator{};
 
-    auto it = scope.declarator_map.find(identifier);
-    if (it != scope.declarator_map.end()) {
+    auto it = scope->declarator_map.find(identifier);
+    if (it != scope->declarator_map.end()) {
         existing_declarator = it->second;
         if (!existing_declarator->type) {
             new_declarator = existing_declarator;
@@ -104,7 +100,7 @@ Declarator* IdentifierMap::add_declarator_internal(Scope& scope,
 
         } else {
             existing_declarator = new_declarator;
-            scope.declarator_map[identifier] = new_declarator;
+            scope->declarator_map[identifier] = new_declarator;
 
             if (primary) {
                 new_declarator->primary = primary;
@@ -115,26 +111,28 @@ Declarator* IdentifierMap::add_declarator_internal(Scope& scope,
     }
 
     if (new_declarator->type) {
-        scope.declarators.push_back(new_declarator);
+        scope->declarators.push_back(new_declarator);
     }
 
     return new_declarator;
 }
 
-void IdentifierMap::push_scope(Scope&& scope) {
-    scopes.push_front(move(scope));
+void IdentifierMap::push_scope(Scope* scope) {
+    scope->parent = top_scope;
+    top_scope = scope;
 }
 
-Scope IdentifierMap::pop_scope() {
-    auto scope = move(scopes.front());
-    scopes.pop_front();
-    return scope;
+Scope* IdentifierMap::pop_scope() {
+    auto popped = top_scope;
+    top_scope = top_scope->parent;
+    return popped;
 }
 
 IdentifierMap::IdentifierMap(bool preparse): preparse(preparse) {
-    push_scope(Scope(ScopeKind::FILE));
+    file_scope = new Scope(ScopeKind::FILE);
+    push_scope(file_scope);
 }
 
 ScopeKind IdentifierMap::scope_kind() const {
-    return scopes.front().kind;
+    return top_scope->kind;
 }

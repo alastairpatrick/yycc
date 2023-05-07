@@ -513,12 +513,12 @@ void TagType::message_print(ostream& stream, int section) const {
 
 
 StructuredType::StructuredType(const Location& location)
-    : TagType(location), scope(ScopeKind::STRUCTURED, "") {
+    : TagType(location) {
 }
 
 const Declarator* StructuredType::lookup_member(const Identifier& identifier) const {
-    auto it = scope.declarator_map.find(identifier.text);
-    if (it == scope.declarator_map.end()) return nullptr;
+    auto it = scope->declarator_map.find(identifier.text);
+    if (it == scope->declarator_map.end()) return nullptr;
     return it->second;
 }
 

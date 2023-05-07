@@ -268,24 +268,34 @@ EXPECT_AST
 [["var","ES",["ENUM",[["ec","E::A"],["ec","E::B"]]],"z"]]
 
 
-BEGIN Qualified identifier of nested structure added to enclosing scope (1)
+BEGIN Unqualified identifier of nested structure added to enclosing file scope (1)
 struct S {
     struct T {};
 };
-S::T x;
+T x;
 PARSE
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["",["STRUCT",[]]]]],"S"]
-,["typedef",["STRUCT",[]],"S::T"]
-,["var","ES",["STRUCT",[]],"x"]]
+,["typedef",["STRUCT",[]],"T"],["var","ES",["STRUCT",[]],"x"]]
 
 
-BEGIN Qualified identifier of nested structure added to enclosing scope (2)
+BEGIN Unqualified identifier of nested structure added to enclosing file scope (2)
+struct S {
+    struct T {
+        struct U {
+        };
+    };
+    U y;
+};
+END
+
+
+BEGIN Unqualified identifier of nested structure added to enclosing block scope
 void f() {
     struct S {
         struct T {};
     };
-    S::T x;
+    T x;
 }
 PARSE
 EXPECT_AST
@@ -295,55 +305,25 @@ EXPECT_AST
 ]]]]
 
 
-BEGIN Qualified identifier of nested structure added to enclosing scope (3)
-struct S {
-    struct T {
-        struct U {
-        };
-    };
-    S::T::U x;
-    T::U y;
-};
-S::T::U z;
-PARSE
-EXPECT_AST
-[[],["var","ES",["STRUCT",[]],"z"]]
-
-
-BEGIN Qualified identifier of nested structure added to enclosing scope (4)
-struct S {
-    struct T;
-};
-S::T* z;
-PARSE
-EXPECT_AST
-[[],["var","ES",["P",["STRUCT",["?"]]],"z"]]
-
-
-BEGIN Qualified identifier of nested structure added to enclosing scope (5)
-struct S {
-    struct T {
-        struct U {
-        };
-    };
-    U y;
-};
-PARSE
-EXPECT_MESSAGE
-:6:5: error type 'U' undefined
-END
-
-
-BEGIN Qualified identifier of nested enum added to enclosing scope
+BEGIN Unqualified identifier of nested enum added to enclosing block scope
 void f() {
     struct S {
-        enum E { E::A };
+        enum E { A };
     };
-    S::E x = S::E::A;
+    E x = A;
 }
 PARSE
 EXPECT_AST
 [["fun","E",["F","V"],"f",[],["block",[
-    []
-   ,["var","",["ENUM",[["ec","E::A"]]],"x","NS::E::A"]
+    [],
+    ["var","",["ENUM",[["ec","A"]]],"x","NA"]
 ]]]]
+
+
+BEGIN Qualified identifier of member function added to enclosing scope
+struct S {
+    void f() {}
+};
+PARSE
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["f",["F","V"]]]],"S"],["fun","",["F","V"],"S::f",[],["block",[]]]]

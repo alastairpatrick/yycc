@@ -25,7 +25,7 @@ struct VisitDeclaratorOutput;
 struct VisitStatementInput;
 struct VisitStatementOutput;
 
-struct ASTNode: virtual Printable {
+struct ASTNode {
     ASTNode();
     ASTNode(const ASTNode&);
     ASTNode(ASTNode&&);
@@ -36,7 +36,7 @@ struct ASTNode: virtual Printable {
     ASTNode* next_delete;
 };
 
-struct LocationNode: ASTNode {
+struct LocationNode: ASTNode, virtual Printable {
     Location location;
 
     LocationNode(const Location& location);
