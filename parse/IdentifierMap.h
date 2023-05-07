@@ -13,10 +13,9 @@ enum class AddScope {
 };
 
 struct IdentifierMap {
-    const bool preparse;
     list<Scope*> scopes;
 
-    explicit IdentifierMap(bool preparse);
+    IdentifierMap();
     void operator=(const IdentifierMap&) = delete;
 
     Declarator* lookup_declarator(const Identifier& identifier) const;

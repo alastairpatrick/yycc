@@ -133,8 +133,8 @@ Statement* parse_statement(IdentifierMap& identifiers, const Input& input) {
     return result;
 }
 
-vector<Declaration*> parse_declarations(IdentifierMap& identifiers, const Input& input) {
-    Preprocessor preprocessor(identifiers.preparse);
+vector<Declaration*> parse_declarations(IdentifierMap& identifiers, bool preparse, const Input& input) {
+    Preprocessor preprocessor(preparse);
     preprocessor.in(input);
 
     Parser parser(preprocessor, identifiers);
@@ -151,7 +151,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
 
         TranslationUnitContext context(message_stream);
 
-        IdentifierMap identifiers(test_type == TestType::PREPARSE);
+        IdentifierMap identifiers;
 
         const Type* type{};
         string module_ir;
@@ -175,7 +175,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
             file.text = sections[INPUT];
             sweep(output_stream, file);
         } else {
-            auto declarations = parse_declarations(identifiers, sections[INPUT]);
+            auto declarations = parse_declarations(identifiers, test_type == TestType::PREPARSE, sections[INPUT]);
 
             if (test_type >= TestType::RESOLVE) {
                 auto resolved_module = resolve_pass(declarations, *identifiers.file_scope());

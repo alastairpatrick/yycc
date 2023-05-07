@@ -26,7 +26,7 @@ int main(int argc, const char* argv[]) {
 
     TranslationUnitContext context(cerr);
 
-    IdentifierMap identifiers(false);
+    IdentifierMap identifiers;
     list<TranslationInput> inputs;
     for (auto i = 1; i < argc; ++i) {
         auto in_file = FileCache::it->read(argv[i]);

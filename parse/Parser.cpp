@@ -16,7 +16,6 @@ const Type* DeclaratorTransform::apply(const Type* type) {
 }
 
 Parser::Parser(Preprocessor& preprocessor, IdentifierMap& identifiers): preprocessor(preprocessor), identifiers(identifiers), preparse(preprocessor.preparse) {
-    assert(identifiers.preparse == preprocessor.preparse);
     consume();
 }
 

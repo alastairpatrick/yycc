@@ -55,7 +55,7 @@ void output_declaration_directives(TextStream& stream, Scope* scope) {
 void sweep(ostream& stream, const File& file) {
     Preprocessor preprocessor1(file.text, true);
 
-    IdentifierMap identifiers(true);
+    IdentifierMap identifiers;
     Parser parser(preprocessor1, identifiers);
     auto declarations = parser.parse();
 

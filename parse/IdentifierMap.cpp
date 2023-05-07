@@ -141,7 +141,7 @@ Scope* IdentifierMap::pop_scope() {
     return popped;
 }
 
-IdentifierMap::IdentifierMap(bool preparse): preparse(preparse) {
+IdentifierMap::IdentifierMap() {
     push_scope(new Scope(ScopeKind::FILE));
 }
 
