@@ -263,3 +263,60 @@ struct S {
 EXPECT_MESSAGE
 :2:10: error declaration directive not matched with a proper declaration of 'x'
 END
+
+
+BEGIN Resolves member expression
+struct S {
+    int x;
+};
+S s;
+int* p = &s.x;
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["x","Si"]]],"S"]
+,["var","ES",["P","Si"],"p",["address",[".","Ns","x"]]]
+,["var","ES",["STRUCT",[["x","Si"]]],"s"]]
+
+
+BEGIN Resolves member expression in same namespace as struct definition
+#namespace Z
+struct S {
+    int x;
+};
+S s;
+int* p = &s.x;
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["Z::x","Si"]]],"Z::S"]
+,["var","ES",["P","Si"],"Z::p",["address",[".","NZ::s","x"]]]
+,["var","ES",["STRUCT",[["Z::x","Si"]]],"Z::s"]]
+
+
+BEGIN Resolves member expression in different namespace from struct definition
+#namespace Y
+struct S {
+    int x;
+};
+
+#namespace Z
+#using ::Y::S
+S s;
+int* p = &s.x;
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["Y::x","Si"]]],"Y::S"]
+,["var","ES",["P","Si"],"Z::p",["address",[".","NZ::s","x"]]]
+,["var","ES",["STRUCT",[["Y::x","Si"]]],"Z::s"]]
+
+
+BEGIN When resolving member expression, only unqualified identifier is combined with prefix of referenced type
+#namespace Y
+struct S {
+#namespace Y::Z
+    int x;
+};
+
+#using ::Y::S
+S s;
+int* p = &s.Z::x;
+EXPECT_MESSAGE
+:9:12: error no member named 'Z::x' in 'struct Y::S'...
+:2:1: ... see type definition
+END

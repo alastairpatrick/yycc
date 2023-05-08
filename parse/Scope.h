@@ -21,13 +21,13 @@ struct Scope: ASTNode {
     const StructuredType* type{};
     vector<Declarator*> declarators;
     unordered_map<InternedString, Declarator*> declarator_map;
-    InternedString prefix = empty_interned_string;
+    InternedString namespace_prefix = empty_interned_string;
 
     explicit Scope(ScopeKind kind);
-    Scope(ScopeKind kind, string_view identifier);
+    Scope(ScopeKind kind, InternedString namespace_prefix);
 
     Declarator* lookup_declarator(const Identifier& identifier) const;
-    Declarator* lookup_member(InternedString identifier) const;
+    Declarator* lookup_member(const Identifier& identifier) const;
 };
 
 #endif

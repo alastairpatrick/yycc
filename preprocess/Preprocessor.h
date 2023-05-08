@@ -11,7 +11,7 @@
 
 struct IncludeContext {
     Location location;
-    string current_namespace_prefix;
+    InternedString current_namespace_prefix;
     unordered_map<InternedString, InternedString> namespace_handles;
 };
 
@@ -21,7 +21,7 @@ struct Preprocessor {
     Fragment fragment;    
     Identifier identifier;
     vector<IncludeContext> include_stack;
-    string current_namespace_prefix;
+    InternedString current_namespace_prefix;
     unordered_map<InternedString, InternedString> namespace_handles;
 
     explicit Preprocessor(bool preparse);

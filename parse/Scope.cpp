@@ -2,8 +2,8 @@
 
 Scope::Scope(ScopeKind kind): kind(kind) {}
 
-Scope::Scope(ScopeKind kind, string_view identifier)
-    : kind(kind), prefix(intern_string(identifier, "::")) {
+Scope::Scope(ScopeKind kind, InternedString namespace_prefix)
+    : kind(kind), namespace_prefix(namespace_prefix) {
 }
 
 Declarator* Scope::lookup_declarator(const Identifier& identifier) const {
@@ -22,9 +22,15 @@ Declarator* Scope::lookup_declarator(const Identifier& identifier) const {
     return nullptr;
 }
 
-Declarator* Scope::lookup_member(InternedString identifier) const {
-    auto it = declarator_map.find(identifier);
-    if (it == declarator_map.end()) return nullptr;
+Declarator* Scope::lookup_member(const Identifier& identifier) const {
+    auto it = declarator_map.find(identifier.qualified);
+    if (it != declarator_map.end()) return it->second;
 
-    return it->second;
+    if (identifier.text->find(':') != identifier.text->npos) return nullptr;
+
+    InternedString requalified = intern_string(*namespace_prefix, *identifier.text);
+    it = declarator_map.find(requalified);
+    if (it != declarator_map.end()) return it->second;
+
+    return nullptr;
 }

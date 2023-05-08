@@ -526,7 +526,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
             structured_type->complete = true;
 
-            if (!anonymous) identifiers.push_scope(new Scope(ScopeKind::STRUCTURED, *identifier.text));
+            if (!anonymous) identifiers.push_scope(new Scope(ScopeKind::STRUCTURED, preprocessor.current_namespace_prefix));
             consume();
 
             OrderIndependentScope oi_scope;

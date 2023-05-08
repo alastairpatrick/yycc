@@ -78,7 +78,7 @@ TokenKind Preprocessor::next_pp_token() {
         lexer.lineno(context.location.line);
         lexer.set_filename(context.location.filename);
 
-        current_namespace_prefix = move(context.current_namespace_prefix);
+        current_namespace_prefix = context.current_namespace_prefix;
         namespace_handles = move(context.namespace_handles);
 
         include_stack.pop_back();
@@ -93,7 +93,7 @@ TokenKind Preprocessor::next_pp_token() {
         if (text[0] == ':') {
             identifier.qualified = intern_string(text.substr(2));
         } else {
-            identifier.qualified = intern_string(current_namespace_prefix, text);
+            identifier.qualified = intern_string(*current_namespace_prefix, text);
         }
 
         identifier.usage_at_file_scope = evaluate_identifier(identifier.text);
@@ -270,7 +270,7 @@ void Preprocessor::handle_pragma_directive() {
 }
 
 void Preprocessor::reset_namespace() {
-    current_namespace_prefix.clear();
+    current_namespace_prefix = empty_interned_string;
     namespace_handles.clear();
 
     add_keyword("auto");
@@ -331,8 +331,7 @@ void Preprocessor::handle_namespace_directive() {
         text.remove_prefix(2);
     }
 
-    current_namespace_prefix = text;
-    current_namespace_prefix += "::";
+    current_namespace_prefix = intern_string(text, "::");
 
     size_t handle_begin = 0;
     for (;;) {
@@ -388,5 +387,5 @@ InternedString Preprocessor::evaluate_identifier(InternedString text) const {
     auto it = namespace_handles.find(text);
     if (it != namespace_handles.end()) return it->second;
 
-    return intern_string(current_namespace_prefix, *text);
+    return intern_string(*current_namespace_prefix, *text);
 }
