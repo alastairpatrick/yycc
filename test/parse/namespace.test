@@ -275,7 +275,7 @@ EXPECT_AST
 BEGIN Namespace affects identifiers declared at block scope
 #namespace X::Y::Z
 void f() {
-    int X::Y::Z::x;
+    int x;
 }
 PARSE
 EXPECT_AST
@@ -285,7 +285,7 @@ EXPECT_AST
 BEGIN Namespace affects struct members
 #namespace X::Y::Z
 struct S {
-    int X::Y::Z::x;
+    int x;
 } z;
 EXPECT_AST
 [["var","ES",["STRUCT",[["X::Y::Z::x","Si"]]],"X::Y::Z::z"]]
@@ -375,17 +375,6 @@ T z;
 END
 
 
-BEGIN Qualified identifier of member function added to enclosing file scope within namespace
-#namespace X::Y
-struct S {
-    void f() {}
-};
-void g() {
-    S::f();
-}
-END
-
-
 BEGIN Unqualified identifier of nested structure added to enclosing block scope
 void f() {
     struct S {
@@ -414,27 +403,3 @@ EXPECT_AST
     [],
     ["var","",["ENUM",[["ec","A"]]],"x","NA"]
 ]]]]
-
-
-BEGIN Qualified identifier of member function added to enclosing scope
-struct S {
-    void f() {}
-};
-PARSE
-EXPECT_GLOBALS
-[["typedef",["STRUCT",[["f",["F","V"]]]],"S"],["fun","",["F","V"],"S::f",[],["block",[]]]]
-
-
-BEGIN Bind to member function through intemediate scope
-struct S {
-    struct T {
-        void f() {}
-    };
-
-    void g() {
-        T::f();
-    }
-};
-PARSE
-EXPECT_GLOBALS
-[["typedef",["STRUCT",[["",["STRUCT",[["f",["F","V"]]]]],["g",["F","V"]]]],"S"],["fun","",["F","V"],"S::T::f",[],["block",[]]],["fun","",["F","V"],"S::g",[],["block",[["call","NT::f"]]]],["typedef",["STRUCT",[["f",["F","V"]]]],"T"]]

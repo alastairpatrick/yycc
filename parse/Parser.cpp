@@ -57,7 +57,7 @@ void Parser::handle_declaration_directive() {
         if (pp_token == TOK_IDENTIFIER) {
             auto id = preprocessor.identifier;
 
-            auto declarator = identifiers.add_declarator(AddScope::TOP, nullptr, nullptr, preprocessor.current_namespace_prefix, id, nullptr, preprocessor.location());
+            auto declarator = identifiers.add_declarator(AddScope::TOP, nullptr, nullptr, id, nullptr, preprocessor.location());
             if (token == TOK_PP_TYPE) {
                 TypeDef* type_def = new TypeDef;
                 type_def->type_def_type.declarator = declarator->primary;
@@ -522,7 +522,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
         if (token == '{') {
             // C99 6.7.2.3p6
-            if (!identifier.empty()) tag_declarator = declare_tag_type(AddScope::FILE_OR_BLOCK_UNQUALIFIED, declaration, identifier, type, specifier_location);
+            if (!identifier.empty()) tag_declarator = declare_tag_type(AddScope::FILE_OR_BLOCK, declaration, identifier, type, specifier_location);
 
             structured_type->complete = true;
 
@@ -573,7 +573,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
         if (consume('{')) {
             // C99 6.7.2.3p6
-            if (!identifier.empty()) tag_declarator = declare_tag_type(AddScope::FILE_OR_BLOCK_UNQUALIFIED, declaration, identifier, type, specifier_location);
+            if (!identifier.empty()) tag_declarator = declare_tag_type(AddScope::FILE_OR_BLOCK, declaration, identifier, type, specifier_location);
 
             enum_type->complete = true;
             while (token && token != '}') {
@@ -598,7 +598,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 }
 
                 auto enum_constant = new EnumConstant(enum_type, constant);
-                auto declarator = identifiers.add_declarator(AddScope::FILE_OR_BLOCK_UNQUALIFIED, declaration, enum_type, preprocessor.current_namespace_prefix, identifier, enum_constant, location);
+                auto declarator = identifiers.add_declarator(AddScope::FILE_OR_BLOCK, declaration, enum_type, identifier, enum_constant, location);
 
                 if (declarator) {
                     enum_type->constants.push_back(declarator);
@@ -612,7 +612,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
     if (!tag_declarator && !identifier.empty()) {
         if (token == ';') {
             // C99 6.7.2.3p7
-            tag_declarator = declare_tag_type(AddScope::FILE_OR_BLOCK_UNQUALIFIED, declaration, identifier, type, specifier_location);
+            tag_declarator = declare_tag_type(AddScope::FILE_OR_BLOCK, declaration, identifier, type, specifier_location);
         } else {
             // C99 6.7.2.3p8
             tag_declarator = declare_tag_type(AddScope::FILE, declaration, identifier, type, specifier_location);
@@ -624,7 +624,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
 Declarator* Parser::declare_tag_type(AddScope add_scope, Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location) {
     auto type_def = new TypeDef;
-    auto declarator = identifiers.add_declarator(add_scope, declaration, type, preprocessor.current_namespace_prefix, identifier, type_def, location);
+    auto declarator = identifiers.add_declarator(add_scope, declaration, type, identifier, type_def, location);
     type_def->type_def_type.declarator = declarator->primary;
     type->tag = declarator;
     return declarator;
@@ -707,7 +707,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
                                 move(declarator_transform.parameters),
                                 body);
 
-        add_scope = AddScope::FILE_OR_BLOCK_QUALIFIED;
+        add_scope = AddScope::TOP;
     } else {
         if (specifiers & SPECIFIER_INLINE) {
             message(Severity::ERROR, location) << "'inline' may only appear on function\n";
@@ -739,11 +739,11 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     Declarator* file_declarator{};  // an additional declarator at file scope if appropriate
     Declarator* primary_declarator{};
     if (scope == ScopeKind::BLOCK && declaration->storage_class == StorageClass::EXTERN) {
-        file_declarator = identifiers.add_declarator(AddScope::FILE, declaration, type, preprocessor.current_namespace_prefix, declarator_transform.identifier, delegate, location);
+        file_declarator = identifiers.add_declarator(AddScope::FILE, declaration, type, declarator_transform.identifier, delegate, location);
         primary_declarator = file_declarator->primary;
     }
 
-    auto declarator = identifiers.add_declarator(add_scope, declaration, type, preprocessor.current_namespace_prefix, declarator_transform.identifier, delegate, location, primary_declarator);
+    auto declarator = identifiers.add_declarator(add_scope, declaration, type, declarator_transform.identifier, delegate, location, primary_declarator);
 
     if (auto type_def = dynamic_cast<TypeDef*>(delegate)) {
         type_def->type_def_type.declarator = declarator->primary;

@@ -293,16 +293,16 @@ int g() {
 EXPECT_IR
 %S = type {}
 
-define i32 @"S::f"(ptr %0) {
+define i32 @g() {
+  %s = alloca %S, align 8
+  %1 = call i32 @f(ptr %s)
+  ret i32 %1
+}
+
+define i32 @f(ptr %0) {
   %this = alloca ptr, align 8
   store ptr %0, ptr %this, align 8
   ret i32 7
-}
-
-define i32 @g() {
-  %s = alloca %S, align 8
-  %1 = call i32 @"S::f"(ptr %s)
-  ret i32 %1
 }
 END
 
@@ -317,18 +317,18 @@ int g(S* p) {
   return p->f();
 }
 EXPECT_IR
-define i32 @"S::f"(ptr %0) {
-  %this = alloca ptr, align 8
-  store ptr %0, ptr %this, align 8
-  ret i32 7
-}
-
 define i32 @g(ptr %0) {
   %p = alloca ptr, align 8
   store ptr %0, ptr %p, align 8
   %2 = load ptr, ptr %p, align 8
-  %3 = call i32 @"S::f"(ptr %2)
+  %3 = call i32 @f(ptr %2)
   ret i32 %3
+}
+
+define i32 @f(ptr %0) {
+  %this = alloca ptr, align 8
+  store ptr %0, ptr %this, align 8
+  ret i32 7
 }
 END
 

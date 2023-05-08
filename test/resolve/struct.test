@@ -251,7 +251,7 @@ struct S {
     int f();
 };
 EXPECT_GLOBALS
-[["typedef",["STRUCT",[["f",["F","Si"]]]],"S"],["fun","",["F","Si"],"S::f"]]
+[["typedef",["STRUCT",[["f",["F","Si"]]]],"S"]]
 END
 
 
