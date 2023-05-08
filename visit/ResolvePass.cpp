@@ -453,9 +453,10 @@ struct ResolvePass: Visitor {
         }
 
         if (auto struct_type = dynamic_cast<const StructuredType*>(object_type)) {
-            auto member = struct_type->lookup_member(member_expr->identifier);
+            auto member = struct_type->scope->lookup_member(member_expr->identifier.text);
             if (!member) {
-                message(Severity::ERROR, member_expr->location) << "no member named '" << member_expr->identifier << "' in '" << PrintType(struct_type) << "'\n";
+                message(Severity::ERROR, member_expr->location) << "no member named '" << member_expr->identifier << "' in '" << PrintType(struct_type) << "'...\n";
+                message(Severity::INFO, struct_type->location) << "... see type definition\n";
                 pause_messages();
                 return VisitStatementOutput(Value::of_zero_int());
             }

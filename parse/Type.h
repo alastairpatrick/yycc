@@ -215,7 +215,6 @@ struct StructuredType: TagType {
     mutable bool complete{};
 
     StructuredType(const Location& location);
-    const Declarator* lookup_member(const Identifier& identifier) const;
     virtual TypePartition partition() const override;
     virtual bool has_tag(const Declarator* declarator) const override;
     virtual void print(std::ostream& stream) const override;

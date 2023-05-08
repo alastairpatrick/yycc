@@ -32,6 +32,7 @@ add_library(yycc_lib STATIC
     "parse/Expr.cpp"
     "parse/IdentifierMap.cpp"
     "parse/Parser.cpp"
+    "parse/Scope.cpp"
     "parse/Statement.cpp"
     "parse/ArrayType.cpp"
     "parse/Type.cpp"

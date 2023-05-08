@@ -550,7 +550,8 @@ int f(S s) {
     return s.y;
 }
 EXPECT_MESSAGE
-:3:13: error no member named 'y' in 'struct S'
+:3:13: error no member named 'y' in 'struct S'...
+:1:1: ... see type definition
 END
 
 

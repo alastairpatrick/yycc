@@ -5,6 +5,7 @@
 #include "InternedString.h"
 
 struct Declarator;
+struct Identifier;
 struct StructuredType;
 
 enum class ScopeKind {
@@ -22,11 +23,11 @@ struct Scope: ASTNode {
     unordered_map<InternedString, Declarator*> declarator_map;
     InternedString prefix = empty_interned_string;
 
-    explicit Scope(ScopeKind kind): kind(kind) {}
+    explicit Scope(ScopeKind kind);
+    Scope(ScopeKind kind, string_view identifier);
 
-    Scope(ScopeKind kind, string_view identifier)
-        : kind(kind), prefix(intern_string(identifier, "::")) {
-    }
+    Declarator* lookup_declarator(const Identifier& identifier) const;
+    Declarator* lookup_member(InternedString identifier) const;
 };
 
 #endif

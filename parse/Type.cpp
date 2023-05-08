@@ -516,12 +516,6 @@ StructuredType::StructuredType(const Location& location)
     : TagType(location) {
 }
 
-const Declarator* StructuredType::lookup_member(const Identifier& identifier) const {
-    auto it = scope->declarator_map.find(identifier.text);
-    if (it == scope->declarator_map.end()) return nullptr;
-    return it->second;
-}
-
 TypePartition StructuredType::partition() const {
     return complete ? TypePartition::OBJECT : TypePartition::INCOMPLETE;
 }

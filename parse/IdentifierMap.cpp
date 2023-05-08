@@ -3,19 +3,8 @@
 #include "Message.h"
 
 Declarator* IdentifierMap::lookup_declarator(const Identifier& identifier) const {
-    for (auto scope: scopes) {
-        InternedString identifier_string = scope == scopes.back() ? identifier.usage_at_file_scope : identifier.text;
+    return scopes.front()->lookup_declarator(identifier);
 
-        auto it = scope->declarator_map.find(identifier_string);
-        if (it != scope->declarator_map.end()) {
-            // Note that this intentionally does _not_ always return the primary. For reporting errors
-            // it is better to return a declarator that is currently in scope. The primary declarator
-            // might not be in scope, e.g. it has extern storage class and block scope.
-            return it->second;
-        }
-    }
-
-    return nullptr;
 }
 
 Declarator* IdentifierMap::add_declarator(AddScope add_scope,
