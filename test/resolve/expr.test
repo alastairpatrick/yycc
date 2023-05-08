@@ -47,14 +47,3 @@ void f(S s) {
     s.f();
 }
 END
-
-
-BEGIN Member expression binds to extension function of struct
-struct S {
-};
-int S.f() {
-}
-void f(S s) {
-    s.f();
-}
-END
