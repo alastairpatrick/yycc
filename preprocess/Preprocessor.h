@@ -60,7 +60,7 @@ private:
     void add_keyword(string_view id);
     void handle_namespace_directive();
     void handle_using_directive();
-    InternedString evaluate_identifier(string_view text) const;
+    InternedString evaluate_identifier(InternedString text) const;
 
     PPTokenLexer lexer;
     IdentifierLexer id_lexer;

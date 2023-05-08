@@ -161,11 +161,31 @@ EXPECT_AST
 BEGIN In namespace, :: qualified identifier usage
 #namespace X::Y
 int a;
+#namespace X
 int* b = &Y::a;
 PARSE
 EXPECT_AST
-[["var","ES","Si","X::Y::a"],["var","ES",["P","Si"],"X::Y::b",["address","NX::Y::a"]]]
+[["var","ES","Si","X::Y::a"],["var","ES",["P","Si"],"X::b",["address","NX::Y::a"]]]
 
+
+BEGIN In namespace, error on :: qualified identifier usage (1)
+#namespace X::Y
+int a;
+int* b = &X::Y::a;
+PARSE
+EXPECT_MESSAGE
+:3:11: error identifier 'X::Y::a' (aka 'X::Y::X::Y::a') undeclared
+END
+
+
+BEGIN In namespace, error on :: qualified identifier usage (2)
+#namespace X::Y
+int a;
+int* b = &Y::a;
+PARSE
+EXPECT_MESSAGE
+:3:11: error identifier 'Y::a' (aka 'X::Y::Y::a') undeclared
+END
 
 BEGIN In namespace, :: prefixed and qualified identifier usage
 #namespace X::Y
@@ -203,7 +223,7 @@ EXPECT_AST
 [["var","ES","Si","std::exp::sort"],["var","ES","Si","x","Nstd::exp::sort"]]
 
 
-BEGIN Substitute unqualified identifier according to using equals directive (1)
+BEGIN Substitute unqualified identifier according to using equals directive
 #using std_sort = std::exp::sort
 int std::exp::sort;
 int x = std_sort;
@@ -242,33 +262,33 @@ END
 
 
 BEGIN Using directive parameter is itself evaluated as an identifier
-#using ns = std
-#using sort = ns::sort
+#using sort = std::sort
+#using sort2 = sort
 int std::sort;
-int x = sort;
+int x = sort2;
 PARSE
 EXPECT_AST
 [["var","ES","Si","std::sort"],["var","ES","Si","x","Nstd::sort"]]
 
 
 
-BEGIN Namespace does not affect identifiers declared at block scope
+BEGIN Namespace affects identifiers declared at block scope
 #namespace X::Y::Z
 void f() {
-    int x;
+    int X::Y::Z::x;
 }
 PARSE
 EXPECT_AST
-[["fun","E",["F","V"],"X::Y::Z::f",[],["block",[["var","","Si","x"]]]]]
+[["fun","E",["F","V"],"X::Y::Z::f",[],["block",[["var","","Si","X::Y::Z::x"]]]]]
 
 
-BEGIN Namespace does not affect struct members
+BEGIN Namespace affects struct members
 #namespace X::Y::Z
 struct S {
-    int x;
+    int X::Y::Z::x;
 } z;
 EXPECT_AST
-[["var","ES",["STRUCT",[["x","Si"]]],"X::Y::Z::z"]]
+[["var","ES",["STRUCT",[["X::Y::Z::x","Si"]]],"X::Y::Z::z"]]
 
 
 BEGIN Namespace affects enum constants
@@ -278,20 +298,6 @@ enum E {
 } z;
 EXPECT_AST
 [["var","ES",["ENUM",[["ec","X::Y::Z::A"]]],"X::Y::Z::z"]]
-
-
-BEGIN Namespace does not affects enum constants with block scope
-#namespace X::Y::Z
-void f() {
-    enum E {
-        A,
-    } z;
-}
-PARSE
-EXPECT_AST
-[["fun","E",["F","V"],"X::Y::Z::f",[],["block",[
-    ["var","",["ENUM",[["ec","A"]]],"z"]
-]]]]
 
 
 BEGIN Can alias keywords with using directive
@@ -365,9 +371,6 @@ BEGIN Unqualified identifier of nested structure added to enclosing file scope w
 struct S {
     struct T {};
 };
-::X::Y::T w;
-X::Y::T x;
-Y::T y;
 T z;
 END
 
@@ -378,9 +381,6 @@ struct S {
     void f() {}
 };
 void g() {
-    ::X::Y::S::f();
-    X::Y::S::f();
-    Y::S::f();
     S::f();
 }
 END

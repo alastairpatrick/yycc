@@ -86,8 +86,17 @@ TokenKind Preprocessor::next_pp_token() {
 
     if (token == TOK_IDENTIFIER) {
         identifier = Identifier();
-        identifier.text = intern_string(lexer.text());
-        identifier.usage_at_file_scope = evaluate_identifier(lexer.text());
+
+        auto text = lexer.text();
+        identifier.text = intern_string(text);
+
+        if (text[0] == ':') {
+            identifier.qualified = intern_string(text.substr(2));
+        } else {
+            identifier.qualified = intern_string(current_namespace_prefix, text);
+        }
+
+        identifier.usage_at_file_scope = evaluate_identifier(identifier.text);
     }
 
     return token;
@@ -370,27 +379,14 @@ void Preprocessor::handle_using_directive() {
         }
     }
 
-    namespace_handles[intern_string(handle_name)] = evaluate_identifier(substitution);
+    namespace_handles[intern_string(handle_name)] = evaluate_identifier(intern_string(substitution));
 }
 
-InternedString Preprocessor::evaluate_identifier(string_view text) const {
-    if (text[0] == ':') {
-        text.remove_prefix(2);
-        return intern_string(text);
-    }
+InternedString Preprocessor::evaluate_identifier(InternedString text) const {
+    if ((*text)[0] == ':') return intern_string((*text).substr(2));
 
-    string_view suffix;
-    auto handle_name = text;
-    auto handle_end = handle_name.find(':');
-    if (handle_end != text.npos) {
-        suffix = handle_name.substr(handle_end);
-        handle_name = handle_name.substr(0, handle_end);
-    }
+    auto it = namespace_handles.find(text);
+    if (it != namespace_handles.end()) return it->second;
 
-    auto it = namespace_handles.find(intern_string(handle_name));
-    if (it != namespace_handles.end()) {
-        return intern_string(*it->second, suffix);
-    }
-
-    return intern_string(current_namespace_prefix, text);
+    return intern_string(current_namespace_prefix, *text);
 }
