@@ -100,6 +100,7 @@ unary_operator
 cast_expression
 	: unary_expression
 	| '(' type_name ')' cast_expression
+    | '(' type_name ')' '.' IDENTIFIER      // ADDITION
 	;
 
 multiplicative_expression

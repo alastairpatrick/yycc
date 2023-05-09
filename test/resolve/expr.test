@@ -49,6 +49,74 @@ void f(S s) {
 END
 
 
+BEGIN Type member expression binds to member of struct (1)
+struct S {
+};
+void f() {
+    (S).f();
+}
+EXPECT_MESSAGE
+:4:9: error no member named 'f' in 'struct S'...
+:1:1: ... see type definition
+END
+
+
+BEGIN Type member expression binds to member of struct (2)
+struct S {
+    void f();
+};
+void f() {
+    (S).f();
+}
+END
+
+
+BEGIN Type member expression binds to member of struct (3)
+struct S {
+    struct T {
+        void f();
+    };
+};
+void f() {
+    (S.T).f();
+}
+END
+
+
+BEGIN Type member expression binds to member of qualified struct
+struct S {
+    void f();
+};
+void f() {
+    (const S).f();
+}
+END
+
+
+BEGIN Error if type member expression binds to type
+struct S {
+    typedef int T;
+};
+void f() {
+    (S).T;
+}
+EXPECT_MESSAGE
+:5:9: error no member named 'T' in 'struct S'...
+:1:1: ... see type definition
+END
+
+
+BEGIN Error if type member expression identifier isn't
+struct S {
+};
+void f() {
+    (S)."x";
+}
+EXPECT_MESSAGE
+:4:9: error unexpected token '"x"'
+END
+
+
 BEGIN Resolves member expression in same namespace as struct definition
 #namespace Z
 struct S {

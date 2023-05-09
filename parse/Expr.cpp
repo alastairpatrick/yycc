@@ -205,6 +205,10 @@ MemberExpr::MemberExpr(TokenKind op, Expr* object, const Identifier& identifier,
     : Expr(location), op(op), object(object), identifier(identifier) {
 }
 
+MemberExpr::MemberExpr(TokenKind op, const Type* type, const Identifier& identifier, const Location& location)
+    : Expr(location), op(op), type(type), identifier(identifier) {
+}
+
 VisitStatementOutput MemberExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
     return visitor.visit(this, input);
 }

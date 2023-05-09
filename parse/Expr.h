@@ -88,11 +88,13 @@ struct InitializerExpr: Expr {
 
 struct MemberExpr: Expr {
     TokenKind op;
-    Expr* object;
+    Expr* object{};
+    const Type* type{};
     Identifier identifier;
     Declarator* member{};
 
     MemberExpr(TokenKind op, Expr* object, const Identifier& identifier, const Location& location);
+    MemberExpr(TokenKind op, const Type* type, const Identifier& identifier, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
     virtual void print(ostream& stream) const override;
 };

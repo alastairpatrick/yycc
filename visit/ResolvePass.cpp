@@ -471,19 +471,24 @@ struct ResolvePass: Visitor {
     }
 
     virtual VisitStatementOutput visit(MemberExpr* member_expr, const VisitStatementInput& input) override {
-        auto object_type = get_expr_type(member_expr->object)->unqualified();
-        object_type = resolve(object_type);
-        auto message_type = object_type;
+        const Type* enclosing_type{};
+        if (member_expr->type) {
+            enclosing_type = resolve(member_expr->type)->unqualified();
+        } else {
+            enclosing_type = get_expr_type(member_expr->object)->unqualified();
+            enclosing_type = resolve(enclosing_type);
+        }
+        auto message_type = enclosing_type;
 
         bool dereferenced{};
-        if (auto pointer_type = dynamic_cast<const PointerType*>(object_type)) {
+        if (auto pointer_type = dynamic_cast<const PointerType*>(enclosing_type)) {
             dereferenced = true;
-            object_type = pointer_type->base_type->unqualified();
+            enclosing_type = pointer_type->base_type->unqualified();
         }
 
-        if (auto struct_type = dynamic_cast<const StructuredType*>(object_type)) {
+        if (auto struct_type = dynamic_cast<const StructuredType*>(enclosing_type)) {
             auto member = struct_type->scope->lookup_member(member_expr->identifier);
-            if (!member) {
+            if (!member || !member->entity()) {
                 message(Severity::ERROR, member_expr->location) << "no member named '" << member_expr->identifier << "' in '" << PrintType(struct_type) << "'...\n";
                 message(Severity::INFO, struct_type->location) << "... see type definition\n";
                 pause_messages();
@@ -504,8 +509,8 @@ struct ResolvePass: Visitor {
             return VisitStatementOutput();
         }
 
-        // todo error
-        message(Severity::ERROR, member_expr->object->location) << "type '" << PrintType(object_type) << "' does not have members\n";
+        Location location = member_expr->object ? member_expr->object->location : member_expr->location;
+        message(Severity::ERROR, location) << "type '" << PrintType(enclosing_type) << "' does not have members\n";
         pause_messages();
         return VisitStatementOutput();
     }
