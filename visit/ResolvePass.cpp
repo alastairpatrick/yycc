@@ -267,33 +267,54 @@ struct ResolvePass: Visitor {
         return VisitDeclaratorOutput();
     }
 
-    virtual VisitTypeOutput visit(const NestedType* type, const VisitTypeInput& input) override {
-        auto enclosing_type = resolve(type->enclosing_type);
-
-        if (auto structured_type = dynamic_cast<const StructuredType*>(enclosing_type)) {
-            if (!structured_type->complete) {
-                message(Severity::ERROR, type->location) << "incomplete type '" << PrintType(enclosing_type) << "' named in nested type specifier\n";
-                message(Severity::INFO, structured_type->location) << "...see '" << PrintType(enclosing_type) << "'\n";
+    Declarator* lookup_member(const Type* enclosing_type, const Identifier& identifier, const Location& lookup_location) {
+        if (auto tag_type = dynamic_cast<const TagType*>(enclosing_type)) {
+            if (!tag_type->complete) {
+                message(Severity::ERROR, lookup_location) << "incomplete type '" << PrintType(enclosing_type) << "' named in nested type specifier\n";
+                message(Severity::INFO, tag_type->location) << "...see '" << PrintType(enclosing_type) << "'\n";
                 pause_messages();
-                return VisitTypeOutput(enclosing_type);
+                return nullptr;
             }
 
-            auto member = structured_type->scope->lookup_member(type->identifier);
-            if (!member || !member->type_delegate()) {
-                message(Severity::ERROR, type->location) << "no nested type named '" << type->identifier << "' in '" << PrintType(structured_type) << "'...\n";
-                message(Severity::INFO, structured_type->location) << "...see '" << PrintType(enclosing_type) << "'\n";
+            if (!tag_type->scope) {
+                message(Severity::ERROR, lookup_location) << "no member named '" << identifier << "' in '" << PrintType(tag_type) << "' because it is unscoped...\n";
+                message(Severity::INFO, tag_type->location) << "...see '" << PrintType(enclosing_type) << "'\n";
                 pause_messages();
-                return VisitTypeOutput(enclosing_type);
+                return nullptr;
+            }
+
+            auto member = tag_type->scope->lookup_member(identifier);
+            if (!member) {
+                message(Severity::ERROR, lookup_location) << "no member named '" << identifier << "' in '" << PrintType(tag_type) << "'...\n";
+                message(Severity::INFO, tag_type->location) << "...see '" << PrintType(enclosing_type) << "'\n";
+                pause_messages();
+                return nullptr;
             }
 
             resolve(member);
-            return VisitTypeOutput(member->type);
+            return member->primary;
         }
 
-        message(Severity::ERROR, type->location) << "type '" << PrintType(enclosing_type) << "' may not contain a nested type '" << type->identifier << "'\n";
+        message(Severity::ERROR, lookup_location) << "type '" << PrintType(enclosing_type) << "' may not contain member '" << identifier << "'\n";
         pause_messages();
 
-        return VisitTypeOutput(enclosing_type);
+        return nullptr;
+    }
+
+    virtual VisitTypeOutput visit(const NestedType* type, const VisitTypeInput& input) override {
+        auto enclosing_type = resolve(type->enclosing_type);
+
+        auto member = lookup_member(enclosing_type, type->identifier, type->location);
+        if (!member) return VisitTypeOutput(enclosing_type);
+
+        if (!member->type_delegate()) {
+            message(Severity::ERROR, type->location) << "member '" << type->identifier << "' is not a nested type\n";
+            if (auto tag_type = dynamic_cast<const TagType*>(enclosing_type)) {
+                message(Severity::INFO, tag_type->location) << "...see '" << PrintType(enclosing_type) << "'\n";
+            }
+        }
+
+        return VisitTypeOutput(member->type);
     }
 
     virtual VisitTypeOutput visit(const PointerType* type, const VisitTypeInput& input) override {
@@ -470,15 +491,41 @@ struct ResolvePass: Visitor {
         return VisitStatementOutput();
     }
 
+    const Type* transform_member_expr_to_type(MemberExpr* expr) {
+        if (auto entity = dynamic_cast<EntityExpr*>(expr->object)) {
+            if (entity->declarator->type_delegate()) {
+                resolve(entity->declarator);
+                return entity->declarator->primary->type;
+            }
+        }
+
+        if (auto nested_member = dynamic_cast<MemberExpr*>(expr->object)) {
+            auto enclosing_type = transform_member_expr_to_type(nested_member);
+            auto member = lookup_member(enclosing_type, nested_member->identifier, nested_member->location);
+            if (!member) return nullptr;
+            return member->primary->type;
+        }
+
+        return nullptr;
+    }
+
     virtual VisitStatementOutput visit(MemberExpr* member_expr, const VisitStatementInput& input) override {
         const Type* enclosing_type{};
         if (member_expr->type) {
-            enclosing_type = resolve(member_expr->type)->unqualified();
+            enclosing_type = resolve(member_expr->type);
         } else {
-            enclosing_type = get_expr_type(member_expr->object);
-            enclosing_type = resolve(enclosing_type);
-            enclosing_type = enclosing_type->unqualified();
+            enclosing_type = transform_member_expr_to_type(member_expr);
+            if (enclosing_type) {
+                member_expr->type = enclosing_type;
+                member_expr->object = nullptr;
+            } else {
+                resolve(member_expr->object);            
+                enclosing_type = get_expr_type(member_expr->object);
+                enclosing_type = resolve(enclosing_type);
+            }
         }
+
+        enclosing_type = enclosing_type->unqualified();
         auto message_type = enclosing_type;
 
         bool dereferenced{};

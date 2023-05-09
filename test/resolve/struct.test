@@ -287,7 +287,7 @@ struct S {
 };
 S.T x;
 EXPECT_MESSAGE
-:4:3: error no nested type named 'T' in 'struct S'...
+:4:3: error member 'T' is not a nested type
 :1:1: ...see 'struct S'
 END
 
@@ -297,7 +297,7 @@ struct S {
 };
 S.T x;
 EXPECT_MESSAGE
-:3:3: error no nested type named 'T' in 'struct S'...
+:3:3: error no member named 'T' in 'struct S'...
 :1:1: ...see 'struct S'
 END
 
@@ -307,7 +307,8 @@ enum E {
 };
 E.T x;
 EXPECT_MESSAGE
-:3:3: error type 'enum E' may not contain a nested type 'T'
+:3:3: error no member named 'T' in 'enum E' because it is unscoped...
+:1:1: ...see 'enum E'
 END
 
 

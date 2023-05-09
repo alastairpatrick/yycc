@@ -202,6 +202,7 @@ private:
 };
 
 struct TagType: LocationNode, CachedType {
+    mutable bool complete{};
     Declarator* tag{};
     Scope* scope{};
 
@@ -212,7 +213,6 @@ struct TagType: LocationNode, CachedType {
 // A StructuredType corresponds to an LLVM struct type. In C terms, it could be a struct type or a union type.
 struct StructuredType: TagType {
     vector<Declaration*> declarations;
-    mutable bool complete{};
 
     StructuredType(const Location& location);
     virtual TypePartition partition() const override;
@@ -242,7 +242,6 @@ struct EnumType: TagType {
     mutable const Type* base_type{};
     mutable bool explicit_base_type{};
     vector<Declarator*> constants;
-    mutable bool complete{};
 
     explicit EnumType(const Location& location);
     virtual TypePartition partition() const override;
