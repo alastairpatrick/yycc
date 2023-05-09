@@ -289,4 +289,17 @@ struct TypeDefType: Type {
     virtual void print(ostream& stream) const override;
 };
 
+struct NestedType: Type {
+    const Type* enclosing_type;
+    const Identifier identifier;
+    const Location location;
+
+    NestedType(const Type* enclosing_type, const Identifier& identifier, const Location& location);
+
+    virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
+    virtual LLVMTypeRef llvm_type() const override;
+    virtual void message_print(ostream& stream, int section) const override;
+    virtual void print(ostream& stream) const override;
+};
+
 #endif

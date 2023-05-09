@@ -247,8 +247,14 @@ type_specifier
 	| atomic_type_specifier
 	| struct_or_union_specifier
 	| enum_specifier
-	| TYPEDEF_NAME		/* after it has been defined as such */
+	| nested_type_specifier  // ADDITION
 	;
+
+/* ADDITION */
+nested_type_specifier
+    : TYPEDEF_NAME		/* after it has been defined as such */
+    | type_member_name '.' IDENTIFIER
+    ;
 
 struct_or_union_specifier
 	: struct_or_union '{' struct_declaration_list '}'

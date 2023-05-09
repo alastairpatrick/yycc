@@ -23,8 +23,7 @@ union S { float x; };
 EXPECT_MESSAGE
 :2:1: error redefinition of union 'S' with incompatible type...
 :1:1: ...see other
-EXPECT_GLOBALS
-[["typedef",["UNION",[["x","Si"]]],"S"]]
+END
 
 
 BEGIN Complete union compatible with incomplete union (1)

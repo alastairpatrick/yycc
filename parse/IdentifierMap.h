@@ -9,6 +9,7 @@ enum class AddScope {
     FILE,
     TOP,
     FILE_OR_BLOCK,
+    FILE_OR_BLOCK_AND_TOP,
 };
 
 struct IdentifierMap {

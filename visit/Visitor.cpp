@@ -42,6 +42,10 @@ VisitTypeOutput Visitor::visit(const FloatingPointType* type, const VisitTypeInp
     return VisitTypeOutput(type);
 }
 
+VisitTypeOutput Visitor::visit(const NestedType* type, const VisitTypeInput& input) {
+    return VisitTypeOutput(type);
+}
+
 VisitTypeOutput Visitor::visit(const PointerType* type, const VisitTypeInput& input) {
     return VisitTypeOutput(type);
 }

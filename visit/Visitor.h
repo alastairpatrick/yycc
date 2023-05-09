@@ -63,6 +63,7 @@ struct Visitor {
     virtual VisitTypeOutput visit(const FloatingPointType* type, const VisitTypeInput& input);
     virtual VisitTypeOutput visit(const FunctionType* type, const VisitTypeInput& input);
     virtual VisitTypeOutput visit(const IntegerType* type, const VisitTypeInput& input);
+    virtual VisitTypeOutput visit(const NestedType* type, const VisitTypeInput& input);
     virtual VisitTypeOutput visit(const PointerType* type, const VisitTypeInput& input);
     virtual VisitTypeOutput visit(const QualifiedType* type, const VisitTypeInput& input);
     virtual VisitTypeOutput visit(const ResolvedArrayType* type, const VisitTypeInput& input);

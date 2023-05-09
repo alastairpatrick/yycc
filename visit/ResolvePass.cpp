@@ -267,6 +267,35 @@ struct ResolvePass: Visitor {
         return VisitDeclaratorOutput();
     }
 
+    virtual VisitTypeOutput visit(const NestedType* type, const VisitTypeInput& input) override {
+        auto enclosing_type = resolve(type->enclosing_type);
+
+        if (auto structured_type = dynamic_cast<const StructuredType*>(enclosing_type)) {
+            if (!structured_type->complete) {
+                message(Severity::ERROR, type->location) << "incomplete type '" << PrintType(enclosing_type) << "' named in nested type specifier\n";
+                message(Severity::INFO, structured_type->location) << "...see '" << PrintType(enclosing_type) << "'\n";
+                pause_messages();
+                return VisitTypeOutput(enclosing_type);
+            }
+
+            auto member = structured_type->scope->lookup_member(type->identifier);
+            if (!member || !member->type_def()) {
+                message(Severity::ERROR, type->location) << "no nested type named '" << type->identifier << "' in '" << PrintType(structured_type) << "'...\n";
+                message(Severity::INFO, structured_type->location) << "...see '" << PrintType(enclosing_type) << "'\n";
+                pause_messages();
+                return VisitTypeOutput(enclosing_type);
+            }
+
+            resolve(member);
+            return VisitTypeOutput(member->type);
+        }
+
+        message(Severity::ERROR, type->location) << "type '" << PrintType(enclosing_type) << "' may not contain a nested type '" << type->identifier << "'\n";
+        pause_messages();
+
+        return VisitTypeOutput(enclosing_type);
+    }
+
     virtual VisitTypeOutput visit(const PointerType* type, const VisitTypeInput& input) override {
         return VisitTypeOutput(resolve(type->base_type)->pointer_to());
     }

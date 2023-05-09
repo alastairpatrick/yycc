@@ -26,9 +26,14 @@ Declarator* IdentifierMap::add_declarator(AddScope add_scope,
         auto file_or_block_scope = scopes.front();
         for (; file_or_block_scope && file_or_block_scope->kind == ScopeKind::STRUCTURED; file_or_block_scope = file_or_block_scope->parent);
 
-        Declarator* result_declarator = add_declarator_internal(file_or_block_scope, declaration, type, qualified, delegate, location, primary);
+        Declarator* declarator = add_declarator_internal(file_or_block_scope, declaration, type, qualified, delegate, location, primary);
+        primary = declarator->primary;
 
-        return result_declarator;
+        if (add_scope == AddScope::FILE_OR_BLOCK_AND_TOP) {
+            declarator = add_declarator_internal(scopes.front(), declaration, type, qualified, delegate, location, primary);
+        }
+
+        return declarator;
     }
 }
 

@@ -879,3 +879,28 @@ void TypeDefType::print(ostream& stream) const {
     stream << declarator->type;
 }
 
+
+NestedType::NestedType(const Type* enclosing_type, const Identifier& identifier, const Location& location)
+    : enclosing_type(enclosing_type), identifier(identifier), location(location) {
+}
+
+VisitTypeOutput NestedType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
+}
+
+LLVMTypeRef NestedType::llvm_type() const {
+    assert(false);
+    return nullptr;
+}
+
+void NestedType::message_print(ostream& stream, int section) const {
+    if (section != 0) return;
+
+    enclosing_type->message_print(stream, section);
+
+    stream << '.' << *identifier.text;
+}
+
+void NestedType::print(ostream& stream) const {
+    stream << "[\"NEST\", " << enclosing_type << ", \"" << identifier << "\"]";
+}
