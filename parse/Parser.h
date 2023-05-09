@@ -84,7 +84,9 @@ private:
     Statement* parse_statement();
     CompoundStatement* parse_compound_statement();
     Expr* parse_expr(OperatorPrec min_prec, Identifier* or_label = nullptr);
+    Expr* continue_parse_expr(Expr* expr, OperatorPrec min_prec, Identifier* or_label);
     Expr* parse_sub_expr(SubExpressionKind kind, Identifier* or_label = nullptr);
+    Expr* continue_postfix_expr(Expr* expr);
     Expr* parse_initializer();
     OperatorAssoc assoc();
     OperatorPrec prec();

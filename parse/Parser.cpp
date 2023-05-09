@@ -320,7 +320,7 @@ Declaration* Parser::parse_declaration_specifiers(bool expression_valid, const T
                   found_specifier_token = token;
                   type_specifier_location = preprocessor.location();                
                   consume();
-
+                  
                   while (consume('.')) {
                       if (!require(TOK_IDENTIFIER)) break;
                       type = new NestedType(type, preprocessor.identifier, preprocessor.location());
@@ -1115,39 +1115,45 @@ CompoundStatement* Parser::parse_compound_statement() {
 
 Expr* Parser::parse_expr(OperatorPrec min_prec, Identifier* or_label) {
     auto location = preprocessor.location();
-    Expr* result{};
+    Expr* expr{};
 
     if (preparse) {
         // To make it easier to write tests that run in both preparse and not, decimal integers can always be parsed.
         if (token == TOK_DEC_INT_LITERAL) {
-            result = IntegerConstant::of(preprocessor.text(), token, preprocessor.location());
+            expr = IntegerConstant::of(preprocessor.text(), token, preprocessor.location());
         } else {
-            result = IntegerConstant::default_expr(location);
+            expr = IntegerConstant::default_expr(location);
         }
 
         skip_expr(min_prec);
-        return result;
+        return expr;
     }
 
-    result = parse_sub_expr(SubExpressionKind::CAST, or_label);
-    if (!result) return result;
+    expr = parse_sub_expr(SubExpressionKind::CAST, or_label);
+    if (!expr) return expr;
+
+    return continue_parse_expr(expr, min_prec, or_label);
+}
+
+Expr* Parser::continue_parse_expr(Expr* expr, OperatorPrec min_prec, Identifier* or_label) {
+    assert(!preparse);
 
     while (prec() >= min_prec) {
-        location = preprocessor.location();
+        auto location = preprocessor.location();
         auto next_min_prec = assoc() == LEFT_ASSOCIATIVE ? OperatorPrec(prec() + 1) : prec();
 
         if (consume('?')) {
             auto then_expr = parse_expr(next_min_prec);
             if (consume_required(':')) {
                 auto else_expr = parse_expr(CONDITIONAL_PRECEDENCE);
-                result = new ConditionExpr(result, then_expr, else_expr, location);
+                expr = new ConditionExpr(expr, then_expr, else_expr, location);
             }
         }
         else {
             TokenKind op;
             switch (token) {
               default:
-                return result;
+                return expr;
               case '*':
               case '/':
               case '%':
@@ -1184,11 +1190,11 @@ Expr* Parser::parse_expr(OperatorPrec min_prec, Identifier* or_label) {
             }
 
             auto right = parse_expr(next_min_prec);
-            result = new BinaryExpr(result, right, op, location);
+            expr = new BinaryExpr(expr, right, op, location);
         }
     }
 
-    return result;
+    return expr;
 }
 
 Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
@@ -1320,12 +1326,16 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
         return result;
     }
 
+    return continue_postfix_expr(result);
+}
+
+Expr* Parser::continue_postfix_expr(Expr* expr) {
     while (token) {
-        location = preprocessor.location();
+        auto location = preprocessor.location();
 
         if (consume('[')) {
             auto index = parse_expr(SEQUENCE_PRECEDENCE);
-            result = new SubscriptExpr(result, index, location);
+            expr = new SubscriptExpr(expr, index, location);
             consume_required(']');
 
         } else if (consume('(')) {
@@ -1336,18 +1346,18 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
                     if (!consume(',')) break;
                 }
             }
-            result = new CallExpr(result, move(parameters), location);
+            expr = new CallExpr(expr, move(parameters), location);
             consume_required(')');
 
         } else if (token == '.' || token == TOK_PTR_OP) {
             auto op = token;
             consume();
             if (require(TOK_IDENTIFIER)) {
-                result = new MemberExpr(op, result, preprocessor.identifier, location);
+                expr = new MemberExpr(op, expr, preprocessor.identifier, location);
                 consume();
             }
         } else if (token == TOK_INC_OP || token == TOK_DEC_OP) {
-            result = new IncDecExpr(token, result, true, location);
+            expr = new IncDecExpr(token, expr, true, location);
             consume();
 
         } else {
@@ -1355,7 +1365,7 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
         }
     }
 
-    return result;
+    return expr;
 }
 
 Expr* Parser::parse_initializer() {
