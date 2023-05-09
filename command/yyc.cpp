@@ -1,5 +1,4 @@
 #include "FileCache.h"
-#include "lex/Fragment.h"
 #include "LLVM.h"
 #include "Message.h"
 #include "parse/Declaration.h"

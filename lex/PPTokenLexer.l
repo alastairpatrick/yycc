@@ -8,7 +8,6 @@
 
 %top {
 #include "InternedString.h"
-#include "lex/Fragment.h"
 #include "lex/Location.h"
 #include "lex/Token.h"
 }
@@ -21,8 +20,8 @@ public:
         return string_view(matcher().begin(), size());
     }
 
-    Fragment fragment() const {
-        return Fragment(matcher().first(), size());
+    size_t position() const {
+        return matcher().first();
     }
 
     Location location() const {

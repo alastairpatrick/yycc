@@ -42,7 +42,7 @@ TokenKind Preprocessor::next_token() {
           } case TOK_PP_NUMBER: {
               num_lexer.buffer(text());
               token = num_lexer.next_token();
-              if (num_lexer.size() != lexer.fragment().length) {
+              if (num_lexer.size() != lexer.size()) {
                   token = TOK_PP_NUMBER;
               }
               commit_token();
@@ -165,9 +165,6 @@ void Preprocessor::commit_token() {
         auto begin = string_stream.pcount();
         text_stream.write(text());
         auto end = string_stream.pcount();
-        fragment = Fragment(begin, end - begin);
-    } else {
-        fragment = lexer.fragment();
     }
 }
 

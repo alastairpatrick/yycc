@@ -1,5 +1,4 @@
 #include "TranslationUnitContext.h"
-#include "lex/Fragment.h"
 #include "FileCache.h"
 #include "LLVM.h"
 #include "Message.h"

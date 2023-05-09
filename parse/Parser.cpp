@@ -178,13 +178,8 @@ void Parser::skip_expr(OperatorPrec min_prec) {
 }
 
 size_t Parser::position() const {
-    return preprocessor.fragment.position;
+    return preprocessor.position();
 }
-
-Fragment Parser::end_fragment(size_t begin_position) const {
-    return Fragment(begin_position, position() - begin_position);
-}
-
 bool Parser::check_eof() {
     if (token == TOK_EOF) return true;
     message(Severity::ERROR, preprocessor.location()) << "expected end of file\n";
@@ -239,7 +234,6 @@ Declaration* Parser::parse_declaration(bool expression_valid) {
             identifier_tokens.clear();
         }
 
-        declaration->fragment = end_fragment(begin);
         return declaration;
     }
 
@@ -753,7 +747,6 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         type_def->type_def_type.declarator = declarator->primary;
     }
 
-    declarator->fragment = end_fragment(begin);
     return declarator;
 }
 
@@ -899,10 +892,8 @@ Declarator* Parser::parse_parameter_declarator() {
     bool last;
     auto begin_declarator = position();
     auto declarator = parse_declarator(declaration, base_type, specifiers, { .allow_identifier = true }, &last);
-    declarator->fragment = end_fragment(begin_declarator);
 
     declaration->declarators.push_back(declarator);
-    declaration->fragment = end_fragment(begin_declaration);
     return declarator;
 }
 

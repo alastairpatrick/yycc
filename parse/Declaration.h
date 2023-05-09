@@ -39,7 +39,6 @@ ostream& operator<<(ostream& stream, StorageDuration duration);
 
 
 struct Declaration: LocationNode {
-    Fragment fragment;
     StorageClass storage_class = StorageClass::NONE;
     const Type* type{};
     vector<Declarator*> declarators;

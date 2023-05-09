@@ -69,7 +69,6 @@ private:
     void skip_expr(OperatorPrec min_prec);
 
     size_t position() const;
-    Fragment end_fragment(size_t begin_position) const;
 
     void handle_declaration_directive();
 

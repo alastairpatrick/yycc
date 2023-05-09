@@ -1,7 +1,6 @@
 #ifndef PARSE_AST_NODE_H
 #define PARSE_AST_NODE_H
 
-#include "lex/Fragment.h"
 #include "lex/Location.h"
 #include "parse/Identifier.h"
 #include "Printable.h"
@@ -55,7 +54,6 @@ enum class DeclaratorStatus {
 
 struct Declarator: LocationNode {
     Declarator* primary{};
-    Fragment fragment;
     const Type* type{};
     InternedString identifier;
     DeclaratorDelegate* delegate{};

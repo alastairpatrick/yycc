@@ -18,7 +18,6 @@ struct IncludeContext {
 struct Preprocessor {
     const bool preparse;
     TokenKind token;
-    Fragment fragment;    
     Identifier identifier;
     vector<IncludeContext> include_stack;
     InternedString current_namespace_prefix;
@@ -34,6 +33,10 @@ struct Preprocessor {
 
     string_view text() const {
         return lexer.text();
+    }
+
+    size_t position() const {
+        return lexer.position();
     }
 
     Location location() const {
