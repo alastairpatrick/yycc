@@ -313,6 +313,8 @@ enumerator_list
 enumerator	/* identifiers must be flagged as ENUMERATION_CONSTANT */
 	: enumeration_constant '=' constant_expression
 	| enumeration_constant
+	| '.' enumeration_constant '=' constant_expression    // ADDITION
+	| '.' enumeration_constant                            // ADDITION
 	;
 
 atomic_type_specifier

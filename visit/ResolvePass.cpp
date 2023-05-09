@@ -486,11 +486,11 @@ struct ResolvePass: Visitor {
             enclosing_type = pointer_type->base_type->unqualified();
         }
 
-        if (auto struct_type = dynamic_cast<const StructuredType*>(enclosing_type)) {
-            auto member = struct_type->scope->lookup_member(member_expr->identifier);
-            if (!member || !member->entity()) {
-                message(Severity::ERROR, member_expr->location) << "no member named '" << member_expr->identifier << "' in '" << PrintType(struct_type) << "'...\n";
-                message(Severity::INFO, struct_type->location) << "... see type definition\n";
+        if (auto tagged_type = dynamic_cast<const TagType*>(enclosing_type)) {
+            auto member = tagged_type->scope->lookup_member(member_expr->identifier);
+            if (!member || (!member->entity() && !member->enum_constant())) {
+                message(Severity::ERROR, member_expr->location) << "no member named '" << member_expr->identifier << "' in '" << PrintType(tagged_type) << "'...\n";
+                message(Severity::INFO, tagged_type->location) << "... see type definition\n";
                 pause_messages();
                 return VisitStatementOutput(Value::of_zero_int());
             }

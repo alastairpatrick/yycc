@@ -573,10 +573,28 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
             // C99 6.7.2.3p6
             if (!identifier.empty()) tag_declarator = declare_tag_type(AddScope::TOP, declaration, identifier, type, specifier_location);
 
+            bool first_constant = true;
+            Location first_constant_location;
             enum_type->complete = true;
             while (token && token != '}') {
 
+                if (consume('.')) {
+                    if (!enum_type->scope) {
+                        if (!first_constant) {
+                            message(Severity::ERROR, preprocessor.location()) << "'.' must be applied to first enum constant of definition...\n";
+                            message(Severity::INFO, first_constant_location) << "... see first constant\n";
+                        }
+
+                        enum_type->scope = new Scope(ScopeKind::STRUCTURED, preprocessor.current_namespace_prefix);;
+                        identifiers.push_scope(enum_type->scope);
+                    }
+                }
+
                 auto location = preprocessor.location();
+                if (first_constant) {
+                    first_constant_location = location;
+                    first_constant = false;
+                }
 
                 Identifier identifier;
                 if (require(TOK_IDENTIFIER)) {
@@ -601,6 +619,10 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 if (declarator) {
                     enum_type->constants.push_back(declarator);
                 }
+            }
+
+            if (enum_type->scope) {
+                identifiers.pop_scope();
             }
 
             consume_required('}');

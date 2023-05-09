@@ -81,6 +81,14 @@ EXPECT_MESSAGE
 END
 
 
+BEGIN Scoped enum constants do not conflict
+enum E1 { .A=1 };
+enum E2 { .A=2 };
+EXPECT_GLOBALS
+[["typedef",["ENUM",[["ec","A",1]]],"E1"]
+,["typedef",["ENUM",[["ec","A",2]]],"E2"]]
+
+
 BEGIN Enum constant folding
 enum E { A = 1+1 };
 EXPECT_GLOBALS
@@ -209,3 +217,11 @@ EXPECT_MESSAGE
 :1:12: error enum constant type 'double' is not an integer type
 EXPECT_GLOBALS
 [["ec","A",0]]
+
+
+BEGIN Type member expression on enum constant
+enum E { .A };
+int x = (E).A;
+EXPECT_GLOBALS
+[["typedef",["ENUM",[["ec","A",0]]],"E"]
+,["var","ES","Si","x",[".",["ENUM",[["ec","A",0]]],"A"]]]

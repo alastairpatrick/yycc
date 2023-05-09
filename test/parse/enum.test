@@ -1,7 +1,10 @@
 BEGIN Tagged enum definition
 enum E { A=1, B } z;
-EXPECT_AST
-[["var","ES",["ENUM",[["ec","A",1],["ec","B"]]],"z"]]
+EXPECT_GLOBALS
+[["ec","A",1]
+,["ec","B"]
+,["typedef",["ENUM",[["ec","A",1],["ec","B"]]],"E"]
+,["var","ES",["ENUM",[["ec","A",1],["ec","B"]]],"z"]]
 
 
 BEGIN Tagged incomplete enum
@@ -15,6 +18,28 @@ enum E: unsigned char {
 } z;
 EXPECT_AST
 [["var","ES",["ENUM","Uc",[]],"z"]]
+
+
+BEGIN Enum with scope (1)
+enum E { .A, .B } z;
+EXPECT_GLOBALS
+[["typedef",["ENUM",[["ec","A"],["ec","B"]]],"E"]
+,["var","ES",["ENUM",[["ec","A"],["ec","B"]]],"z"]]
+
+
+BEGIN Enum with scope (2)
+enum E { .A, B } z;
+EXPECT_GLOBALS
+[["typedef",["ENUM",[["ec","A"],["ec","B"]]],"E"]
+,["var","ES",["ENUM",[["ec","A"],["ec","B"]]],"z"]]
+
+
+BEGIN Enum with scope must have dot before first enum constant
+enum E { A, .B } z;
+EXPECT_MESSAGE
+:1:14: error '.' must be applied to first enum constant of definition...
+:1:10: ... see first constant
+END
 
 
 BEGIN #enum directive
