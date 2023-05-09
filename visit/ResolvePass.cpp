@@ -475,8 +475,9 @@ struct ResolvePass: Visitor {
         if (member_expr->type) {
             enclosing_type = resolve(member_expr->type)->unqualified();
         } else {
-            enclosing_type = get_expr_type(member_expr->object)->unqualified();
+            enclosing_type = get_expr_type(member_expr->object);
             enclosing_type = resolve(enclosing_type);
+            enclosing_type = enclosing_type->unqualified();
         }
         auto message_type = enclosing_type;
 
