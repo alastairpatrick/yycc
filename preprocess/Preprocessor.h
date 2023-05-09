@@ -17,6 +17,7 @@ struct IncludeContext {
 
 struct Preprocessor {
     const bool preparse;
+    size_t position;
     TokenKind token;
     Identifier identifier;
     vector<IncludeContext> include_stack;
@@ -35,14 +36,9 @@ struct Preprocessor {
         return lexer.text();
     }
 
-    size_t position() const {
-        return lexer.position();
-    }
-
     Location location() const {
         return lexer.location();
-    }
-    
+    }    
 
     void skip_to_eol();
     void require_eol();

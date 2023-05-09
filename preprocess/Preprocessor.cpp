@@ -162,9 +162,10 @@ void Preprocessor::unexpected_directive_token() {
 void Preprocessor::commit_token() {
     if (preparse) {
         text_stream.locate(lexer.location());
-        auto begin = string_stream.pcount();
+        position = string_stream.pcount();
         text_stream.write(text());
-        auto end = string_stream.pcount();
+    } else {
+        position = lexer.position();
     }
 }
 

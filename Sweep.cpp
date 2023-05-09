@@ -69,7 +69,7 @@ void sweep(ostream& stream, const File& file) {
     auto oi_scope_it = oi_scopes.begin();
 
     for (auto token = preprocessor2.next_token(); token; token = preprocessor2.next_token()) {
-        while (oi_scope_it != oi_scopes.end() && oi_scope_it->position == preprocessor2.position()) {
+        while (oi_scope_it != oi_scopes.end() && oi_scope_it->position == preprocessor2.position) {
             output_declaration_directives(text_stream, oi_scope_it->scope);
             ++oi_scope_it;
         }

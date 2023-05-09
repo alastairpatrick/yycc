@@ -178,7 +178,7 @@ void Parser::skip_expr(OperatorPrec min_prec) {
 }
 
 size_t Parser::position() const {
-    return preprocessor.position();
+    return preprocessor.position;
 }
 bool Parser::check_eof() {
     if (token == TOK_EOF) return true;
