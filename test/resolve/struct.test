@@ -230,8 +230,7 @@ struct S {
     char a[A];
 };
 EXPECT_GLOBALS
-[["ec","A",2],
-["typedef",["STRUCT",[["a",["A","C",2]]]],"S"]]
+[["typedef",["STRUCT",[["a",["A","C",2]]]],"S"]]
 
 
 BEGIN #var in struct definition
@@ -279,8 +278,7 @@ struct S {
 };
 S.T x;
 EXPECT_GLOBALS
-[["typedef",["STRUCT",[["",["STRUCT",[]]]]],"S"],["typedef",["STRUCT",[]],"T"]
-,["var","ES",["STRUCT",[]],"x"]]
+[["typedef",["STRUCT",[["",["STRUCT",[]]]]],"S"],["var","ES",["STRUCT",[]],"x"]]
 
 
 BEGIN Error on attempt to use non-type member as nested type
