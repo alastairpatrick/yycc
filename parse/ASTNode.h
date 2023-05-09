@@ -2,8 +2,8 @@
 #define PARSE_AST_NODE_H
 
 #include "lex/Fragment.h"
-#include "lex/Identifier.h"
 #include "lex/Location.h"
+#include "parse/Identifier.h"
 #include "Printable.h"
 
 struct Declaration;

@@ -2,7 +2,7 @@
 #define PARSE_TYPE_H
 
 #include "ASTNode.h"
-#include "lex/Identifier.h"
+#include "Identifier.h"
 #include "lex/Location.h"
 #include "lex/Token.h"
 #include "Printable.h"

@@ -1,7 +1,6 @@
 #include "Preprocessor.h"
 
 #include "FileCache.h"
-#include "lex/Identifier.h"
 #include "lex/StringLiteral.h"
 #include "Message.h"
 

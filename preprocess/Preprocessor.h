@@ -4,10 +4,10 @@
 #include "generated/IdentifierLexer.yy.h"
 #include "generated/PPNumberLexer.yy.h"
 #include "generated/PPTokenLexer.yy.h"
-#include "lex/Identifier.h"
 #include "lex/Location.h"
 #include "lex/Token.h"
 #include "TextStream.h"
+#include "parse/Identifier.h"
 
 struct IncludeContext {
     Location location;

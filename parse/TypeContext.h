@@ -1,8 +1,8 @@
 #ifndef PARSE_TYPE_CONTEXT_H
 #define PARSE_TYPE_CONTEXT_H
 
-#include "lex/Identifier.h"
 #include "lex/Token.h"
+#include "parse/Identifier.h"
 
 enum class ArrayKind;
 struct FunctionType;
