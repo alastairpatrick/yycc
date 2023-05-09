@@ -16,7 +16,7 @@ struct Expr;
 struct IdentifierMap;
 enum class ScopeKind;
 struct PointerType;
-struct TypeDef;
+struct TypeDelegate;
 struct Visitor;
 struct VisitTypeInput;
 struct VisitTypeOutput;

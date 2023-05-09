@@ -20,7 +20,7 @@ VisitDeclaratorOutput Visitor::visit(Declarator* declarator, Function* function,
     return VisitDeclaratorOutput();
 }
 
-VisitDeclaratorOutput Visitor::visit(Declarator* declarator, TypeDef* type_def, const VisitDeclaratorInput& input) {
+VisitDeclaratorOutput Visitor::visit(Declarator* declarator, TypeDelegate* type_delegate, const VisitDeclaratorInput& input) {
     return VisitDeclaratorOutput();
 }
 

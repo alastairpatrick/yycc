@@ -15,7 +15,7 @@ enum class Linkage;
 enum class ScopeKind;
 enum class StorageClass;
 struct Type;
-struct TypeDef;
+struct TypeDelegate;
 struct Value;
 struct Variable;
 struct Visitor;
@@ -67,7 +67,7 @@ struct Declarator: LocationNode {
     Entity* entity() const;
     Variable* variable() const;
     Function* function() const;
-    TypeDef* type_def() const;
+    TypeDelegate* type_delegate() const;
 
     const Type* to_type() const;
     const char* error_kind() const;

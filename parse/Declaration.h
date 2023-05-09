@@ -115,10 +115,10 @@ struct Function: Entity {
     virtual void print(const Declarator* declarator, ostream& stream) const override;
 };
 
-struct TypeDef: DeclaratorDelegate {
+struct TypeDelegate: DeclaratorDelegate {
     TypeDefType type_def_type;
 
-    TypeDef() = default;
+    TypeDelegate() = default;
 
     virtual DeclaratorKind kind() const override;
     virtual const char* error_kind() const override;

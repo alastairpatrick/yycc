@@ -250,7 +250,7 @@ struct ResolvePass: Visitor {
         return nullptr;
     }
 
-    virtual VisitDeclaratorOutput visit(Declarator* primary, TypeDef* primary_type_def, const VisitDeclaratorInput& input) override {
+    virtual VisitDeclaratorOutput visit(Declarator* primary, TypeDelegate* primary_type_def, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
         if (!secondary) {
             return VisitDeclaratorOutput();
@@ -279,7 +279,7 @@ struct ResolvePass: Visitor {
             }
 
             auto member = structured_type->scope->lookup_member(type->identifier);
-            if (!member || !member->type_def()) {
+            if (!member || !member->type_delegate()) {
                 message(Severity::ERROR, type->location) << "no nested type named '" << type->identifier << "' in '" << PrintType(structured_type) << "'...\n";
                 message(Severity::INFO, structured_type->location) << "...see '" << PrintType(enclosing_type) << "'\n";
                 pause_messages();
@@ -592,7 +592,7 @@ struct ResolvePass: Visitor {
             }
         }
 
-        if (primary->type_def()) primary->status = DeclaratorStatus::RESOLVED;
+        if (primary->type_delegate()) primary->status = DeclaratorStatus::RESOLVED;
 
         if (acyclic_declarator) {
             swap(acyclic_declarator->type, primary->type);

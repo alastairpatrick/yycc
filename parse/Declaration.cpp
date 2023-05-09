@@ -83,8 +83,8 @@ Function* Declarator::function() const {
     return dynamic_cast<Function*>(delegate);
 }
 
-TypeDef* Declarator::type_def() const {
-    return dynamic_cast<TypeDef*>(delegate);
+TypeDelegate* Declarator::type_delegate() const {
+    return dynamic_cast<TypeDelegate*>(delegate);
 }
 
 const Type* Declarator::to_type() const {
@@ -211,11 +211,11 @@ void Function::print(const Declarator* declarator, ostream& stream) const {
     stream << ']';
 }
 
-DeclaratorKind TypeDef::kind() const {
+DeclaratorKind TypeDelegate::kind() const {
     return DeclaratorKind::TYPE_DEF;
 }
 
-const char* TypeDef::error_kind() const {
+const char* TypeDelegate::error_kind() const {
     if (dynamic_cast<const StructType*>(type_def_type.declarator->type)) {
         return "struct";
     } else if (dynamic_cast<const UnionType*>(type_def_type.declarator->type)) {
@@ -226,19 +226,19 @@ const char* TypeDef::error_kind() const {
     return "typedef";
 }
 
-const Type* TypeDef::to_type() const {
+const Type* TypeDelegate::to_type() const {
     return &type_def_type;
 }
 
-bool TypeDef::is_definition() const {
+bool TypeDelegate::is_definition() const {
     return true;
 }
 
-VisitDeclaratorOutput TypeDef::accept(Declarator* declarator, Visitor& visitor, const VisitDeclaratorInput& input) {
+VisitDeclaratorOutput TypeDelegate::accept(Declarator* declarator, Visitor& visitor, const VisitDeclaratorInput& input) {
     return visitor.visit(declarator, this, input);
 }
 
-void TypeDef::print(const Declarator* declarator, ostream& stream) const {
+void TypeDelegate::print(const Declarator* declarator, ostream& stream) const {
     stream << "[\"typedef\", " << declarator->type << ", \"" << *declarator->identifier  << "\"]";
 }
 

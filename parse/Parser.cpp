@@ -59,9 +59,9 @@ void Parser::handle_declaration_directive() {
 
             auto declarator = identifiers.add_declarator(AddScope::TOP, nullptr, nullptr, id, nullptr, preprocessor.location());
             if (token == TOK_PP_TYPE) {
-                TypeDef* type_def = new TypeDef;
-                type_def->type_def_type.declarator = declarator->primary;
-                declarator->delegate = type_def;
+                TypeDelegate* type_delegate = new TypeDelegate;
+                type_delegate->type_def_type.declarator = declarator->primary;
+                declarator->delegate = type_delegate;
 
                 declarator->type = declarator->to_type();
             }
@@ -621,9 +621,9 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 }
 
 Declarator* Parser::declare_tag_type(AddScope add_scope, Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location) {
-    auto type_def = new TypeDef;
-    auto declarator = identifiers.add_declarator(add_scope, declaration, type, identifier, type_def, location);
-    type_def->type_def_type.declarator = declarator->primary;
+    auto delegate = new TypeDelegate;
+    auto declarator = identifiers.add_declarator(add_scope, declaration, type, identifier, delegate, location);
+    delegate->type_def_type.declarator = declarator->primary;
     type->tag = declarator;
     return declarator;
 }
@@ -712,7 +712,7 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
         }
 
         if (storage_class == StorageClass::TYPEDEF) {
-            delegate = new TypeDef;
+            delegate = new TypeDelegate;
         } else {
             StorageDuration storage_duration{};
             if (storage_class == StorageClass::EXTERN || storage_class == StorageClass::STATIC || scope == ScopeKind::FILE) {
@@ -743,8 +743,8 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
 
     auto declarator = identifiers.add_declarator(add_scope, declaration, type, declarator_transform.identifier, delegate, location, primary_declarator);
 
-    if (auto type_def = dynamic_cast<TypeDef*>(delegate)) {
-        type_def->type_def_type.declarator = declarator->primary;
+    if (auto type_delegate = dynamic_cast<TypeDelegate*>(delegate)) {
+        type_delegate->type_def_type.declarator = declarator->primary;
     }
 
     return declarator;
