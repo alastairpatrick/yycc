@@ -1092,71 +1092,6 @@ struct Emitter: Visitor {
         return VisitStatementOutput(intermediate);
     }
 
-    virtual VisitStatementOutput visit(CallExpr* expr, const VisitStatementInput& input) override {
-        auto function_output = emit(expr->function);
-        auto function_value = function_output.value.unqualified();
-
-        if (auto pointer_type = type_cast<PointerType>(function_value.type)) {
-            function_value = Value(ValueKind::LVALUE, pointer_type->base_type, get_rvalue(function_value));
-        }
-
-        if (auto function_type = type_cast<FunctionType>(function_value.type)) {
-            auto result_type = function_type->return_type;
-            if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
-
-            size_t param_idx = 0;
-            vector<LLVMValueRef> llvm_params;
-            llvm_params.reserve(function_type->parameter_types.size() + 1);
-
-            Declarator* function_declarator{};
-            if (auto entity_expr = dynamic_cast<EntityExpr*>(expr->function)) {
-                function_declarator = entity_expr->declarator;
-            }
-
-            if (auto member_expr = dynamic_cast<MemberExpr*>(expr->function)) {
-                function_declarator = member_expr->member;
-
-                auto object_pointer_value = emit_object_of_member_expr(member_expr).address_of();
-
-                if (function_type->parameter_types.size() <= param_idx) {
-                    message(Severity::ERROR, expr->function->location) << "called member function has no parameters\n";
-                    message(Severity::INFO, function_declarator->location) << "see declaration of called member function\n";
-
-                    return VisitStatementOutput(Value::of_recover(result_type));
-                }
-
-                auto expected_type = function_type->parameter_types[param_idx++];
-                auto param_value = convert_to_type(object_pointer_value, expected_type, ConvKind::IMPLICIT, member_expr->location);
-                llvm_params.push_back(param_value.get_rvalue(builder));
-            }
-
-            size_t expected_num_params = function_type->parameter_types.size() - param_idx;
-            size_t actual_num_params = expr->parameters.size();
-            if (actual_num_params != expected_num_params) {
-                message(Severity::ERROR, expr->location) << "expected " << expected_num_params << " parameter(s) but got " << actual_num_params << "\n";
-
-                if (function_declarator) {
-                    message(Severity::INFO, function_declarator->location) << "see declaration of called function\n";
-                }
-
-                return VisitStatementOutput(Value::of_recover(result_type));
-            }
-
-            for (auto param_expr: expr->parameters) {
-                auto expected_type = function_type->parameter_types[param_idx++];
-                auto param_value = convert_to_type(param_expr, expected_type, ConvKind::IMPLICIT);
-                llvm_params.push_back(get_rvalue(param_value));
-            }
-
-            auto result = LLVMBuildCall2(builder, function_type->llvm_type(), function_value.get_lvalue(), llvm_params.data(), llvm_params.size(), "");
-            return VisitStatementOutput(result_type, result);
-        }
-
-        message(Severity::ERROR, expr->location) << "called object type '" << PrintType(function_value.type) << "' is not a function or function pointer\n";
-
-        return VisitStatementOutput();
-    }
-
     virtual VisitStatementOutput visit(CastExpr* expr, const VisitStatementInput& input) override {
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(expr->type);
 
@@ -1318,6 +1253,71 @@ struct Emitter: Visitor {
         }
 
         return VisitStatementOutput(Value::of_zero_int());
+    }
+    
+    virtual VisitStatementOutput visit(CallExpr* expr, const VisitStatementInput& input) override {
+        auto function_output = emit(expr->function);
+        auto function_value = function_output.value.unqualified();
+
+        if (auto pointer_type = type_cast<PointerType>(function_value.type)) {
+            function_value = Value(ValueKind::LVALUE, pointer_type->base_type, get_rvalue(function_value));
+        }
+
+        if (auto function_type = type_cast<FunctionType>(function_value.type)) {
+            auto result_type = function_type->return_type;
+            if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+
+            size_t param_idx = 0;
+            vector<LLVMValueRef> llvm_params;
+            llvm_params.reserve(function_type->parameter_types.size() + 1);
+
+            Declarator* function_declarator{};
+            if (auto entity_expr = dynamic_cast<EntityExpr*>(expr->function)) {
+                function_declarator = entity_expr->declarator;
+            }
+
+            if (auto member_expr = dynamic_cast<MemberExpr*>(expr->function)) {
+                function_declarator = member_expr->member;
+
+                auto object_pointer_value = emit_object_of_member_expr(member_expr).address_of();
+
+                if (function_type->parameter_types.size() <= param_idx) {
+                    message(Severity::ERROR, expr->function->location) << "called member function has no parameters\n";
+                    message(Severity::INFO, function_declarator->location) << "see declaration of called member function\n";
+
+                    return VisitStatementOutput(Value::of_recover(result_type));
+                }
+
+                auto expected_type = function_type->parameter_types[param_idx++];
+                auto param_value = convert_to_type(object_pointer_value, expected_type, ConvKind::IMPLICIT, member_expr->location);
+                llvm_params.push_back(param_value.get_rvalue(builder));
+            }
+
+            size_t expected_num_params = function_type->parameter_types.size() - param_idx;
+            size_t actual_num_params = expr->parameters.size();
+            if (actual_num_params != expected_num_params) {
+                message(Severity::ERROR, expr->location) << "expected " << expected_num_params << " parameter(s) but got " << actual_num_params << "\n";
+
+                if (function_declarator) {
+                    message(Severity::INFO, function_declarator->location) << "see declaration of called function\n";
+                }
+
+                return VisitStatementOutput(Value::of_recover(result_type));
+            }
+
+            for (auto param_expr: expr->parameters) {
+                auto expected_type = function_type->parameter_types[param_idx++];
+                auto param_value = convert_to_type(param_expr, expected_type, ConvKind::IMPLICIT);
+                llvm_params.push_back(get_rvalue(param_value));
+            }
+
+            auto result = LLVMBuildCall2(builder, function_type->llvm_type(), function_value.get_lvalue(), llvm_params.data(), llvm_params.size(), "");
+            return VisitStatementOutput(result_type, result);
+        }
+
+        message(Severity::ERROR, expr->location) << "called object type '" << PrintType(function_value.type) << "' is not a function or function pointer\n";
+
+        return VisitStatementOutput();
     }
 
     virtual VisitStatementOutput visit(SizeOfExpr* expr, const VisitStatementInput& input) override {
