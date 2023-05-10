@@ -138,6 +138,16 @@ END
 
 REM ******** AddressExpr ********
 
+
+BEGIN Constant expression may take address of variable
+int x;
+int* y = &x;
+EXPECT_IR
+@x = global i32 0
+@y = global ptr @x
+END
+
+
 BEGIN Function returning address of global int
 int v;
 int* f() {
@@ -190,6 +200,15 @@ END
 
 
 REM ******** CallExpr ********
+
+
+BEGIN Constant expression may not call function
+int size();
+int x[1 + size()];
+EXPECT_MESSAGE
+:2:15: error cannot call function in constant expression
+END
+
 
 BEGIN Call function
 void f() {}
@@ -373,6 +392,15 @@ END
 
 REM ******** DereferenceExpr ********
 
+
+BEGIN Constant expression may not dereference pointer
+int size;
+int x[1 + *(int*)0];
+EXPECT_MESSAGE
+:2:11: error cannot dereference pointer in constant expression
+END
+
+
 BEGIN Dereference global pointer
 int* p;
 int f() {
@@ -438,6 +466,15 @@ END
 
 
 REM ******** EntityExpr ********
+
+
+BEGIN Constant expression may not access non-const variable
+int size;
+int x[1 + size];
+EXPECT_MESSAGE
+:2:11: error variable 'size' is not a constant
+END
+
 
 BEGIN Value of local variable
 int f() {

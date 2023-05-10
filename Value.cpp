@@ -8,7 +8,12 @@ Value Value::of_zero_int() {
 }
 
 Value Value::of_recover(const Type* type) {
-    if (type->unqualified() == &VoidType::it) {
+    type = type->unqualified();
+
+    // Too late to fail properly here.
+    assert(!dynamic_cast<const FunctionType*>(type));
+
+    if (type == &VoidType::it) {
         return Value(type);
     } else {
         return of_null(type);

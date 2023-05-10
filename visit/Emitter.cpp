@@ -15,6 +15,10 @@ enum class EmitOutcome {
     IR,
 };
 
+// Must only be thrown if the emit outcome is FOLD.
+struct FoldError {
+};
+
 struct Module {
     LLVMModuleRef llvm_module{};
 
@@ -116,11 +120,15 @@ struct Emitter: Visitor {
         if (outcome == EmitOutcome::IR) {
             return value.get_rvalue(builder);
         } else {
+            // If outcome is TYPE, something ought to have earlied out before control flow got here.
+            assert(outcome == EmitOutcome::FOLD);
+
             if (value.is_const()) {
                 return value.get_const();
             } else {
-                assert(false);  // TODO
-                return Value::of_recover(value.type).get_const();
+                // Something ought to have thrown FoldError before control flow got here.
+                assert(false);
+                return nullptr;
             }
         }
     }
@@ -373,6 +381,8 @@ struct Emitter: Visitor {
             return emit_scalar_initializer(dest_type, initializer);
         }
 
+        // todo should be:
+        // return convert_to_type(fold_expr(expr), dest_type, ConvKind::IMPLICIT, expr->location);
         return convert_to_type(expr, dest_type, ConvKind::IMPLICIT);
     }
 
@@ -1158,6 +1168,11 @@ struct Emitter: Visitor {
     }
 
     virtual VisitStatementOutput visit(DereferenceExpr* expr, const VisitStatementInput& input) override {
+        if (outcome == EmitOutcome::FOLD) {
+            message(Severity::ERROR, expr->location) << "cannot dereference pointer in constant expression\n";
+            throw FoldError();
+        }
+
         auto value = emit(expr->expr).value.unqualified();
         auto pointer_type = type_cast<PointerType>(value.type);
         auto result_type = pointer_type->base_type;
@@ -1185,7 +1200,14 @@ struct Emitter: Visitor {
             auto int_type = type_cast<IntegerType>(type);
             return VisitStatementOutput(Value::of_int(int_type, enum_constant->value).bit_cast(result_type));
 
-        } else if (auto variable = declarator->variable()) {
+        }
+        
+        if (outcome == EmitOutcome::FOLD) {
+            message(Severity::ERROR, expr->location) << declarator->message_kind() << " '" << *declarator->identifier << "' is not a constant\n";
+            throw FoldError();
+        }
+
+        if (auto variable = declarator->variable()) {
             if (this_type && !variable->value.is_valid()) {
                 assert(variable->member);
                 assert(declarator->scope == this_type->scope); // todo check properly
@@ -1277,6 +1299,11 @@ struct Emitter: Visitor {
     }
     
     virtual VisitStatementOutput visit(CallExpr* expr, const VisitStatementInput& input) override {
+        if (outcome == EmitOutcome::FOLD) {
+            message(Severity::ERROR, expr->location) << "cannot call function in constant expression\n";
+            throw FoldError();
+        }
+
         auto function_output = emit(expr->function);
         auto function_value = function_output.value.unqualified();
 
@@ -1454,7 +1481,11 @@ const Type* get_expr_type(const Expr* expr) {
 Value fold_expr(const Expr* expr) {
     static const EmitOptions options;
     Emitter emitter(EmitOutcome::FOLD, options);
-    return emitter.emit(const_cast<Expr*>(expr)).value;
+    try {
+        return emitter.emit(const_cast<Expr*>(expr)).value;
+    } catch (FoldError&) {
+        return Value::of_recover(get_expr_type(expr));
+    }
 }
 
 LLVMModuleRef emit_pass(const ResolvedModule& resolved_module, const EmitOptions& options) {
