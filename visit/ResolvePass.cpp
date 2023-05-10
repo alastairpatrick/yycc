@@ -491,18 +491,26 @@ struct ResolvePass: Visitor {
         return VisitStatementOutput();
     }
 
-    const Type* transform_member_expr_to_type(MemberExpr* expr) {
+    // If the LHS of a MemberExpr is a type, return that resolved type, else null.
+    const Type* wrangle_member_expr_enclosing_type(MemberExpr* expr) {
+        if (expr->type) {
+            return resolve(expr->type);
+        }
+
         if (auto entity = dynamic_cast<EntityExpr*>(expr->object)) {
-            if (entity->declarator->type_delegate()) {
-                resolve(entity->declarator);
-                return entity->declarator->primary->type;
-            }
+            if (!entity->declarator->type_delegate()) return nullptr;
+
+            resolve(entity->declarator);
+            return entity->declarator->primary->type;
         }
 
         if (auto nested_member = dynamic_cast<MemberExpr*>(expr->object)) {
-            auto enclosing_type = transform_member_expr_to_type(nested_member);
+            auto enclosing_type = wrangle_member_expr_enclosing_type(nested_member);
+            if (!enclosing_type) return nullptr;
+
             auto member = lookup_member(enclosing_type, nested_member->identifier, nested_member->location);
             if (!member) return nullptr;
+            
             return member->primary->type;
         }
 
@@ -510,19 +518,14 @@ struct ResolvePass: Visitor {
     }
 
     virtual VisitStatementOutput visit(MemberExpr* member_expr, const VisitStatementInput& input) override {
-        const Type* enclosing_type{};
-        if (member_expr->type) {
-            enclosing_type = resolve(member_expr->type);
+        auto enclosing_type = wrangle_member_expr_enclosing_type(member_expr);
+        if (enclosing_type) {
+            member_expr->type = enclosing_type;
+            member_expr->object = nullptr;
         } else {
-            enclosing_type = transform_member_expr_to_type(member_expr);
-            if (enclosing_type) {
-                member_expr->type = enclosing_type;
-                member_expr->object = nullptr;
-            } else {
-                resolve(member_expr->object);            
-                enclosing_type = get_expr_type(member_expr->object);
-                enclosing_type = resolve(enclosing_type);
-            }
+            resolve(member_expr->object);            
+            enclosing_type = get_expr_type(member_expr->object);
+            enclosing_type = resolve(enclosing_type);
         }
 
         enclosing_type = enclosing_type->unqualified();
@@ -535,13 +538,8 @@ struct ResolvePass: Visitor {
         }
 
         if (auto tagged_type = dynamic_cast<const TagType*>(enclosing_type)) {
-            auto member = tagged_type->scope->lookup_member(member_expr->identifier);
-            if (!member || (!member->entity() && !member->enum_constant())) {
-                message(Severity::ERROR, member_expr->location) << "no member named '" << member_expr->identifier << "' in '" << PrintType(tagged_type) << "'...\n";
-                message(Severity::INFO, tagged_type->location) << "... see type definition\n";
-                pause_messages();
-                return VisitStatementOutput(Value::of_zero_int());
-            }
+            auto member = lookup_member(enclosing_type, member_expr->identifier, member_expr->location);
+            if (!member) return VisitStatementOutput(Value::of_zero_int());
 
             if (dereferenced) {
                 if (member_expr->op == '.') {

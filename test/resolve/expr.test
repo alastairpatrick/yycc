@@ -13,7 +13,7 @@ void f(S s) {
 }
 EXPECT_MESSAGE
 :4:6: error no member named 'x' in 'struct S'...
-:1:1: ... see type definition
+:1:1: ...see 'struct S'
 END
 
 
@@ -35,7 +35,7 @@ void f(S s) {
 }
 EXPECT_MESSAGE
 :4:6: error no member named 'f' in 'struct S'...
-:1:1: ... see type definition
+:1:1: ...see 'struct S'
 END
 
 
@@ -57,7 +57,7 @@ void f() {
 }
 EXPECT_MESSAGE
 :4:14: error no member named 'f' in 'struct S'...
-:1:1: ... see type definition
+:1:1: ...see 'struct S'
 END
 
 
@@ -91,7 +91,7 @@ void f() {
 }
 EXPECT_MESSAGE
 :4:9: error no member named 'f' in 'struct S'...
-:1:1: ... see type definition
+:1:1: ...see 'struct S'
 END
 
 
@@ -113,6 +113,18 @@ struct S {
 };
 void f() {
     (S.T).f();
+}
+END
+
+
+BEGIN Type member expression binds to member of struct using cast variant (4)
+struct S {
+    struct T {
+        void f();
+    };
+};
+void f() {
+    (S).T.f();
 }
 END
 
@@ -173,5 +185,5 @@ S s;
 int* p = &s.Z::x;
 EXPECT_MESSAGE
 :9:12: error no member named 'Z::x' in 'struct Y::S'...
-:2:1: ... see type definition
+:2:1: ...see 'struct Y::S'
 END
