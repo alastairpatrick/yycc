@@ -101,7 +101,7 @@ struct ResolvePass: Visitor {
                 message(Severity::ERROR, secondary->location) << "duplicate member '" << *primary->identifier << "'...\n";
                 see_other_message(primary->location);
             } else {
-                redeclaration_message(Severity::ERROR, secondary, primary->location, "with no linkage");
+                redeclaration_message(Severity::ERROR, secondary, primary->location, nullptr);
             }
         } else {
             if (primary_entity->linkage != secondary_entity->linkage) {

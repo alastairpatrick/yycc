@@ -84,3 +84,23 @@ extern int x;
 EXPECT_GLOBALS
 [["var","IS","Si","x"]]
 
+
+BEGIN Error on multiple variable definitions with no linkage
+void f() {
+    int x;
+    int x;
+}
+EXPECT_MESSAGE
+:3:9: error redefinition of variable 'x'...
+:2:9: ...see other
+END
+
+
+BEGIN Error on multiple parameter definitions
+void f(int x, int x) {
+}
+EXPECT_MESSAGE
+:1:19: error redefinition of variable 'x'...
+:1:12: ...see other
+END
+

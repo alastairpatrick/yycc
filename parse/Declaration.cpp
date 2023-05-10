@@ -151,7 +151,7 @@ const char* Variable::message_kind() const {
 }
 
 bool Variable::message_is_definition() const {
-    return initializer;
+    return initializer || linkage == Linkage::NONE;
 }
 
 VisitDeclaratorOutput Variable::accept(Declarator* declarator, Visitor& visitor, const VisitDeclaratorInput& input) {
