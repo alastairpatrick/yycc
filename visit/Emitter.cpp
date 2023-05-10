@@ -1267,48 +1267,47 @@ struct Emitter: Visitor {
             auto result_type = function_type->return_type;
             if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
-            size_t param_idx = 0;
-            vector<LLVMValueRef> llvm_params;
-            llvm_params.reserve(function_type->parameter_types.size() + 1);
-
             Declarator* function_declarator{};
             if (auto entity_expr = dynamic_cast<EntityExpr*>(expr->function)) {
                 function_declarator = entity_expr->declarator;
             }
 
-            if (auto member_expr = dynamic_cast<MemberExpr*>(expr->function)) {
+            size_t actual_num_params = expr->parameters.size();
+
+            Value object_pointer_value;
+            MemberExpr* member_expr = dynamic_cast<MemberExpr*>(expr->function);
+            if (member_expr) {
                 function_declarator = member_expr->member;
-
-                auto object_pointer_value = emit_object_of_member_expr(member_expr).address_of();
-
-                if (function_type->parameter_types.size() <= param_idx) {
-                    message(Severity::ERROR, expr->function->location) << "called member function has no parameters\n";
-                    message(Severity::INFO, function_declarator->location) << "see declaration of called member function\n";
-
-                    return VisitStatementOutput(Value::of_recover(result_type));
-                }
-
-                auto expected_type = function_type->parameter_types[param_idx++];
-                auto param_value = convert_to_type(object_pointer_value, expected_type, ConvKind::IMPLICIT, member_expr->location);
-                llvm_params.push_back(param_value.get_rvalue(builder));
+                object_pointer_value = emit_object_of_member_expr(member_expr).address_of();
+                ++actual_num_params;
             }
 
-            size_t expected_num_params = function_type->parameter_types.size() - param_idx;
-            size_t actual_num_params = expr->parameters.size();
+            size_t expected_num_params = function_type->parameter_types.size();
             if (actual_num_params != expected_num_params) {
                 message(Severity::ERROR, expr->location) << "expected " << expected_num_params << " parameter(s) but got " << actual_num_params << "\n";
 
                 if (function_declarator) {
-                    message(Severity::INFO, function_declarator->location) << "see declaration of called function\n";
+                    message(Severity::INFO, function_declarator->location) << "see prototype of '" << *function_declarator->identifier << "'\n";
                 }
 
                 return VisitStatementOutput(Value::of_recover(result_type));
             }
 
-            for (auto param_expr: expr->parameters) {
-                auto expected_type = function_type->parameter_types[param_idx++];
-                auto param_value = convert_to_type(param_expr, expected_type, ConvKind::IMPLICIT);
-                llvm_params.push_back(get_rvalue(param_value));
+            vector<LLVMValueRef> llvm_params;
+            llvm_params.resize(expected_num_params);
+
+            size_t param_expr_idx{};
+            for (size_t i = 0; i < expected_num_params; ++i) {
+                Value param_value;
+                if (member_expr && i == 0) {
+                    auto expected_type = function_type->parameter_types[i];
+                    param_value = convert_to_type(object_pointer_value, expected_type, ConvKind::IMPLICIT, member_expr->location);
+                } else {
+                    auto param_expr = expr->parameters[param_expr_idx++];
+                    auto expected_type = function_type->parameter_types[i];
+                    param_value = convert_to_type(param_expr, expected_type, ConvKind::IMPLICIT);
+                }
+                llvm_params[i] = get_rvalue(param_value);
             }
 
             auto result = LLVMBuildCall2(builder, function_type->llvm_type(), function_value.get_lvalue(), llvm_params.data(), llvm_params.size(), "");
