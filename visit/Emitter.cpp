@@ -1108,15 +1108,19 @@ struct Emitter: Visitor {
             vector<LLVMValueRef> llvm_params;
             llvm_params.reserve(function_type->parameter_types.size() + 1);
 
+            Declarator* function_declarator{};
+            if (auto entity_expr = dynamic_cast<EntityExpr*>(expr->function)) {
+                function_declarator = entity_expr->declarator;
+            }
+
             if (auto member_expr = dynamic_cast<MemberExpr*>(expr->function)) {
+                function_declarator = member_expr->member;
+
                 auto object_pointer_value = emit_object_of_member_expr(member_expr).address_of();
 
                 if (function_type->parameter_types.size() <= param_idx) {
                     message(Severity::ERROR, expr->function->location) << "called member function has no parameters\n";
-
-                    if (function_output.ast_node) {
-                        message(Severity::INFO, function_output.ast_node->location) << "see declaration of called member function\n";
-                    }
+                    message(Severity::INFO, function_declarator->location) << "see declaration of called member function\n";
 
                     return VisitStatementOutput(Value::of_recover(result_type));
                 }
@@ -1131,8 +1135,8 @@ struct Emitter: Visitor {
             if (actual_num_params != expected_num_params) {
                 message(Severity::ERROR, expr->location) << "expected " << expected_num_params << " parameter(s) but got " << actual_num_params << "\n";
 
-                if (function_output.ast_node) {
-                    message(Severity::INFO, function_output.ast_node->location) << "see declaration of called function\n";
+                if (function_declarator) {
+                    message(Severity::INFO, function_declarator->location) << "see declaration of called function\n";
                 }
 
                 return VisitStatementOutput(Value::of_recover(result_type));
@@ -1238,9 +1242,7 @@ struct Emitter: Visitor {
             // EntityPass ensures that all functions and globals are created before the Emitter pass.
             assert(entity->value.get_lvalue());
 
-            VisitStatementOutput output(entity->value);
-            output.ast_node = declarator;
-            return output;
+            return VisitStatementOutput(entity->value);
         } else {
             message(Severity::ERROR, expr->location) << "identifier is not an expression\n";
             pause_messages();
@@ -1292,7 +1294,6 @@ struct Emitter: Visitor {
 
         if (auto struct_type = type_cast<StructuredType>(object_type)) {
             VisitStatementOutput output;
-            output.ast_node = expr->member;
 
             auto result_type = expr->member->type;
             if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
