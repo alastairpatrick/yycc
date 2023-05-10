@@ -160,6 +160,18 @@ int* p = &s.x;
 END
 
 
+BEGIN Resolves member expression referring to member of struct declared at block scope
+#namespace Y
+void f() {
+    struct S {
+        int x;
+    };
+    S s;
+    s.x;
+}
+END
+
+
 BEGIN Resolves member expression in different namespace from struct definition
 #namespace Y
 struct S {

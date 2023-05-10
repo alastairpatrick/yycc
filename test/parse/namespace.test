@@ -272,14 +272,36 @@ EXPECT_AST
 
 
 
-BEGIN Namespace affects identifiers declared at block scope
+BEGIN Namespace does not affect identifiers declared at block scope
 #namespace X::Y::Z
 void f() {
     int x;
 }
 PARSE
 EXPECT_AST
-[["fun","E",["F","V"],"X::Y::Z::f",[],["block",[["var","","Si","X::Y::Z::x"]]]]]
+[["fun","E",["F","V"],"X::Y::Z::f",[],["block",[["var","","Si","x"]]]]]
+
+
+BEGIN Namespace does not affect identifiers declared at prototype scope
+#namespace X::Y::Z
+void f(int x) {
+}
+PARSE
+EXPECT_AST
+[["fun","E",["F","V","Si"],"X::Y::Z::f",["x"],["block",[]]]]
+
+
+BEGIN Namespace does not affect identifier of struct declared at block scope but does affect its members
+#namespace X::Y::Z
+void f() {
+    struct S {
+        int x;
+    };
+    S s;
+}
+PARSE
+EXPECT_AST
+[["fun","E",["F","V"],"X::Y::Z::f",[],["block",[[],["var","",["STRUCT",[["X::Y::Z::x","Si"]]],"s"]]]]]
 
 
 BEGIN Namespace affects struct members

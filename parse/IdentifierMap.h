@@ -30,7 +30,7 @@ struct IdentifierMap {
     Declarator* add_declarator_internal(Scope* scope,
                                         const Declaration* declaration,
                                         const Type* type,
-                                        InternedString qualified,
+                                        const Identifier& identifier,
                                         DeclaratorDelegate* delegate,
                                         const Location& location,
                                         Declarator* primary = nullptr);

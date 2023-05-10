@@ -16,21 +16,19 @@ Declarator* IdentifierMap::add_declarator(AddScope add_scope,
                                           Declarator* primary) {
     if (identifier.text->empty()) return new Declarator(declaration, type, identifier.text, delegate, location);
 
-    auto qualified = identifier.qualified;
-
     if (add_scope == AddScope::FILE) {
-        return add_declarator_internal(scopes.back(), declaration, type, qualified, delegate, location, primary);
+        return add_declarator_internal(scopes.back(), declaration, type, identifier, delegate, location, primary);
     } else if (add_scope == AddScope::TOP) {
-        return add_declarator_internal(scopes.front(), declaration, type, qualified, delegate, location, primary);
+        return add_declarator_internal(scopes.front(), declaration, type, identifier, delegate, location, primary);
     } else {
         auto file_or_block_scope = scopes.front();
         for (; file_or_block_scope && file_or_block_scope->kind == ScopeKind::STRUCTURED; file_or_block_scope = file_or_block_scope->parent);
 
-        Declarator* declarator = add_declarator_internal(file_or_block_scope, declaration, type, qualified, delegate, location, primary);
+        Declarator* declarator = add_declarator_internal(file_or_block_scope, declaration, type, identifier, delegate, location, primary);
         primary = declarator->primary;
 
         if (add_scope == AddScope::FILE_OR_BLOCK_AND_TOP) {
-            declarator = add_declarator_internal(scopes.front(), declaration, type, qualified, delegate, location, primary);
+            declarator = add_declarator_internal(scopes.front(), declaration, type, identifier, delegate, location, primary);
         }
 
         return declarator;
@@ -40,19 +38,31 @@ Declarator* IdentifierMap::add_declarator(AddScope add_scope,
 Declarator* IdentifierMap::add_declarator_internal(Scope* scope,
                                                    const Declaration* declaration,
                                                    const Type* type,
-                                                   InternedString qualified,
+                                                   const Identifier& identifier,
                                                    DeclaratorDelegate* delegate,
                                                    const Location& location,
                                                    Declarator* primary) {
     Declarator* new_declarator{};
     Declarator* existing_declarator{};
 
-    auto it = scope->declarator_map.find(qualified);
+    InternedString identifier_for_scope;
+    if (scope->kind == ScopeKind::BLOCK || scope->kind == ScopeKind::PROTOTYPE) {
+        identifier_for_scope = identifier.text;
+        auto colon_pos = identifier_for_scope->rfind(':');
+        if (colon_pos != identifier_for_scope->npos) {
+            identifier_for_scope = intern_string(identifier_for_scope->substr(colon_pos + 1));
+            message(Severity::ERROR, location) << "identifiers at this scope may not be qualified; consider using '" << *identifier_for_scope << "'\n";
+        }
+    } else {
+        identifier_for_scope = identifier.qualified;
+    }
+
+    auto it = scope->declarator_map.find(identifier_for_scope);
     if (it != scope->declarator_map.end()) {
         existing_declarator = it->second;
         if (!existing_declarator->type) {
             new_declarator = existing_declarator;
-            assert(new_declarator->identifier == qualified);
+            assert(new_declarator->identifier == identifier_for_scope);
 
             new_declarator->declaration = declaration;
             new_declarator->type = type;
@@ -62,7 +72,7 @@ Declarator* IdentifierMap::add_declarator_internal(Scope* scope,
     }
 
     if (!new_declarator) {
-        new_declarator = new Declarator(declaration, type, qualified, delegate, location);
+        new_declarator = new Declarator(declaration, type, identifier_for_scope, delegate, location);
 
         if (existing_declarator) {
             assert(!primary || existing_declarator->primary == primary);
@@ -73,7 +83,7 @@ Declarator* IdentifierMap::add_declarator_internal(Scope* scope,
 
         } else {
             existing_declarator = new_declarator;
-            scope->declarator_map[qualified] = new_declarator;
+            scope->declarator_map[identifier_for_scope] = new_declarator;
 
             if (primary) {
                 new_declarator->primary = primary;
