@@ -67,6 +67,9 @@ struct Emitter: Visitor {
     unordered_map<InternedString, LLVMBasicBlockRef> goto_labels;
     Construct* innermost_construct{};
     SwitchConstruct* innermost_switch{};
+    InternedString this_string;
+    Value this_value;
+    const StructuredType* this_type;
 
     Emitter(EmitOutcome outcome, const EmitOptions& options): outcome(outcome), options(options) {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
@@ -76,6 +79,7 @@ struct Emitter: Visitor {
         if (outcome == EmitOutcome::IR) {
             temp_builder = LLVMCreateBuilderInContext(llvm_context);
         }
+        this_string = intern_string("this");
     }
 
     ~Emitter() {
@@ -256,13 +260,21 @@ struct Emitter: Visitor {
         unreachable_block = append_block("");
         LLVMPositionBuilderAtEnd(builder, entry_block);
 
+        this_value = Value();
+        this_type = nullptr;
         for (size_t i = 0; i < entity->parameters.size(); ++i) {
             auto param = entity->parameters[i];
             auto param_entity = param->entity();
 
+            auto llvm_param = LLVMGetParam(function, i);
+            if (i == 0 && param->identifier == this_string) {
+                this_value = Value(param->type, llvm_param);
+                this_type = type_cast<StructuredType>(type_cast<PointerType>(param->type->unqualified())->base_type->unqualified()); // todo test
+            }
+
             auto storage = LLVMBuildAlloca(builder, param->type->llvm_type(), c_str(param->identifier));
             param_entity->value = Value(ValueKind::LVALUE, param->type, storage);
-            LLVMBuildStore(builder, LLVMGetParam(function, i), storage);
+            LLVMBuildStore(builder, llvm_param, storage);
         }
 
         emit(entity->body);
@@ -368,6 +380,15 @@ struct Emitter: Visitor {
         return convert_to_type(expr, dest_type, ConvKind::IMPLICIT);
     }
 
+    void use_temp_builder() {
+        auto first_insn = LLVMGetFirstInstruction(entry_block);
+        if (first_insn) {
+            LLVMPositionBuilderBefore(temp_builder, first_insn);
+        } else {
+            LLVMPositionBuilderAtEnd(temp_builder, entry_block);
+        }
+    }
+
     void emit_variable(Declarator* declarator, Variable* entity) {
         auto type = declarator->primary->type;
         auto llvm_type = type->llvm_type();
@@ -375,12 +396,7 @@ struct Emitter: Visitor {
         auto null_value = LLVMConstNull(llvm_type);
 
         if (entity->storage_duration == StorageDuration::AUTO) {
-            auto first_insn = LLVMGetFirstInstruction(entry_block);
-            if (first_insn) {
-                LLVMPositionBuilderBefore(temp_builder, first_insn);
-            } else {
-                LLVMPositionBuilderAtEnd(temp_builder, entry_block);
-            }
+            use_temp_builder();
             auto storage = LLVMBuildAlloca(temp_builder, llvm_type, c_str(declarator->identifier));
 
             entity->value = Value(ValueKind::LVALUE, type, storage);
@@ -1173,16 +1189,26 @@ struct Emitter: Visitor {
             auto int_type = type_cast<IntegerType>(type);
             return VisitStatementOutput(Value::of_int(int_type, enum_constant->value).bit_cast(result_type));
 
-        } else if (auto entity = declarator->entity()) {
+        } else if (auto variable = declarator->variable()) {
+            if (this_type && !variable->value.is_valid()) {
+                assert(variable->member);
+                assert(declarator->scope == this_type->scope); // todo check properly
+
+                auto llvm_this = this_value.get_rvalue(temp_builder);
+                return VisitStatementOutput(Value(ValueKind::LVALUE, declarator->type,
+                    LLVMBuildGEP2(builder, this_type->llvm_type(), llvm_this, variable->member->gep_indices.data(), variable->member->gep_indices.size(), "")));
+            }
+        }
+        
+        if (auto entity = declarator->entity()) {
             // EntityPass ensures that all functions and globals are created before the Emitter pass.
             assert(entity->value.get_lvalue());
-
             return VisitStatementOutput(entity->value);
-        } else {
-            message(Severity::ERROR, expr->location) << "identifier is not an expression\n";
-            pause_messages();
-            throw EmitError(true);
         }
+
+        message(Severity::ERROR, expr->location) << "identifier is not an expression\n";
+        pause_messages();
+        throw EmitError(true);  // todo: needed?
 
         return VisitStatementOutput();
     }

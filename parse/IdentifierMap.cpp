@@ -73,6 +73,7 @@ Declarator* IdentifierMap::add_declarator_internal(Scope* scope,
 
     if (!new_declarator) {
         new_declarator = new Declarator(declaration, type, identifier_for_scope, delegate, location);
+        new_declarator->scope = scope;
 
         if (existing_declarator) {
             assert(!primary || existing_declarator->primary == primary);

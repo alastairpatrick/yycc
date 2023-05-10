@@ -12,6 +12,7 @@ struct EnumConstant;
 struct Expr;
 struct Function;
 enum class Linkage;
+struct Scope;
 enum class ScopeKind;
 enum class StorageClass;
 struct Type;
@@ -54,11 +55,11 @@ enum class DeclaratorStatus {
 
 struct Declarator: LocationNode {
     Declarator* primary{};
+    Declarator* next{};
     const Type* type{};
+    Scope* scope{};
     InternedString identifier;
     DeclaratorDelegate* delegate{};
-
-    Declarator* next{};
     DeclaratorStatus status = DeclaratorStatus::UNRESOLVED;
     
     Declarator(const Declaration* declaration, const Type* type, InternedString identifier, DeclaratorDelegate* delegate, const Location& location);
