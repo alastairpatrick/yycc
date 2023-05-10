@@ -92,8 +92,8 @@ const Type* Declarator::to_type() const {
     return delegate->to_type();
 }
 
-const char* Declarator::error_kind() const {
-    return delegate->error_kind();
+const char* Declarator::message_kind() const {
+    return delegate->message_kind();
 }
 
 bool Declarator::is_member() const {
@@ -142,7 +142,7 @@ DeclaratorKind Variable::kind() const {
     return DeclaratorKind::VARIABLE;
 }
 
-const char* Variable::error_kind() const {
+const char* Variable::message_kind() const {
     if (storage_duration == StorageDuration::AGGREGATE) {
         return "member";
     } else {
@@ -179,7 +179,7 @@ DeclaratorKind Function::kind() const {
     return DeclaratorKind::FUNCTION;
 }
 
-const char* Function::error_kind() const {
+const char* Function::message_kind() const {
     return "function";
 }
 
@@ -215,7 +215,7 @@ DeclaratorKind TypeDelegate::kind() const {
     return DeclaratorKind::TYPE_DEF;
 }
 
-const char* TypeDelegate::error_kind() const {
+const char* TypeDelegate::message_kind() const {
     if (dynamic_cast<const StructType*>(type_def_type.declarator->type)) {
         return "struct";
     } else if (dynamic_cast<const UnionType*>(type_def_type.declarator->type)) {
@@ -249,7 +249,7 @@ DeclaratorKind EnumConstant::kind() const {
     return DeclaratorKind::ENUM_CONSTANT;
 }
 
-const char* EnumConstant::error_kind() const {
+const char* EnumConstant::message_kind() const {
     return "enum constant";
 }
 

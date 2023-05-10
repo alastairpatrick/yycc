@@ -54,7 +54,7 @@ ostream& operator<<(ostream& stream, const vector<Declaration*>& items);
 
 struct DeclaratorDelegate: ASTNode {
     virtual DeclaratorKind kind() const = 0;
-    virtual const char* error_kind() const = 0;
+    virtual const char* message_kind() const = 0;
     virtual bool message_is_definition() const = 0;
     virtual const Type* to_type() const;
     virtual VisitDeclaratorOutput accept(Declarator* declarator, Visitor& visitor, const VisitDeclaratorInput& input) = 0;
@@ -94,7 +94,7 @@ struct Variable: Entity {
     Variable(Linkage linkage, StorageDuration storage_duration, Expr* initializer = nullptr);
 
     virtual DeclaratorKind kind() const override;
-    virtual const char* error_kind() const override;
+    virtual const char* message_kind() const override;
     virtual bool message_is_definition() const override;
     virtual VisitDeclaratorOutput accept(Declarator* declarator, Visitor& visitor, const VisitDeclaratorInput& input) override;
     virtual void print(const Declarator* declarator, ostream& stream) const override;
@@ -109,7 +109,7 @@ struct Function: Entity {
     explicit Function(Linkage linkage);
 
     virtual DeclaratorKind kind() const override;
-    virtual const char* error_kind() const override;
+    virtual const char* message_kind() const override;
     virtual bool message_is_definition() const override;
     virtual VisitDeclaratorOutput accept(Declarator* declarator, Visitor& visitor, const VisitDeclaratorInput& input) override;
     virtual void print(const Declarator* declarator, ostream& stream) const override;
@@ -121,7 +121,7 @@ struct TypeDelegate: DeclaratorDelegate {
     TypeDelegate() = default;
 
     virtual DeclaratorKind kind() const override;
-    virtual const char* error_kind() const override;
+    virtual const char* message_kind() const override;
     virtual const Type* to_type() const override;
     virtual bool message_is_definition() const override;
     virtual VisitDeclaratorOutput accept(Declarator* declarator, Visitor& visitor, const VisitDeclaratorInput& input) override;
@@ -137,7 +137,7 @@ struct EnumConstant: DeclaratorDelegate {
     EnumConstant(const EnumType* type, Expr* constant);
 
     virtual DeclaratorKind kind() const override;
-    virtual const char* error_kind() const override;
+    virtual const char* message_kind() const override;
     virtual bool message_is_definition() const override;
     virtual VisitDeclaratorOutput accept(Declarator* declarator, Visitor& visitor, const VisitDeclaratorInput& input) override;
     virtual void print(const Declarator* declarator, ostream& stream) const override;

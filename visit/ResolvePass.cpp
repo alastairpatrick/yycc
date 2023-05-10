@@ -41,7 +41,7 @@ struct ResolvePass: Visitor {
             stream << "redeclaration";
         }
         
-        stream << " of " << secondary->error_kind() << " '" << *secondary->identifier << "'";
+        stream << " of " << secondary->message_kind() << " '" << *secondary->identifier << "'";
         
         if (problem) {
             stream << ' ' << problem;
@@ -149,7 +149,7 @@ struct ResolvePass: Visitor {
             }
 
             if (primary->type->partition() == TypePartition::INCOMPLETE) {
-                message(Severity::ERROR, primary->location) << primary->error_kind() << " '" << *primary->identifier << "' has incomplete type\n";
+                message(Severity::ERROR, primary->location) << primary->message_kind() << " '" << *primary->identifier << "' has incomplete type\n";
                 primary->type = IntegerType::default_type();
             }
 
