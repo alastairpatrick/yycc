@@ -15,11 +15,6 @@ enum class EmitOutcome {
     IR,
 };
 
-struct EmitError {
-    explicit EmitError(bool error_reported): error_reported(error_reported) {}
-    bool error_reported;
-};
-
 struct Module {
     LLVMModuleRef llvm_module{};
 
@@ -124,7 +119,8 @@ struct Emitter: Visitor {
             if (value.is_const()) {
                 return value.get_const();
             } else {
-                throw EmitError(false);
+                assert(false);  // TODO
+                return Value::of_recover(value.type).get_const();
             }
         }
     }
@@ -1208,9 +1204,8 @@ struct Emitter: Visitor {
 
         message(Severity::ERROR, expr->location) << "identifier is not an expression\n";
         pause_messages();
-        throw EmitError(true);  // todo: needed?
 
-        return VisitStatementOutput();
+        return VisitStatementOutput(Value::of_recover(declarator->type));
     }
 
     virtual VisitStatementOutput visit(IncDecExpr* expr, const VisitStatementInput& input) override {
@@ -1453,28 +1448,13 @@ SwitchConstruct::~SwitchConstruct() {
 const Type* get_expr_type(const Expr* expr) {
     static const EmitOptions options;
     Emitter emitter(EmitOutcome::TYPE, options);
-
-    try {
-        return emitter.emit(const_cast<Expr*>(expr)).value.type;
-    } catch (EmitError&) {
-        return IntegerType::default_type();
-    }
+    return emitter.emit(const_cast<Expr*>(expr)).value.type;
 }
 
 Value fold_expr(const Expr* expr) {
     static const EmitOptions options;
     Emitter emitter(EmitOutcome::FOLD, options);
-
-    try {
-        return emitter.emit(const_cast<Expr*>(expr)).value;
-    } catch (EmitError& e) {
-        if (!e.error_reported) {
-            message(Severity::ERROR, expr->location) << "not a constant expression\n";
-        }
-
-        auto type = get_expr_type(expr)->unqualified();
-        return Value(type, LLVMConstNull(type->llvm_type()));
-    }
+    return emitter.emit(const_cast<Expr*>(expr)).value;
 }
 
 LLVMModuleRef emit_pass(const ResolvedModule& resolved_module, const EmitOptions& options) {
