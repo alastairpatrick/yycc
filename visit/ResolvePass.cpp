@@ -35,7 +35,7 @@ struct ResolvePass: Visitor {
     void redeclaration_message(Severity severity, const Declarator* secondary, const Location &primary_location, const char* problem) {
         auto& stream = message(severity, secondary->location);
         
-        if (secondary->delegate->is_definition()) {
+        if (secondary->delegate->message_is_definition()) {
             stream << "redefinition";
         } else {
             stream << "redeclaration";

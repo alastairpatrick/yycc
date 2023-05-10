@@ -150,7 +150,7 @@ const char* Variable::error_kind() const {
     }
 }
 
-bool Variable::is_definition() const {
+bool Variable::message_is_definition() const {
     return initializer;
 }
 
@@ -183,7 +183,7 @@ const char* Function::error_kind() const {
     return "function";
 }
 
-bool Function::is_definition() const {
+bool Function::message_is_definition() const {
     return body;
 }
 
@@ -230,7 +230,7 @@ const Type* TypeDelegate::to_type() const {
     return &type_def_type;
 }
 
-bool TypeDelegate::is_definition() const {
+bool TypeDelegate::message_is_definition() const {
     return true;
 }
 
@@ -253,7 +253,7 @@ const char* EnumConstant::error_kind() const {
     return "enum constant";
 }
 
-bool EnumConstant::is_definition() const {
+bool EnumConstant::message_is_definition() const {
     return true;
 }
 
