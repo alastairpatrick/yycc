@@ -598,26 +598,27 @@ LLVMTypeRef StructuredType::build_llvm_struct_type(const vector<LLVMValueRef>& g
             auto bit_field = member_variable->member->bit_field.get();
             if (bit_field) {
                 if (auto integer_type = dynamic_cast<const IntegerType*>(member->type)) {
+                    long long bit_size = 1;
+
                     auto bit_size_value = fold_expr(member_variable->member->bit_field->expr);
-                    if (!bit_size_value.is_const_integer()) {
+                    if (bit_size_value.is_const_integer()) {
+                        bit_size = LLVMConstIntGetSExtValue(bit_size_value.get_const());
+                    } else if (bit_size_value.is_valid()) {
                         message(Severity::ERROR, bit_field->expr->location) << "bit field '" << *member->identifier << "' must have integer type, not '"
                                                                                              << PrintType(bit_size_value.type) << "'\n";
-                        continue;
                     }
 
-                    auto llvm_bit_size = bit_size_value.get_const();
-                    auto bit_size = LLVMConstIntGetSExtValue(llvm_bit_size);
                     if (bit_size <= 0) {
                         message(Severity::ERROR, bit_field->expr->location) << "bit field '" << *member->identifier << "' has invalid width ("
                                                                                              << bit_size << " bits)\n";
-                        continue;
+                        bit_size = 1;
                     }
 
                     if (bit_size > integer_type->num_bits()) {
                         message(Severity::ERROR, bit_field->expr->location) << "width of bit field '" << *member->identifier
                                                                                               << "' (" << bit_size << " bits) exceeds width of its type '"
                                                                                               << PrintType(integer_type) << "' (" << integer_type->num_bits() << " bits)\n";
-                        continue;
+                        bit_size = 1;
                     }
 
                     if (!is_union && bit_size <= bits_to_left) {

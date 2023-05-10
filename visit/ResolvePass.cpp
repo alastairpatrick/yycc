@@ -410,10 +410,9 @@ struct ResolvePass: Visitor {
                 auto value = fold_expr(enum_constant->expr);
                 if (value.is_const_integer()) {
                     next = LLVMConstIntGetSExtValue(value.get_const());                
-                } else {
+                } else if (value.is_valid()) {
                     message(Severity::ERROR, enum_constant->expr->location) << "enum constant type '" << PrintType(value.type) << "' is not an integer type\n";
                 }
-
             }
 
             enum_constant->value = next++;
