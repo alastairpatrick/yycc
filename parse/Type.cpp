@@ -55,8 +55,8 @@ LLVMTypeRef CachedType::llvm_type() const {
     return cached_llvm_type = cache_llvm_type();
 }
 
-const PointerType* Type::pointer_to(bool pass_by_reference) const {
-    return TranslationUnitContext::it->type.get_pointer_type(this, pass_by_reference);
+const PointerType* Type::pointer_to() const {
+    return TranslationUnitContext::it->type.get_pointer_type(this);
 }
 
 TypePartition Type::partition() const {
@@ -352,17 +352,43 @@ void PointerType::message_print(ostream& stream, int section) const {
 }
 
 void PointerType::print(std::ostream& stream) const {
-    stream << "[\"P";
-    if (pass_by_reference) {
-        stream << 'r';
+    stream << "[\"P\", " << base_type << ']';
+}
+
+PointerType::PointerType(const Type* base_type)
+    : base_type(base_type) {
+}
+
+
+const PassByReferenceType* PassByReferenceType::of(const Type* base_type) {
+    auto& type_context = TranslationUnitContext::it->type;
+    return type_context.get_pass_by_reference_type(base_type);
+}
+
+VisitTypeOutput PassByReferenceType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+    return visitor.visit(this, input);
+}
+
+LLVMTypeRef PassByReferenceType::cache_llvm_type() const {
+    auto llvm_context = TranslationUnitContext::it->llvm_context;
+    return LLVMPointerTypeInContext(llvm_context, 0);
+}
+
+void PassByReferenceType::message_print(ostream& stream, int section) const {
+    if (section == 2) {
+        stream << '&';
     }
-    stream << "\", " << base_type << ']';
+
+    base_type->message_print(stream, section);
 }
 
-PointerType::PointerType(const Type* base_type, bool pass_by_reference)
-    : base_type(base_type), pass_by_reference(pass_by_reference) {
+void PassByReferenceType::print(std::ostream& stream) const {
+    stream << "[\"Pr\", " << base_type << ']';
 }
 
+PassByReferenceType::PassByReferenceType(const Type* base_type)
+    : base_type(base_type) {
+}
 
 
 const Type* QualifiedType::of(const Type* base_type, unsigned qualifiers) {

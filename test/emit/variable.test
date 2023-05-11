@@ -152,6 +152,18 @@ define i32 @f(i32 %0, i32 %1) {
 END
 
 
+BEGIN Load pass-by-reference parameter value
+int f(int x&) {
+    return x;
+}
+EXPECT_IR
+define i32 @f(ptr %0) {
+  %2 = load i32, ptr %0, align 4
+  ret i32 %2
+}
+END
+
+
 BEGIN Allocate null initialized automatic duration local variables
 void f() {
     int x;
@@ -800,4 +812,18 @@ struct S {
 EXPECT_MESSAGE
 :4:33: error 'x' is not a member of the immediately enclosing type so is inaccessible via 'this'
 :2:9: see definition of member 'x'
+END
+
+
+BEGIN Store in element of pass-by-reference array
+void f(int a[3][2]) {
+    a[2][1] = 7;
+}
+EXPECT_IR
+define void @f(ptr %0) {
+  %2 = getelementptr [3 x [2 x i32]], ptr %0, i64 0, i32 2
+  %3 = getelementptr [2 x i32], ptr %2, i64 0, i32 1
+  store i32 7, ptr %3, align 4
+  ret void
+}
 END

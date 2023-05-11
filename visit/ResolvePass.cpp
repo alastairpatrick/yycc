@@ -318,7 +318,11 @@ struct ResolvePass: Visitor {
     }
 
     virtual VisitTypeOutput visit(const PointerType* type, const VisitTypeInput& input) override {
-        return VisitTypeOutput(resolve(type->base_type)->pointer_to(type->pass_by_reference));
+        return VisitTypeOutput(resolve(type->base_type)->pointer_to());
+    }
+
+    virtual VisitTypeOutput visit(const PassByReferenceType* type, const VisitTypeInput& input) override {
+        return VisitTypeOutput(PassByReferenceType::of(resolve(type->base_type)));
     }
 
     virtual VisitTypeOutput visit(const QualifiedType* type, const VisitTypeInput& input) override {
@@ -337,7 +341,7 @@ struct ResolvePass: Visitor {
 
             if (auto array_type = dynamic_cast<const ArrayType*>(param_type->unqualified())) {
                 // Instead of tranforming array type parameters to pointer type, pass arrays by reference.
-                param_type = param_type->pointer_to(true);
+                param_type = PassByReferenceType::of(param_type);
 
                 // C99 6.7.5.3p7
                 // param_type = QualifiedType::of(array_type->element_type->pointer_to(), param_type->qualifiers());

@@ -50,6 +50,10 @@ VisitTypeOutput Visitor::visit(const PointerType* type, const VisitTypeInput& in
     return VisitTypeOutput(type);
 }
 
+VisitTypeOutput Visitor::visit(const PassByReferenceType* type, const VisitTypeInput& input) {
+    return VisitTypeOutput(type);
+}
+
 VisitTypeOutput Visitor::visit(const QualifiedType* type, const VisitTypeInput& input) {
     return VisitTypeOutput(type);
 }

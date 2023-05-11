@@ -64,6 +64,7 @@ struct Visitor {
     virtual VisitTypeOutput visit(const IntegerType* type, const VisitTypeInput& input);
     virtual VisitTypeOutput visit(const NestedType* type, const VisitTypeInput& input);
     virtual VisitTypeOutput visit(const PointerType* type, const VisitTypeInput& input);
+    virtual VisitTypeOutput visit(const PassByReferenceType* type, const VisitTypeInput& input);
     virtual VisitTypeOutput visit(const QualifiedType* type, const VisitTypeInput& input);
     virtual VisitTypeOutput visit(const ResolvedArrayType* type, const VisitTypeInput& input);
     virtual VisitTypeOutput visit(const StructType* type, const VisitTypeInput& input);

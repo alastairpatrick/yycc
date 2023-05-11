@@ -42,7 +42,7 @@ struct Type: virtual Printable {
     virtual QualifierSet qualifiers() const;
     virtual const Type* unqualified() const;
 
-    const PointerType* pointer_to(bool pass_by_reference = false) const;
+    const PointerType* pointer_to() const;
 
     virtual TypePartition partition() const;  // C99 6.2.5p1
     virtual bool has_tag(const Declarator* declarator) const;
@@ -138,7 +138,6 @@ private:
 
 struct PointerType: CachedType {
     const Type* const base_type;
-    const bool pass_by_reference;
 
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual void message_print(ostream& stream, int section) const override;
@@ -146,7 +145,21 @@ struct PointerType: CachedType {
 
 private:
     friend class TypeContext;
-    explicit PointerType(const Type* base_type, bool pass_by_reference);
+    explicit PointerType(const Type* base_type);
+    virtual LLVMTypeRef cache_llvm_type() const override;
+};
+
+struct PassByReferenceType: CachedType {
+    const Type* const base_type;
+
+    static const PassByReferenceType* of(const Type* base_type);
+    virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
+    virtual void message_print(ostream& stream, int section) const override;
+    virtual void print(std::ostream& stream) const override;
+
+private:
+    friend class TypeContext;
+    explicit PassByReferenceType(const Type* base_type);
     virtual LLVMTypeRef cache_llvm_type() const override;
 };
 

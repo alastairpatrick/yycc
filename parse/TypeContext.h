@@ -7,6 +7,7 @@
 enum class ArrayKind;
 struct FunctionType;
 struct Type;
+struct PassByReferenceType;
 struct PointerType;
 struct QualifiedType;
 struct ResolvedArrayType;
@@ -26,7 +27,7 @@ struct VectorHash {
 
 struct DerivedTypes {
     unique_ptr<const PointerType> pointer;
-    unique_ptr<const PointerType> pass_by_reference;
+    unique_ptr<const PassByReferenceType> pass_by_reference;
 
     unordered_map<unsigned, unique_ptr<const QualifiedType>> qualified;
 
@@ -46,7 +47,8 @@ struct TypeContext {
 
     void operator=(const TypeContext&) = delete;
 
-    const PointerType* get_pointer_type(const Type* base_type, bool pass_by_reference);
+    const PointerType* get_pointer_type(const Type* base_type);
+    const PassByReferenceType* get_pass_by_reference_type(const Type* base_type);
     const QualifiedType* get_qualified_type(const Type* base_type, unsigned qualifiers);
 
     const ResolvedArrayType* get_array_type(ArrayKind kind, const Type* element_type, unsigned long long size);

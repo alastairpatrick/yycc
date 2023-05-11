@@ -285,9 +285,13 @@ struct Emitter: Visitor {
                 this_type = type_cast<StructuredType>(type_cast<PointerType>(param->type->unqualified())->base_type->unqualified()); // todo test
             }
 
-            auto storage = LLVMBuildAlloca(builder, param->type->llvm_type(), c_str(param->identifier));
-            param_entity->value = Value(ValueKind::LVALUE, param->type, storage);
-            LLVMBuildStore(builder, llvm_param, storage);
+            if (auto reference_type = dynamic_cast<const PassByReferenceType*>(param->type)) {
+                param_entity->value = Value(ValueKind::LVALUE, reference_type->base_type, llvm_param);
+            } else {
+                auto storage = LLVMBuildAlloca(builder, param->type->llvm_type(), c_str(param->identifier));
+                param_entity->value = Value(ValueKind::LVALUE, param->type, storage);
+                LLVMBuildStore(builder, llvm_param, storage);
+            }
         }
 
         emit(entity->body);
@@ -615,7 +619,7 @@ struct Emitter: Visitor {
 
         return VisitTypeOutput();
     }
-
+    
     VisitTypeOutput visit(const VoidType* source_type, const VisitTypeInput& input) {
         return VisitTypeOutput();
     }
