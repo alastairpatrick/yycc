@@ -216,6 +216,10 @@ struct Emitter: Visitor {
         
         dest_type = dest_type->unqualified();
 
+        if (dest_type == &VoidType::it) {
+            return Value(dest_type);
+        }
+
         if (value.is_null_literal && kind == ConvKind::IMPLICIT && type_cast<PointerType>(dest_type)) {
             return Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
         }
@@ -1163,16 +1167,18 @@ struct Emitter: Visitor {
         LLVMValueRef alt_values[2];
 
         LLVMPositionBuilderAtEnd(builder, alt_blocks[0]);
-        alt_values[0] = get_rvalue(convert_to_type(expr->then_expr, result_type, ConvKind::IMPLICIT));
+        auto then_value = convert_to_type(expr->then_expr, result_type, ConvKind::IMPLICIT);
+        if (result_type != &VoidType::it) alt_values[0] = get_rvalue(then_value);
         LLVMBuildBr(builder, merge_block);
 
         LLVMPositionBuilderAtEnd(builder, alt_blocks[1]);
-        alt_values[1] = get_rvalue(convert_to_type(expr->else_expr, result_type, ConvKind::IMPLICIT));
+        auto else_value = convert_to_type(expr->else_expr, result_type, ConvKind::IMPLICIT);
+        if (result_type != &VoidType::it) alt_values[1] = get_rvalue(else_value);
         LLVMBuildBr(builder, merge_block);
 
         LLVMPositionBuilderAtEnd(builder, merge_block);
         Value result;
-        if (result_type->unqualified() != &VoidType::it) {
+        if (result_type != &VoidType::it) {
             auto phi_value = LLVMBuildPhi(builder, result_type->llvm_type(), "");
             LLVMAddIncoming(phi_value, alt_values, alt_blocks, 2);
             result = Value(result_type, phi_value);

@@ -21,13 +21,18 @@ Value Value::of_recover(const Type* type) {
 }
 
 LLVMValueRef Value::dangerously_get_rvalue(LLVMBuilderRef builder) const {
+    assert(kind != ValueKind::INVALID);
+    assert(type != &VoidType::it);
+    assert(!dynamic_cast<const FunctionType*>(type));
     assert(llvm);
+
     if (kind == ValueKind::RVALUE) return llvm;
 
     auto value = LLVMBuildLoad2(builder, bit_field ? bit_field->storage_type : type->llvm_type(), llvm, "");
     if (qualifiers & QUALIFIER_VOLATILE) {
         LLVMSetVolatile(value, true);
     }
+
     if (!bit_field) return value;
 
     auto integer_type = dynamic_cast<const IntegerType*>(type);
