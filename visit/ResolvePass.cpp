@@ -382,7 +382,15 @@ struct ResolvePass: Visitor {
         };
 
         for (auto declaration: type->declarations) {
-            resolve(declaration);
+            declaration->type = resolve(declaration->type);
+
+            for (auto declarator: declaration->declarators) {
+                if (auto variable = declarator->variable()) {
+                    resolve(declarator);
+                } else {
+                    pend(declarator);
+                }
+            }
         }
 
         return VisitTypeOutput(type);

@@ -739,17 +739,15 @@ define void @f() {
 END
 
 
-BEGIN Load value of member variable from member function via this
+BEGIN Load value of member variable from member function via "this" passed by reference
 struct S {
     int x;
-    int f(S* this) { return x; }
+    int f(S this&) { return x; }
 };
 EXPECT_IR
 %S = type { i32 }
 
 define i32 @f(ptr %0) {
-  %this = alloca ptr, align 8
-  store ptr %0, ptr %this, align 8
   %2 = getelementptr %S, ptr %0, i32 0, i32 0
   %3 = load i32, ptr %2, align 4
   ret i32 %3
@@ -757,26 +755,22 @@ define i32 @f(ptr %0) {
 END
 
 
-BEGIN Load value of member variable from two member functions via this
+BEGIN Load value of member variable from two member functions via "this" passed by reference
 struct S {
     int x;
-    int f1(S* this) { return x; }
-    int f2(S* this) { return x; }
+    int f1(S this&) { return x; }
+    int f2(S this&) { return x; }
 };
 EXPECT_IR
 %S = type { i32 }
 
 define i32 @f1(ptr %0) {
-  %this = alloca ptr, align 8
-  store ptr %0, ptr %this, align 8
   %2 = getelementptr %S, ptr %0, i32 0, i32 0
   %3 = load i32, ptr %2, align 4
   ret i32 %3
 }
 
 define i32 @f2(ptr %0) {
-  %this = alloca ptr, align 8
-  store ptr %0, ptr %this, align 8
   %2 = getelementptr %S, ptr %0, i32 0, i32 0
   %3 = load i32, ptr %2, align 4
   ret i32 %3
@@ -784,17 +778,15 @@ define i32 @f2(ptr %0) {
 END
 
 
-BEGIN Load value of member variable from member function via this
+BEGIN Store value of member variable from member function via "this" passed by reference
 struct S {
     int x;
-    void f(S* this) { x = 7; }
+    void f(S this&) { x = 7; }
 };
 EXPECT_IR
 %S = type { i32 }
 
 define void @f(ptr %0) {
-  %this = alloca ptr, align 8
-  store ptr %0, ptr %this, align 8
   %2 = getelementptr %S, ptr %0, i32 0, i32 0
   store i32 7, ptr %2, align 4
   ret void
@@ -806,12 +798,48 @@ BEGIN Member variables of outer type are not accessible to member function of ne
 struct S {
     int x;
     struct T {
-        int f(T* this) { return x; }
+        int f(T this&) { return x; }
     };
 };
 EXPECT_MESSAGE
 :4:33: error 'x' is not a member of the immediately enclosing type so is inaccessible via 'this'
 :2:9: see definition of member 'x'
+END
+
+
+BEGIN Load value of member variable from member function via "this" passed by value
+struct S {
+    int x;
+    int f(S this) { return x; }
+};
+EXPECT_IR
+%S = type { i32 }
+
+define i32 @f(%S %0) {
+  %this = alloca %S, align 8
+  store %S %0, ptr %this, align 4
+  %2 = getelementptr %S, ptr %this, i32 0, i32 0
+  %3 = load i32, ptr %2, align 4
+  ret i32 %3
+}
+END
+
+
+BEGIN Load value of member variable from member function via second parameter "this"
+struct S {
+    int x;
+    int f(int z, S this&) { return x; }
+};
+EXPECT_IR
+%S = type { i32 }
+
+define i32 @f(i32 %0, ptr %1) {
+  %z = alloca i32, align 4
+  store i32 %0, ptr %z, align 4
+  %3 = getelementptr %S, ptr %1, i32 0, i32 0
+  %4 = load i32, ptr %3, align 4
+  ret i32 %4
+}
 END
 
 

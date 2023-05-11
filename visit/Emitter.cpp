@@ -72,7 +72,6 @@ struct Emitter: Visitor {
     SwitchConstruct* innermost_switch{};
     InternedString this_string;
     Value this_value;
-    const StructuredType* this_type;
 
     Emitter(EmitOutcome outcome, const EmitOptions& options): outcome(outcome), options(options) {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
@@ -274,16 +273,11 @@ struct Emitter: Visitor {
         LLVMPositionBuilderAtEnd(builder, entry_block);
 
         this_value = Value();
-        this_type = nullptr;
         for (size_t i = 0; i < entity->parameters.size(); ++i) {
             auto param = entity->parameters[i];
             auto param_entity = param->entity();
 
             auto llvm_param = LLVMGetParam(function, i);
-            if (i == 0 && param->identifier == this_string) {
-                this_value = Value(param->type, llvm_param);
-                this_type = type_cast<StructuredType>(type_cast<PointerType>(param->type->unqualified())->base_type->unqualified()); // todo test
-            }
 
             if (auto reference_type = dynamic_cast<const PassByReferenceType*>(param->type)) {
                 param_entity->value = Value(ValueKind::LVALUE, reference_type->base_type, llvm_param);
@@ -291,6 +285,10 @@ struct Emitter: Visitor {
                 auto storage = LLVMBuildAlloca(builder, param->type->llvm_type(), c_str(param->identifier));
                 param_entity->value = Value(ValueKind::LVALUE, param->type, storage);
                 LLVMBuildStore(builder, llvm_param, storage);
+            }
+
+            if (param->identifier == this_string) {
+                this_value = param_entity->value;
             }
         }
 
@@ -1228,17 +1226,18 @@ struct Emitter: Visitor {
         }
 
         if (auto variable = declarator->variable()) {
-            if (outcome == EmitOutcome::IR && this_type && !variable->value.is_valid()) {
-                assert(variable->member);
+            if (outcome == EmitOutcome::IR && this_value.is_valid() && !variable->value.is_valid()) {
+                if (auto this_type = type_cast<StructuredType>(this_value.type->unqualified())) {
+                    assert(variable->member);
 
-                if (declarator->scope != this_type->scope) {
-                    message(Severity::ERROR, expr->location) << "'" << *declarator->identifier << "' is not a member of the immediately enclosing type so is inaccessible via 'this'\n";
-                    declarator->message_see_declaration();
-                    pause_messages();
-                } else {
-                    auto llvm_this = get_rvalue(this_value);
-                    return VisitStatementOutput(Value(ValueKind::LVALUE, declarator->type,
-                        LLVMBuildGEP2(builder, this_type->llvm_type(), llvm_this, variable->member->gep_indices.data(), variable->member->gep_indices.size(), "")));
+                    if (declarator->scope != this_type->scope) {
+                        message(Severity::ERROR, expr->location) << "'" << *declarator->identifier << "' is not a member of the immediately enclosing type so is inaccessible via 'this'\n";
+                        declarator->message_see_declaration();
+                        pause_messages();
+                    } else {
+                        return VisitStatementOutput(Value(ValueKind::LVALUE, declarator->type,
+                            LLVMBuildGEP2(builder, this_type->llvm_type(), this_value.get_lvalue(), variable->member->gep_indices.data(), variable->member->gep_indices.size(), "")));
+                    }
                 }
             }
         }
