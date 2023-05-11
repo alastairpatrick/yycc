@@ -358,6 +358,7 @@ direct_declarator
 	| direct_declarator '(' parameter_type_list ')'
 	| direct_declarator '(' ')'
 	| direct_declarator '(' identifier_list ')'
+	| direct_declarator '&'             // ADDITION pass-by-reference
 	;
 
 pointer

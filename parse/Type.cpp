@@ -352,11 +352,15 @@ void PointerType::message_print(ostream& stream, int section) const {
 }
 
 void PointerType::print(std::ostream& stream) const {
-    stream << "[\"P\", " << base_type << ']';
+    stream << "[\"P";
+    if (pass_by_reference) {
+        stream << 'r';
+    }
+    stream << "\", " << base_type << ']';
 }
 
-PointerType::PointerType(const Type* base_type)
-    : base_type(base_type) {
+PointerType::PointerType(const Type* base_type, bool pass_by_reference)
+    : base_type(base_type), pass_by_reference(pass_by_reference) {
 }
 
 

@@ -17,8 +17,14 @@ const QualifiedType* TypeContext::get_qualified_type(const Type* base_type, unsi
 
 const PointerType* TypeContext::get_pointer_type(const Type* base_type) {
     auto& derived = derived_types[base_type];
-    if (!derived.pointer) derived.pointer.reset(new PointerType(base_type));
+    if (!derived.pointer) derived.pointer.reset(new PointerType(base_type, false));
     return derived.pointer.get();
+}
+
+const PointerType* TypeContext::get_pass_by_reference_type(const Type* base_type) {
+    auto& derived = derived_types[base_type];
+    if (!derived.pointer) derived.pass_by_reference.reset(new PointerType(base_type, true));
+    return derived.pass_by_reference.get();
 }
 
 const ResolvedArrayType* TypeContext::get_array_type(ArrayKind kind, const Type* element_type, unsigned long long size) {

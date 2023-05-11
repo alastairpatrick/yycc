@@ -9,6 +9,7 @@
 #include "Message.h"
 #include "Specifier.h"
 #include "Statement.h"
+#include "TranslationUnitContext.h"
 
 const Type* DeclaratorTransform::apply(const Type* type) {
     if (type_transform) type = type_transform(type);
@@ -812,10 +813,24 @@ DeclaratorTransform Parser::parse_declarator_transform(ParseDeclaratorFlags flag
         }
     }
 
-    auto location = preprocessor.location();
+    bool pass_by_reference_too_late(declarator.type_transform);
+
     function<const Type*(const Type*)> right_transform;
     for (int depth = 0; token; ++depth) {
-        if (consume('[')) {
+        auto location = preprocessor.location();
+
+        if (consume('&')) {
+            if (identifiers.scope_kind() != ScopeKind::PROTOTYPE) {
+                message(Severity::ERROR, location) << "pass-by-reference '&' only valid on function parameters\n";
+            } else if (pass_by_reference_too_late) {
+                message(Severity::ERROR, location) << "pass-by-reference '&' at invalid position\n";
+            } else {
+                right_transform = [right_transform](const Type* type) {
+                    auto& type_context = TranslationUnitContext::it->type;
+                    return type_context.get_pass_by_reference_type(type);
+                };
+            }
+        } else if (consume('[')) {
             // C99 6.7.5.3p7
             SpecifierSet array_qualifier_set{};
             if (depth == 0 && scope == ScopeKind::PROTOTYPE) {
@@ -880,6 +895,8 @@ DeclaratorTransform Parser::parse_declarator_transform(ParseDeclaratorFlags flag
         } else {
             break;
         }
+
+        pass_by_reference_too_late = true;
 
         location = preprocessor.location();
     }

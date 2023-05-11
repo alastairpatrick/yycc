@@ -138,6 +138,7 @@ private:
 
 struct PointerType: CachedType {
     const Type* const base_type;
+    const bool pass_by_reference;
 
     virtual VisitTypeOutput accept(Visitor& visitor, const VisitTypeInput& input) const override;
     virtual void message_print(ostream& stream, int section) const override;
@@ -145,7 +146,7 @@ struct PointerType: CachedType {
 
 private:
     friend class TypeContext;
-    explicit PointerType(const Type* base_type);
+    explicit PointerType(const Type* base_type, bool pass_by_reference);
     virtual LLVMTypeRef cache_llvm_type() const override;
 };
 
