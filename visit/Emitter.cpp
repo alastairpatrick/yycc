@@ -386,8 +386,6 @@ struct Emitter: Visitor {
             return get_rvalue(emit_scalar_initializer(dest_type, initializer));
         }
 
-        // todo should be:
-        // return convert_to_type(fold_expr(expr), dest_type, ConvKind::IMPLICIT, expr->location);
         return get_rvalue(convert_to_type(expr, dest_type, ConvKind::IMPLICIT));
     }
 
