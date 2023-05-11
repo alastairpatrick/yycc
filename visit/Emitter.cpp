@@ -423,12 +423,15 @@ struct Emitter: Visitor {
 
             LLVMValueRef initial = null_value;
             if (entity->initializer) {
-                static const EmitOptions options;
-                Emitter emitter(EmitOutcome::FOLD, options);
-                emitter.module = module;
+                auto old_outcome = outcome;
+                outcome = EmitOutcome::FOLD;
+                SCOPE_EXIT {
+                    outcome = old_outcome;
+                };
+
                 Value value;
                 try {
-                    initial = emitter.emit_static_initializer(type, entity->initializer);
+                    initial = emit_static_initializer(type, entity->initializer);
                 } catch (FoldError& e) {
                     if (!e.error_reported) {
                         message(Severity::ERROR, entity->initializer->location) << "static initializer is not a constant expression\n";
