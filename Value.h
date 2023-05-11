@@ -66,7 +66,8 @@ struct Value {
         return llvm;
     }
 
-    LLVMValueRef get_rvalue(LLVMBuilderRef builder) const;
+    // Use Emitter::get_rvalue instead
+    LLVMValueRef dangerously_get_rvalue(LLVMBuilderRef builder) const;
 
     Value unqualified() const {
         return bit_cast(type->unqualified());
@@ -76,10 +77,6 @@ struct Value {
         auto result(*this);
         result.type = type;
         return result;
-    }
-
-    Value load(LLVMBuilderRef builder) const {
-        return Value(type, get_rvalue(builder));
     }
 
     void store(LLVMBuilderRef builder, const Value& new_value) const;

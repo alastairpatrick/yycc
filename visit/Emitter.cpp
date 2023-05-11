@@ -122,7 +122,7 @@ struct Emitter: Visitor {
     
     LLVMValueRef get_rvalue(const Value &value) {
         if (outcome == EmitOutcome::IR) {
-            return value.get_rvalue(builder);
+            return value.dangerously_get_rvalue(builder);
         } else {
             // If outcome is TYPE, something ought to have earlied out before control flow got here.
             assert(outcome == EmitOutcome::FOLD);
@@ -1219,7 +1219,7 @@ struct Emitter: Visitor {
                 assert(variable->member);
                 assert(declarator->scope == this_type->scope); // todo check properly
 
-                auto llvm_this = this_value.get_rvalue(temp_builder);
+                auto llvm_this = get_rvalue(this_value);
                 return VisitStatementOutput(Value(ValueKind::LVALUE, declarator->type,
                     LLVMBuildGEP2(builder, this_type->llvm_type(), llvm_this, variable->member->gep_indices.data(), variable->member->gep_indices.size(), "")));
             }
@@ -1248,7 +1248,7 @@ struct Emitter: Visitor {
 
     virtual VisitStatementOutput visit(IncDecExpr* expr, const VisitStatementInput& input) override {
         auto lvalue = emit(expr->expr).value.unqualified();
-        auto before_value = lvalue.load(builder);
+        auto before_value = Value(lvalue.type, get_rvalue(lvalue));
 
         const Type* result_type = before_value.type;
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);

@@ -20,7 +20,7 @@ Value Value::of_recover(const Type* type) {
     }
 }
 
-LLVMValueRef Value::get_rvalue(LLVMBuilderRef builder) const {
+LLVMValueRef Value::dangerously_get_rvalue(LLVMBuilderRef builder) const {
     assert(llvm);
     if (kind == ValueKind::RVALUE) return llvm;
 
@@ -46,7 +46,7 @@ LLVMValueRef Value::get_rvalue(LLVMBuilderRef builder) const {
 }
 
 void Value::store(LLVMBuilderRef builder, const Value& new_value) const {
-    auto value = new_value.get_rvalue(builder);
+    auto value = new_value.dangerously_get_rvalue(builder);
 
     if (bit_field) {
         // value = (value << bits_to_right) & mask
