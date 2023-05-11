@@ -42,7 +42,6 @@ struct Declaration: LocationNode {
     StorageClass storage_class = StorageClass::NONE;
     const Type* type{};
     vector<Declarator*> declarators;
-    unordered_set<InternedString> identifier_tokens;  // all identifier tokens encountered parsing this declaration
 
     Declaration(StorageClass storage_class, const Type* type, const Location& location);
     explicit Declaration(const Location& location);

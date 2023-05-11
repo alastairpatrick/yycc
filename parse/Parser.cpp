@@ -30,10 +30,6 @@ Statement* Parser::parse_standalone_statement() {
 
 void Parser::consume() {
     while (token) {
-        if (token == TOK_IDENTIFIER && preparse) {
-            identifier_tokens.insert(preprocessor.identifier.usage_at_file_scope);
-        }
-
         token = preprocessor.next_token();
 
         switch (token) {
@@ -206,8 +202,6 @@ Declaration* Parser::parse_declaration(bool expression_valid) {
     auto begin = position();
     ScopeKind scope = identifiers.scope_kind();
 
-    assert(scope != ScopeKind::FILE || identifier_tokens.empty());
-
     const Type* base_type{};
     SpecifierSet specifiers;
     if (auto declaration = parse_declaration_specifiers(expression_valid, base_type, specifiers)) {
@@ -230,15 +224,9 @@ Declaration* Parser::parse_declaration(bool expression_valid) {
 
         if (!last_declarator) consume_required(';');
 
-        if (scope == ScopeKind::FILE) {
-            declaration->identifier_tokens = move(identifier_tokens);
-            identifier_tokens.clear();
-        }
-
         return declaration;
     }
 
-    if (scope == ScopeKind::FILE) identifier_tokens.clear();
     return nullptr;
 }
 
