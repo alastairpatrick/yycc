@@ -378,10 +378,12 @@ END
 
 
 BEGIN Cannot convert array to integer without explicit cast
-char a[10];
-int x = a;
+void f() {
+    char a[10];
+    int x = a;
+}
 EXPECT_MESSAGE
-:2:9: error conversion from type 'char[10]' to type 'int' requires explicit cast
+:3:13: error conversion from type 'char[10]' to type 'int' requires explicit cast
 END
 
 

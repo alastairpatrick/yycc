@@ -17,6 +17,10 @@ enum class EmitOutcome {
 
 // Must only be thrown if the emit outcome is FOLD.
 struct FoldError {
+    bool error_reported;
+
+    FoldError(bool error_reported): error_reported(error_reported) {
+    }
 };
 
 struct Module {
@@ -126,9 +130,7 @@ struct Emitter: Visitor {
             if (value.is_const()) {
                 return value.get_const();
             } else {
-                // Something ought to have thrown FoldError before control flow got here.
-                assert(false);
-                return nullptr;
+                throw FoldError(false);
             }
         }
     }
@@ -164,11 +166,14 @@ struct Emitter: Visitor {
     }
 
     VisitStatementOutput emit(Expr* expr) {
-        auto output = accept(expr, VisitStatementInput());
-        if (!output.value.is_valid()) {
-            output.value = Value::of_zero_int();
+        try {
+            return accept(expr, VisitStatementInput());
+        } catch (FoldError& e) {
+            if (!e.error_reported) {
+                message(Severity::ERROR, expr->location) << "not a constant expression\n";
+            }
+            throw FoldError(true);
         }
-        return output;
     }
 
     VisitStatementOutput emit(Statement* statement) {
@@ -348,20 +353,20 @@ struct Emitter: Visitor {
 
         LLVMBuildStore(builder, get_rvalue(scalar_value), dest.get_lvalue());
     }
-    
-    Value emit_static_initializer(const Type* dest_type, Expr* expr) {
+
+    LLVMValueRef emit_static_initializer(const Type* dest_type, Expr* expr) {
         if (auto uninitializer = dynamic_cast<UninitializedExpr*>(expr)) {
-            return Value(dest_type, LLVMGetUndef(dest_type->llvm_type()));
+            return LLVMGetUndef(dest_type->llvm_type());
         }
 
         if (auto initializer = dynamic_cast<InitializerExpr*>(expr)) {
             if (auto array_type = type_cast<ResolvedArrayType>(dest_type)) {
                 vector<LLVMValueRef> values(array_type->size);
                 for (size_t i = 0; i < array_type->size; ++i) {
-                    values[i] = emit_static_initializer(array_type->element_type, initializer->elements[i]).get_const();
+                    values[i] = emit_static_initializer(array_type->element_type, initializer->elements[i]);
                 }
 
-                return Value(array_type, LLVMConstArray(array_type->element_type->llvm_type(), values.data(), values.size()));
+                return LLVMConstArray(array_type->element_type->llvm_type(), values.data(), values.size());
             }
 
             if (auto struct_type = type_cast<StructType>(dest_type)) {
@@ -370,20 +375,20 @@ struct Emitter: Visitor {
                 for (auto declaration: struct_type->declarations) {
                     for (auto member: declaration->declarators) {
                         if (auto member_variable = member->variable()) {
-                            values.push_back(emit_static_initializer(member->type, initializer->elements[initializer_idx++]).get_const());
+                            values.push_back(emit_static_initializer(member->type, initializer->elements[initializer_idx++]));
                         }
                     }
                 }
 
-                return Value(struct_type, LLVMConstNamedStruct(struct_type->llvm_type(), values.data(), values.size()));
+                return LLVMConstNamedStruct(struct_type->llvm_type(), values.data(), values.size());
             }
 
-            return emit_scalar_initializer(dest_type, initializer);
+            return get_rvalue(emit_scalar_initializer(dest_type, initializer));
         }
 
         // todo should be:
         // return convert_to_type(fold_expr(expr), dest_type, ConvKind::IMPLICIT, expr->location);
-        return convert_to_type(expr, dest_type, ConvKind::IMPLICIT);
+        return get_rvalue(convert_to_type(expr, dest_type, ConvKind::IMPLICIT));
     }
 
     void use_temp_builder() {
@@ -418,7 +423,17 @@ struct Emitter: Visitor {
 
             LLVMValueRef initial = null_value;
             if (entity->initializer) {
-                initial = emit_static_initializer(type, entity->initializer).get_const();
+                static const EmitOptions options;
+                Emitter emitter(EmitOutcome::FOLD, options);
+                emitter.module = module;
+                Value value;
+                try {
+                    initial = emitter.emit_static_initializer(type, entity->initializer);
+                } catch (FoldError& e) {
+                    if (!e.error_reported) {
+                        message(Severity::ERROR, entity->initializer->location) << "static initializer is not a constant expression\n";
+                    }
+                }
             }
             LLVMSetInitializer(global, initial);
 
@@ -1168,10 +1183,6 @@ struct Emitter: Visitor {
     }
 
     virtual VisitStatementOutput visit(DereferenceExpr* expr, const VisitStatementInput& input) override {
-        if (outcome == EmitOutcome::FOLD) {
-            message(Severity::ERROR, expr->location) << "cannot dereference pointer in constant expression\n";
-            throw FoldError();
-        }
 
         auto value = emit(expr->expr).value.unqualified();
         auto pointer_type = type_cast<PointerType>(value.type);
@@ -1201,14 +1212,9 @@ struct Emitter: Visitor {
             return VisitStatementOutput(Value::of_int(int_type, enum_constant->value).bit_cast(result_type));
 
         }
-        
-        if (outcome == EmitOutcome::FOLD) {
-            message(Severity::ERROR, expr->location) << declarator->message_kind() << " '" << *declarator->identifier << "' is not a constant\n";
-            throw FoldError();
-        }
 
         if (auto variable = declarator->variable()) {
-            if (this_type && !variable->value.is_valid()) {
+            if (outcome == EmitOutcome::IR && this_type && !variable->value.is_valid()) {
                 assert(variable->member);
                 assert(declarator->scope == this_type->scope); // todo check properly
 
@@ -1219,12 +1225,21 @@ struct Emitter: Visitor {
         }
         
         if (auto entity = declarator->entity()) {
+            if (entity->value.kind == ValueKind::LVALUE) {
+                return VisitStatementOutput(entity->value);
+            }
+
+            if (outcome == EmitOutcome::FOLD) {
+                message(Severity::ERROR, expr->location) << declarator->message_kind() << " '" << *declarator->identifier << "' is not a constant\n";
+                throw FoldError(true);
+            }
+
             // EntityPass ensures that all functions and globals are created before the Emitter pass.
-            assert(entity->value.get_lvalue());
+            assert(false);
             return VisitStatementOutput(entity->value);
         }
 
-        message(Severity::ERROR, expr->location) << "identifier is not an expression\n";
+        message(Severity::ERROR, expr->location) << declarator->message_kind() << " '" << *declarator->identifier << "' is not an expression\n";
         pause_messages();
 
         return VisitStatementOutput(Value::of_recover(declarator->type));
@@ -1301,7 +1316,7 @@ struct Emitter: Visitor {
     virtual VisitStatementOutput visit(CallExpr* expr, const VisitStatementInput& input) override {
         if (outcome == EmitOutcome::FOLD) {
             message(Severity::ERROR, expr->location) << "cannot call function in constant expression\n";
-            throw FoldError();
+            throw FoldError(true);
         }
 
         auto function_output = emit(expr->function);

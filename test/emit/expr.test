@@ -397,7 +397,7 @@ BEGIN Constant expression may not dereference pointer
 int size;
 int x[1 + *(int*)0];
 EXPECT_MESSAGE
-:2:11: error cannot dereference pointer in constant expression
+:2:9: error not a constant expression
 END
 
 

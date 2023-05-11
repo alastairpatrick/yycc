@@ -90,6 +90,14 @@ EXPECT_IR
 END
 
 
+BEGIN Static initializer must be a constant expression
+int x;
+int y = x;
+EXPECT_MESSAGE
+:2:9: error static initializer is not a constant expression
+END
+
+
 BEGIN Scalar local variable initialized with initializer expression (1)
 void f() {
     int x = {1};
