@@ -26,14 +26,11 @@ struct VisitStatementInput;
 struct VisitStatementOutput;
 
 struct ASTNode {
-    ASTNode();
-    ASTNode(const ASTNode&);
-    ASTNode(ASTNode&&);
-    virtual ~ASTNode() = default;
-    ASTNode& operator=(const ASTNode&);
-    ASTNode& operator=(ASTNode&&);
-
     ASTNode* next_delete;
+
+    ASTNode();
+    virtual ~ASTNode() = default;
+    void operator=(const ASTNode&) = delete;
 };
 
 struct LocationNode: ASTNode, virtual Printable {
