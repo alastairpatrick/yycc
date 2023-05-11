@@ -70,6 +70,7 @@ struct Declarator: LocationNode {
     const Type* to_type() const;
     const char* message_kind() const;
     bool is_member() const;
+    void message_see_declaration() const;
     VisitDeclaratorOutput accept(Visitor& visitor, const VisitDeclaratorInput& input);
     void print(ostream& stream) const;
 

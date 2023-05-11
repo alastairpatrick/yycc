@@ -788,3 +788,16 @@ define void @f(ptr %0) {
   ret void
 }
 END
+
+
+BEGIN Member variables of outer type are not accessible to member function of nested type
+struct S {
+    int x;
+    struct T {
+        int f(T* this) { return x; }
+    };
+};
+EXPECT_MESSAGE
+:4:33: error 'x' is not a member of the immediately enclosing type so is inaccessible via 'this'
+:2:9: see definition of member 'x'
+END

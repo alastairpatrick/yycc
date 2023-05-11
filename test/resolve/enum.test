@@ -148,6 +148,7 @@ BEGIN Enum constant may not refer to following constants (2)
 enum E { B = A, A = 1 };
 EXPECT_MESSAGE
 :2:14: error enum constant 'A' not yet available
+:2:17: see definition of enum constant 'A'
 END
 
 
@@ -163,6 +164,7 @@ BEGIN Enum constant may not refer to self (2)
 enum E { A = A };
 EXPECT_MESSAGE
 :2:14: error enum constant 'A' not yet available
+:2:10: see definition of enum constant 'A'
 END
 
 

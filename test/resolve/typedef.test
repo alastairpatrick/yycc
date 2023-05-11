@@ -72,7 +72,8 @@ BEGIN Error on use of typedef name as a constant integer expression
 typedef int T;
 char a[T];
 EXPECT_MESSAGE
-:2:8: error typedef 'T' is not an expression
+:2:8: error typedef 'T' is not a constant
+:1:13: see definition of typedef 'T'
 EXPECT_GLOBALS
 [["typedef","Si","T"],["var","ES",["A","C"],"a"]]
 

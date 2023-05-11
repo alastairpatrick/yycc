@@ -473,6 +473,7 @@ int size;
 int x[1 + size];
 EXPECT_MESSAGE
 :2:11: error variable 'size' is not a constant
+:1:5: see declaration of variable 'size'
 END
 
 

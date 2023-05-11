@@ -119,7 +119,7 @@ struct Emitter: Visitor {
 
         declarator->status = DeclaratorStatus::EMITTED;
     }
-    
+
     LLVMValueRef get_rvalue(const Value &value) {
         if (outcome == EmitOutcome::IR) {
             return value.dangerously_get_rvalue(builder);
@@ -1208,6 +1208,7 @@ struct Emitter: Visitor {
         if (auto enum_constant = declarator->enum_constant()) {
             if (!enum_constant->ready) {
                 message(Severity::ERROR, expr->location) << "enum constant '" << *declarator->identifier << "' not yet available\n";
+                declarator->message_see_declaration();
             }
 
             auto type = result_type;
@@ -1223,11 +1224,16 @@ struct Emitter: Visitor {
         if (auto variable = declarator->variable()) {
             if (outcome == EmitOutcome::IR && this_type && !variable->value.is_valid()) {
                 assert(variable->member);
-                assert(declarator->scope == this_type->scope); // todo check properly
 
-                auto llvm_this = get_rvalue(this_value);
-                return VisitStatementOutput(Value(ValueKind::LVALUE, declarator->type,
-                    LLVMBuildGEP2(builder, this_type->llvm_type(), llvm_this, variable->member->gep_indices.data(), variable->member->gep_indices.size(), "")));
+                if (declarator->scope != this_type->scope) {
+                    message(Severity::ERROR, expr->location) << "'" << *declarator->identifier << "' is not a member of the immediately enclosing type so is inaccessible via 'this'\n";
+                    declarator->message_see_declaration();
+                    pause_messages();
+                } else {
+                    auto llvm_this = get_rvalue(this_value);
+                    return VisitStatementOutput(Value(ValueKind::LVALUE, declarator->type,
+                        LLVMBuildGEP2(builder, this_type->llvm_type(), llvm_this, variable->member->gep_indices.data(), variable->member->gep_indices.size(), "")));
+                }
             }
         }
         
@@ -1235,19 +1241,16 @@ struct Emitter: Visitor {
             if (entity->value.kind == ValueKind::LVALUE) {
                 return VisitStatementOutput(entity->value);
             }
-
-            if (outcome == EmitOutcome::FOLD) {
-                message(Severity::ERROR, expr->location) << declarator->message_kind() << " '" << *declarator->identifier << "' is not a constant\n";
-                throw FoldError(true);
-            }
-
-            // EntityPass ensures that all functions and globals are created before the Emitter pass.
-            assert(false);
-            return VisitStatementOutput(entity->value);
         }
 
-        message(Severity::ERROR, expr->location) << declarator->message_kind() << " '" << *declarator->identifier << "' is not an expression\n";
-        pause_messages();
+        if (outcome == EmitOutcome::FOLD) {
+            message(Severity::ERROR, expr->location) << declarator->message_kind() << " '" << *declarator->identifier << "' is not a constant\n";
+            declarator->message_see_declaration();
+            throw FoldError(true);
+        } else {
+            message(Severity::ERROR, expr->location) << declarator->message_kind() << " '" << *declarator->identifier << "' is not an expression\n";
+            pause_messages();
+        }
 
         return VisitStatementOutput(Value::of_recover(declarator->type));
     }

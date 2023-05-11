@@ -102,6 +102,16 @@ bool Declarator::is_member() const {
     }
     return false;
 }
+    
+void Declarator::message_see_declaration() const {
+    auto& stream = message(Severity::INFO, location) << "see ";
+    if (delegate->message_is_definition()) {
+        stream << "definition";
+    } else {
+        stream << "declaration";
+    }
+    stream << " of " << message_kind() << " '"  << *identifier << "'\n";
+}
 
 VisitDeclaratorOutput Declarator::accept(Visitor& visitor, const VisitDeclaratorInput& input) {
     return delegate->accept(this, visitor, input);
