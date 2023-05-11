@@ -42,7 +42,7 @@ struct Type: virtual Printable {
     virtual QualifierSet qualifiers() const;
     virtual const Type* unqualified() const;
 
-    const PointerType* pointer_to() const;
+    const PointerType* pointer_to(bool pass_by_reference = false) const;
 
     virtual TypePartition partition() const;  // C99 6.2.5p1
     virtual bool has_tag(const Declarator* declarator) const;

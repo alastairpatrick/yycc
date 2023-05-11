@@ -46,8 +46,7 @@ struct TypeContext {
 
     void operator=(const TypeContext&) = delete;
 
-    const PointerType* get_pointer_type(const Type* base_type);
-    const PointerType* get_pass_by_reference_type(const Type* base_type);
+    const PointerType* get_pointer_type(const Type* base_type, bool pass_by_reference);
     const QualifiedType* get_qualified_type(const Type* base_type, unsigned qualifiers);
 
     const ResolvedArrayType* get_array_type(ArrayKind kind, const Type* element_type, unsigned long long size);

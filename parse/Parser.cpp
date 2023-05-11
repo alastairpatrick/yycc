@@ -826,8 +826,7 @@ DeclaratorTransform Parser::parse_declarator_transform(ParseDeclaratorFlags flag
                 message(Severity::ERROR, location) << "pass-by-reference '&' at invalid position\n";
             } else {
                 right_transform = [right_transform](const Type* type) {
-                    auto& type_context = TranslationUnitContext::it->type;
-                    return type_context.get_pass_by_reference_type(type);
+                    return type->pointer_to(true);
                 };
             }
         } else if (consume('[')) {

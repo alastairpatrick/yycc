@@ -55,8 +55,8 @@ LLVMTypeRef CachedType::llvm_type() const {
     return cached_llvm_type = cache_llvm_type();
 }
 
-const PointerType* Type::pointer_to() const {
-    return TranslationUnitContext::it->type.get_pointer_type(this);
+const PointerType* Type::pointer_to(bool pass_by_reference) const {
+    return TranslationUnitContext::it->type.get_pointer_type(this, pass_by_reference);
 }
 
 TypePartition Type::partition() const {
