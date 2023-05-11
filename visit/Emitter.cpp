@@ -1360,7 +1360,7 @@ struct Emitter: Visitor {
                 message(Severity::ERROR, expr->location) << "expected " << expected_num_params << " parameter(s) but got " << actual_num_params << "\n";
 
                 if (function_declarator) {
-                    message(Severity::INFO, function_declarator->location) << "see prototype of '" << *function_declarator->identifier << "'\n";
+                    function_declarator->message_see_declaration("prototype");
                 }
 
                 return VisitStatementOutput(Value::of_recover(result_type));

@@ -253,7 +253,7 @@ void g() {
 }
 EXPECT_MESSAGE
 :3:6: error expected 1 parameter(s) but got 2
-:1:6: see prototype of 'f'
+:1:6: see prototype of function 'f'
 END
 
 
@@ -363,7 +363,7 @@ int g(S* p) {
 }
 EXPECT_MESSAGE
 :7:14: error expected 0 parameter(s) but got 1
-:2:7: see prototype of 'f'
+:2:7: see prototype of function 'f'
 END
 
 
