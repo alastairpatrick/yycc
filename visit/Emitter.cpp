@@ -718,6 +718,7 @@ struct Emitter: Visitor {
                 auto type = get_expr_type(statement->expr);
                 if (type->unqualified() != &VoidType::it) {
                     message(Severity::ERROR, statement->expr->location) << "void function '" << *function_declarator->identifier << "' should not return a value\n";
+                    function_declarator->message_see_declaration("return type");
                 }
             }
             LLVMBuildRetVoid(builder);
@@ -727,6 +728,7 @@ struct Emitter: Visitor {
                 value = convert_to_type(statement->expr, function_type->return_type->unqualified(), ConvKind::IMPLICIT);
             } else {
                 message(Severity::ERROR, statement->location) << "non-void function '" << *function_declarator->identifier << "' should return a value\n";
+                function_declarator->message_see_declaration("return type");
                 value = Value(function_type->return_type, LLVMConstNull(function_type->return_type->llvm_type()));
             }
             LLVMBuildRet(builder, get_rvalue(value));
@@ -1249,6 +1251,7 @@ struct Emitter: Visitor {
             throw FoldError(true);
         } else {
             message(Severity::ERROR, expr->location) << declarator->message_kind() << " '" << *declarator->identifier << "' is not an expression\n";
+            declarator->message_see_declaration();
             pause_messages();
         }
 

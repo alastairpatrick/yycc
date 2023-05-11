@@ -316,6 +316,7 @@ void f() {
 }
 EXPECT_MESSAGE
 :2:12: error void function 'f' should not return a value
+:1:6: see return type of function 'f'
 END
 
 
@@ -325,6 +326,7 @@ int f() {
 }
 EXPECT_MESSAGE
 :2:5: error non-void function 'f' should return a value
+:1:5: see return type of function 'f'
 END
 
 
