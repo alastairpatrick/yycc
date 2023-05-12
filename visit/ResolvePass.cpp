@@ -302,7 +302,7 @@ struct ResolvePass: Visitor, TypeVisitor {
         return nullptr;
     }
 
-    virtual VisitTypeOutput visit(const NestedType* type, const VisitTypeInput& input) override {
+    virtual VisitTypeOutput visit(const NestedType* type) override {
         auto enclosing_type = resolve(type->enclosing_type);
 
         auto member = lookup_member(enclosing_type, type->identifier, type->location);
@@ -318,23 +318,23 @@ struct ResolvePass: Visitor, TypeVisitor {
         return VisitTypeOutput(member->type);
     }
 
-    virtual VisitTypeOutput visit(const PointerType* type, const VisitTypeInput& input) override {
+    virtual VisitTypeOutput visit(const PointerType* type) override {
         return VisitTypeOutput(resolve(type->base_type)->pointer_to());
     }
 
-    virtual VisitTypeOutput visit(const PassByReferenceType* type, const VisitTypeInput& input) override {
+    virtual VisitTypeOutput visit(const PassByReferenceType* type) override {
         return VisitTypeOutput(PassByReferenceType::of(resolve(type->base_type)));
     }
 
-    virtual VisitTypeOutput visit(const QualifiedType* type, const VisitTypeInput& input) override {
+    virtual VisitTypeOutput visit(const QualifiedType* type) override {
         return VisitTypeOutput(QualifiedType::of(resolve(type->base_type), type->qualifier_flags));
     }
 
-    virtual VisitTypeOutput visit(const UnqualifiedType* type, const VisitTypeInput& input) override {
+    virtual VisitTypeOutput visit(const UnqualifiedType* type) override {
         return VisitTypeOutput(resolve(type->base_type)->unqualified());
     }
 
-    virtual VisitTypeOutput visit(const FunctionType* type, const VisitTypeInput& input) override {
+    virtual VisitTypeOutput visit(const FunctionType* type) override {
         auto resolved_return_type = resolve(type->return_type);
         auto resolved_param_types(type->parameter_types);
         for (auto& param_type : resolved_param_types) {
@@ -357,15 +357,15 @@ struct ResolvePass: Visitor, TypeVisitor {
         return VisitTypeOutput(FunctionType::of(resolved_return_type, resolved_param_types, type->variadic));
     }
 
-    virtual VisitTypeOutput visit(const StructType* type, const VisitTypeInput& input) override {
-        return visit_structured_type(type, input);
+    virtual VisitTypeOutput visit(const StructType* type) override {
+        return visit_structured_type(type);
     }
 
-    virtual VisitTypeOutput visit(const UnionType* type, const VisitTypeInput& input) override {
-        return visit_structured_type(type, input);
+    virtual VisitTypeOutput visit(const UnionType* type) override {
+        return visit_structured_type(type);
     }
 
-    VisitTypeOutput visit_structured_type(const StructuredType* type, const VisitTypeInput& input) {
+    VisitTypeOutput visit_structured_type(const StructuredType* type) {
         pend(type->tag);
 
         if (!type->complete) return VisitTypeOutput(type);
@@ -397,7 +397,7 @@ struct ResolvePass: Visitor, TypeVisitor {
         return VisitTypeOutput(type);
     }
 
-    virtual VisitTypeOutput visit(const EnumType* type, const VisitTypeInput& input) override {
+    virtual VisitTypeOutput visit(const EnumType* type) override {
         pend(type->tag);
 
         if (!type->complete) return VisitTypeOutput(type);
@@ -447,16 +447,16 @@ struct ResolvePass: Visitor, TypeVisitor {
         return VisitTypeOutput(type);
     }
 
-    virtual VisitTypeOutput visit(const TypeOfType* type, const VisitTypeInput& input) override {
+    virtual VisitTypeOutput visit(const TypeOfType* type) override {
         resolve(type->expr);
         return VisitTypeOutput(get_expr_type(type->expr));
     }
 
-    virtual VisitTypeOutput visit(const TypeDefType* type, const VisitTypeInput& input) override {
+    virtual VisitTypeOutput visit(const TypeDefType* type) override {
         return VisitTypeOutput(resolve(type->declarator));
     }
 
-    virtual VisitTypeOutput visit(const UnresolvedArrayType* type, const VisitTypeInput& input) override {
+    virtual VisitTypeOutput visit(const UnresolvedArrayType* type) override {
         auto resolved_element_type = resolve(type->element_type);
         if (resolved_element_type->partition() != TypePartition::OBJECT) {
             if (resolved_element_type->partition() == TypePartition::INCOMPLETE) {
@@ -702,7 +702,7 @@ struct ResolvePass: Visitor, TypeVisitor {
         auto& resolved_type = resolved_types[unresolved_type];
         if (resolved_type) return resolved_type;
 
-        return resolved_type = unresolved_type->accept(*this, VisitTypeInput()).value.type;
+        return resolved_type = unresolved_type->accept(*this).value.type;
     }
 
     void resolve(Expr*& expr) {

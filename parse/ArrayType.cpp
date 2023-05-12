@@ -17,8 +17,8 @@ TypePartition UnresolvedArrayType::partition() const {
     return TypePartition::INCOMPLETE;
 }
 
-VisitTypeOutput UnresolvedArrayType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
+VisitTypeOutput UnresolvedArrayType::accept(TypeVisitor& visitor) const {
+    return visitor.visit(this);
 }
 
 LLVMTypeRef UnresolvedArrayType::cache_llvm_type() const {
@@ -54,8 +54,8 @@ TypePartition ResolvedArrayType::partition() const {
     return kind == ArrayKind::INCOMPLETE ? TypePartition::INCOMPLETE : TypePartition::OBJECT;
 }
 
-VisitTypeOutput ResolvedArrayType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
+VisitTypeOutput ResolvedArrayType::accept(TypeVisitor& visitor) const {
+    return visitor.visit(this);
 }
 
 LLVMTypeRef ResolvedArrayType::cache_llvm_type() const {

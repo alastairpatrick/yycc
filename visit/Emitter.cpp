@@ -201,10 +201,7 @@ struct Emitter: Visitor {
             dest_type = dest_enum_type->base_type;
         }
 
-        VisitTypeInput input;
-        input.value = value;
-        input.dest_type = dest_type;
-        auto output = ::convert_to_type(input, module, builder, outcome);
+        auto output = ::convert_to_type(value, dest_type, module, builder, outcome);
         auto result = output.value;
 
         if (dest_enum_type) {

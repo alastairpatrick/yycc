@@ -14,11 +14,6 @@ enum class ConvKind {
     EXPLICIT,
 };
 
-struct VisitTypeInput {
-    Value value;
-    const Type* dest_type{};
-};
-
 struct VisitTypeOutput {
     Value value;
     ConvKind conv_kind = ConvKind::IMPLICIT;
@@ -29,23 +24,23 @@ struct VisitTypeOutput {
 };
 
 struct TypeVisitor {
-    virtual VisitTypeOutput visit(const EnumType* type, const VisitTypeInput& input);
-    virtual VisitTypeOutput visit(const FloatingPointType* type, const VisitTypeInput& input);
-    virtual VisitTypeOutput visit(const FunctionType* type, const VisitTypeInput& input);
-    virtual VisitTypeOutput visit(const IntegerType* type, const VisitTypeInput& input);
-    virtual VisitTypeOutput visit(const NestedType* type, const VisitTypeInput& input);
-    virtual VisitTypeOutput visit(const PointerType* type, const VisitTypeInput& input);
-    virtual VisitTypeOutput visit(const PassByReferenceType* type, const VisitTypeInput& input);
-    virtual VisitTypeOutput visit(const QualifiedType* type, const VisitTypeInput& input);
-    virtual VisitTypeOutput visit(const ResolvedArrayType* type, const VisitTypeInput& input);
-    virtual VisitTypeOutput visit(const StructType* type, const VisitTypeInput& input);
-    virtual VisitTypeOutput visit(const TypeDefType* type, const VisitTypeInput& input);
-    virtual VisitTypeOutput visit(const TypeOfType* type, const VisitTypeInput& input);
-    virtual VisitTypeOutput visit(const VoidType* type, const VisitTypeInput& input);
-    virtual VisitTypeOutput visit(const UnboundType* type, const VisitTypeInput& input);
-    virtual VisitTypeOutput visit(const UnionType* type, const VisitTypeInput& input);
-    virtual VisitTypeOutput visit(const UnqualifiedType* type, const VisitTypeInput& input);
-    virtual VisitTypeOutput visit(const UnresolvedArrayType* type, const VisitTypeInput& input);
+    virtual VisitTypeOutput visit(const EnumType* type);
+    virtual VisitTypeOutput visit(const FloatingPointType* type);
+    virtual VisitTypeOutput visit(const FunctionType* type);
+    virtual VisitTypeOutput visit(const IntegerType* type);
+    virtual VisitTypeOutput visit(const NestedType* type);
+    virtual VisitTypeOutput visit(const PointerType* type);
+    virtual VisitTypeOutput visit(const PassByReferenceType* type);
+    virtual VisitTypeOutput visit(const QualifiedType* type);
+    virtual VisitTypeOutput visit(const ResolvedArrayType* type);
+    virtual VisitTypeOutput visit(const StructType* type);
+    virtual VisitTypeOutput visit(const TypeDefType* type);
+    virtual VisitTypeOutput visit(const TypeOfType* type);
+    virtual VisitTypeOutput visit(const VoidType* type);
+    virtual VisitTypeOutput visit(const UnboundType* type);
+    virtual VisitTypeOutput visit(const UnionType* type);
+    virtual VisitTypeOutput visit(const UnqualifiedType* type);
+    virtual VisitTypeOutput visit(const UnresolvedArrayType* type);
 };
 
 #endif

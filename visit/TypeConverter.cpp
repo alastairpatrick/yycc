@@ -41,15 +41,14 @@ struct TypeConverter: TypeVisitor {
     Module* module;
     LLVMBuilderRef builder;
     EmitOutcome outcome;
+    Value value;
+    const Type* dest_type{};
 
     LLVMValueRef get_rvalue(const Value &value) {
         return value.get_rvalue(builder, outcome);
     }
 
-    VisitTypeOutput visit(const ResolvedArrayType* source_type, const VisitTypeInput& input) {
-        auto dest_type = input.dest_type;
-        auto value = input.value;
-
+    VisitTypeOutput visit(const ResolvedArrayType* source_type) {
         if (auto dest_array_type = type_cast<ResolvedArrayType>(dest_type)) {
             if (value.is_const() && source_type->element_type == dest_array_type->element_type && source_type->size <= dest_array_type->size) {
                 LLVMValueRef source_array = value.get_const();
@@ -84,40 +83,34 @@ struct TypeConverter: TypeVisitor {
 
         if (value.kind == ValueKind::LVALUE) {
             auto pointer_type = source_type->element_type->pointer_to();
-            Value pointer_value(pointer_type, value.get_lvalue());
-            return visit(pointer_type, VisitTypeInput(pointer_value, dest_type));
+            value = Value(pointer_type, value.get_lvalue());
+            return visit(pointer_type);
         }
 
         return VisitTypeOutput(); 
     }
 
-    virtual VisitTypeOutput visit(const EnumType* source_type, const VisitTypeInput& input) override {
-        return source_type->base_type->accept(*this, input);
+    virtual VisitTypeOutput visit(const EnumType* source_type) override {
+        return source_type->base_type->accept(*this);
     }
 
-    virtual VisitTypeOutput visit(const FloatingPointType* source_type, const VisitTypeInput& input) override {
-        auto dest_type = input.dest_type;
-        auto value = input.value;
-
+    virtual VisitTypeOutput visit(const FloatingPointType* source_type) override {
         if (type_cast<FloatingPointType>(dest_type)) {
-            return VisitTypeOutput(dest_type, LLVMBuildFPCast(builder, get_rvalue(value), input.dest_type->llvm_type(), ""));
+            return VisitTypeOutput(dest_type, LLVMBuildFPCast(builder, get_rvalue(value), dest_type->llvm_type(), ""));
         }
 
         if (auto dest_int_type = type_cast<IntegerType>(dest_type)) {
             if (dest_int_type->is_signed()) {
-                return VisitTypeOutput(dest_type, LLVMBuildFPToSI(builder, get_rvalue(value), input.dest_type->llvm_type(), ""));
+                return VisitTypeOutput(dest_type, LLVMBuildFPToSI(builder, get_rvalue(value), dest_type->llvm_type(), ""));
             } else {
-                return VisitTypeOutput(dest_type, LLVMBuildFPToUI(builder, get_rvalue(value), input.dest_type->llvm_type(), ""));
+                return VisitTypeOutput(dest_type, LLVMBuildFPToUI(builder, get_rvalue(value), dest_type->llvm_type(), ""));
             }
         }
 
         return VisitTypeOutput();
     }
 
-    virtual VisitTypeOutput visit(const FunctionType* source_type, const VisitTypeInput& input) override {
-        auto dest_type = input.dest_type;
-        auto value = input.value;
-
+    virtual VisitTypeOutput visit(const FunctionType* source_type) override {
         if (auto pointer_type = type_cast<PointerType>(dest_type)) {
             ConvKind kind = pointer_type->base_type->unqualified() == source_type ? ConvKind::IMPLICIT : ConvKind::EXPLICIT;
             return VisitTypeOutput(dest_type, value.get_lvalue(), kind);
@@ -126,10 +119,7 @@ struct TypeConverter: TypeVisitor {
         return VisitTypeOutput();
     }
 
-    virtual VisitTypeOutput visit(const IntegerType* source_type, const VisitTypeInput& input) override {
-        auto dest_type = input.dest_type;
-        auto value = input.value;
-
+    virtual VisitTypeOutput visit(const IntegerType* source_type) override {
         if (auto int_target = type_cast<IntegerType>(dest_type)) {
             return VisitTypeOutput(dest_type, LLVMBuildIntCast2(builder, get_rvalue(value), dest_type->llvm_type(), source_type->is_signed(), ""));
         }
@@ -149,10 +139,7 @@ struct TypeConverter: TypeVisitor {
         return VisitTypeOutput();
     }
     
-    VisitTypeOutput visit(const PointerType* source_type, const VisitTypeInput& input) {
-        auto dest_type = input.dest_type;
-        auto value = input.value;
-
+    VisitTypeOutput visit(const PointerType* source_type) {
         if (auto dest_pointer_type = type_cast<PointerType>(dest_type)) {
             return VisitTypeOutput(value.bit_cast(dest_type), check_pointer_conversion(source_type->base_type, dest_pointer_type->base_type));
         }
@@ -165,15 +152,18 @@ struct TypeConverter: TypeVisitor {
         return VisitTypeOutput();
     }
     
-    VisitTypeOutput visit(const VoidType* source_type, const VisitTypeInput& input) {
+    VisitTypeOutput visit(const VoidType* source_type) {
         return VisitTypeOutput();
     }
 };
 
-VisitTypeOutput convert_to_type(const VisitTypeInput& input, Module* module, LLVMBuilderRef builder, EmitOutcome outcome) {
+VisitTypeOutput convert_to_type(const Value & value, const Type* dest_type, Module* module, LLVMBuilderRef builder, EmitOutcome outcome) {
     TypeConverter converter;
     converter.module = module;
     converter.builder = builder;
     converter.outcome = outcome;
-    return input.value.type->accept(converter, input);
+    converter.value = value;
+    converter.dest_type = dest_type;
+
+    return value.type->accept(converter);
 }

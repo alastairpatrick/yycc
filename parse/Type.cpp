@@ -75,8 +75,8 @@ TypePartition VoidType::partition() const {
     return TypePartition::INCOMPLETE;
 }
 
-VisitTypeOutput VoidType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
+VisitTypeOutput VoidType::accept(TypeVisitor& visitor) const {
+    return visitor.visit(this);
 }
 
 LLVMTypeRef VoidType::llvm_type() const {
@@ -176,8 +176,8 @@ unsigned long long IntegerType::max() const {
     return result;
 }
 
-VisitTypeOutput IntegerType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
+VisitTypeOutput IntegerType::accept(TypeVisitor& visitor) const {
+    return visitor.visit(this);
 }
 
 LLVMTypeRef IntegerType::llvm_type() const {
@@ -279,8 +279,8 @@ const FloatingPointType* FloatingPointType::of(FloatingPointSize size) {
     return &types[int(size)];
 }
 
-VisitTypeOutput FloatingPointType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
+VisitTypeOutput FloatingPointType::accept(TypeVisitor& visitor) const {
+    return visitor.visit(this);
 }
 
 LLVMTypeRef FloatingPointType::llvm_type() const {
@@ -324,8 +324,8 @@ void FloatingPointType::print(ostream& stream) const {
 
 
 
-VisitTypeOutput PointerType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
+VisitTypeOutput PointerType::accept(TypeVisitor& visitor) const {
+    return visitor.visit(this);
 }
 
 LLVMTypeRef PointerType::cache_llvm_type() const {
@@ -365,8 +365,8 @@ const PassByReferenceType* PassByReferenceType::of(const Type* base_type) {
     return type_context.get_pass_by_reference_type(base_type);
 }
 
-VisitTypeOutput PassByReferenceType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
+VisitTypeOutput PassByReferenceType::accept(TypeVisitor& visitor) const {
+    return visitor.visit(this);
 }
 
 LLVMTypeRef PassByReferenceType::cache_llvm_type() const {
@@ -414,8 +414,8 @@ TypePartition QualifiedType::partition() const {
     return base_type->partition();
 }
 
-VisitTypeOutput QualifiedType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
+VisitTypeOutput QualifiedType::accept(TypeVisitor& visitor) const {
+    return visitor.visit(this);
 }
 
 LLVMTypeRef QualifiedType::llvm_type() const {
@@ -459,8 +459,8 @@ const Type* UnqualifiedType::unqualified() const {
     return this;
 }
 
-VisitTypeOutput UnqualifiedType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
+VisitTypeOutput UnqualifiedType::accept(TypeVisitor& visitor) const {
+    return visitor.visit(this);
 }
 
 void UnqualifiedType::message_print(ostream& stream, int section) const {
@@ -482,8 +482,8 @@ TypePartition FunctionType::partition() const {
     return TypePartition::FUNCTION;
 }
 
-VisitTypeOutput FunctionType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
+VisitTypeOutput FunctionType::accept(TypeVisitor& visitor) const {
+    return visitor.visit(this);
 }
 
 LLVMTypeRef FunctionType::cache_llvm_type() const {
@@ -748,8 +748,8 @@ StructType::StructType(const Location& location)
     : StructuredType(location) {
 }
 
-VisitTypeOutput StructType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
+VisitTypeOutput StructType::accept(TypeVisitor& visitor) const {
+    return visitor.visit(this);
 }
 
 void StructType::message_print(ostream& stream, int section) const {
@@ -769,8 +769,8 @@ UnionType::UnionType(const Location& location)
     : StructuredType(location) {
 }
 
-VisitTypeOutput UnionType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
+VisitTypeOutput UnionType::accept(TypeVisitor& visitor) const {
+    return visitor.visit(this);
 }
 
 void UnionType::message_print(ostream& stream, int section) const {
@@ -798,8 +798,8 @@ bool EnumType::has_tag(const Declarator* declarator) const {
     return tag;
 }
 
-VisitTypeOutput EnumType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
+VisitTypeOutput EnumType::accept(TypeVisitor& visitor) const {
+    return visitor.visit(this);
 }
 
 LLVMTypeRef EnumType::cache_llvm_type() const {
@@ -846,8 +846,8 @@ TypePartition TypeOfType::partition() const {
     return TypePartition::INCOMPLETE;
 }
 
-VisitTypeOutput TypeOfType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
+VisitTypeOutput TypeOfType::accept(TypeVisitor& visitor) const {
+    return visitor.visit(this);
 }
 
 void TypeOfType::message_print(ostream& stream, int section) const {
@@ -864,8 +864,8 @@ const UnboundType* UnboundType::of(const Identifier& identifier) {
     return TranslationUnitContext::it->type.get_unbound_type(identifier);
 }
 
-VisitTypeOutput UnboundType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
+VisitTypeOutput UnboundType::accept(TypeVisitor& visitor) const {
+    return visitor.visit(this);
 }
 
 LLVMTypeRef UnboundType::llvm_type() const {
@@ -893,8 +893,8 @@ const Type* TypeDefType::unqualified() const {
     return this;
 }
 
-VisitTypeOutput TypeDefType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
+VisitTypeOutput TypeDefType::accept(TypeVisitor& visitor) const {
+    return visitor.visit(this);
 }
 
 LLVMTypeRef TypeDefType::llvm_type() const {
@@ -915,8 +915,8 @@ NestedType::NestedType(const Type* enclosing_type, const Identifier& identifier,
     : enclosing_type(enclosing_type), identifier(identifier), location(location) {
 }
 
-VisitTypeOutput NestedType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
-    return visitor.visit(this, input);
+VisitTypeOutput NestedType::accept(TypeVisitor& visitor) const {
+    return visitor.visit(this);
 }
 
 LLVMTypeRef NestedType::llvm_type() const {
