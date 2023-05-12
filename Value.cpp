@@ -50,6 +50,21 @@ LLVMValueRef Value::dangerously_get_rvalue(LLVMBuilderRef builder) const {
     return LLVMBuildIntCast2(builder, value, type->llvm_type(), integer_type->is_signed(), "");
 }
 
+LLVMValueRef Value::get_rvalue(LLVMBuilderRef builder, EmitOutcome outcome) const {
+    if (outcome == EmitOutcome::IR) {
+        return dangerously_get_rvalue(builder);
+    } else {
+        // If outcome is TYPE, something ought to have earlied out before control flow got here.
+        assert(outcome == EmitOutcome::FOLD);
+
+        if (is_const()) {
+            return get_const();
+        } else {
+            throw FoldError(false);
+        }
+    }
+}
+
 void Value::store(LLVMBuilderRef builder, const Value& new_value) const {
     auto value = new_value.dangerously_get_rvalue(builder);
 

@@ -5,6 +5,15 @@
 #include "parse/Type.h"
 #include "Value.h"
 
+struct Module {
+    LLVMModuleRef llvm_module{};
+
+    // Maps from a constant to a constant global initialized with that constant. Intended only to pool strings.
+    // Note that LLVM internally performs constant uniqueing, ensuring that constants with the same type and
+    // value are the same instance.
+    unordered_map<LLVMValueRef, LLVMValueRef> reified_constants;
+};
+
 struct EmitOptions {
     bool initialize_variables = true;
 };

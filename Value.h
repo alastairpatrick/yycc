@@ -3,6 +3,20 @@
 
 #include "parse/Type.h"
 
+enum class EmitOutcome {
+    TYPE,
+    FOLD,
+    IR,
+};
+
+// Must only be thrown if the emit outcome is FOLD.
+struct FoldError {
+    bool error_reported;
+
+    FoldError(bool error_reported): error_reported(error_reported) {
+    }
+};
+
 enum class ValueKind: uint8_t {
     INVALID,
     TYPE_ONLY,
@@ -68,6 +82,8 @@ struct Value {
 
     // Use Emitter::get_rvalue instead
     LLVMValueRef dangerously_get_rvalue(LLVMBuilderRef builder) const;
+
+    LLVMValueRef get_rvalue(LLVMBuilderRef builder, EmitOutcome outcome) const;
 
     Value unqualified() const {
         return bit_cast(type->unqualified());
