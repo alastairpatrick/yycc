@@ -61,9 +61,11 @@ struct DereferenceExpr: Expr {
 };
 
 struct EntityExpr: Expr {
+    Scope* scope{};
+    Identifier identifier;
     Declarator* declarator{};
 
-    EntityExpr(Declarator* declarator, const Location& location);
+    EntityExpr(Scope* scope, const Identifier& identifier, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
     virtual void print(ostream& stream) const override;
 };

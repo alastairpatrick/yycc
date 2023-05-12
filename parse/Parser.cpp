@@ -1230,24 +1230,13 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
           Identifier identifier = preprocessor.identifier;
           consume();
 
-          // This is a hack to parse labels without adding an additional token of lookahead.
+          // This is a hack to parse labels without adding a token of lookahead.
           if (or_label && token == ':') {
               *or_label = identifier;
               return nullptr;
           }
 
-          Declarator* declarator = identifiers.lookup_declarator(identifier);
-          if (declarator) {
-              result = new EntityExpr(declarator, location);
-          } else {
-              auto& stream = message(Severity::ERROR, location) << "identifier '" << *identifier.text << "' ";
-              if (identifier.text != identifier.usage_at_file_scope) {
-                  stream << "(aka '" << *identifier.usage_at_file_scope << "') ";
-              }
-              stream << "undeclared\n";
-
-              result = IntegerConstant::default_expr(location);
-          }
+          result = new EntityExpr(identifiers.top_scope(), identifier, location);
           break;
       }
     }

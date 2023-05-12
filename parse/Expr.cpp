@@ -142,8 +142,8 @@ void DereferenceExpr::print(ostream& stream) const {
 }
 
 
-EntityExpr::EntityExpr(Declarator* declarator, const Location& location)
-    : Expr(location), declarator(declarator) {
+EntityExpr::EntityExpr(Scope* scope, const Identifier& identifier, const Location& location)
+    : Expr(location), scope(scope), identifier(identifier) {
 }
 
 VisitStatementOutput EntityExpr::accept(Visitor& visitor, const VisitStatementInput& input) {
@@ -151,7 +151,7 @@ VisitStatementOutput EntityExpr::accept(Visitor& visitor, const VisitStatementIn
 }
 
 void EntityExpr::print(ostream& stream) const {
-    stream << "\"N" << *declarator->identifier << '"';
+    stream << "\"N" << *identifier.text << '"';
 }
 
 

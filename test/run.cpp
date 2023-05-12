@@ -58,6 +58,7 @@ static const Test tests[] = {
 
     { "parse/namespace",            TestType::PREPARSE},
     { "parse/namespace",            TestType::PARSE},
+    { "resolve/namespace",          TestType::RESOLVE},
 
     { "parse/array",                TestType::PREPARSE },
     { "parse/array",                TestType::PARSE },

@@ -153,9 +153,9 @@ EXPECT_GLOBALS
 BEGIN Impossible recursive array size (1)
 char a[sizeof(a)];
 EXPECT_MESSAGE
-:1:15: error identifier 'a' undeclared
+:1:6: error recursive definition of 'a'
 EXPECT_GLOBALS
-[["var","ES",["A","C",4],"a"]]
+[["var","ES","Si","a"]]
 
 
 BEGIN Impossible recursive array size (2)

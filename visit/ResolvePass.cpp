@@ -494,10 +494,21 @@ struct ResolvePass: Visitor {
         return Visitor::visit(expr, input);
     }
 
-    virtual VisitStatementOutput visit(EntityExpr* entity_expr, const VisitStatementInput& input) override {
-        resolve(entity_expr->declarator);
-        entity_expr->declarator = entity_expr->declarator->primary;
-        return Visitor::visit(entity_expr, input);
+
+    virtual VisitStatementOutput visit(EntityExpr* expr, const VisitStatementInput& input) override {
+        expr->declarator = expr->scope->lookup_declarator(expr->identifier);
+        if (!expr->declarator) {
+            auto& stream = message(Severity::ERROR, expr->location) << "identifier '" << *expr->identifier.text << "' ";
+            if (expr->identifier.text != expr->identifier.usage_at_file_scope) {
+                stream << "(aka '" << *expr->identifier.usage_at_file_scope << "') ";
+            }
+            stream << "undeclared\n";
+            return Visitor::visit(IntegerConstant::default_expr(expr->location), input);
+        }
+
+        resolve(expr->declarator);
+        expr->declarator = expr->declarator->primary;
+        return Visitor::visit(expr, input);
     }
 
     // If the LHS of a MemberExpr is a type, return that resolved type, else null.
@@ -527,6 +538,8 @@ struct ResolvePass: Visitor {
     }
 
     virtual VisitStatementOutput visit(MemberExpr* member_expr, const VisitStatementInput& input) override {
+        auto result = Visitor::visit(member_expr, input);
+
         auto enclosing_type = wrangle_member_expr_enclosing_type(member_expr);
         if (enclosing_type) {
             member_expr->type = enclosing_type;
@@ -561,13 +574,13 @@ struct ResolvePass: Visitor {
             }
 
             member_expr->member = member->primary;
-            return Visitor::visit(member_expr, input);
+            return result;
         }
 
         Location location = member_expr->object ? member_expr->object->location : member_expr->location;
         message(Severity::ERROR, location) << "type '" << PrintType(enclosing_type) << "' does not have members\n";
         pause_messages();
-        return Visitor::visit(member_expr, input);
+        return result;
     }
 
     virtual VisitStatementOutput visit(SizeOfExpr* expr, const VisitStatementInput& input) override {

@@ -138,7 +138,8 @@ EXPECT_GLOBALS
 BEGIN Enum constant may not refer to following constants (1)
 enum E { B = A, A = 1 };
 EXPECT_MESSAGE
-:1:14: error identifier 'A' undeclared
+:1:14: error enum constant 'A' not yet available
+:1:17: see definition of enum constant 'A'
 EXPECT_GLOBALS
 [["ec","A",1],["ec","B",0],["typedef",["ENUM",[["ec","B",0],["ec","A",1]]],"E"]]
 
@@ -155,7 +156,8 @@ END
 BEGIN Enum constant may not refer to self (1)
 enum E { A = A };
 EXPECT_MESSAGE
-:1:14: error identifier 'A' undeclared
+:1:14: error enum constant 'A' not yet available
+:1:10: see definition of enum constant 'A'
 END
 
 
