@@ -3,13 +3,9 @@
 
 /* Declarations */
 
-VisitDeclaratorOutput Visitor::accept(Declarator* declarator, const VisitDeclaratorInput& input) {
+VisitDeclaratorOutput Visitor::accept_declarator(Declarator* declarator, const VisitDeclaratorInput& input) {
     if (!declarator) return VisitDeclaratorOutput();
-    pre_visit(declarator);
     return declarator->accept(*this, input);
-}
-
-void Visitor::pre_visit(Declarator* declarator) {
 }
 
 VisitDeclaratorOutput Visitor::visit(Declarator* declarator, Variable* variable, const VisitDeclaratorInput& input) {
@@ -30,13 +26,9 @@ VisitDeclaratorOutput Visitor::visit(Declarator* declarator, EnumConstant* enum_
 
 /* Statements */
 
-VisitStatementOutput Visitor::accept(Statement* statement) {
+VisitStatementOutput Visitor::accept_statement(Statement* statement) {
     if (!statement) return VisitStatementOutput();
-    pre_visit(statement);
     return statement->accept(*this);
-}
-
-void Visitor::pre_visit(Statement* statement) {
 }
 
 VisitStatementOutput Visitor::visit(CompoundStatement* statement) {
@@ -70,7 +62,7 @@ VisitStatementOutput Visitor::visit(SwitchStatement* statement) {
 /* Expressions */
 
 [[nodiscard]]
-VisitExpressionOutput Visitor::accept(Expr* expr) {
+VisitExpressionOutput Visitor::accept_expr(Expr* expr) {
     if (!expr) return VisitExpressionOutput();
     return expr->accept(*this);
 }
@@ -168,7 +160,7 @@ static void visit_declaration(DepthFirstVisitor* visitor, Declaration* declarati
     if (!declaration) return;
 
     for (auto declarator: declaration->declarators) {
-        visitor->accept(declarator, VisitDeclaratorInput());
+        visitor->accept_declarator(declarator, VisitDeclaratorInput());
     }
 }
 
@@ -180,23 +172,23 @@ VisitStatementOutput DepthFirstVisitor::visit(CompoundStatement* statement) {
         }
 
         if (auto statement = dynamic_cast<Statement*>(node)) {
-            accept(statement);
+            accept_statement(statement);
         }
     }
     return VisitStatementOutput();
 }
 
 VisitStatementOutput DepthFirstVisitor::visit(ExprStatement* statement) {
-    statement->expr = accept(statement->expr).expr;
+    statement->expr = accept_expr(statement->expr).expr;
     return VisitStatementOutput();
 }
 
 VisitStatementOutput DepthFirstVisitor::visit(ForStatement* statement) {
     visit_declaration(this, statement->declaration);
-    statement->initialize = accept(statement->initialize).expr;
-    statement->condition = accept(statement->condition).expr;
-    statement->iterate = accept(statement->iterate).expr;
-    accept(statement->body);
+    statement->initialize = accept_expr(statement->initialize).expr;
+    statement->condition = accept_expr(statement->condition).expr;
+    statement->iterate = accept_expr(statement->iterate).expr;
+    accept_statement(statement->body);
 
     return VisitStatementOutput();
 }
@@ -206,23 +198,23 @@ VisitStatementOutput DepthFirstVisitor::visit(GoToStatement* statement) {
 }
 
 VisitStatementOutput DepthFirstVisitor::visit(IfElseStatement* statement) {
-    statement->condition = accept(statement->condition).expr;
-    accept(statement->then_statement);
-    accept(statement->else_statement);
+    statement->condition = accept_expr(statement->condition).expr;
+    accept_statement(statement->then_statement);
+    accept_statement(statement->else_statement);
     return VisitStatementOutput();
 }
 
 VisitStatementOutput DepthFirstVisitor::visit(ReturnStatement* statement) {
-    statement->expr = accept(statement->expr).expr;
+    statement->expr = accept_expr(statement->expr).expr;
     return VisitStatementOutput();
 }
 
 VisitStatementOutput DepthFirstVisitor::visit(SwitchStatement* statement) {
-    statement->expr = accept(statement->expr).expr;
-    accept(statement->body);
+    statement->expr = accept_expr(statement->expr).expr;
+    accept_statement(statement->body);
     
     for (auto& case_expr: statement->cases) {
-        case_expr = accept(case_expr).expr;
+        case_expr = accept_expr(case_expr).expr;
     }
 
     return VisitStatementOutput();
@@ -231,38 +223,38 @@ VisitStatementOutput DepthFirstVisitor::visit(SwitchStatement* statement) {
 /* Expressions */
 
 VisitExpressionOutput DepthFirstVisitor::visit(AddressExpr* expr) {
-    expr->expr = accept(expr->expr).expr;
+    expr->expr = accept_expr(expr->expr).expr;
     return VisitExpressionOutput(expr);
 }
 
 VisitExpressionOutput DepthFirstVisitor::visit(BinaryExpr* expr) {
-    expr->left = accept(expr->left).expr;
-    expr->right = accept(expr->right).expr;
+    expr->left = accept_expr(expr->left).expr;
+    expr->right = accept_expr(expr->right).expr;
     return VisitExpressionOutput(expr);
 }
 
 VisitExpressionOutput DepthFirstVisitor::visit(CallExpr* expr) {
-    expr->function = accept(expr->function).expr;
+    expr->function = accept_expr(expr->function).expr;
     for (auto& parameter: expr->parameters) {
-        parameter = accept(parameter).expr;
+        parameter = accept_expr(parameter).expr;
     }
     return VisitExpressionOutput(expr);
 }
 
 VisitExpressionOutput DepthFirstVisitor::visit(CastExpr* expr) {
-    expr->expr = accept(expr->expr).expr;
+    expr->expr = accept_expr(expr->expr).expr;
     return VisitExpressionOutput(expr);
 }
 
 VisitExpressionOutput DepthFirstVisitor::visit(ConditionExpr* expr) {
-    expr->condition = accept(expr->condition).expr;
-    expr->then_expr = accept(expr->then_expr).expr;
-    expr->else_expr = accept(expr->else_expr).expr;
+    expr->condition = accept_expr(expr->condition).expr;
+    expr->then_expr = accept_expr(expr->then_expr).expr;
+    expr->else_expr = accept_expr(expr->else_expr).expr;
     return VisitExpressionOutput(expr);
 }
 
 VisitExpressionOutput DepthFirstVisitor::visit(DereferenceExpr* expr) {
-    expr->expr = accept(expr->expr).expr;
+    expr->expr = accept_expr(expr->expr).expr;
     return VisitExpressionOutput(expr);
 }
 
@@ -271,19 +263,19 @@ VisitExpressionOutput DepthFirstVisitor::visit(EntityExpr* expr) {
 }
 
 VisitExpressionOutput DepthFirstVisitor::visit(IncDecExpr* expr) {
-    expr->expr = accept(expr->expr).expr;
+    expr->expr = accept_expr(expr->expr).expr;
     return VisitExpressionOutput(expr);
 }
 
 VisitExpressionOutput DepthFirstVisitor::visit(InitializerExpr* expr) {
     for (auto& element: expr->elements) {
-        element = accept(element).expr;
+        element = accept_expr(element).expr;
     }
     return VisitExpressionOutput(expr);
 }
 
 VisitExpressionOutput DepthFirstVisitor::visit(MemberExpr* expr) {
-    expr->object = accept(expr->object).expr;
+    expr->object = accept_expr(expr->object).expr;
     return VisitExpressionOutput(expr);
 }
 
@@ -292,8 +284,8 @@ VisitExpressionOutput DepthFirstVisitor::visit(SizeOfExpr* expr) {
 }
 
 VisitExpressionOutput DepthFirstVisitor::visit(SubscriptExpr* expr) {
-    expr->left = accept(expr->left).expr;
-    expr->right = accept(expr->right).expr;
+    expr->left = accept_expr(expr->left).expr;
+    expr->right = accept_expr(expr->right).expr;
     return VisitExpressionOutput(expr);
 }
 

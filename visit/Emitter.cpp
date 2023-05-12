@@ -134,7 +134,7 @@ struct Emitter: Visitor {
 
     VisitExpressionOutput emit(Expr* expr) {
         try {
-            return accept(expr);
+            return accept_expr(expr);
         } catch (FoldError& e) {
             if (!e.error_reported) {
                 message(Severity::ERROR, expr->location) << "not a constant expression\n";
@@ -144,11 +144,11 @@ struct Emitter: Visitor {
     }
 
     VisitStatementOutput emit(Statement* statement) {
-        return accept(statement);
+        return accept_statement(statement);
     }
 
-    virtual void pre_visit(Statement* statement) override {
-        if (!statement->labels.size()) return;
+    virtual VisitStatementOutput accept_statement(Statement* statement) override {
+        if (!statement) return VisitStatementOutput();
 
         for (auto& label: statement->labels) {
             LLVMBasicBlockRef labelled_block{};
@@ -165,6 +165,10 @@ struct Emitter: Visitor {
             LLVMMoveBasicBlockAfter(labelled_block, current_block);
             LLVMPositionBuilderAtEnd(builder, labelled_block);
         }
+
+        statement->accept(*this);
+
+        return VisitStatementOutput();
     }
 
     template <typename T, typename U>

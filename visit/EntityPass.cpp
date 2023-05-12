@@ -9,7 +9,7 @@ struct EntityPass: DepthFirstVisitor {
 
     void emit(const Scope* scope) {
         for (auto declarator: scope->declarators) {
-            accept(declarator, VisitDeclaratorInput());
+            accept_declarator(declarator, VisitDeclaratorInput());
         }
     }
 
@@ -52,7 +52,7 @@ struct EntityPass: DepthFirstVisitor {
         pass.llvm_module = llvm_module;
         pass.prefix = prefixed_name + '.';
 
-        pass.accept(entity->body);
+        pass.accept_statement(entity->body);
 
         return VisitDeclaratorOutput();
     }

@@ -23,12 +23,16 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
     set<LocationNode*, TodoLess> todo;
     unordered_set<LocationNode*> done;
 
-    virtual void pre_visit(Statement* statement) override {
+    virtual VisitStatementOutput accept_statement(Statement* statement) override {
+        if (!statement) return VisitStatementOutput();
+
         for (auto& label: statement->labels) {
             resolve(label.case_expr);
         }
+
+        return statement->accept(*this);
     }
-    
+
     void see_other_message(const Location& location) {
         message(Severity::INFO, location) << "...see other\n";
     }
@@ -705,10 +709,6 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         return resolved_type = unresolved_type->accept(*this);
     }
 
-    void resolve(Expr*& expr) {
-        expr = accept(expr).expr;
-    }
-
     void resolve(LocationNode* node) {
         if (!node) return;
 
@@ -720,9 +720,9 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         } else if (auto declarator = dynamic_cast<Declarator*>(node)) {
             resolve(declarator);         
         } else if (auto statement = dynamic_cast<Statement*>(node)) {
-            accept(statement);
+            accept_statement(statement);
         } else if (auto expr = dynamic_cast<Expr*>(node)) {
-            accept(expr);
+            accept_expr(expr);
         } else {
             assert(false);
         }

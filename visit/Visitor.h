@@ -34,17 +34,13 @@ struct VisitExpressionOutput {
 struct Visitor {
     typedef Visitor Base;
 
-    VisitDeclaratorOutput accept(Declarator* declarator, const VisitDeclaratorInput& input);
-    virtual void pre_visit(Declarator* declarator);
-
+    virtual VisitDeclaratorOutput accept_declarator(Declarator* declarator, const VisitDeclaratorInput& input);
     virtual VisitDeclaratorOutput visit(Declarator* declarator, Variable* variable, const VisitDeclaratorInput& input);
     virtual VisitDeclaratorOutput visit(Declarator* declarator, Function* function, const VisitDeclaratorInput& input);
     virtual VisitDeclaratorOutput visit(Declarator* declarator, TypeDelegate* type_delegate, const VisitDeclaratorInput& input);
     virtual VisitDeclaratorOutput visit(Declarator* declarator, EnumConstant* enum_constant, const VisitDeclaratorInput& input);
 
-    VisitStatementOutput accept(Statement* statement);
-    virtual void pre_visit(Statement* statement);
-
+    virtual VisitStatementOutput accept_statement(Statement* statement);
     virtual VisitStatementOutput visit(CompoundStatement* statement);
     virtual VisitStatementOutput visit(ExprStatement* statement);
     virtual VisitStatementOutput visit(ForStatement* statement);
@@ -53,8 +49,7 @@ struct Visitor {
     virtual VisitStatementOutput visit(ReturnStatement* statement);
     virtual VisitStatementOutput visit(SwitchStatement* statement);
 
-    VisitExpressionOutput accept(Expr* expr);
-
+    virtual VisitExpressionOutput accept_expr(Expr* expr);
     virtual VisitExpressionOutput visit(AddressExpr* expr);
     virtual VisitExpressionOutput visit(BinaryExpr* expr);
     virtual VisitExpressionOutput visit(CallExpr* expr);
