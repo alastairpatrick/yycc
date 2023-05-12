@@ -85,6 +85,7 @@ TokenKind Preprocessor::next_pp_token() {
 
     if (token == TOK_IDENTIFIER) {
         identifier = Identifier();
+        identifier.position = lexer.position();
 
         auto text = lexer.text();
         identifier.text = intern_string(text);

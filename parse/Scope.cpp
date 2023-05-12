@@ -11,12 +11,11 @@ Declarator* Scope::lookup_declarator(const Identifier& identifier) const {
         InternedString identifier_string = scope->parent ? identifier.text : identifier.usage_at_file_scope;
 
         auto it = scope->declarator_map.find(identifier_string);
-        if (it != scope->declarator_map.end()) {
-            // Note that this intentionally does _not_ always return the primary. For reporting errors
-            // it is better to return a declarator that is currently in scope. The primary declarator
-            // might not be in scope, e.g. it has extern storage class and block scope.
-            return it->second;
-        }
+        if (it == scope->declarator_map.end()) continue;
+
+        if (it->second->identifier_position >= identifier.position) continue;
+
+        return it->second;
     }
 
     return nullptr;

@@ -704,6 +704,10 @@ struct ResolvePass: Visitor {
         return resolved_type = unresolved_type->accept(*this, VisitTypeInput()).value.type;
     }
 
+    void resolve(Expr*& expr) {
+        expr = accept(expr, VisitStatementInput()).expr;
+    }
+
     void resolve(LocationNode* node) {
         if (!node) return;
 

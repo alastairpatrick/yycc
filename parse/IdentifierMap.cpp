@@ -94,6 +94,8 @@ Declarator* IdentifierMap::add_declarator_internal(Scope* scope,
         }
     }
 
+    new_declarator->identifier_position = scope->kind == ScopeKind::BLOCK ? identifier.position : 0;
+
     if (new_declarator->type) {
         scope->declarators.push_back(new_declarator);
     }

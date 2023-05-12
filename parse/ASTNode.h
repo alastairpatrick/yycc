@@ -56,6 +56,7 @@ struct Declarator: LocationNode {
     const Type* type{};
     Scope* scope{};
     InternedString identifier;
+    size_t identifier_position{};
     DeclaratorDelegate* delegate{};
     DeclaratorStatus status = DeclaratorStatus::UNRESOLVED;
     

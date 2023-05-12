@@ -211,6 +211,16 @@ EXPECT_MESSAGE
 END
 
 
+BEGIN Cannot bind to identifier before it is defined at block scope
+int f() {
+    return x;
+    int x;
+}
+EXPECT_MESSAGE
+:2:12: error identifier 'x' undeclared
+END
+
+
 BEGIN #func directive preceeding function declaration
 #func f
 void f() {}
