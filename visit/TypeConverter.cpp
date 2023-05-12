@@ -1,6 +1,7 @@
 #include "TypeConverter.h"
-#include "TypeVisitor.h"
 #include "Emitter.h"
+#include "Message.h"
+#include "TypeVisitor.h"
 
 template <typename T, typename U>
 const T* type_cast(const U* type) {
@@ -147,8 +148,20 @@ struct TypeConverter: TypeVisitor {
     }
 };
 
-ConvertTypeResult convert_to_type(const Value & value, const Type* dest_type, Module* module, LLVMBuilderRef builder, EmitOutcome outcome) {
+ConvertTypeResult convert_to_type(const Value& value, const Type* dest_type, Module* module, LLVMBuilderRef builder, EmitOutcome outcome) {
+    assert(dest_type->qualifiers() == 0);
+
+    if (dest_type == &VoidType::it) {
+        return ConvertTypeResult(Value(dest_type));
+    }
+
+    const EnumType* dest_enum_type{};
+    if (dest_enum_type = type_cast<EnumType>(dest_type)) {
+        dest_type = dest_enum_type->base_type;
+    }
+
     TypeConverter converter;
+    ConvertTypeResult& result = converter.result;
     converter.module = module;
     converter.builder = builder;
     converter.outcome = outcome;
@@ -156,6 +169,11 @@ ConvertTypeResult convert_to_type(const Value & value, const Type* dest_type, Mo
     converter.dest_type = dest_type;
 
     value.type->accept(converter);
+
+    if (dest_enum_type) {
+        result.value = result.value.bit_cast(dest_enum_type);
+        dest_type = dest_enum_type;
+    }
 
     return converter.result;
 }

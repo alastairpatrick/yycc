@@ -183,10 +183,6 @@ struct Emitter: Visitor {
         
         dest_type = dest_type->unqualified();
 
-        if (dest_type == &VoidType::it) {
-            return Value(dest_type);
-        }
-
         if (value.is_null_literal && kind == ConvKind::IMPLICIT && type_cast<PointerType>(dest_type)) {
             return Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
         }
@@ -196,18 +192,8 @@ struct Emitter: Visitor {
             return value;
         }
 
-        const EnumType* dest_enum_type{};
-        if (dest_enum_type = type_cast<EnumType>(dest_type)) {
-            dest_type = dest_enum_type->base_type;
-        }
-
         auto output = ::convert_to_type(value, dest_type, module, builder, outcome);
         auto result = output.value;
-
-        if (dest_enum_type) {
-            result = result.bit_cast(dest_enum_type);
-            dest_type = dest_enum_type;
-        }
 
         if (!result.is_valid()) {
             message(Severity::ERROR, location) << "cannot convert from type '" << PrintType(value.type)
@@ -218,7 +204,7 @@ struct Emitter: Visitor {
             } else {
                 return Value::of_zero_int();
             }
-        } else if ((dest_enum_type || output.conv_kind != ConvKind::IMPLICIT) && kind == ConvKind::IMPLICIT) {
+        } else if ((type_cast<EnumType>(dest_type) || output.conv_kind != ConvKind::IMPLICIT) && kind == ConvKind::IMPLICIT) {
             auto severity = output.conv_kind == ConvKind::C_IMPLICIT ? Severity::CONTEXTUAL_ERROR : Severity::ERROR;
             message(severity, location) << "conversion from type '" << PrintType(value.type)
                                         << "' to type '" << PrintType(dest_type) << "' requires explicit cast\n";
