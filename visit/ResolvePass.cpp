@@ -483,20 +483,20 @@ struct ResolvePass: Visitor, TypeVisitor {
         }
     }
 
-    virtual VisitStatementOutput visit(CompoundStatement* statement, const VisitStatementInput& input) override {
+    virtual VisitStatementOutput visit(CompoundStatement* statement) override {
         for (auto node: statement->nodes) {
             resolve(node);
         }
         return VisitStatementOutput();
     }
 
-    virtual VisitExpressionOutput visit(CastExpr* expr, const VisitExpressionInput& input) override {
+    virtual VisitExpressionOutput visit(CastExpr* expr) override {
         expr->type = resolve(expr->type);
-        return Visitor::visit(expr, input);
+        return Visitor::visit(expr);
     }
 
 
-    virtual VisitExpressionOutput visit(EntityExpr* expr, const VisitExpressionInput& input) override {
+    virtual VisitExpressionOutput visit(EntityExpr* expr) override {
         expr->declarator = expr->scope->lookup_declarator(expr->identifier);
         if (!expr->declarator) {
             auto& stream = message(Severity::ERROR, expr->location) << "identifier '" << *expr->identifier.text << "' ";
@@ -504,12 +504,12 @@ struct ResolvePass: Visitor, TypeVisitor {
                 stream << "(aka '" << *expr->identifier.usage_at_file_scope << "') ";
             }
             stream << "undeclared\n";
-            return Visitor::visit(IntegerConstant::default_expr(expr->location), input);
+            return Visitor::visit(IntegerConstant::default_expr(expr->location));
         }
 
         resolve(expr->declarator);
         expr->declarator = expr->declarator->primary;
-        return Visitor::visit(expr, input);
+        return Visitor::visit(expr);
     }
 
     // If the LHS of a MemberExpr is a type, return that resolved type, else null.
@@ -538,8 +538,8 @@ struct ResolvePass: Visitor, TypeVisitor {
         return nullptr;
     }
 
-    virtual VisitExpressionOutput visit(MemberExpr* member_expr, const VisitExpressionInput& input) override {
-        auto result = Visitor::visit(member_expr, input);
+    virtual VisitExpressionOutput visit(MemberExpr* member_expr) override {
+        auto result = Visitor::visit(member_expr);
 
         auto enclosing_type = wrangle_member_expr_enclosing_type(member_expr);
         if (enclosing_type) {
@@ -584,15 +584,15 @@ struct ResolvePass: Visitor, TypeVisitor {
         return result;
     }
 
-    virtual VisitExpressionOutput visit(SizeOfExpr* expr, const VisitExpressionInput& input) override {
+    virtual VisitExpressionOutput visit(SizeOfExpr* expr) override {
         expr->type = resolve(expr->type);
         if (expr->type->partition() == TypePartition::INCOMPLETE) {
             message(Severity::ERROR, expr->location) << "sizeof applied to incomplete type\n";
             pause_messages();
-            return Visitor::visit(expr, input);
+            return Visitor::visit(expr);
         }
 
-        return Visitor::visit(expr, input);
+        return Visitor::visit(expr);
     }
 
     bool is_trivially_cyclic(Declarator* primary, const Type* type) {
@@ -706,7 +706,7 @@ struct ResolvePass: Visitor, TypeVisitor {
     }
 
     void resolve(Expr*& expr) {
-        expr = accept(expr, VisitExpressionInput()).expr;
+        expr = accept(expr).expr;
     }
 
     void resolve(LocationNode* node) {
@@ -720,9 +720,9 @@ struct ResolvePass: Visitor, TypeVisitor {
         } else if (auto declarator = dynamic_cast<Declarator*>(node)) {
             resolve(declarator);         
         } else if (auto statement = dynamic_cast<Statement*>(node)) {
-            accept(statement, VisitStatementInput());
+            accept(statement);
         } else if (auto expr = dynamic_cast<Expr*>(node)) {
-            accept(expr, VisitExpressionInput());
+            accept(expr);
         } else {
             assert(false);
         }

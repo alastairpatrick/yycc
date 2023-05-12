@@ -52,7 +52,7 @@ struct EntityPass: Visitor {
         pass.llvm_module = llvm_module;
         pass.prefix = prefixed_name + '.';
 
-        pass.accept(entity->body, VisitStatementInput());
+        pass.accept(entity->body);
 
         return VisitDeclaratorOutput();
     }

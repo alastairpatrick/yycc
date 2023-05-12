@@ -11,8 +11,8 @@ AddressExpr::AddressExpr(Expr* expr, const Location& location)
     : Expr(location), expr(expr) {
 }
 
-VisitExpressionOutput AddressExpr::accept(Visitor& visitor, const VisitExpressionInput& input) {
-    return visitor.visit(this, input);
+VisitExpressionOutput AddressExpr::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void AddressExpr::print(ostream& stream) const {
@@ -70,8 +70,8 @@ string BinaryExpr::message_kind() const {
     }
 }
 
-VisitExpressionOutput BinaryExpr::accept(Visitor& visitor, const VisitExpressionInput& input) {
-    return visitor.visit(this, input);
+VisitExpressionOutput BinaryExpr::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void BinaryExpr::print(ostream& stream) const {
@@ -83,8 +83,8 @@ CallExpr::CallExpr(Expr* function, vector<Expr*>&& parameters, const Location& l
     : Expr(location), function(function), parameters(move(parameters)) {
 }
 
-VisitExpressionOutput CallExpr::accept(Visitor& visitor, const VisitExpressionInput& input) {
-    return visitor.visit(this, input);
+VisitExpressionOutput CallExpr::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void CallExpr::print(ostream& stream) const {
@@ -104,8 +104,8 @@ CastExpr::CastExpr(const Type* type, Expr* expr, const Location& location)
     assert(expr);
 }
 
-VisitExpressionOutput CastExpr::accept(Visitor& visitor, const VisitExpressionInput& input) {
-    return visitor.visit(this, input);
+VisitExpressionOutput CastExpr::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void CastExpr::print(ostream& stream) const {
@@ -120,8 +120,8 @@ ConditionExpr::ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, 
     assert(this->else_expr);
 }
 
-VisitExpressionOutput ConditionExpr::accept(Visitor& visitor, const VisitExpressionInput& input) {
-    return visitor.visit(this, input);
+VisitExpressionOutput ConditionExpr::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void ConditionExpr::print(ostream& stream) const {
@@ -133,8 +133,8 @@ DereferenceExpr::DereferenceExpr(Expr* expr, const Location& location)
     : Expr(location), expr(expr) {
 }
 
-VisitExpressionOutput DereferenceExpr::accept(Visitor& visitor, const VisitExpressionInput& input) {
-    return visitor.visit(this, input);
+VisitExpressionOutput DereferenceExpr::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void DereferenceExpr::print(ostream& stream) const {
@@ -146,8 +146,8 @@ EntityExpr::EntityExpr(Scope* scope, const Identifier& identifier, const Locatio
     : Expr(location), scope(scope), identifier(identifier) {
 }
 
-VisitExpressionOutput EntityExpr::accept(Visitor& visitor, const VisitExpressionInput& input) {
-    return visitor.visit(this, input);
+VisitExpressionOutput EntityExpr::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void EntityExpr::print(ostream& stream) const {
@@ -159,8 +159,8 @@ IncDecExpr::IncDecExpr(TokenKind op, Expr* expr, bool postfix, const Location& l
     : Expr(location), op(op), expr(expr), postfix(postfix) {
 }
 
-VisitExpressionOutput IncDecExpr::accept(Visitor& visitor, const VisitExpressionInput& input) {
-    return visitor.visit(this, input);
+VisitExpressionOutput IncDecExpr::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void IncDecExpr::print(ostream& stream) const {
@@ -186,8 +186,8 @@ void IncDecExpr::print(ostream& stream) const {
 InitializerExpr::InitializerExpr(const Location& location): Expr(location) {
 }
 
-VisitExpressionOutput InitializerExpr::accept(Visitor& visitor, const VisitExpressionInput& input) {
-    return visitor.visit(this, input);
+VisitExpressionOutput InitializerExpr::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void InitializerExpr::print(ostream& stream) const {
@@ -209,8 +209,8 @@ MemberExpr::MemberExpr(TokenKind op, const Type* type, const Identifier& identif
     : Expr(location), op(op), type(type), identifier(identifier) {
 }
 
-VisitExpressionOutput MemberExpr::accept(Visitor& visitor, const VisitExpressionInput& input) {
-    return visitor.visit(this, input);
+VisitExpressionOutput MemberExpr::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void MemberExpr::print(ostream& stream) const {
@@ -238,8 +238,8 @@ SizeOfExpr::SizeOfExpr(const Type* type, const Location& location)
     : Expr(location), type(type) {
 }
 
-VisitExpressionOutput SizeOfExpr::accept(Visitor& visitor, const VisitExpressionInput& input) {
-    return visitor.visit(this, input);
+VisitExpressionOutput SizeOfExpr::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void SizeOfExpr::print(ostream& stream) const {
@@ -251,8 +251,8 @@ SubscriptExpr::SubscriptExpr(Expr* left, Expr* right, const Location& location)
     : Expr(location), left(left), right(right) {
 }
 
-VisitExpressionOutput SubscriptExpr::accept(Visitor& visitor, const VisitExpressionInput& input) {
-    return visitor.visit(this, input);
+VisitExpressionOutput SubscriptExpr::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void SubscriptExpr::print(ostream& stream) const {
@@ -262,8 +262,8 @@ void SubscriptExpr::print(ostream& stream) const {
 UninitializedExpr::UninitializedExpr(const Location& location): Expr(location) {
 }
 
-VisitExpressionOutput UninitializedExpr::accept(Visitor& visitor, const VisitExpressionInput& input) {
-    return visitor.visit(this, input);
+VisitExpressionOutput UninitializedExpr::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void UninitializedExpr::print(ostream& stream) const {

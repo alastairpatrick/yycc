@@ -27,8 +27,8 @@ CompoundStatement::CompoundStatement(ASTNodeVector&& nodes, const Location& loca
     : Statement(location), nodes(move(nodes)) {
 }
 
-VisitStatementOutput CompoundStatement::accept(Visitor& visitor, const VisitStatementInput& input) {
-    return visitor.visit(this, input);
+VisitStatementOutput CompoundStatement::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void CompoundStatement::print(ostream& stream) const {
@@ -43,8 +43,8 @@ ExprStatement::ExprStatement(Expr* expr)
     : Statement(expr->location), expr(expr) {
 }
 
-VisitStatementOutput ExprStatement::accept(Visitor& visitor, const VisitStatementInput& input) {
-    return visitor.visit(this, input);
+VisitStatementOutput ExprStatement::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void ExprStatement::print(ostream& stream) const {
@@ -57,8 +57,8 @@ ForStatement::ForStatement(Declaration* declaration,  Expr* initialize, Expr* co
     : Statement(location), declaration(declaration), initialize(initialize), condition(condition), iterate(iterate), body(body) {
 }
 
-VisitStatementOutput ForStatement::accept(Visitor& visitor, const VisitStatementInput& input) {
-    return visitor.visit(this, input);
+VisitStatementOutput ForStatement::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void ForStatement::print(ostream& stream) const {
@@ -72,8 +72,8 @@ GoToStatement::GoToStatement(TokenKind kind, const Identifier& identifier, const
     : Statement(location), kind(kind), identifier(identifier) {
 }
 
-VisitStatementOutput GoToStatement::accept(Visitor& visitor, const VisitStatementInput& input) {
-    return visitor.visit(this, input);
+VisitStatementOutput GoToStatement::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void GoToStatement::print(ostream& stream) const {
@@ -100,8 +100,8 @@ IfElseStatement::IfElseStatement(Expr* condition, Statement* then_statement, Sta
     : Statement(location), condition(condition), then_statement(then_statement), else_statement(else_statement) {
 }
 
-VisitStatementOutput IfElseStatement::accept(Visitor& visitor, const VisitStatementInput& input) {
-    return visitor.visit(this, input);
+VisitStatementOutput IfElseStatement::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void IfElseStatement::print(ostream& stream) const {
@@ -115,8 +115,8 @@ ReturnStatement::ReturnStatement(Expr* expr, const Location& location)
     : Statement(location), expr(expr) {
 }
 
-VisitStatementOutput ReturnStatement::accept(Visitor& visitor, const VisitStatementInput& input) {
-    return visitor.visit(this, input);
+VisitStatementOutput ReturnStatement::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void ReturnStatement::print(ostream& stream) const {
@@ -135,8 +135,8 @@ SwitchStatement::SwitchStatement(Expr* expr, CompoundStatement* body, const Loca
     : Statement(location), expr(expr), body(body) {
 }
 
-VisitStatementOutput SwitchStatement::accept(Visitor& visitor, const VisitStatementInput& input) {
-    return visitor.visit(this, input);
+VisitStatementOutput SwitchStatement::accept(Visitor& visitor) {
+    return visitor.visit(this);
 }
 
 void SwitchStatement::print(ostream& stream) const {

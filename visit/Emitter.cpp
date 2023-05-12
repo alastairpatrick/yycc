@@ -134,7 +134,7 @@ struct Emitter: Visitor {
 
     VisitExpressionOutput emit(Expr* expr) {
         try {
-            return accept(expr, VisitExpressionInput());
+            return accept(expr);
         } catch (FoldError& e) {
             if (!e.error_reported) {
                 message(Severity::ERROR, expr->location) << "not a constant expression\n";
@@ -144,7 +144,7 @@ struct Emitter: Visitor {
     }
 
     VisitStatementOutput emit(Statement* statement) {
-        return accept(statement, VisitStatementInput());
+        return accept(statement);
     }
 
     virtual void pre_visit(Statement* statement) override {
@@ -434,7 +434,7 @@ struct Emitter: Visitor {
         return VisitDeclaratorOutput();
     }
 
-    VisitStatementOutput visit(ForStatement* statement, const VisitStatementInput& input) {
+    VisitStatementOutput visit(ForStatement* statement) {
         Construct construct(this);
 
         if (statement->declaration) {
@@ -473,7 +473,7 @@ struct Emitter: Visitor {
         return VisitStatementOutput();
     }
 
-    VisitStatementOutput visit(GoToStatement* statement, const VisitStatementInput& input) {
+    VisitStatementOutput visit(GoToStatement* statement) {
         
         LLVMBasicBlockRef target_block{};
         switch (statement->kind) {
@@ -494,7 +494,7 @@ struct Emitter: Visitor {
         return VisitStatementOutput();
     }
 
-    VisitStatementOutput visit(IfElseStatement* statement, const VisitStatementInput& input) {
+    VisitStatementOutput visit(IfElseStatement* statement) {
         auto then_block = append_block("if_c");
         LLVMBasicBlockRef else_block;
         if (statement->else_statement) else_block = append_block("if_a");
@@ -519,7 +519,7 @@ struct Emitter: Visitor {
         return VisitStatementOutput();
     }
 
-    virtual VisitStatementOutput visit(ReturnStatement* statement, const VisitStatementInput& input) override {
+    virtual VisitStatementOutput visit(ReturnStatement* statement) override {
         if (function_type->return_type->unqualified() == &VoidType::it) {
             if (statement->expr) {
                 auto type = get_expr_type(statement->expr);
@@ -546,7 +546,7 @@ struct Emitter: Visitor {
         return VisitStatementOutput();
     }
 
-    virtual VisitStatementOutput visit(SwitchStatement* statement, const VisitStatementInput& input) override {
+    virtual VisitStatementOutput visit(SwitchStatement* statement) override {
         SwitchConstruct construct(this);
 
         construct.break_block = append_block("");
@@ -583,7 +583,7 @@ struct Emitter: Visitor {
         return VisitStatementOutput();
     }
 
-    virtual VisitExpressionOutput visit(AddressExpr* expr, const VisitExpressionInput& input) override {
+    virtual VisitExpressionOutput visit(AddressExpr* expr) override {
         auto value = emit(expr->expr).value;
         auto result_type = value.type->pointer_to();
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
@@ -904,7 +904,7 @@ struct Emitter: Visitor {
         return value;
     }
 
-    virtual VisitExpressionOutput visit(BinaryExpr* expr, const VisitExpressionInput& input) override {
+    virtual VisitExpressionOutput visit(BinaryExpr* expr) override {
         auto op = expr->op;
         Value intermediate;
         Value left_value = emit(expr->left).value.unqualified();
@@ -944,14 +944,14 @@ struct Emitter: Visitor {
         return VisitExpressionOutput(intermediate);
     }
 
-    virtual VisitExpressionOutput visit(CastExpr* expr, const VisitExpressionInput& input) override {
+    virtual VisitExpressionOutput visit(CastExpr* expr) override {
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(expr->type);
 
         auto value = convert_to_type(expr->expr, expr->type, ConvKind::EXPLICIT);
         return VisitExpressionOutput(value);
     }
 
-    virtual VisitExpressionOutput visit(ConditionExpr* expr, const VisitExpressionInput& input) override {
+    virtual VisitExpressionOutput visit(ConditionExpr* expr) override {
         auto then_type = get_expr_type(expr->then_expr)->unqualified();
         auto else_type = get_expr_type(expr->else_expr)->unqualified();
 
@@ -999,7 +999,7 @@ struct Emitter: Visitor {
         return VisitExpressionOutput(result);
     }
 
-    virtual VisitExpressionOutput visit(DereferenceExpr* expr, const VisitExpressionInput& input) override {
+    virtual VisitExpressionOutput visit(DereferenceExpr* expr) override {
 
         auto value = emit(expr->expr).value.unqualified();
         auto pointer_type = type_cast<PointerType>(value.type);
@@ -1009,7 +1009,7 @@ struct Emitter: Visitor {
         return VisitExpressionOutput(Value(ValueKind::LVALUE, result_type, get_rvalue(value)));
     }
 
-    virtual VisitExpressionOutput visit(EntityExpr* expr, const VisitExpressionInput& input) override {
+    virtual VisitExpressionOutput visit(EntityExpr* expr) override {
         auto declarator = expr->declarator->primary;
         auto result_type = declarator->type;
 
@@ -1067,7 +1067,7 @@ struct Emitter: Visitor {
         return VisitExpressionOutput(Value::of_recover(declarator->type));
     }
 
-    virtual VisitExpressionOutput visit(IncDecExpr* expr, const VisitExpressionInput& input) override {
+    virtual VisitExpressionOutput visit(IncDecExpr* expr) override {
         auto lvalue = emit(expr->expr).value.unqualified();
         auto before_value = Value(lvalue.type, get_rvalue(lvalue));
 
@@ -1098,7 +1098,7 @@ struct Emitter: Visitor {
         return object;
     }
 
-    virtual VisitExpressionOutput visit(MemberExpr* expr, const VisitExpressionInput& input) override {
+    virtual VisitExpressionOutput visit(MemberExpr* expr) override {
         if (!expr->member) return VisitExpressionOutput(Value::of_zero_int());
 
         auto object_type = get_expr_type(expr->object)->unqualified();
@@ -1135,7 +1135,7 @@ struct Emitter: Visitor {
         return VisitExpressionOutput(Value::of_zero_int());
     }
     
-    virtual VisitExpressionOutput visit(CallExpr* expr, const VisitExpressionInput& input) override {
+    virtual VisitExpressionOutput visit(CallExpr* expr) override {
         if (outcome == EmitOutcome::FOLD) {
             message(Severity::ERROR, expr->location) << "cannot call function in constant expression\n";
             throw FoldError(true);
@@ -1204,7 +1204,7 @@ struct Emitter: Visitor {
         return VisitExpressionOutput();
     }
 
-    virtual VisitExpressionOutput visit(SizeOfExpr* expr, const VisitExpressionInput& input) override {
+    virtual VisitExpressionOutput visit(SizeOfExpr* expr) override {
         auto zero = TranslationUnitContext::it->zero_size;
         auto llvm_target_data = TranslationUnitContext::it->llvm_target_data;
 
@@ -1219,7 +1219,7 @@ struct Emitter: Visitor {
         return VisitExpressionOutput(result_type, size_const_int(LLVMStoreSizeOfType(llvm_target_data, expr->type->llvm_type())));
     }
 
-    virtual VisitExpressionOutput visit(SubscriptExpr* expr, const VisitExpressionInput& input) override {
+    virtual VisitExpressionOutput visit(SubscriptExpr* expr) override {
         auto zero = TranslationUnitContext::it->zero_size;
 
         auto left_value = emit(expr->left).value.unqualified();
@@ -1254,15 +1254,15 @@ struct Emitter: Visitor {
         return VisitExpressionOutput();
     }
 
-    virtual VisitExpressionOutput visit(IntegerConstant* constant, const VisitExpressionInput& input) override {
+    virtual VisitExpressionOutput visit(IntegerConstant* constant) override {
         return VisitExpressionOutput(constant->value);
     }
 
-    virtual VisitExpressionOutput visit(FloatingPointConstant* constant, const VisitExpressionInput& input) override {
+    virtual VisitExpressionOutput visit(FloatingPointConstant* constant) override {
         return VisitExpressionOutput(constant->value);
     }
 
-    virtual VisitExpressionOutput visit(StringConstant* constant, const VisitExpressionInput& input) override {
+    virtual VisitExpressionOutput visit(StringConstant* constant) override {
         auto result_type = ResolvedArrayType::of(ArrayKind::COMPLETE,
                                                  QualifiedType::of(constant->character_type, QUALIFIER_CONST),
                                                  constant->value.length + 1);

@@ -22,9 +22,7 @@ struct Variable;
 struct Visitor;
 struct VisitDeclaratorInput;
 struct VisitDeclaratorOutput;
-struct VisitExpressionInput;
 struct VisitExpressionOutput;
-struct VisitStatementInput;
 struct VisitStatementOutput;
 
 struct ASTNode {
@@ -99,13 +97,13 @@ struct Statement: LocationNode {
     vector<Label> labels;
 
     explicit Statement(const Location& location);
-    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) = 0;
+    virtual VisitStatementOutput accept(Visitor& visitor) = 0;
     virtual void print(ostream& stream) const override;
 };
 
 struct Expr: LocationNode {
     explicit Expr(const Location& location);
-    virtual VisitExpressionOutput accept(Visitor& visitor, const VisitExpressionInput& input) = 0;
+    virtual VisitExpressionOutput accept(Visitor& visitor) = 0;
 };
 
 
