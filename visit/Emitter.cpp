@@ -783,6 +783,7 @@ struct Emitter: Visitor {
         auto result_type = value.type->pointer_to();
         if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
 
+        // todo: error if not an lvalue
         return VisitStatementOutput(result_type, value.get_lvalue());
     }
 
@@ -1445,7 +1446,6 @@ struct Emitter: Visitor {
                 LLVMBuildGEP2(builder, array_type->llvm_type(), left_value.get_lvalue(), indices, 2, "")));
         }
 
-        assert(false);
         return VisitStatementOutput();
     }
 
