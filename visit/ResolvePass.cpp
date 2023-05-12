@@ -9,7 +9,7 @@
 #include "Visitor.h"
 #include "TypeVisitor.h"
 
-struct ResolvePass: Visitor, TypeVisitor {
+struct ResolvePass: DepthFirstVisitor, TypeVisitor {
     ResolvedModule result;
     unordered_set<const TagType*> tag_types;
     unordered_map<const Type*, const Type*> resolved_types;
@@ -492,7 +492,7 @@ struct ResolvePass: Visitor, TypeVisitor {
 
     virtual VisitExpressionOutput visit(CastExpr* expr) override {
         expr->type = resolve(expr->type);
-        return Visitor::visit(expr);
+        return Base::visit(expr);
     }
 
 
@@ -504,12 +504,12 @@ struct ResolvePass: Visitor, TypeVisitor {
                 stream << "(aka '" << *expr->identifier.usage_at_file_scope << "') ";
             }
             stream << "undeclared\n";
-            return Visitor::visit(IntegerConstant::default_expr(expr->location));
+            return Base::visit(IntegerConstant::default_expr(expr->location));
         }
 
         resolve(expr->declarator);
         expr->declarator = expr->declarator->primary;
-        return Visitor::visit(expr);
+        return Base::visit(expr);
     }
 
     // If the LHS of a MemberExpr is a type, return that resolved type, else null.
@@ -539,7 +539,7 @@ struct ResolvePass: Visitor, TypeVisitor {
     }
 
     virtual VisitExpressionOutput visit(MemberExpr* member_expr) override {
-        auto result = Visitor::visit(member_expr);
+        auto result = Base::visit(member_expr);
 
         auto enclosing_type = wrangle_member_expr_enclosing_type(member_expr);
         if (enclosing_type) {
@@ -589,10 +589,10 @@ struct ResolvePass: Visitor, TypeVisitor {
         if (expr->type->partition() == TypePartition::INCOMPLETE) {
             message(Severity::ERROR, expr->location) << "sizeof applied to incomplete type\n";
             pause_messages();
-            return Visitor::visit(expr);
+            return Base::visit(expr);
         }
 
-        return Visitor::visit(expr);
+        return Base::visit(expr);
     }
 
     bool is_trivially_cyclic(Declarator* primary, const Type* type) {

@@ -434,6 +434,27 @@ struct Emitter: Visitor {
         return VisitDeclaratorOutput();
     }
 
+    VisitStatementOutput visit(CompoundStatement* statement) {
+        for (auto node: statement->nodes) {
+            if (auto declaration = dynamic_cast<Declaration*>(node)) {
+                for (auto declarator: declaration->declarators) {
+                    emit(declarator);
+                }
+            }
+
+            if (auto statement = dynamic_cast<Statement*>(node)) {
+                emit(statement);
+            }
+        }
+
+        return VisitStatementOutput();
+    }
+
+    VisitStatementOutput visit(ExprStatement* statement) {
+        emit(statement->expr);
+        return VisitStatementOutput();
+    }
+
     VisitStatementOutput visit(ForStatement* statement) {
         Construct construct(this);
 

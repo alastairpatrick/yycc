@@ -3,7 +3,7 @@
 #include "Visitor.h"
 
 // This pass creates LLVM globals for all variables with static duration and LLVM functions, including those nested within functions.
-struct EntityPass: Visitor {
+struct EntityPass: DepthFirstVisitor {
     string prefix;
     LLVMModuleRef llvm_module{};
 
