@@ -69,6 +69,7 @@ VisitStatementOutput Visitor::visit(SwitchStatement* statement) {
 
 /* Expressions */
 
+[[nodiscard]]
 VisitExpressionOutput Visitor::accept(Expr* expr) {
     if (!expr) return VisitExpressionOutput();
     return expr->accept(*this);
@@ -186,15 +187,15 @@ VisitStatementOutput DepthFirstVisitor::visit(CompoundStatement* statement) {
 }
 
 VisitStatementOutput DepthFirstVisitor::visit(ExprStatement* statement) {
-    accept(statement->expr).expr;
+    statement->expr = accept(statement->expr).expr;
     return VisitStatementOutput();
 }
 
 VisitStatementOutput DepthFirstVisitor::visit(ForStatement* statement) {
     visit_declaration(this, statement->declaration);
-    accept(statement->initialize).expr;
-    accept(statement->condition).expr;
-    accept(statement->iterate).expr;
+    statement->initialize = accept(statement->initialize).expr;
+    statement->condition = accept(statement->condition).expr;
+    statement->iterate = accept(statement->iterate).expr;
     accept(statement->body);
 
     return VisitStatementOutput();
@@ -205,23 +206,23 @@ VisitStatementOutput DepthFirstVisitor::visit(GoToStatement* statement) {
 }
 
 VisitStatementOutput DepthFirstVisitor::visit(IfElseStatement* statement) {
-    accept(statement->condition).expr;
+    statement->condition = accept(statement->condition).expr;
     accept(statement->then_statement);
     accept(statement->else_statement);
     return VisitStatementOutput();
 }
 
 VisitStatementOutput DepthFirstVisitor::visit(ReturnStatement* statement) {
-    accept(statement->expr).expr;
+    statement->expr = accept(statement->expr).expr;
     return VisitStatementOutput();
 }
 
 VisitStatementOutput DepthFirstVisitor::visit(SwitchStatement* statement) {
-    accept(statement->expr).expr;
+    statement->expr = accept(statement->expr).expr;
     accept(statement->body);
     
-    for (auto case_expr: statement->cases) {
-        accept(case_expr).expr;
+    for (auto& case_expr: statement->cases) {
+        case_expr = accept(case_expr).expr;
     }
 
     return VisitStatementOutput();
@@ -242,8 +243,8 @@ VisitExpressionOutput DepthFirstVisitor::visit(BinaryExpr* expr) {
 
 VisitExpressionOutput DepthFirstVisitor::visit(CallExpr* expr) {
     expr->function = accept(expr->function).expr;
-    for (auto parameter: expr->parameters) {
-        accept(parameter);
+    for (auto& parameter: expr->parameters) {
+        parameter = accept(parameter).expr;
     }
     return VisitExpressionOutput(expr);
 }

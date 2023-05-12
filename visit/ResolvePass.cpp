@@ -562,7 +562,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
 
         if (auto tagged_type = dynamic_cast<const TagType*>(enclosing_type)) {
             auto member = lookup_member(enclosing_type, member_expr->identifier, member_expr->location);
-            if (!member) return VisitExpressionOutput(Value::of_zero_int());
+            if (!member) return VisitExpressionOutput(IntegerConstant::default_expr(member_expr->location));
 
             if (dereferenced) {
                 if (member_expr->op == '.') {
