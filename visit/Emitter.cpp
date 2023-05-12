@@ -5,6 +5,7 @@
 #include "parse/AssocPrec.h"
 #include "parse/Declaration.h"
 #include "TranslationUnitContext.h"
+#include "TypeVisitor.h"
 #include "Visitor.h"
 
 struct Emitter;
@@ -53,7 +54,7 @@ struct SwitchConstruct: Construct {
     ~SwitchConstruct();
 };
 
-struct Emitter: Visitor {
+struct Emitter: Visitor, TypeVisitor {
     EmitOutcome outcome;
     const EmitOptions& options;
 

@@ -8,8 +8,8 @@
 #include "InternedString.h"
 #include "Message.h"
 #include "TranslationUnitContext.h"
-#include "visit/Visitor.h"
 #include "visit/Emitter.h"
+#include "visit/TypeVisitor.h"
 
 // Type codes
 // A array
@@ -75,7 +75,7 @@ TypePartition VoidType::partition() const {
     return TypePartition::INCOMPLETE;
 }
 
-VisitTypeOutput VoidType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+VisitTypeOutput VoidType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
 
@@ -176,7 +176,7 @@ unsigned long long IntegerType::max() const {
     return result;
 }
 
-VisitTypeOutput IntegerType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+VisitTypeOutput IntegerType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
 
@@ -279,7 +279,7 @@ const FloatingPointType* FloatingPointType::of(FloatingPointSize size) {
     return &types[int(size)];
 }
 
-VisitTypeOutput FloatingPointType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+VisitTypeOutput FloatingPointType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
 
@@ -324,7 +324,7 @@ void FloatingPointType::print(ostream& stream) const {
 
 
 
-VisitTypeOutput PointerType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+VisitTypeOutput PointerType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
 
@@ -365,7 +365,7 @@ const PassByReferenceType* PassByReferenceType::of(const Type* base_type) {
     return type_context.get_pass_by_reference_type(base_type);
 }
 
-VisitTypeOutput PassByReferenceType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+VisitTypeOutput PassByReferenceType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
 
@@ -414,7 +414,7 @@ TypePartition QualifiedType::partition() const {
     return base_type->partition();
 }
 
-VisitTypeOutput QualifiedType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+VisitTypeOutput QualifiedType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
 
@@ -459,7 +459,7 @@ const Type* UnqualifiedType::unqualified() const {
     return this;
 }
 
-VisitTypeOutput UnqualifiedType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+VisitTypeOutput UnqualifiedType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
 
@@ -482,7 +482,7 @@ TypePartition FunctionType::partition() const {
     return TypePartition::FUNCTION;
 }
 
-VisitTypeOutput FunctionType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+VisitTypeOutput FunctionType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
 
@@ -748,7 +748,7 @@ StructType::StructType(const Location& location)
     : StructuredType(location) {
 }
 
-VisitTypeOutput StructType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+VisitTypeOutput StructType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
 
@@ -769,7 +769,7 @@ UnionType::UnionType(const Location& location)
     : StructuredType(location) {
 }
 
-VisitTypeOutput UnionType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+VisitTypeOutput UnionType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
 
@@ -798,7 +798,7 @@ bool EnumType::has_tag(const Declarator* declarator) const {
     return tag;
 }
 
-VisitTypeOutput EnumType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+VisitTypeOutput EnumType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
 
@@ -846,7 +846,7 @@ TypePartition TypeOfType::partition() const {
     return TypePartition::INCOMPLETE;
 }
 
-VisitTypeOutput TypeOfType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+VisitTypeOutput TypeOfType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
 
@@ -864,7 +864,7 @@ const UnboundType* UnboundType::of(const Identifier& identifier) {
     return TranslationUnitContext::it->type.get_unbound_type(identifier);
 }
 
-VisitTypeOutput UnboundType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+VisitTypeOutput UnboundType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
 
@@ -893,7 +893,7 @@ const Type* TypeDefType::unqualified() const {
     return this;
 }
 
-VisitTypeOutput TypeDefType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+VisitTypeOutput TypeDefType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
 
@@ -915,7 +915,7 @@ NestedType::NestedType(const Type* enclosing_type, const Identifier& identifier,
     : enclosing_type(enclosing_type), identifier(identifier), location(location) {
 }
 
-VisitTypeOutput NestedType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+VisitTypeOutput NestedType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
 

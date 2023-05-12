@@ -3,7 +3,7 @@
 #include "Expr.h"
 #include "Message.h"
 #include "TranslationUnitContext.h"
-#include "visit/Visitor.h"
+#include "visit/TypeVisitor.h"
 
 ArrayType::ArrayType(const Type* element_type): element_type(element_type) {
 }
@@ -17,7 +17,7 @@ TypePartition UnresolvedArrayType::partition() const {
     return TypePartition::INCOMPLETE;
 }
 
-VisitTypeOutput UnresolvedArrayType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+VisitTypeOutput UnresolvedArrayType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
 
@@ -54,7 +54,7 @@ TypePartition ResolvedArrayType::partition() const {
     return kind == ArrayKind::INCOMPLETE ? TypePartition::INCOMPLETE : TypePartition::OBJECT;
 }
 
-VisitTypeOutput ResolvedArrayType::accept(Visitor& visitor, const VisitTypeInput& input) const {
+VisitTypeOutput ResolvedArrayType::accept(TypeVisitor& visitor, const VisitTypeInput& input) const {
     return visitor.visit(this, input);
 }
 

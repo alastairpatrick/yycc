@@ -7,8 +7,9 @@
 #include "parse/IdentifierMap.h"
 #include "parse/Type.h"
 #include "Visitor.h"
+#include "TypeVisitor.h"
 
-struct ResolvePass: Visitor {
+struct ResolvePass: Visitor, TypeVisitor {
     ResolvedModule result;
     unordered_set<const TagType*> tag_types;
     unordered_map<const Type*, const Type*> resolved_types;
