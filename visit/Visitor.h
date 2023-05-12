@@ -43,12 +43,23 @@ struct VisitStatementInput {
 
 struct VisitStatementOutput {
     Value value;
-    Expr* expr{};
 
     VisitStatementOutput() = default;
     explicit VisitStatementOutput(Value value): value(value) {}
     explicit VisitStatementOutput(const Type* type, LLVMValueRef value = nullptr): value(type, value) {}
-    explicit VisitStatementOutput(Expr* expr): expr(expr) {}
+};
+
+struct VisitExpressionInput {
+};
+
+struct VisitExpressionOutput {
+    Value value;
+    Expr* expr{};
+
+    VisitExpressionOutput() = default;
+    explicit VisitExpressionOutput(Expr* expr): expr(expr) {}
+    explicit VisitExpressionOutput(Value value): value(value) {}
+    explicit VisitExpressionOutput(const Type* type, LLVMValueRef value = nullptr): value(type, value) {}
 };
 
 struct Visitor {
@@ -82,29 +93,32 @@ struct Visitor {
     virtual void pre_visit(Statement* statement);
 
     virtual VisitStatementOutput visit(CompoundStatement* statement, const VisitStatementInput& input);
+    virtual VisitStatementOutput visit(ExprStatement* statement, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(ForStatement* statement, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(GoToStatement* statement, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(IfElseStatement* statement, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(ReturnStatement* statement, const VisitStatementInput& input);
     virtual VisitStatementOutput visit(SwitchStatement* statement, const VisitStatementInput& input);
 
-    virtual VisitStatementOutput visit(AddressExpr* expr, const VisitStatementInput& input);
-    virtual VisitStatementOutput visit(BinaryExpr* expr, const VisitStatementInput& input);
-    virtual VisitStatementOutput visit(CallExpr* expr, const VisitStatementInput& input);
-    virtual VisitStatementOutput visit(CastExpr* expr, const VisitStatementInput& input);
-    virtual VisitStatementOutput visit(ConditionExpr* expr, const VisitStatementInput& input);
-    virtual VisitStatementOutput visit(DereferenceExpr* expr, const VisitStatementInput& input);
-    virtual VisitStatementOutput visit(EntityExpr* expr, const VisitStatementInput& input);
-    virtual VisitStatementOutput visit(IncDecExpr* expr, const VisitStatementInput& input);
-    virtual VisitStatementOutput visit(InitializerExpr* expr, const VisitStatementInput& input);
-    virtual VisitStatementOutput visit(MemberExpr* expr, const VisitStatementInput& input);
-    virtual VisitStatementOutput visit(SizeOfExpr* expr, const VisitStatementInput& input);
-    virtual VisitStatementOutput visit(SubscriptExpr* expr, const VisitStatementInput& input);
-    virtual VisitStatementOutput visit(UninitializedExpr* expr, const VisitStatementInput& input);
+    VisitExpressionOutput accept(Expr* expr, const VisitExpressionInput& input);
 
-    virtual VisitStatementOutput visit(IntegerConstant* constant, const VisitStatementInput& input);
-    virtual VisitStatementOutput visit(FloatingPointConstant* constant, const VisitStatementInput& input);
-    virtual VisitStatementOutput visit(StringConstant* constant, const VisitStatementInput& input);
+    virtual VisitExpressionOutput visit(AddressExpr* expr, const VisitExpressionInput& input);
+    virtual VisitExpressionOutput visit(BinaryExpr* expr, const VisitExpressionInput& input);
+    virtual VisitExpressionOutput visit(CallExpr* expr, const VisitExpressionInput& input);
+    virtual VisitExpressionOutput visit(CastExpr* expr, const VisitExpressionInput& input);
+    virtual VisitExpressionOutput visit(ConditionExpr* expr, const VisitExpressionInput& input);
+    virtual VisitExpressionOutput visit(DereferenceExpr* expr, const VisitExpressionInput& input);
+    virtual VisitExpressionOutput visit(EntityExpr* expr, const VisitExpressionInput& input);
+    virtual VisitExpressionOutput visit(IncDecExpr* expr, const VisitExpressionInput& input);
+    virtual VisitExpressionOutput visit(InitializerExpr* expr, const VisitExpressionInput& input);
+    virtual VisitExpressionOutput visit(MemberExpr* expr, const VisitExpressionInput& input);
+    virtual VisitExpressionOutput visit(SizeOfExpr* expr, const VisitExpressionInput& input);
+    virtual VisitExpressionOutput visit(SubscriptExpr* expr, const VisitExpressionInput& input);
+    virtual VisitExpressionOutput visit(UninitializedExpr* expr, const VisitExpressionInput& input);
+
+    virtual VisitExpressionOutput visit(IntegerConstant* constant, const VisitExpressionInput& input);
+    virtual VisitExpressionOutput visit(FloatingPointConstant* constant, const VisitExpressionInput& input);
+    virtual VisitExpressionOutput visit(StringConstant* constant, const VisitExpressionInput& input);
 
 };
 

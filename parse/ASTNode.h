@@ -22,6 +22,8 @@ struct Variable;
 struct Visitor;
 struct VisitDeclaratorInput;
 struct VisitDeclaratorOutput;
+struct VisitExpressionInput;
+struct VisitExpressionOutput;
 struct VisitStatementInput;
 struct VisitStatementOutput;
 
@@ -101,8 +103,9 @@ struct Statement: LocationNode {
     virtual void print(ostream& stream) const override;
 };
 
-struct Expr: Statement {
+struct Expr: LocationNode {
     explicit Expr(const Location& location);
+    virtual VisitExpressionOutput accept(Visitor& visitor, const VisitExpressionInput& input) = 0;
 };
 
 

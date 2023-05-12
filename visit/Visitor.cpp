@@ -131,11 +131,16 @@ VisitStatementOutput Visitor::visit(CompoundStatement* statement, const VisitSta
     return VisitStatementOutput();
 }
 
+VisitStatementOutput Visitor::visit(ExprStatement* statement, const VisitStatementInput& input) {
+    accept(statement->expr, VisitExpressionInput()).expr;
+    return VisitStatementOutput();
+}
+
 VisitStatementOutput Visitor::visit(ForStatement* statement, const VisitStatementInput& input) {
     visit_declaration(this, statement->declaration);
-    accept(statement->initialize, input);
-    accept(statement->condition, input);
-    accept(statement->iterate, input);
+    accept(statement->initialize, VisitExpressionInput()).expr;
+    accept(statement->condition, VisitExpressionInput()).expr;
+    accept(statement->iterate, VisitExpressionInput()).expr;
     accept(statement->body, input);
 
     return VisitStatementOutput();
@@ -146,23 +151,23 @@ VisitStatementOutput Visitor::visit(GoToStatement* statement, const VisitStateme
 }
 
 VisitStatementOutput Visitor::visit(IfElseStatement* statement, const VisitStatementInput& input) {
-    accept(statement->condition, input);
+    accept(statement->condition, VisitExpressionInput()).expr;
     accept(statement->then_statement, input);
     accept(statement->else_statement, input);
     return VisitStatementOutput();
 }
 
 VisitStatementOutput Visitor::visit(ReturnStatement* statement, const VisitStatementInput& input) {
-    accept(statement->expr, input);
+    accept(statement->expr, VisitExpressionInput()).expr;
     return VisitStatementOutput();
 }
 
 VisitStatementOutput Visitor::visit(SwitchStatement* statement, const VisitStatementInput& input) {
-    accept(statement->expr, input);
+    accept(statement->expr, VisitExpressionInput()).expr;
     accept(statement->body, input);
     
     for (auto case_expr: statement->cases) {
-        accept(case_expr, input);
+        accept(case_expr, VisitExpressionInput()).expr;
     }
 
     return VisitStatementOutput();
@@ -170,87 +175,92 @@ VisitStatementOutput Visitor::visit(SwitchStatement* statement, const VisitState
 
 /* Expressions */
 
-VisitStatementOutput Visitor::visit(AddressExpr* expr, const VisitStatementInput& input) {
-    expr->expr = accept(expr->expr, input).expr;
-    return VisitStatementOutput(expr);
+VisitExpressionOutput Visitor::accept(Expr* expr, const VisitExpressionInput& input) {
+    if (!expr) return VisitExpressionOutput();
+    return expr->accept(*this, VisitExpressionInput());
 }
 
-VisitStatementOutput Visitor::visit(BinaryExpr* expr, const VisitStatementInput& input) {
+VisitExpressionOutput Visitor::visit(AddressExpr* expr, const VisitExpressionInput& input) {
+    expr->expr = accept(expr->expr, input).expr;
+    return VisitExpressionOutput(expr);
+}
+
+VisitExpressionOutput Visitor::visit(BinaryExpr* expr, const VisitExpressionInput& input) {
     expr->left = accept(expr->left, input).expr;
     expr->right = accept(expr->right, input).expr;
-    return VisitStatementOutput(expr);
+    return VisitExpressionOutput(expr);
 }
 
-VisitStatementOutput Visitor::visit(CallExpr* expr, const VisitStatementInput& input) {
+VisitExpressionOutput Visitor::visit(CallExpr* expr, const VisitExpressionInput& input) {
     expr->function = accept(expr->function, input).expr;
     for (auto parameter: expr->parameters) {
         accept(parameter, input);
     }
-    return VisitStatementOutput(expr);
+    return VisitExpressionOutput(expr);
 }
 
-VisitStatementOutput Visitor::visit(CastExpr* expr, const VisitStatementInput& input) {
+VisitExpressionOutput Visitor::visit(CastExpr* expr, const VisitExpressionInput& input) {
     expr->expr = accept(expr->expr, input).expr;
-    return VisitStatementOutput(expr);
+    return VisitExpressionOutput(expr);
 }
 
-VisitStatementOutput Visitor::visit(ConditionExpr* expr, const VisitStatementInput& input) {
+VisitExpressionOutput Visitor::visit(ConditionExpr* expr, const VisitExpressionInput& input) {
     expr->condition = accept(expr->condition, input).expr;
     expr->then_expr = accept(expr->then_expr, input).expr;
     expr->else_expr = accept(expr->else_expr, input).expr;
-    return VisitStatementOutput(expr);
+    return VisitExpressionOutput(expr);
 }
 
-VisitStatementOutput Visitor::visit(DereferenceExpr* expr, const VisitStatementInput& input) {
+VisitExpressionOutput Visitor::visit(DereferenceExpr* expr, const VisitExpressionInput& input) {
     expr->expr = accept(expr->expr, input).expr;
-    return VisitStatementOutput(expr);
+    return VisitExpressionOutput(expr);
 }
 
-VisitStatementOutput Visitor::visit(EntityExpr* expr, const VisitStatementInput& input) {
-    return VisitStatementOutput(expr);
+VisitExpressionOutput Visitor::visit(EntityExpr* expr, const VisitExpressionInput& input) {
+    return VisitExpressionOutput(expr);
 }
 
-VisitStatementOutput Visitor::visit(IncDecExpr* expr, const VisitStatementInput& input) {
+VisitExpressionOutput Visitor::visit(IncDecExpr* expr, const VisitExpressionInput& input) {
     expr->expr = accept(expr->expr, input).expr;
-    return VisitStatementOutput(expr);
+    return VisitExpressionOutput(expr);
 }
 
-VisitStatementOutput Visitor::visit(InitializerExpr* expr, const VisitStatementInput& input) {
+VisitExpressionOutput Visitor::visit(InitializerExpr* expr, const VisitExpressionInput& input) {
     for (auto& element: expr->elements) {
         element = accept(element, input).expr;
     }
-    return VisitStatementOutput(expr);
+    return VisitExpressionOutput(expr);
 }
 
-VisitStatementOutput Visitor::visit(MemberExpr* expr, const VisitStatementInput& input) {
+VisitExpressionOutput Visitor::visit(MemberExpr* expr, const VisitExpressionInput& input) {
     expr->object = accept(expr->object, input).expr;
-    return VisitStatementOutput(expr);
+    return VisitExpressionOutput(expr);
 }
 
-VisitStatementOutput Visitor::visit(SizeOfExpr* expr, const VisitStatementInput& input) {
-    return VisitStatementOutput(expr);
+VisitExpressionOutput Visitor::visit(SizeOfExpr* expr, const VisitExpressionInput& input) {
+    return VisitExpressionOutput(expr);
 }
 
-VisitStatementOutput Visitor::visit(SubscriptExpr* expr, const VisitStatementInput& input) {
+VisitExpressionOutput Visitor::visit(SubscriptExpr* expr, const VisitExpressionInput& input) {
     expr->left = accept(expr->left, input).expr;
     expr->right = accept(expr->right, input).expr;
-    return VisitStatementOutput(expr);
+    return VisitExpressionOutput(expr);
 }
 
-VisitStatementOutput Visitor::visit(UninitializedExpr* expr, const VisitStatementInput& input) {
-    return VisitStatementOutput(expr);
+VisitExpressionOutput Visitor::visit(UninitializedExpr* expr, const VisitExpressionInput& input) {
+    return VisitExpressionOutput(expr);
 }
 
 /* Constants */
 
-VisitStatementOutput Visitor::visit(IntegerConstant* constant, const VisitStatementInput& input) {
-    return VisitStatementOutput(constant);
+VisitExpressionOutput Visitor::visit(IntegerConstant* constant, const VisitExpressionInput& input) {
+    return VisitExpressionOutput(constant);
 }
 
-VisitStatementOutput Visitor::visit(FloatingPointConstant* constant, const VisitStatementInput& input) {
-    return VisitStatementOutput(constant);
+VisitExpressionOutput Visitor::visit(FloatingPointConstant* constant, const VisitExpressionInput& input) {
+    return VisitExpressionOutput(constant);
 }
 
-VisitStatementOutput Visitor::visit(StringConstant* constant, const VisitStatementInput& input) {
-    return VisitStatementOutput(constant);
+VisitExpressionOutput Visitor::visit(StringConstant* constant, const VisitExpressionInput& input) {
+    return VisitExpressionOutput(constant);
 }

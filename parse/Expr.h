@@ -9,7 +9,7 @@ struct AddressExpr: Expr {
     Expr* expr{};
     
     AddressExpr(Expr* expr, const Location& location);
-    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual VisitExpressionOutput accept(Visitor& visitor, const VisitExpressionInput& input) override;
     virtual void print(ostream& stream) const override;
 };
 
@@ -20,7 +20,7 @@ struct BinaryExpr: Expr {
     
     BinaryExpr(Expr* left, Expr* right, TokenKind op, const Location& location);
     string message_kind() const;
-    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual VisitExpressionOutput accept(Visitor& visitor, const VisitExpressionInput& input) override;
     virtual void print(ostream& stream) const override;
 };
 
@@ -29,7 +29,7 @@ struct CallExpr: Expr {
     vector<Expr*> parameters;
 
     CallExpr(Expr* function, vector<Expr*>&& parameters, const Location& location);
-    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual VisitExpressionOutput accept(Visitor& visitor, const VisitExpressionInput& input) override;
     virtual void print(ostream& stream) const override;
 };
 
@@ -38,7 +38,7 @@ struct CastExpr: Expr {
     Expr* expr{};
     
     CastExpr(const Type* type, Expr* expr, const Location& location);
-    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual VisitExpressionOutput accept(Visitor& visitor, const VisitExpressionInput& input) override;
     virtual void print(ostream& stream) const override;
 };
 
@@ -48,7 +48,7 @@ struct ConditionExpr: Expr {
     Expr* else_expr{};
 
     ConditionExpr(Expr* condition, Expr* then_expr, Expr* else_expr, const Location& location);
-    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual VisitExpressionOutput accept(Visitor& visitor, const VisitExpressionInput& input) override;
     virtual void print(ostream& stream) const override;
 };
 
@@ -56,7 +56,7 @@ struct DereferenceExpr: Expr {
     Expr* expr{};
     
     DereferenceExpr(Expr* expr, const Location& location);
-    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual VisitExpressionOutput accept(Visitor& visitor, const VisitExpressionInput& input) override;
     virtual void print(ostream& stream) const override;
 };
 
@@ -66,7 +66,7 @@ struct EntityExpr: Expr {
     Declarator* declarator{};
 
     EntityExpr(Scope* scope, const Identifier& identifier, const Location& location);
-    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual VisitExpressionOutput accept(Visitor& visitor, const VisitExpressionInput& input) override;
     virtual void print(ostream& stream) const override;
 };
 
@@ -76,7 +76,7 @@ struct IncDecExpr: Expr {
     bool postfix{};
 
     IncDecExpr(TokenKind op, Expr* expr, bool postfix, const Location& location);
-    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual VisitExpressionOutput accept(Visitor& visitor, const VisitExpressionInput& input) override;
     virtual void print(ostream& stream) const override;
 };
 
@@ -84,7 +84,7 @@ struct InitializerExpr: Expr {
     vector<Expr*> elements;
 
     explicit InitializerExpr(const Location& location);
-    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual VisitExpressionOutput accept(Visitor& visitor, const VisitExpressionInput& input) override;
     virtual void print(ostream& stream) const override;
 };
 
@@ -97,7 +97,7 @@ struct MemberExpr: Expr {
 
     MemberExpr(TokenKind op, Expr* object, const Identifier& identifier, const Location& location);
     MemberExpr(TokenKind op, const Type* type, const Identifier& identifier, const Location& location);
-    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual VisitExpressionOutput accept(Visitor& visitor, const VisitExpressionInput& input) override;
     virtual void print(ostream& stream) const override;
 };
 
@@ -105,7 +105,7 @@ struct SizeOfExpr: Expr {
     const Type* type{};
 
     SizeOfExpr(const Type* type, const Location& location);
-    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual VisitExpressionOutput accept(Visitor& visitor, const VisitExpressionInput& input) override;
     virtual void print(ostream& stream) const override;
 };
 
@@ -114,13 +114,13 @@ struct SubscriptExpr: Expr {
     Expr* right{};
 
     SubscriptExpr(Expr* left, Expr* right, const Location& location);
-    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual VisitExpressionOutput accept(Visitor& visitor, const VisitExpressionInput& input) override;
     virtual void print(ostream& stream) const override;
 };
 
 struct UninitializedExpr: Expr {
     UninitializedExpr(const Location& location);
-    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual VisitExpressionOutput accept(Visitor& visitor, const VisitExpressionInput& input) override;
     virtual void print(ostream& stream) const override;
 };
 

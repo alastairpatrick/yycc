@@ -128,7 +128,7 @@ IntegerConstant::IntegerConstant(const Value& value, const Location& location)
     this->value.is_null_literal = LLVMIsNull(value.get_const());
 }
 
-VisitStatementOutput IntegerConstant::accept(Visitor& visitor, const VisitStatementInput& input) {
+VisitExpressionOutput IntegerConstant::accept(Visitor& visitor, const VisitExpressionInput& input) {
     return visitor.visit(this, input);
 }
 
@@ -161,7 +161,7 @@ FloatingPointConstant::FloatingPointConstant(const Value& value, const Location&
     : Constant(location), value(value) {
 }
 
-VisitStatementOutput FloatingPointConstant::accept(Visitor& visitor, const VisitStatementInput& input) {
+VisitExpressionOutput FloatingPointConstant::accept(Visitor& visitor, const VisitExpressionInput& input) {
     return visitor.visit(this, input);
 }
 
@@ -187,7 +187,7 @@ StringConstant::StringConstant(StringLiteral&& value, const IntegerType* charact
     : Constant(location), character_type(character_type), value(move(value)) {
 }
 
-VisitStatementOutput StringConstant::accept(Visitor& visitor, const VisitStatementInput& input) {
+VisitExpressionOutput StringConstant::accept(Visitor& visitor, const VisitExpressionInput& input) {
     return visitor.visit(this, input);
 }
 

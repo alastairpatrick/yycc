@@ -1065,12 +1065,12 @@ Statement* Parser::parse_statement() {
 
       } default: {
           Label label;
-          Statement* statement = parse_expr(SEQUENCE_PRECEDENCE, &label.identifier);
+          auto expr = parse_expr(SEQUENCE_PRECEDENCE, &label.identifier);
 
           if (!label.identifier.empty()) {
               consume_required(':');
 
-              statement = parse_statement();
+              auto statement = parse_statement();
 
               label.kind = LabelKind::GOTO;
               statement->labels.push_back(label);
@@ -1078,7 +1078,7 @@ Statement* Parser::parse_statement() {
           }
 
           consume_required(';');
-          return statement;
+          return new ExprStatement(expr);
       }
     }
 }

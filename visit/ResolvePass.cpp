@@ -489,13 +489,13 @@ struct ResolvePass: Visitor {
         return VisitStatementOutput();
     }
 
-    virtual VisitStatementOutput visit(CastExpr* expr, const VisitStatementInput& input) override {
+    virtual VisitExpressionOutput visit(CastExpr* expr, const VisitExpressionInput& input) override {
         expr->type = resolve(expr->type);
         return Visitor::visit(expr, input);
     }
 
 
-    virtual VisitStatementOutput visit(EntityExpr* expr, const VisitStatementInput& input) override {
+    virtual VisitExpressionOutput visit(EntityExpr* expr, const VisitExpressionInput& input) override {
         expr->declarator = expr->scope->lookup_declarator(expr->identifier);
         if (!expr->declarator) {
             auto& stream = message(Severity::ERROR, expr->location) << "identifier '" << *expr->identifier.text << "' ";
@@ -537,7 +537,7 @@ struct ResolvePass: Visitor {
         return nullptr;
     }
 
-    virtual VisitStatementOutput visit(MemberExpr* member_expr, const VisitStatementInput& input) override {
+    virtual VisitExpressionOutput visit(MemberExpr* member_expr, const VisitExpressionInput& input) override {
         auto result = Visitor::visit(member_expr, input);
 
         auto enclosing_type = wrangle_member_expr_enclosing_type(member_expr);
@@ -561,7 +561,7 @@ struct ResolvePass: Visitor {
 
         if (auto tagged_type = dynamic_cast<const TagType*>(enclosing_type)) {
             auto member = lookup_member(enclosing_type, member_expr->identifier, member_expr->location);
-            if (!member) return VisitStatementOutput(Value::of_zero_int());
+            if (!member) return VisitExpressionOutput(Value::of_zero_int());
 
             if (dereferenced) {
                 if (member_expr->op == '.') {
@@ -583,7 +583,7 @@ struct ResolvePass: Visitor {
         return result;
     }
 
-    virtual VisitStatementOutput visit(SizeOfExpr* expr, const VisitStatementInput& input) override {
+    virtual VisitExpressionOutput visit(SizeOfExpr* expr, const VisitExpressionInput& input) override {
         expr->type = resolve(expr->type);
         if (expr->type->partition() == TypePartition::INCOMPLETE) {
             message(Severity::ERROR, expr->location) << "sizeof applied to incomplete type\n";
@@ -696,7 +696,7 @@ struct ResolvePass: Visitor {
 
         return primary->type;
     }
-    
+
     const Type* resolve(const Type* unresolved_type) {
         auto& resolved_type = resolved_types[unresolved_type];
         if (resolved_type) return resolved_type;
@@ -705,7 +705,7 @@ struct ResolvePass: Visitor {
     }
 
     void resolve(Expr*& expr) {
-        expr = accept(expr, VisitStatementInput()).expr;
+        expr = accept(expr, VisitExpressionInput()).expr;
     }
 
     void resolve(LocationNode* node) {
@@ -717,9 +717,11 @@ struct ResolvePass: Visitor {
                 resolve(declarator);
             }
         } else if (auto declarator = dynamic_cast<Declarator*>(node)) {
-            resolve(declarator);            
+            resolve(declarator);         
         } else if (auto statement = dynamic_cast<Statement*>(node)) {
             accept(statement, VisitStatementInput());
+        } else if (auto expr = dynamic_cast<Expr*>(node)) {
+            accept(expr, VisitExpressionInput());
         } else {
             assert(false);
         }

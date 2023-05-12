@@ -13,6 +13,14 @@ struct CompoundStatement: Statement {
     virtual void print(ostream& stream) const override;
 };
 
+struct ExprStatement: Statement {
+    Expr* expr{};
+
+    explicit ExprStatement(Expr* expr);
+    virtual VisitStatementOutput accept(Visitor& visitor, const VisitStatementInput& input) override;
+    virtual void print(ostream& stream) const override;
+};
+
 struct ForStatement: Statement {
     Declaration* declaration{};
     Expr* initialize{};

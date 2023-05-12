@@ -164,9 +164,9 @@ struct Emitter: Visitor {
         return block;
     }
 
-    VisitStatementOutput emit(Expr* expr) {
+    VisitExpressionOutput emit(Expr* expr) {
         try {
-            return accept(expr, VisitStatementInput());
+            return accept(expr, VisitExpressionInput());
         } catch (FoldError& e) {
             if (!e.error_reported) {
                 message(Severity::ERROR, expr->location) << "not a constant expression\n";
@@ -778,13 +778,13 @@ struct Emitter: Visitor {
         return VisitStatementOutput();
     }
 
-    virtual VisitStatementOutput visit(AddressExpr* expr, const VisitStatementInput& input) override {
+    virtual VisitExpressionOutput visit(AddressExpr* expr, const VisitExpressionInput& input) override {
         auto value = emit(expr->expr).value;
         auto result_type = value.type->pointer_to();
-        if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+        if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
         // todo: error if not an lvalue
-        return VisitStatementOutput(result_type, value.get_lvalue());
+        return VisitExpressionOutput(result_type, value.get_lvalue());
     }
 
     Value emit_logical_binary_operation(BinaryExpr* expr, const Value& left_value, const Location& left_location) {
@@ -1099,7 +1099,7 @@ struct Emitter: Visitor {
         return value;
     }
 
-    virtual VisitStatementOutput visit(BinaryExpr* expr, const VisitStatementInput& input) override {
+    virtual VisitExpressionOutput visit(BinaryExpr* expr, const VisitExpressionInput& input) override {
         auto op = expr->op;
         Value intermediate;
         Value left_value = emit(expr->left).value.unqualified();
@@ -1130,23 +1130,23 @@ struct Emitter: Visitor {
             intermediate = Value::of_zero_int();
         }
 
-        if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(intermediate);
+        if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(intermediate);
 
         if (operator_flags(expr->op) & OP_ASSIGN) {
             store_value(left_value, intermediate, expr->location);
         }
 
-        return VisitStatementOutput(intermediate);
+        return VisitExpressionOutput(intermediate);
     }
 
-    virtual VisitStatementOutput visit(CastExpr* expr, const VisitStatementInput& input) override {
-        if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(expr->type);
+    virtual VisitExpressionOutput visit(CastExpr* expr, const VisitExpressionInput& input) override {
+        if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(expr->type);
 
         auto value = convert_to_type(expr->expr, expr->type, ConvKind::EXPLICIT);
-        return VisitStatementOutput(value);
+        return VisitExpressionOutput(value);
     }
 
-    virtual VisitStatementOutput visit(ConditionExpr* expr, const VisitStatementInput& input) override {
+    virtual VisitExpressionOutput visit(ConditionExpr* expr, const VisitExpressionInput& input) override {
         auto then_type = get_expr_type(expr->then_expr)->unqualified();
         auto else_type = get_expr_type(expr->else_expr)->unqualified();
 
@@ -1155,10 +1155,10 @@ struct Emitter: Visitor {
             // TODO there are other combinations of types that are valid for condition expressions
             message(Severity::ERROR, expr->location) << "incompatible conditional operand types '" << PrintType(then_type) << "' and '" << PrintType(else_type) << "'\n";
             pause_messages();
-            return VisitStatementOutput(Value::of_zero_int());
+            return VisitExpressionOutput(Value::of_zero_int());
         }
 
-        if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+        if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
         LLVMBasicBlockRef alt_blocks[2] = {
             append_block("then"),
@@ -1191,24 +1191,24 @@ struct Emitter: Visitor {
             result = Value(result_type);
         }
 
-        return VisitStatementOutput(result);
+        return VisitExpressionOutput(result);
     }
 
-    virtual VisitStatementOutput visit(DereferenceExpr* expr, const VisitStatementInput& input) override {
+    virtual VisitExpressionOutput visit(DereferenceExpr* expr, const VisitExpressionInput& input) override {
 
         auto value = emit(expr->expr).value.unqualified();
         auto pointer_type = type_cast<PointerType>(value.type);
         auto result_type = pointer_type->base_type;
-        if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+        if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-        return VisitStatementOutput(Value(ValueKind::LVALUE, result_type, get_rvalue(value)));
+        return VisitExpressionOutput(Value(ValueKind::LVALUE, result_type, get_rvalue(value)));
     }
 
-    virtual VisitStatementOutput visit(EntityExpr* expr, const VisitStatementInput& input) override {
+    virtual VisitExpressionOutput visit(EntityExpr* expr, const VisitExpressionInput& input) override {
         auto declarator = expr->declarator->primary;
         auto result_type = declarator->type;
 
-        if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+        if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
         if (auto enum_constant = declarator->enum_constant()) {
             if (!enum_constant->ready) {
@@ -1222,7 +1222,7 @@ struct Emitter: Visitor {
             }
 
             auto int_type = type_cast<IntegerType>(type);
-            return VisitStatementOutput(Value::of_int(int_type, enum_constant->value).bit_cast(result_type));
+            return VisitExpressionOutput(Value::of_int(int_type, enum_constant->value).bit_cast(result_type));
 
         }
 
@@ -1236,7 +1236,7 @@ struct Emitter: Visitor {
                         declarator->message_see_declaration();
                         pause_messages();
                     } else {
-                        return VisitStatementOutput(Value(ValueKind::LVALUE, declarator->type,
+                        return VisitExpressionOutput(Value(ValueKind::LVALUE, declarator->type,
                             LLVMBuildGEP2(builder, this_type->llvm_type(), this_value.get_lvalue(), variable->member->gep_indices.data(), variable->member->gep_indices.size(), "")));
                     }
                 }
@@ -1245,7 +1245,7 @@ struct Emitter: Visitor {
         
         if (auto entity = declarator->entity()) {
             if (entity->value.kind == ValueKind::LVALUE) {
-                return VisitStatementOutput(entity->value);
+                return VisitExpressionOutput(entity->value);
             }
         }
 
@@ -1259,15 +1259,15 @@ struct Emitter: Visitor {
             pause_messages();
         }
 
-        return VisitStatementOutput(Value::of_recover(declarator->type));
+        return VisitExpressionOutput(Value::of_recover(declarator->type));
     }
 
-    virtual VisitStatementOutput visit(IncDecExpr* expr, const VisitStatementInput& input) override {
+    virtual VisitExpressionOutput visit(IncDecExpr* expr, const VisitExpressionInput& input) override {
         auto lvalue = emit(expr->expr).value.unqualified();
         auto before_value = Value(lvalue.type, get_rvalue(lvalue));
 
         const Type* result_type = before_value.type;
-        if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+        if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
         LLVMValueRef one = LLVMConstInt(result_type->llvm_type(), 1, false);
 
@@ -1282,7 +1282,7 @@ struct Emitter: Visitor {
         }
 
         store_value(lvalue, after_value, expr->location);
-        return VisitStatementOutput(expr->postfix ? before_value : after_value);
+        return VisitExpressionOutput(expr->postfix ? before_value : after_value);
     }
 
     Value emit_object_of_member_expr(MemberExpr* expr) {
@@ -1293,8 +1293,8 @@ struct Emitter: Visitor {
         return object;
     }
 
-    virtual VisitStatementOutput visit(MemberExpr* expr, const VisitStatementInput& input) override {
-        if (!expr->member) return VisitStatementOutput(Value::of_zero_int());
+    virtual VisitExpressionOutput visit(MemberExpr* expr, const VisitExpressionInput& input) override {
+        if (!expr->member) return VisitExpressionOutput(Value::of_zero_int());
 
         auto object_type = get_expr_type(expr->object)->unqualified();
 
@@ -1303,10 +1303,10 @@ struct Emitter: Visitor {
         }
 
         if (auto struct_type = type_cast<StructuredType>(object_type)) {
-            VisitStatementOutput output;
+            VisitExpressionOutput output;
 
             auto result_type = expr->member->type;
-            if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+            if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
             if (auto member_variable = expr->member->variable()) {
                 auto object = emit_object_of_member_expr(expr);
@@ -1327,10 +1327,10 @@ struct Emitter: Visitor {
             }
         }
 
-        return VisitStatementOutput(Value::of_zero_int());
+        return VisitExpressionOutput(Value::of_zero_int());
     }
     
-    virtual VisitStatementOutput visit(CallExpr* expr, const VisitStatementInput& input) override {
+    virtual VisitExpressionOutput visit(CallExpr* expr, const VisitExpressionInput& input) override {
         if (outcome == EmitOutcome::FOLD) {
             message(Severity::ERROR, expr->location) << "cannot call function in constant expression\n";
             throw FoldError(true);
@@ -1345,7 +1345,7 @@ struct Emitter: Visitor {
 
         if (auto function_type = type_cast<FunctionType>(function_value.type)) {
             auto result_type = function_type->return_type;
-            if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+            if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
             Declarator* function_declarator{};
             if (auto entity_expr = dynamic_cast<EntityExpr*>(expr->function)) {
@@ -1370,7 +1370,7 @@ struct Emitter: Visitor {
                     function_declarator->message_see_declaration("prototype");
                 }
 
-                return VisitStatementOutput(Value::of_recover(result_type));
+                return VisitExpressionOutput(Value::of_recover(result_type));
             }
 
             vector<LLVMValueRef> llvm_params;
@@ -1391,30 +1391,30 @@ struct Emitter: Visitor {
             }
 
             auto result = LLVMBuildCall2(builder, function_type->llvm_type(), function_value.get_lvalue(), llvm_params.data(), llvm_params.size(), "");
-            return VisitStatementOutput(result_type, result);
+            return VisitExpressionOutput(result_type, result);
         }
 
         message(Severity::ERROR, expr->location) << "called object type '" << PrintType(function_value.type) << "' is not a function or function pointer\n";
 
-        return VisitStatementOutput();
+        return VisitExpressionOutput();
     }
 
-    virtual VisitStatementOutput visit(SizeOfExpr* expr, const VisitStatementInput& input) override {
+    virtual VisitExpressionOutput visit(SizeOfExpr* expr, const VisitExpressionInput& input) override {
         auto zero = TranslationUnitContext::it->zero_size;
         auto llvm_target_data = TranslationUnitContext::it->llvm_target_data;
 
         auto result_type = IntegerType::of_size(IntegerSignedness::UNSIGNED);
 
         if (expr->type->partition() == TypePartition::INCOMPLETE) {
-            return VisitStatementOutput(result_type, zero);
+            return VisitExpressionOutput(result_type, zero);
         }
 
-        if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+        if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-        return VisitStatementOutput(result_type, size_const_int(LLVMStoreSizeOfType(llvm_target_data, expr->type->llvm_type())));
+        return VisitExpressionOutput(result_type, size_const_int(LLVMStoreSizeOfType(llvm_target_data, expr->type->llvm_type())));
     }
 
-    virtual VisitStatementOutput visit(SubscriptExpr* expr, const VisitStatementInput& input) override {
+    virtual VisitExpressionOutput visit(SubscriptExpr* expr, const VisitExpressionInput& input) override {
         auto zero = TranslationUnitContext::it->zero_size;
 
         auto left_value = emit(expr->left).value.unqualified();
@@ -1426,10 +1426,10 @@ struct Emitter: Visitor {
 
         if (auto pointer_type = type_cast<PointerType>(left_value.type)) {
             auto result_type = pointer_type->base_type;
-            if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+            if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
             LLVMValueRef index = get_rvalue(index_value);
-            return VisitStatementOutput(Value(
+            return VisitExpressionOutput(Value(
                 ValueKind::LVALUE,
                 result_type,
                 LLVMBuildGEP2(builder, result_type->llvm_type(), get_rvalue(left_value), &index, 1, "")));
@@ -1437,31 +1437,31 @@ struct Emitter: Visitor {
 
         if (auto array_type = type_cast<ArrayType>(left_value.type)) {
             auto result_type = array_type->element_type;
-            if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+            if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
             LLVMValueRef indices[2] = { zero, get_rvalue(index_value) };
-            return VisitStatementOutput(Value(
+            return VisitExpressionOutput(Value(
                 ValueKind::LVALUE,
                 result_type,
                 LLVMBuildGEP2(builder, array_type->llvm_type(), left_value.get_lvalue(), indices, 2, "")));
         }
 
-        return VisitStatementOutput();
+        return VisitExpressionOutput();
     }
 
-    virtual VisitStatementOutput visit(IntegerConstant* constant, const VisitStatementInput& input) override {
-        return VisitStatementOutput(constant->value);
+    virtual VisitExpressionOutput visit(IntegerConstant* constant, const VisitExpressionInput& input) override {
+        return VisitExpressionOutput(constant->value);
     }
 
-    virtual VisitStatementOutput visit(FloatingPointConstant* constant, const VisitStatementInput& input) override {
-        return VisitStatementOutput(constant->value);
+    virtual VisitExpressionOutput visit(FloatingPointConstant* constant, const VisitExpressionInput& input) override {
+        return VisitExpressionOutput(constant->value);
     }
 
-    virtual VisitStatementOutput visit(StringConstant* constant, const VisitStatementInput& input) override {
+    virtual VisitExpressionOutput visit(StringConstant* constant, const VisitExpressionInput& input) override {
         auto result_type = ResolvedArrayType::of(ArrayKind::COMPLETE,
                                                  QualifiedType::of(constant->character_type, QUALIFIER_CONST),
                                                  constant->value.length + 1);
-        if (outcome == EmitOutcome::TYPE) return VisitStatementOutput(result_type);
+        if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
         auto llvm_context = TranslationUnitContext::it->llvm_context;
 
@@ -1481,7 +1481,7 @@ struct Emitter: Visitor {
             llvm_constant = LLVMConstArray(llvm_char_type, llvm_char_values.data(), llvm_char_values.size());
         }
 
-        return VisitStatementOutput(result_type, llvm_constant);
+        return VisitExpressionOutput(result_type, llvm_constant);
     }
 };
 

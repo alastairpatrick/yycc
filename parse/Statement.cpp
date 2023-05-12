@@ -39,6 +39,20 @@ void CompoundStatement::print(ostream& stream) const {
 
 
 
+ExprStatement::ExprStatement(Expr* expr)
+    : Statement(expr->location), expr(expr) {
+}
+
+VisitStatementOutput ExprStatement::accept(Visitor& visitor, const VisitStatementInput& input) {
+    return visitor.visit(this, input);
+}
+
+void ExprStatement::print(ostream& stream) const {
+    stream << expr;
+}
+
+
+
 ForStatement::ForStatement(Declaration* declaration,  Expr* initialize, Expr* condition, Expr* iterate, Statement* body, const Location& location)
     : Statement(location), declaration(declaration), initialize(initialize), condition(condition), iterate(iterate), body(body) {
 }
