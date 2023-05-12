@@ -302,11 +302,11 @@ struct ResolvePass: Visitor, TypeVisitor {
         return nullptr;
     }
 
-    virtual VisitTypeOutput visit(const NestedType* type) override {
+    virtual const Type* visit(const NestedType* type) override {
         auto enclosing_type = resolve(type->enclosing_type);
 
         auto member = lookup_member(enclosing_type, type->identifier, type->location);
-        if (!member) return VisitTypeOutput(enclosing_type);
+        if (!member) return enclosing_type;
 
         if (!member->type_delegate()) {
             message(Severity::ERROR, type->location) << "member '" << type->identifier << "' is not a nested type\n";
@@ -315,26 +315,26 @@ struct ResolvePass: Visitor, TypeVisitor {
             }
         }
 
-        return VisitTypeOutput(member->type);
+        return member->type;
     }
 
-    virtual VisitTypeOutput visit(const PointerType* type) override {
-        return VisitTypeOutput(resolve(type->base_type)->pointer_to());
+    virtual const Type* visit(const PointerType* type) override {
+        return resolve(type->base_type)->pointer_to();
     }
 
-    virtual VisitTypeOutput visit(const PassByReferenceType* type) override {
-        return VisitTypeOutput(PassByReferenceType::of(resolve(type->base_type)));
+    virtual const Type* visit(const PassByReferenceType* type) override {
+        return PassByReferenceType::of(resolve(type->base_type));
     }
 
-    virtual VisitTypeOutput visit(const QualifiedType* type) override {
-        return VisitTypeOutput(QualifiedType::of(resolve(type->base_type), type->qualifier_flags));
+    virtual const Type* visit(const QualifiedType* type) override {
+        return QualifiedType::of(resolve(type->base_type), type->qualifier_flags);
     }
 
-    virtual VisitTypeOutput visit(const UnqualifiedType* type) override {
-        return VisitTypeOutput(resolve(type->base_type)->unqualified());
+    virtual const Type* visit(const UnqualifiedType* type) override {
+        return resolve(type->base_type)->unqualified();
     }
 
-    virtual VisitTypeOutput visit(const FunctionType* type) override {
+    virtual const Type* visit(const FunctionType* type) override {
         auto resolved_return_type = resolve(type->return_type);
         auto resolved_param_types(type->parameter_types);
         for (auto& param_type : resolved_param_types) {
@@ -354,21 +354,21 @@ struct ResolvePass: Visitor, TypeVisitor {
             }
 
         }
-        return VisitTypeOutput(FunctionType::of(resolved_return_type, resolved_param_types, type->variadic));
+        return FunctionType::of(resolved_return_type, resolved_param_types, type->variadic);
     }
 
-    virtual VisitTypeOutput visit(const StructType* type) override {
+    virtual const Type* visit(const StructType* type) override {
         return visit_structured_type(type);
     }
 
-    virtual VisitTypeOutput visit(const UnionType* type) override {
+    virtual const Type* visit(const UnionType* type) override {
         return visit_structured_type(type);
     }
 
-    VisitTypeOutput visit_structured_type(const StructuredType* type) {
+    const Type* visit_structured_type(const StructuredType* type) {
         pend(type->tag);
 
-        if (!type->complete) return VisitTypeOutput(type);
+        if (!type->complete) return type;
 
         if (type->scope) {
             result.type_scopes.push_back(type->scope);        
@@ -394,13 +394,13 @@ struct ResolvePass: Visitor, TypeVisitor {
             }
         }
 
-        return VisitTypeOutput(type);
+        return type;
     }
 
-    virtual VisitTypeOutput visit(const EnumType* type) override {
+    virtual const Type* visit(const EnumType* type) override {
         pend(type->tag);
 
-        if (!type->complete) return VisitTypeOutput(type);
+        if (!type->complete) return type;
 
         // C99 6.7.2.3p4
         bool want_complete = type->complete;
@@ -444,19 +444,19 @@ struct ResolvePass: Visitor, TypeVisitor {
             type->explicit_base_type = false;
         }
 
-        return VisitTypeOutput(type);
+        return type;
     }
 
-    virtual VisitTypeOutput visit(const TypeOfType* type) override {
+    virtual const Type* visit(const TypeOfType* type) override {
         resolve(type->expr);
-        return VisitTypeOutput(get_expr_type(type->expr));
+        return get_expr_type(type->expr);
     }
 
-    virtual VisitTypeOutput visit(const TypeDefType* type) override {
-        return VisitTypeOutput(resolve(type->declarator));
+    virtual const Type* visit(const TypeDefType* type) override {
+        return resolve(type->declarator);
     }
 
-    virtual VisitTypeOutput visit(const UnresolvedArrayType* type) override {
+    virtual const Type* visit(const UnresolvedArrayType* type) override {
         auto resolved_element_type = resolve(type->element_type);
         if (resolved_element_type->partition() != TypePartition::OBJECT) {
             if (resolved_element_type->partition() == TypePartition::INCOMPLETE) {
@@ -477,9 +477,9 @@ struct ResolvePass: Visitor, TypeVisitor {
                 size_int = LLVMConstIntGetZExtValue(size_constant.get_const());
             }
 
-            return VisitTypeOutput(ResolvedArrayType::of(ArrayKind::COMPLETE, resolved_element_type, size_int));
+            return ResolvedArrayType::of(ArrayKind::COMPLETE, resolved_element_type, size_int);
         } else {
-            return VisitTypeOutput(ResolvedArrayType::of(ArrayKind::INCOMPLETE, resolved_element_type, 0));
+            return ResolvedArrayType::of(ArrayKind::INCOMPLETE, resolved_element_type, 0);
         }
     }
 
@@ -702,7 +702,7 @@ struct ResolvePass: Visitor, TypeVisitor {
         auto& resolved_type = resolved_types[unresolved_type];
         if (resolved_type) return resolved_type;
 
-        return resolved_type = unresolved_type->accept(*this).value.type;
+        return resolved_type = unresolved_type->accept(*this);
     }
 
     void resolve(Expr*& expr) {

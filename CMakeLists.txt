@@ -44,7 +44,7 @@ add_library(yycc_lib STATIC
     "visit/EntityPass.cpp"
     "visit/ResolvePass.cpp"
     "visit/TypeConverter.cpp"
-    "visit/TypeVisitor.cpp"
+    
     "visit/Visitor.cpp"
 
     "Sweep.cpp"

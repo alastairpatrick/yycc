@@ -17,7 +17,7 @@ TypePartition UnresolvedArrayType::partition() const {
     return TypePartition::INCOMPLETE;
 }
 
-VisitTypeOutput UnresolvedArrayType::accept(TypeVisitor& visitor) const {
+const Type* UnresolvedArrayType::accept(TypeVisitor& visitor) const {
     return visitor.visit(this);
 }
 
@@ -54,7 +54,7 @@ TypePartition ResolvedArrayType::partition() const {
     return kind == ArrayKind::INCOMPLETE ? TypePartition::INCOMPLETE : TypePartition::OBJECT;
 }
 
-VisitTypeOutput ResolvedArrayType::accept(TypeVisitor& visitor) const {
+const Type* ResolvedArrayType::accept(TypeVisitor& visitor) const {
     return visitor.visit(this);
 }
 

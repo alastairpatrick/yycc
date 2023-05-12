@@ -75,7 +75,7 @@ TypePartition VoidType::partition() const {
     return TypePartition::INCOMPLETE;
 }
 
-VisitTypeOutput VoidType::accept(TypeVisitor& visitor) const {
+const Type* VoidType::accept(TypeVisitor& visitor) const {
     return visitor.visit(this);
 }
 
@@ -176,7 +176,7 @@ unsigned long long IntegerType::max() const {
     return result;
 }
 
-VisitTypeOutput IntegerType::accept(TypeVisitor& visitor) const {
+const Type* IntegerType::accept(TypeVisitor& visitor) const {
     return visitor.visit(this);
 }
 
@@ -279,7 +279,7 @@ const FloatingPointType* FloatingPointType::of(FloatingPointSize size) {
     return &types[int(size)];
 }
 
-VisitTypeOutput FloatingPointType::accept(TypeVisitor& visitor) const {
+const Type* FloatingPointType::accept(TypeVisitor& visitor) const {
     return visitor.visit(this);
 }
 
@@ -324,7 +324,7 @@ void FloatingPointType::print(ostream& stream) const {
 
 
 
-VisitTypeOutput PointerType::accept(TypeVisitor& visitor) const {
+const Type* PointerType::accept(TypeVisitor& visitor) const {
     return visitor.visit(this);
 }
 
@@ -365,7 +365,7 @@ const PassByReferenceType* PassByReferenceType::of(const Type* base_type) {
     return type_context.get_pass_by_reference_type(base_type);
 }
 
-VisitTypeOutput PassByReferenceType::accept(TypeVisitor& visitor) const {
+const Type* PassByReferenceType::accept(TypeVisitor& visitor) const {
     return visitor.visit(this);
 }
 
@@ -414,7 +414,7 @@ TypePartition QualifiedType::partition() const {
     return base_type->partition();
 }
 
-VisitTypeOutput QualifiedType::accept(TypeVisitor& visitor) const {
+const Type* QualifiedType::accept(TypeVisitor& visitor) const {
     return visitor.visit(this);
 }
 
@@ -459,7 +459,7 @@ const Type* UnqualifiedType::unqualified() const {
     return this;
 }
 
-VisitTypeOutput UnqualifiedType::accept(TypeVisitor& visitor) const {
+const Type* UnqualifiedType::accept(TypeVisitor& visitor) const {
     return visitor.visit(this);
 }
 
@@ -482,7 +482,7 @@ TypePartition FunctionType::partition() const {
     return TypePartition::FUNCTION;
 }
 
-VisitTypeOutput FunctionType::accept(TypeVisitor& visitor) const {
+const Type* FunctionType::accept(TypeVisitor& visitor) const {
     return visitor.visit(this);
 }
 
@@ -748,7 +748,7 @@ StructType::StructType(const Location& location)
     : StructuredType(location) {
 }
 
-VisitTypeOutput StructType::accept(TypeVisitor& visitor) const {
+const Type* StructType::accept(TypeVisitor& visitor) const {
     return visitor.visit(this);
 }
 
@@ -769,7 +769,7 @@ UnionType::UnionType(const Location& location)
     : StructuredType(location) {
 }
 
-VisitTypeOutput UnionType::accept(TypeVisitor& visitor) const {
+const Type* UnionType::accept(TypeVisitor& visitor) const {
     return visitor.visit(this);
 }
 
@@ -798,7 +798,7 @@ bool EnumType::has_tag(const Declarator* declarator) const {
     return tag;
 }
 
-VisitTypeOutput EnumType::accept(TypeVisitor& visitor) const {
+const Type* EnumType::accept(TypeVisitor& visitor) const {
     return visitor.visit(this);
 }
 
@@ -846,7 +846,7 @@ TypePartition TypeOfType::partition() const {
     return TypePartition::INCOMPLETE;
 }
 
-VisitTypeOutput TypeOfType::accept(TypeVisitor& visitor) const {
+const Type* TypeOfType::accept(TypeVisitor& visitor) const {
     return visitor.visit(this);
 }
 
@@ -864,7 +864,7 @@ const UnboundType* UnboundType::of(const Identifier& identifier) {
     return TranslationUnitContext::it->type.get_unbound_type(identifier);
 }
 
-VisitTypeOutput UnboundType::accept(TypeVisitor& visitor) const {
+const Type* UnboundType::accept(TypeVisitor& visitor) const {
     return visitor.visit(this);
 }
 
@@ -893,7 +893,7 @@ const Type* TypeDefType::unqualified() const {
     return this;
 }
 
-VisitTypeOutput TypeDefType::accept(TypeVisitor& visitor) const {
+const Type* TypeDefType::accept(TypeVisitor& visitor) const {
     return visitor.visit(this);
 }
 
@@ -915,7 +915,7 @@ NestedType::NestedType(const Type* enclosing_type, const Identifier& identifier,
     : enclosing_type(enclosing_type), identifier(identifier), location(location) {
 }
 
-VisitTypeOutput NestedType::accept(TypeVisitor& visitor) const {
+const Type* NestedType::accept(TypeVisitor& visitor) const {
     return visitor.visit(this);
 }
 
