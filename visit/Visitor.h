@@ -22,11 +22,6 @@ struct VisitStatementInput {
 };
 
 struct VisitStatementOutput {
-    Value value;
-
-    VisitStatementOutput() = default;
-    explicit VisitStatementOutput(Value value): value(value) {}
-    explicit VisitStatementOutput(const Type* type, LLVMValueRef value = nullptr): value(type, value) {}
 };
 
 struct VisitExpressionInput {
