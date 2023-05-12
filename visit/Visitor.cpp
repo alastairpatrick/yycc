@@ -171,86 +171,86 @@ VisitStatementOutput Visitor::visit(SwitchStatement* statement, const VisitState
 /* Expressions */
 
 VisitStatementOutput Visitor::visit(AddressExpr* expr, const VisitStatementInput& input) {
-    accept(expr->expr, input);
-    return VisitStatementOutput();
+    expr->expr = accept(expr->expr, input).expr;
+    return VisitStatementOutput(expr);
 }
 
 VisitStatementOutput Visitor::visit(BinaryExpr* expr, const VisitStatementInput& input) {
-    accept(expr->left, input);
-    accept(expr->right, input);
-    return VisitStatementOutput();
+    expr->left = accept(expr->left, input).expr;
+    expr->right = accept(expr->right, input).expr;
+    return VisitStatementOutput(expr);
 }
 
 VisitStatementOutput Visitor::visit(CallExpr* expr, const VisitStatementInput& input) {
-    accept(expr->function, input);
+    expr->function = accept(expr->function, input).expr;
     for (auto parameter: expr->parameters) {
         accept(parameter, input);
     }
-    return VisitStatementOutput();
+    return VisitStatementOutput(expr);
 }
 
 VisitStatementOutput Visitor::visit(CastExpr* expr, const VisitStatementInput& input) {
-    accept(expr->expr, input);
-    return VisitStatementOutput();
+    expr->expr = accept(expr->expr, input).expr;
+    return VisitStatementOutput(expr);
 }
 
 VisitStatementOutput Visitor::visit(ConditionExpr* expr, const VisitStatementInput& input) {
-    accept(expr->condition, input);
-    accept(expr->then_expr, input);
-    accept(expr->else_expr, input);
-    return VisitStatementOutput();
+    expr->condition = accept(expr->condition, input).expr;
+    expr->then_expr = accept(expr->then_expr, input).expr;
+    expr->else_expr = accept(expr->else_expr, input).expr;
+    return VisitStatementOutput(expr);
 }
 
 VisitStatementOutput Visitor::visit(DereferenceExpr* expr, const VisitStatementInput& input) {
-    accept(expr->expr, input);
-    return VisitStatementOutput();
+    expr->expr = accept(expr->expr, input).expr;
+    return VisitStatementOutput(expr);
 }
 
 VisitStatementOutput Visitor::visit(EntityExpr* expr, const VisitStatementInput& input) {
-    return VisitStatementOutput();
+    return VisitStatementOutput(expr);
 }
 
 VisitStatementOutput Visitor::visit(IncDecExpr* expr, const VisitStatementInput& input) {
-    accept(expr->expr, input);
-    return VisitStatementOutput();
+    expr->expr = accept(expr->expr, input).expr;
+    return VisitStatementOutput(expr);
 }
 
 VisitStatementOutput Visitor::visit(InitializerExpr* expr, const VisitStatementInput& input) {
-    for (auto element: expr->elements) {
-        accept(element, input);
+    for (auto& element: expr->elements) {
+        element = accept(element, input).expr;
     }
-    return VisitStatementOutput();
+    return VisitStatementOutput(expr);
 }
 
 VisitStatementOutput Visitor::visit(MemberExpr* expr, const VisitStatementInput& input) {
-    accept(expr->object, input);
-    return VisitStatementOutput();
+    expr->object = accept(expr->object, input).expr;
+    return VisitStatementOutput(expr);
 }
 
 VisitStatementOutput Visitor::visit(SizeOfExpr* expr, const VisitStatementInput& input) {
-    return VisitStatementOutput();
+    return VisitStatementOutput(expr);
 }
 
 VisitStatementOutput Visitor::visit(SubscriptExpr* expr, const VisitStatementInput& input) {
-    accept(expr->left, input);
-    accept(expr->right, input);
-    return VisitStatementOutput();
+    expr->left = accept(expr->left, input).expr;
+    expr->right = accept(expr->right, input).expr;
+    return VisitStatementOutput(expr);
 }
 
 VisitStatementOutput Visitor::visit(UninitializedExpr* expr, const VisitStatementInput& input) {
-    return VisitStatementOutput();
+    return VisitStatementOutput(expr);
 }
 
 /* Constants */
 
 VisitStatementOutput Visitor::visit(IntegerConstant* constant, const VisitStatementInput& input) {
-    return VisitStatementOutput();
+    return VisitStatementOutput(constant);
 }
 
 VisitStatementOutput Visitor::visit(FloatingPointConstant* constant, const VisitStatementInput& input) {
-    return VisitStatementOutput();
+    return VisitStatementOutput(constant);
 }
 
 VisitStatementOutput Visitor::visit(StringConstant* constant, const VisitStatementInput& input) {
-    return VisitStatementOutput();
+    return VisitStatementOutput(constant);
 }

@@ -482,11 +482,6 @@ struct ResolvePass: Visitor {
         }
     }
 
-    VisitStatementOutput visit_default(Statement* statement, const VisitStatementInput& input) {
-        assert(false);
-        return VisitStatementOutput();
-    }
-
     virtual VisitStatementOutput visit(CompoundStatement* statement, const VisitStatementInput& input) override {
         for (auto node: statement->nodes) {
             resolve(node);
@@ -494,15 +489,15 @@ struct ResolvePass: Visitor {
         return VisitStatementOutput();
     }
 
-    virtual VisitStatementOutput visit(CastExpr* cast_expr, const VisitStatementInput& input) override {
-        cast_expr->type = resolve(cast_expr->type);
-        return Visitor::visit(cast_expr, input);
+    virtual VisitStatementOutput visit(CastExpr* expr, const VisitStatementInput& input) override {
+        expr->type = resolve(expr->type);
+        return Visitor::visit(expr, input);
     }
 
     virtual VisitStatementOutput visit(EntityExpr* entity_expr, const VisitStatementInput& input) override {
         resolve(entity_expr->declarator);
         entity_expr->declarator = entity_expr->declarator->primary;
-        return VisitStatementOutput();
+        return Visitor::visit(entity_expr, input);
     }
 
     // If the LHS of a MemberExpr is a type, return that resolved type, else null.
@@ -566,24 +561,24 @@ struct ResolvePass: Visitor {
             }
 
             member_expr->member = member->primary;
-            return VisitStatementOutput();
+            return Visitor::visit(member_expr, input);
         }
 
         Location location = member_expr->object ? member_expr->object->location : member_expr->location;
         message(Severity::ERROR, location) << "type '" << PrintType(enclosing_type) << "' does not have members\n";
         pause_messages();
-        return VisitStatementOutput();
+        return Visitor::visit(member_expr, input);
     }
 
-    virtual VisitStatementOutput visit(SizeOfExpr* size_of_expr, const VisitStatementInput& input) override {
-        size_of_expr->type = resolve(size_of_expr->type);
-        if (size_of_expr->type->partition() == TypePartition::INCOMPLETE) {
-            message(Severity::ERROR, size_of_expr->location) << "sizeof applied to incomplete type\n";
+    virtual VisitStatementOutput visit(SizeOfExpr* expr, const VisitStatementInput& input) override {
+        expr->type = resolve(expr->type);
+        if (expr->type->partition() == TypePartition::INCOMPLETE) {
+            message(Severity::ERROR, expr->location) << "sizeof applied to incomplete type\n";
             pause_messages();
-            return VisitStatementOutput();
+            return Visitor::visit(expr, input);
         }
 
-        return VisitStatementOutput();
+        return Visitor::visit(expr, input);
     }
 
     bool is_trivially_cyclic(Declarator* primary, const Type* type) {
