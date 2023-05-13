@@ -186,7 +186,7 @@ struct Emitter: Visitor {
             } else {
                 return Value::of_zero_int();
             }
-        } else if ((type_cast<EnumType>(dest_type) || output.conv_kind != ConvKind::IMPLICIT) && kind == ConvKind::IMPLICIT) {
+        } else if ((output.conv_kind != ConvKind::IMPLICIT) && kind == ConvKind::IMPLICIT) {
             auto severity = output.conv_kind == ConvKind::C_IMPLICIT ? Severity::CONTEXTUAL_ERROR : Severity::ERROR;
             message(severity, location) << "conversion from type '" << PrintType(value.type)
                                         << "' to type '" << PrintType(dest_type) << "' requires explicit cast\n";

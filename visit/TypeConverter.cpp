@@ -22,7 +22,7 @@ ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest
     if (result == ConvKind::IMPLICIT) {
         if (auto source_base_pointer_type = type_cast<PointerType>(source_base_type->unqualified())) {
             if (auto dest_base_pointer_type = type_cast<PointerType>(dest_base_type->unqualified())) {
-                result = check_pointer_conversion(source_base_pointer_type, dest_base_pointer_type);
+                result = check_pointer_conversion(source_base_pointer_type->base_type, dest_base_pointer_type->base_type);
             }
         }
     }
@@ -44,25 +44,38 @@ struct TypeConverter: TypeVisitor {
     LLVMBuilderRef builder;
     EmitOutcome outcome;
     Value value;
-    const Type* dest_type{};
     ConvertTypeResult result;
 
     LLVMValueRef get_rvalue(const Value &value) {
         return value.get_rvalue(builder, outcome);
     }
 
-    // todo: investigate whether the visited objects should be dest_type rather than source_type
-    virtual const Type* visit(const ResolvedArrayType* source_type) override {
-        if (auto dest_array_type = type_cast<ResolvedArrayType>(dest_type)) {
-            if (value.is_const() && source_type->element_type == dest_array_type->element_type && source_type->size <= dest_array_type->size) {
+    void convert_array_to_pointer() {
+        if (auto source_type = type_cast<ResolvedArrayType>(value.type)) {
+            if (value.kind == ValueKind::LVALUE) {
+                auto pointer_type = source_type->element_type->pointer_to();
+                value = Value(pointer_type, value.get_lvalue());
+            }
+        }
+    }
+
+    void convert_enum_to_int() {
+        if (auto source_type = type_cast<EnumType>(value.type)) {
+            value = value.bit_cast(source_type->base_type);
+        }
+    }
+
+    virtual const Type* visit(const ResolvedArrayType* dest_type) override {
+        if (auto source_type = type_cast<ResolvedArrayType>(value.type)) {
+            if (value.is_const() && source_type->element_type == dest_type->element_type && source_type->size <= dest_type->size) {
                 LLVMValueRef source_array = value.get_const();
-                vector<LLVMValueRef> resized_array_values(dest_array_type->size);
+                vector<LLVMValueRef> resized_array_values(dest_type->size);
                 size_t i;
                 for (i = 0; i < source_type->size; ++i) {
                     resized_array_values[i] = LLVMGetAggregateElement(source_array, i);
                 }
                 LLVMValueRef null_value = LLVMConstNull(source_type->element_type->llvm_type());
-                for (; i < dest_array_type->size; ++i) {
+                for (; i < dest_type->size; ++i) {
                     resized_array_values[i] = null_value;
                 }
 
@@ -70,7 +83,12 @@ struct TypeConverter: TypeVisitor {
                 LLVMValueRef resized_array = LLVMConstArray(source_type->element_type->llvm_type(), resized_array_values.data(), resized_array_values.size());
                 result = ConvertTypeResult(dest_type, resized_array);
             }
-        } else if (auto pointer_type = type_cast<PointerType>(dest_type)) {
+        }
+        return nullptr;
+    }
+
+    virtual const Type* visit(const PointerType* dest_type) override {
+        if (auto source_type = type_cast<ResolvedArrayType>(value.type)) {
             if (module && value.is_const()) {
                 auto& global = module->reified_constants[value.get_const()];
                 if (!global) {
@@ -84,67 +102,66 @@ struct TypeConverter: TypeVisitor {
             }
         }
         
-        if (value.kind == ValueKind::LVALUE) {
-            auto pointer_type = source_type->element_type->pointer_to();
-            value = Value(pointer_type, value.get_lvalue());
-            visit(pointer_type);
+        convert_array_to_pointer();
+
+        if (auto source_type = type_cast<FunctionType>(value.type)) {
+            ConvKind kind = dest_type->base_type->unqualified() == source_type ? ConvKind::IMPLICIT : ConvKind::EXPLICIT;
+            result = ConvertTypeResult(dest_type, value.get_lvalue(), kind);
+        } else if (auto source_type = type_cast<IntegerType>(value.type)) {
+            result = ConvertTypeResult(dest_type, LLVMBuildIntToPtr(builder, get_rvalue(value), dest_type->llvm_type(), ""), ConvKind::EXPLICIT);
+        } else if (auto source_type = type_cast<PointerType>(value.type)) {
+            result = ConvertTypeResult(value.bit_cast(dest_type), check_pointer_conversion(source_type->base_type, dest_type->base_type));
         }
 
         return nullptr;
     }
 
-    virtual const Type* visit(const EnumType* source_type) override {
-        source_type->base_type->accept(*this);
-        return nullptr;
-    }
+    virtual const Type* visit(const IntegerType* dest_type) override {
+        convert_array_to_pointer();
+        convert_enum_to_int();
 
-    virtual const Type* visit(const FloatingPointType* source_type) override {
-        if (type_cast<FloatingPointType>(dest_type)) {
-            result = ConvertTypeResult(dest_type, LLVMBuildFPCast(builder, get_rvalue(value), dest_type->llvm_type(), ""));
-        } else if (auto dest_int_type = type_cast<IntegerType>(dest_type)) {
-            if (dest_int_type->is_signed()) {
+        if (auto source_type = type_cast<IntegerType>(value.type)) {
+            result = ConvertTypeResult(dest_type, LLVMBuildIntCast2(builder, get_rvalue(value), dest_type->llvm_type(), source_type->is_signed(), ""));
+        } else if (auto source_type = type_cast<FloatingPointType>(value.type)) {
+            if (dest_type->is_signed()) {
                 result = ConvertTypeResult(dest_type, LLVMBuildFPToSI(builder, get_rvalue(value), dest_type->llvm_type(), ""));
             } else {
                 result = ConvertTypeResult(dest_type, LLVMBuildFPToUI(builder, get_rvalue(value), dest_type->llvm_type(), ""));
             }
+        } else if (auto source_type = type_cast<PointerType>(value.type)) {
+            auto kind = dest_type->size == IntegerSize::BOOL ? ConvKind::IMPLICIT : ConvKind::EXPLICIT;
+            result = ConvertTypeResult(dest_type, LLVMBuildPtrToInt(builder, get_rvalue(value), dest_type->llvm_type(), ""), kind);
         }
+
         return nullptr;
     }
 
-    virtual const Type* visit(const FunctionType* source_type) override {
-        if (auto pointer_type = type_cast<PointerType>(dest_type)) {
-            ConvKind kind = pointer_type->base_type->unqualified() == source_type ? ConvKind::IMPLICIT : ConvKind::EXPLICIT;
-            result = ConvertTypeResult(dest_type, value.get_lvalue(), kind);
-        }
-        return nullptr;
-    }
+    virtual const Type* visit(const FloatingPointType* dest_type) override {
+        convert_enum_to_int();
 
-    virtual const Type* visit(const IntegerType* source_type) override {
-        if (auto int_target = type_cast<IntegerType>(dest_type)) {
-            result = ConvertTypeResult(dest_type, LLVMBuildIntCast2(builder, get_rvalue(value), dest_type->llvm_type(), source_type->is_signed(), ""));
-        } else if (type_cast<FloatingPointType>(dest_type)) {
+        if (type_cast<FloatingPointType>(value.type)) {
+            result = ConvertTypeResult(dest_type, LLVMBuildFPCast(builder, get_rvalue(value), dest_type->llvm_type(), ""));
+        } else if (auto source_type = type_cast<IntegerType>(value.type)) {
             if (source_type->is_signed()) {
                 result = ConvertTypeResult(dest_type, LLVMBuildSIToFP(builder, get_rvalue(value), dest_type->llvm_type(), ""));
             } else {
                 result = ConvertTypeResult(dest_type, LLVMBuildUIToFP(builder, get_rvalue(value), dest_type->llvm_type(), ""));
             }
-        } else if (type_cast<PointerType>(dest_type)) {
-            result = ConvertTypeResult(dest_type, LLVMBuildIntToPtr(builder, get_rvalue(value), dest_type->llvm_type(), ""), ConvKind::EXPLICIT);
         }
         return nullptr;
     }
-    
-    const Type* visit(const PointerType* source_type) {
-        if (auto dest_pointer_type = type_cast<PointerType>(dest_type)) {
-            result = ConvertTypeResult(value.bit_cast(dest_type), check_pointer_conversion(source_type->base_type, dest_pointer_type->base_type));
-        } else if (auto dest_int_type = type_cast<IntegerType>(dest_type)) {
-            auto kind = dest_int_type->size == IntegerSize::BOOL ? ConvKind::IMPLICIT : ConvKind::EXPLICIT;
-            result = ConvertTypeResult(dest_type, LLVMBuildPtrToInt(builder, get_rvalue(value), dest_type->llvm_type(), ""), kind);
+
+    virtual const Type* visit(const EnumType* dest_type) override {
+        dest_type->base_type->accept(*this);
+        if (result.value.is_valid()) {
+            result.value = result.value.bit_cast(dest_type);
+            result.conv_kind = ConvKind::EXPLICIT;
         }
         return nullptr;
     }
-    
-    const Type* visit(const VoidType* source_type) {
+
+    virtual const Type* visit(const VoidType* dest_type) override {
+        result = ConvertTypeResult(Value(dest_type));
         return nullptr;
     }
 };
@@ -152,29 +169,14 @@ struct TypeConverter: TypeVisitor {
 ConvertTypeResult convert_to_type(const Value& value, const Type* dest_type, Module* module, LLVMBuilderRef builder, EmitOutcome outcome) {
     assert(dest_type->qualifiers() == 0);
 
-    if (dest_type == &VoidType::it) {
-        return ConvertTypeResult(Value(dest_type));
-    }
-
-    const EnumType* dest_enum_type{};
-    if (dest_enum_type = type_cast<EnumType>(dest_type)) {
-        dest_type = dest_enum_type->base_type;
-    }
-
     TypeConverter converter;
     ConvertTypeResult& result = converter.result;
     converter.module = module;
     converter.builder = builder;
     converter.outcome = outcome;
     converter.value = value;
-    converter.dest_type = dest_type;
 
-    value.type->accept(converter);
-
-    if (dest_enum_type) {
-        result.value = result.value.bit_cast(dest_enum_type);
-        dest_type = dest_enum_type;
-    }
+    dest_type->accept(converter);
 
     return converter.result;
 }
