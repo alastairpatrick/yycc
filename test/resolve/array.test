@@ -205,3 +205,17 @@ int a[] = { 1, 2, 3 };
 EXPECT_MESSAGE
 :2:16: error excess elements in array initializer
 END
+
+
+BEGIN Cast in array size
+int a[(int) 3.0];
+EXPECT_AST
+[["var","ES",["A","Si",3],"a"]]
+
+
+BEGIN String in array size
+int a[(int) (char*) "3"];
+EXPECT_MESSAGE
+:1:21: error cannot convert from type 'char const[2]' to type 'char*'
+EXPECT_AST
+[["var","ES",["A","Si"],"a"]]

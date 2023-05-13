@@ -70,7 +70,7 @@ struct TypeConverter: TypeVisitor {
                 result = ConvertTypeResult(dest_type, resized_array);
             }
         } else if (auto pointer_type = type_cast<PointerType>(dest_type)) {
-            if (value.is_const()) {
+            if (module && value.is_const()) {
                 auto& global = module->reified_constants[value.get_const()];
                 if (!global) {
                     global = LLVMAddGlobal(module->llvm_module, value.type->llvm_type(), "const");
