@@ -7,12 +7,6 @@ struct EntityPass: DepthFirstVisitor {
     string prefix;
     LLVMModuleRef llvm_module{};
 
-    void emit(const Scope* scope) {
-        for (auto declarator: scope->declarators) {
-            accept_declarator(declarator);
-        }
-    }
-
     virtual VisitDeclaratorOutput visit(Declarator* primary, Variable* entity, const VisitDeclaratorInput& input) override {
         primary = primary->primary;
         entity = primary->variable();
@@ -56,14 +50,20 @@ struct EntityPass: DepthFirstVisitor {
 
         return VisitDeclaratorOutput();
     }
+
+    void accept_scope(const Scope* scope) {
+        for (auto declarator: scope->declarators) {
+            accept_declarator(declarator);
+        }
+    }
 };
 
 void entity_pass(const ResolvedModule& resolved_module, LLVMModuleRef llvm_module) {
     EntityPass pass;
     pass.llvm_module = llvm_module;
 
-    pass.emit(resolved_module.file_scope);
+    pass.accept_scope(resolved_module.file_scope);
     for (auto scope: resolved_module.type_scopes) {
-        pass.emit(scope);
+        pass.accept_scope(scope);
     }
 }
