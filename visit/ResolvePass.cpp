@@ -48,21 +48,6 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         pause_messages();
     }
 
-    void compose(Declarator* primary, Declarator* secondary) {
-        if (primary->delegate == secondary->delegate) return;
-
-        if (secondary->delegate && primary->delegate && typeid(*secondary->delegate) != typeid(*primary->delegate)) {
-            redeclaration_message(Severity::ERROR, secondary, primary->location, "with different kind of identifier");
-            return;
-        }
-
-        if (primary->delegate) {
-            primary->accept(*this, VisitDeclaratorInput(secondary));
-        } else {
-            assert(false);
-            primary->delegate = secondary->delegate;
-        }
-    }
     
     const Type* composite_type(const Type* a, const Type* b) {
         if (a == b) return a;
@@ -147,7 +132,6 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         }
 
         auto secondary_entity = secondary->variable();
-        assert(secondary_entity); //  TODO
 
         composite_entity(primary, primary_entity, secondary, secondary_entity);
 
@@ -177,7 +161,6 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         }
 
         auto secondary_entity = secondary->function();
-        assert(secondary_entity); //  TODO
 
         composite_entity(primary, primary_entity, secondary, secondary_entity);
     
@@ -670,7 +653,11 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
                     pause_messages();
                 }
 
-                compose(primary, secondary);
+                if (typeid(*secondary->delegate) != typeid(*primary->delegate)) {
+                    redeclaration_message(Severity::ERROR, secondary, primary->location, "with different kind of identifier");
+                } else {
+                    primary->accept(*this, VisitDeclaratorInput(secondary));
+                }
             }
         } else {
             auto declarator = primary;
