@@ -1,4 +1,6 @@
 #include "ResolvePass.h"
+
+#include "DepthFirstVisitor.h"
 #include "Emitter.h"
 #include "Message.h"
 #include "parse/Declaration.h"
@@ -6,7 +8,6 @@
 #include "parse/Expr.h"
 #include "parse/IdentifierMap.h"
 #include "parse/Type.h"
-#include "Visitor.h"
 #include "TypeVisitor.h"
 
 struct ResolvePass: DepthFirstVisitor, TypeVisitor {

@@ -40,11 +40,11 @@ add_library(yycc_lib STATIC
 
     "preprocess/Preprocessor.cpp"
     
+    "visit/DepthFirstVisitor.cpp"
     "visit/Emitter.cpp"
     "visit/EntityPass.cpp"
     "visit/ResolvePass.cpp"
     "visit/TypeConverter.cpp"
-    
     "visit/Visitor.cpp"
 
     "Sweep.cpp"

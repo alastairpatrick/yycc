@@ -1,6 +1,6 @@
+#include "DepthFirstVisitor.h"
 #include "parse/Declaration.h"
 #include "ResolvePass.h"
-#include "Visitor.h"
 
 // This pass creates LLVM globals for all variables with static duration and LLVM functions, including those nested within functions.
 struct EntityPass: DepthFirstVisitor {
