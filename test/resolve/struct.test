@@ -318,6 +318,7 @@ S.T x;
 EXPECT_MESSAGE
 :2:3: error incomplete type 'struct S' named in nested type specifier
 :1:1: ...see 'struct S'
+:2:5: error variable 'x' has incomplete type
 END
 
 

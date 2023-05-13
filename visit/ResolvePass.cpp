@@ -15,23 +15,13 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
     unordered_map<const Type*, const Type*> resolved_types;
 
     struct TodoLess {
-        bool operator()(LocationNode* a, LocationNode* b) const {
+        bool operator()(Declarator* a, Declarator* b) const {
             return a->location < b->location;
         }
     };
 
-    set<LocationNode*, TodoLess> todo;
-    unordered_set<LocationNode*> done;
-
-    virtual VisitStatementOutput accept_statement(Statement* statement) override {
-        if (!statement) return VisitStatementOutput();
-
-        for (auto& label: statement->labels) {
-            resolve(label.case_expr);
-        }
-
-        return statement->accept(*this);
-    }
+    set<Declarator*, TodoLess> todo;
+    unordered_set<Declarator*> done;
 
     void see_other_message(const Location& location) {
         message(Severity::INFO, location) << "...see other\n";
@@ -122,7 +112,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         }
     }
 
-    virtual VisitDeclaratorOutput visit(Declarator* primary, Variable* primary_entity, const VisitDeclaratorInput& input) override {
+virtual VisitDeclaratorOutput visit(Declarator* primary, Variable* primary_entity, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
         if (!secondary) {
             if (primary_entity->member) {
@@ -457,7 +447,8 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
     }
 
     virtual const Type* visit(const TypeDefType* type) override {
-        return resolve(type->declarator);
+        accept_declarator(type->declarator);
+        return type->declarator->primary->type;
     }
 
     virtual const Type* visit(const UnresolvedArrayType* type) override {
@@ -624,11 +615,11 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         declarator->delegate = new Function(variable->linkage);
     }
 
-    const Type* resolve(Declarator* primary) {
+    virtual VisitDeclaratorOutput accept_declarator(Declarator* primary) override {
         struct ResolutionCycle {};
 
         primary = primary->primary;
-        if (primary->status >= DeclaratorStatus::RESOLVED) return primary->type;
+        if (primary->status >= DeclaratorStatus::RESOLVED) return VisitDeclaratorOutput();
         if (primary->status == DeclaratorStatus::RESOLVING) {
             throw ResolutionCycle();
         }
@@ -699,7 +690,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         primary->accept(*this, VisitDeclaratorInput());
         primary->status = DeclaratorStatus::RESOLVED;
 
-        return primary->type;
+        return VisitDeclaratorOutput();
     }
 
     const Type* resolve(const Type* unresolved_type) {
@@ -708,7 +699,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
 
         return resolved_type = unresolved_type->accept(*this);
     }
-
+    
     void resolve(LocationNode* node) {
         if (!node) return;
 
@@ -718,7 +709,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
                 resolve(declarator);
             }
         } else if (auto declarator = dynamic_cast<Declarator*>(node)) {
-            resolve(declarator);         
+            accept_declarator(declarator);         
         } else if (auto statement = dynamic_cast<Statement*>(node)) {
             accept_statement(statement);
         } else if (auto expr = dynamic_cast<Expr*>(node)) {
@@ -730,7 +721,8 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
     
     void resolve(const vector<Declaration*>& declarations) {
         for (auto declaration: declarations) {
-            todo.insert(declaration);
+            declaration->type = resolve(declaration->type);
+            todo.insert(declaration->declarators.begin(), declaration->declarators.end());
         }
 
         while (!todo.empty()) {
@@ -753,10 +745,10 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         });
     }
 
-    void pend(LocationNode* node) {
-        if (!node) return;
-        if (done.find(node) != done.end()) return;
-        todo.insert(node);
+    void pend(Declarator* declarator) {
+        if (!declarator) return;
+        if (done.find(declarator) != done.end()) return;
+        todo.insert(declarator);
     }
 };
 

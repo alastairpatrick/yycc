@@ -34,7 +34,7 @@ struct VisitExpressionOutput {
 struct Visitor {
     typedef Visitor Base;
 
-    virtual VisitDeclaratorOutput accept_declarator(Declarator* declarator, const VisitDeclaratorInput& input);
+    virtual VisitDeclaratorOutput accept_declarator(Declarator* declarator);
     virtual VisitDeclaratorOutput visit(Declarator* declarator, Variable* variable, const VisitDeclaratorInput& input);
     virtual VisitDeclaratorOutput visit(Declarator* declarator, Function* function, const VisitDeclaratorInput& input);
     virtual VisitDeclaratorOutput visit(Declarator* declarator, TypeDelegate* type_delegate, const VisitDeclaratorInput& input);
@@ -78,6 +78,7 @@ struct DepthFirstVisitor: Visitor {
     virtual VisitDeclaratorOutput visit(Declarator* declarator, TypeDelegate* type_delegate, const VisitDeclaratorInput& input) override;
     virtual VisitDeclaratorOutput visit(Declarator* declarator, EnumConstant* enum_constant, const VisitDeclaratorInput& input) override;
 
+    virtual VisitStatementOutput accept_statement(Statement* statement);
     virtual VisitStatementOutput visit(CompoundStatement* statement) override;
     virtual VisitStatementOutput visit(ExprStatement* statement) override;
     virtual VisitStatementOutput visit(ForStatement* statement) override;

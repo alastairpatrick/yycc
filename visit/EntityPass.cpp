@@ -9,7 +9,7 @@ struct EntityPass: DepthFirstVisitor {
 
     void emit(const Scope* scope) {
         for (auto declarator: scope->declarators) {
-            accept_declarator(declarator, VisitDeclaratorInput());
+            accept_declarator(declarator);
         }
     }
 

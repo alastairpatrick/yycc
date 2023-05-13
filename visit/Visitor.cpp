@@ -3,9 +3,9 @@
 
 /* Declarations */
 
-VisitDeclaratorOutput Visitor::accept_declarator(Declarator* declarator, const VisitDeclaratorInput& input) {
+VisitDeclaratorOutput Visitor::accept_declarator(Declarator* declarator) {
     if (!declarator) return VisitDeclaratorOutput();
-    return declarator->accept(*this, input);
+    return declarator->accept(*this, VisitDeclaratorInput());
 }
 
 VisitDeclaratorOutput Visitor::visit(Declarator* declarator, Variable* variable, const VisitDeclaratorInput& input) {
@@ -160,10 +160,19 @@ static void visit_declaration(DepthFirstVisitor* visitor, Declaration* declarati
     if (!declaration) return;
 
     for (auto declarator: declaration->declarators) {
-        visitor->accept_declarator(declarator, VisitDeclaratorInput());
+        visitor->accept_declarator(declarator);
     }
 }
 
+VisitStatementOutput DepthFirstVisitor::accept_statement(Statement* statement) {
+    if (!statement) return VisitStatementOutput();
+
+    for (auto& label: statement->labels) {
+        label.case_expr = accept_expr(label.case_expr).expr;
+    }
+
+    return statement->accept(*this);
+}
 
 VisitStatementOutput DepthFirstVisitor::visit(CompoundStatement* statement) {
     for (auto node: statement->nodes) {
