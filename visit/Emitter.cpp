@@ -68,34 +68,16 @@ struct Emitter: Visitor {
         if (temp_builder) LLVMDisposeBuilder(temp_builder);
     }
 
-    void emit(ASTNode* node) {
-        if (auto declaration = dynamic_cast<Declaration*>(node)) {
-            emit(declaration);
-        } else if (auto statement = dynamic_cast<Statement*>(node)) {
-            emit(statement);
-        }
-    }
-
-    void emit(Declaration* declaration) {
-        for (auto declarator: declaration->declarators) {
-            emit(declarator);
-        }
-    }
-
-    void emit(Scope* scope) {
-        for (auto declarator: scope->declarators) {
-            emit(declarator);
-        }
-    }
-
-    void emit(Declarator* declarator) {
+    virtual VisitDeclaratorOutput accept_declarator(Declarator* declarator) override {
         declarator = declarator->primary;
-        if (declarator->status >= DeclaratorStatus::EMITTED) return;
+        if (declarator->status >= DeclaratorStatus::EMITTED) return VisitDeclaratorOutput();
         assert(declarator->status == DeclaratorStatus::RESOLVED);
 
         declarator->accept(*this, VisitDeclaratorInput());
 
         declarator->status = DeclaratorStatus::EMITTED;
+
+        return VisitDeclaratorOutput();
     }
 
     LLVMValueRef get_rvalue(const Value &value) {
@@ -132,19 +114,15 @@ struct Emitter: Visitor {
         return block;
     }
 
-    VisitExpressionOutput emit(Expr* expr) {
+    VisitExpressionOutput accept_expr(Expr* expr) {
         try {
-            return accept_expr(expr);
+            return expr->accept(*this);
         } catch (FoldError& e) {
             if (!e.error_reported) {
                 message(Severity::ERROR, expr->location) << "not a constant expression\n";
             }
             throw FoldError(true);
         }
-    }
-
-    VisitStatementOutput emit(Statement* statement) {
-        return accept_statement(statement);
     }
 
     virtual VisitStatementOutput accept_statement(Statement* statement) override {
@@ -178,7 +156,7 @@ struct Emitter: Visitor {
     }
 
     Value convert_to_type(Expr* expr, const Type* dest_type, ConvKind kind) {
-        auto value = emit(expr).value.unqualified();
+        auto value = accept_expr(expr).value.unqualified();
         return convert_to_type(value, dest_type, kind, expr->location);
     }
 
@@ -247,7 +225,7 @@ struct Emitter: Visitor {
             }
         }
 
-        emit(entity->body);
+        accept_statement(entity->body);
 
         if (function_type->return_type->unqualified() == &VoidType::it) {
             LLVMBuildRetVoid(builder);
@@ -428,12 +406,12 @@ struct Emitter: Visitor {
         for (auto node: statement->nodes) {
             if (auto declaration = dynamic_cast<Declaration*>(node)) {
                 for (auto declarator: declaration->declarators) {
-                    emit(declarator);
+                    accept_declarator(declarator);
                 }
             }
 
             if (auto statement = dynamic_cast<Statement*>(node)) {
-                emit(statement);
+                accept_statement(statement);
             }
         }
 
@@ -441,7 +419,7 @@ struct Emitter: Visitor {
     }
 
     VisitStatementOutput visit(ExprStatement* statement) {
-        emit(statement->expr);
+        accept_expr(statement->expr);
         return VisitStatementOutput();
     }
 
@@ -449,11 +427,13 @@ struct Emitter: Visitor {
         Construct construct(this);
 
         if (statement->declaration) {
-            emit(statement->declaration);
+            for (auto declarator: statement->declaration->declarators) {
+                accept_declarator(declarator);
+            }
         }
 
         if (statement->initialize) {
-            emit(statement->initialize);
+            accept_expr(statement->initialize);
         }
 
         auto loop_block = append_block("for_l");
@@ -469,13 +449,13 @@ struct Emitter: Visitor {
         }
 
         LLVMPositionBuilderAtEnd(builder, body_block);
-        emit(statement->body);
+        accept_statement(statement->body);
 
         if (statement->iterate) {
             LLVMBuildBr(builder, iterate_block);
 
             LLVMPositionBuilderAtEnd(builder, iterate_block);
-            emit(statement->iterate);
+            accept_expr(statement->iterate);
         }
 
         LLVMBuildBr(builder, loop_block);
@@ -516,12 +496,12 @@ struct Emitter: Visitor {
         LLVMBuildCondBr(builder, get_rvalue(condition_value), then_block, else_block);
 
         LLVMPositionBuilderAtEnd(builder, then_block);
-        emit(statement->then_statement);
+        accept_statement(statement->then_statement);
         LLVMBuildBr(builder, end_block);
 
         if (statement->else_statement) {
             LLVMPositionBuilderAtEnd(builder, else_block);
-            emit(statement->else_statement);
+            accept_statement(statement->else_statement);
             LLVMBuildBr(builder, end_block);
         }
 
@@ -569,7 +549,7 @@ struct Emitter: Visitor {
             default_block = construct.break_block;
         }
 
-        auto expr_value = emit(statement->expr).value.unqualified();
+        auto expr_value = accept_expr(statement->expr).value.unqualified();
         auto switch_value = LLVMBuildSwitch(builder, get_rvalue(expr_value), default_block, statement->cases.size());
 
         for (auto case_expr: statement->cases) {
@@ -586,7 +566,7 @@ struct Emitter: Visitor {
 
         LLVMPositionBuilderAtEnd(builder, unreachable_block);
 
-        emit(statement->body);
+        accept_statement(statement->body);
 
         LLVMBuildBr(builder, construct.break_block);
         LLVMPositionBuilderAtEnd(builder, construct.break_block);
@@ -595,7 +575,7 @@ struct Emitter: Visitor {
     }
 
     virtual VisitExpressionOutput visit(AddressExpr* expr) override {
-        auto value = emit(expr->expr).value;
+        auto value = accept_expr(expr->expr).value;
         auto result_type = value.type->pointer_to();
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
@@ -918,7 +898,7 @@ struct Emitter: Visitor {
     virtual VisitExpressionOutput visit(BinaryExpr* expr) override {
         auto op = expr->op;
         Value intermediate;
-        Value left_value = emit(expr->left).value.unqualified();
+        Value left_value = accept_expr(expr->left).value.unqualified();
 
         if (op == TOK_AND_OP || op == TOK_OR_OP) {
             intermediate = emit_logical_binary_operation(expr, left_value, expr->left->location);
@@ -926,7 +906,7 @@ struct Emitter: Visitor {
             left_value = convert_array_to_pointer(left_value);
             auto left_pointer_type = type_cast<PointerType>(left_value.type);
 
-            auto right_value = emit(expr->right).value.unqualified();
+            auto right_value = accept_expr(expr->right).value.unqualified();
             right_value = convert_array_to_pointer(right_value);
             auto right_pointer_type = type_cast<PointerType>(right_value.type);
 
@@ -1012,7 +992,7 @@ struct Emitter: Visitor {
 
     virtual VisitExpressionOutput visit(DereferenceExpr* expr) override {
 
-        auto value = emit(expr->expr).value.unqualified();
+        auto value = accept_expr(expr->expr).value.unqualified();
         auto pointer_type = type_cast<PointerType>(value.type);
         auto result_type = pointer_type->base_type;
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
@@ -1079,7 +1059,7 @@ struct Emitter: Visitor {
     }
 
     virtual VisitExpressionOutput visit(IncDecExpr* expr) override {
-        auto lvalue = emit(expr->expr).value.unqualified();
+        auto lvalue = accept_expr(expr->expr).value.unqualified();
         auto before_value = Value(lvalue.type, get_rvalue(lvalue));
 
         const Type* result_type = before_value.type;
@@ -1102,7 +1082,7 @@ struct Emitter: Visitor {
     }
 
     Value emit_object_of_member_expr(MemberExpr* expr) {
-        auto object = emit(expr->object).value.unqualified();
+        auto object = accept_expr(expr->object).value.unqualified();
         if (auto pointer_type = type_cast<PointerType>(object.type)) {
             object = Value(ValueKind::LVALUE, pointer_type->base_type, get_rvalue(object));
         }
@@ -1152,7 +1132,7 @@ struct Emitter: Visitor {
             throw FoldError(true);
         }
 
-        auto function_output = emit(expr->function);
+        auto function_output = accept_expr(expr->function);
         auto function_value = function_output.value.unqualified();
 
         if (auto pointer_type = type_cast<PointerType>(function_value.type)) {
@@ -1233,8 +1213,8 @@ struct Emitter: Visitor {
     virtual VisitExpressionOutput visit(SubscriptExpr* expr) override {
         auto zero = TranslationUnitContext::it->zero_size;
 
-        auto left_value = emit(expr->left).value.unqualified();
-        auto index_value = emit(expr->right).value.unqualified();
+        auto left_value = accept_expr(expr->left).value.unqualified();
+        auto index_value = accept_expr(expr->right).value.unqualified();
 
         if (type_cast<IntegerType>(left_value.type)) {
             swap(left_value, index_value);
@@ -1299,6 +1279,12 @@ struct Emitter: Visitor {
 
         return VisitExpressionOutput(result_type, llvm_constant);
     }
+
+    void accept_scope(Scope* scope) {
+        for (auto declarator: scope->declarators) {
+            accept_declarator(declarator);
+        }
+    }
 };
 
 Construct::Construct(Emitter* emitter): emitter(emitter) {
@@ -1322,14 +1308,14 @@ SwitchConstruct::~SwitchConstruct() {
 const Type* get_expr_type(const Expr* expr) {
     static const EmitOptions options;
     Emitter emitter(EmitOutcome::TYPE, options);
-    return emitter.emit(const_cast<Expr*>(expr)).value.type;
+    return emitter.accept_expr(const_cast<Expr*>(expr)).value.type;
 }
 
 Value fold_expr(const Expr* expr) {
     static const EmitOptions options;
     Emitter emitter(EmitOutcome::FOLD, options);
     try {
-        return emitter.emit(const_cast<Expr*>(expr)).value;
+        return emitter.accept_expr(const_cast<Expr*>(expr)).value;
     } catch (FoldError&) {
         return Value::of_recover(get_expr_type(expr));
     }
@@ -1347,9 +1333,9 @@ LLVMModuleRef emit_pass(const ResolvedModule& resolved_module, const EmitOptions
     Emitter emitter(EmitOutcome::IR, options);
     emitter.module = &module;
 
-    emitter.emit(resolved_module.file_scope);
+    emitter.accept_scope(resolved_module.file_scope);
     for (auto scope: resolved_module.type_scopes) {
-        emitter.emit(scope);
+        emitter.accept_scope(scope);
     }
 
     LLVMVerifyModule(module.llvm_module, LLVMPrintMessageAction, nullptr);
