@@ -301,7 +301,7 @@ END
 
 BEGIN Call member function (1)
 struct S {
-  int f(S* this) {
+  int f(S this&) {
     return 7;
   }
 };
@@ -319,8 +319,6 @@ define i32 @g() {
 }
 
 define i32 @f(ptr %0) {
-  %this = alloca ptr, align 8
-  store ptr %0, ptr %this, align 8
   ret i32 7
 }
 END
@@ -328,7 +326,7 @@ END
 
 BEGIN Call member function (2)
 struct S {
-  int f(S* this) {
+  int f(S this&) {
     return 7;
   }
 };
@@ -345,9 +343,38 @@ define i32 @g(ptr %0) {
 }
 
 define i32 @f(ptr %0) {
-  %this = alloca ptr, align 8
-  store ptr %0, ptr %this, align 8
   ret i32 7
+}
+END
+
+
+BEGIN Member function call receiver converted to lvalue
+struct S {
+  S f(S this&) {
+    S s;
+    return s;
+  }
+};
+void g() {
+  S s;
+  s.f().f();
+}
+EXPECT_IR
+%S = type {}
+
+define void @g() {
+  %1 = alloca %S, align 8
+  %s = alloca %S, align 8
+  %2 = call %S @f(ptr %s)
+  store %S %2, ptr %1, align 1
+  %3 = call %S @f(ptr %1)
+  ret void
+}
+
+define %S @f(ptr %0) {
+  %s = alloca %S, align 8
+  %2 = load %S, ptr %s, align 1
+  ret %S %2
 }
 END
 
@@ -367,9 +394,22 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN Error if cannot convert instance parameter in member function call
+BEGIN Error if value passed by reference has different type
+struct S {};
+struct T {};
+void f(S&) {}
+void g() {
+    T t;
+    f(t);
+}
+EXPECT_MESSAGE
+:6:7: error lvalue type 'struct T' incompatible with pass-by-reference parameter type 'struct S&'
+END
+
+
+BEGIN Error if lvalue has more qualifiers than pass-by-reference parameter
 struct S {
-  int f(S*) {
+  int f(S&) {
     return 7;
   }
 };
@@ -377,7 +417,36 @@ int g(const S* p) {
   return p->f();
 }
 EXPECT_MESSAGE
-:7:11: contextual error conversion from type 'struct S const*' to type 'struct S*' requires explicit cast
+:7:10: error lvalue type 'struct S const' has more type qualifiers than pass-by-reference parameter type 'struct S&'
+END
+
+
+BEGIN Rvalue passed to const parameter by reference is converted
+void f(const int&) {}
+void g() {
+    f(1.0);
+}
+EXPECT_IR
+define void @f(ptr %0) {
+  ret void
+}
+
+define void @g() {
+  %1 = alloca i32, align 4
+  store i32 1, ptr %1, align 4
+  call void @f(ptr %1)
+  ret void
+}
+END
+
+
+BEGIN Rvalue passed to non-const parameter by reference yields error
+void f(int&) {}
+void g() {
+    f(1.0);
+}
+EXPECT_MESSAGE
+:3:7: error rvalue type 'double' incompatible with non-const pass-by-reference parameter type 'int&'
 END
 
 

@@ -337,28 +337,29 @@ struct Emitter: Visitor {
         }
     }
 
+    Value allocate_auto_storage(const Type* type, const char* name) {
+        use_temp_builder();
+        auto storage = LLVMBuildAlloca(temp_builder, type->llvm_type(), name);
+        return Value(ValueKind::LVALUE, type, storage);
+    }
+
     void emit_variable(Declarator* declarator, Variable* entity) {
         auto type = declarator->primary->type;
         auto llvm_type = type->llvm_type();
 
-        auto null_value = LLVMConstNull(llvm_type);
-
         if (entity->storage_duration == StorageDuration::AUTO) {
-            use_temp_builder();
-            auto storage = LLVMBuildAlloca(temp_builder, llvm_type, c_str(declarator->identifier));
-
-            entity->value = Value(ValueKind::LVALUE, type, storage);
+            entity->value = allocate_auto_storage(type, c_str(declarator->identifier));
 
             if (entity->initializer) {
                 emit_auto_initializer(entity->value, entity->initializer);
             } else if (options.initialize_variables) {
-                LLVMBuildStore(builder, null_value, storage);
+                entity->value.store(builder, Value::of_null(type));
             }
 
         } else if (entity->storage_duration == StorageDuration::STATIC) {
             auto global = entity->value.get_lvalue();
 
-            LLVMValueRef initial = null_value;
+            LLVMValueRef initial = LLVMConstNull(llvm_type);
             if (entity->initializer) {
                 auto old_outcome = outcome;
                 outcome = EmitOutcome::FOLD;
@@ -1082,7 +1083,7 @@ struct Emitter: Visitor {
     }
 
     Value emit_object_of_member_expr(MemberExpr* expr) {
-        auto object = accept_expr(expr->object).value.unqualified();
+        auto object = accept_expr(expr->object).value;
         if (auto pointer_type = type_cast<PointerType>(object.type)) {
             object = Value(ValueKind::LVALUE, pointer_type->base_type, get_rvalue(object));
         }
@@ -1150,11 +1151,18 @@ struct Emitter: Visitor {
 
             size_t actual_num_params = expr->parameters.size();
 
-            Value object_pointer_value;
+            Value object_value;
             MemberExpr* member_expr = dynamic_cast<MemberExpr*>(expr->function);
             if (member_expr) {
                 function_declarator = member_expr->member;
-                object_pointer_value = emit_object_of_member_expr(member_expr).address_of();
+                object_value = emit_object_of_member_expr(member_expr);
+
+                if (object_value.kind != ValueKind::LVALUE) {
+                    auto lvalue = allocate_auto_storage(object_value.type, "");
+                    lvalue.store(builder, object_value);
+                    object_value = lvalue;
+                }
+
                 ++actual_num_params;
             }
 
@@ -1175,15 +1183,51 @@ struct Emitter: Visitor {
             size_t param_expr_idx{};
             for (size_t i = 0; i < expected_num_params; ++i) {
                 Value param_value;
+                auto expected_type = function_type->parameter_types[i];
+
+                const PassByReferenceType* pass_by_ref_type{};
+                if (pass_by_ref_type = type_cast<PassByReferenceType>(expected_type)) {
+                    expected_type = pass_by_ref_type->base_type;
+                }
+
+                Location param_location;
                 if (member_expr && i == 0) {
-                    auto expected_type = function_type->parameter_types[i];
-                    param_value = convert_to_type(object_pointer_value, expected_type, ConvKind::IMPLICIT, member_expr->location);
+                    param_value = object_value;
+                    param_location = member_expr->object->location;
                 } else {
                     auto param_expr = expr->parameters[param_expr_idx++];
-                    auto expected_type = function_type->parameter_types[i];
-                    param_value = convert_to_type(param_expr, expected_type, ConvKind::IMPLICIT);
+                    param_value = accept_expr(param_expr).value;
+                    param_location = param_expr->location;
                 }
-                llvm_params[i] = get_rvalue(param_value);
+
+                if (pass_by_ref_type) {
+                    if (param_value.kind != ValueKind::LVALUE && (expected_type->qualifiers() & QUALIFIER_CONST)) {
+                        param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, member_expr->location);
+                        auto lvalue = allocate_auto_storage(param_value.type, "");
+                        lvalue.store(builder, param_value);
+                        llvm_params[i] = lvalue.get_lvalue();
+                    } else if (param_value.kind != ValueKind::LVALUE) {
+                        message(Severity::ERROR, param_location) << "rvalue type '" << PrintType(param_value.type) << "' incompatible with non-const pass-by-reference parameter type '"
+                                                                 << PrintType(function_type->parameter_types[i]) << "'\n";
+                        llvm_params[i] = LLVMConstNull(pass_by_ref_type->llvm_type());
+                    } else {
+                        if (param_value.type->unqualified() != expected_type->unqualified()) {
+                            message(Severity::ERROR, param_location) << "lvalue type '" << PrintType(param_value.type) << "' incompatible with pass-by-reference parameter type '"
+                                                                     << PrintType(function_type->parameter_types[i]) << "'\n";
+                        }
+
+                        if (param_value.qualifiers > expected_type->qualifiers()) {
+                            message(Severity::ERROR, param_location) << "lvalue type '" << PrintType(param_value.type) << "' has more type qualifiers than pass-by-reference parameter type '"
+                                                                     << PrintType(function_type->parameter_types[i]) << "'\n";
+                        }
+
+                        param_value = param_value.unqualified();
+                        llvm_params[i] = param_value.get_lvalue();
+                    }
+                } else {
+                    param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, member_expr->location);
+                    llvm_params[i] = get_rvalue(param_value);
+                }
             }
 
             auto result = LLVMBuildCall2(builder, function_type->llvm_type(), function_value.get_lvalue(), llvm_params.data(), llvm_params.size(), "");
