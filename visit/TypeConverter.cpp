@@ -51,6 +51,7 @@ struct TypeConverter: TypeVisitor {
         return value.get_rvalue(builder, outcome);
     }
 
+    // todo: investigate whether the visited objects should be dest_type rather than source_type
     virtual const Type* visit(const ResolvedArrayType* source_type) override {
         if (auto dest_array_type = type_cast<ResolvedArrayType>(dest_type)) {
             if (value.is_const() && source_type->element_type == dest_array_type->element_type && source_type->size <= dest_array_type->size) {
