@@ -278,7 +278,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
                 return nullptr;
             }
 
-            resolve(member);
+            accept_declarator(member);
             return member->primary;
         }
 
@@ -373,7 +373,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
 
             for (auto declarator: declaration->declarators) {
                 if (auto variable = declarator->variable()) {
-                    resolve(declarator);
+                    accept_declarator(declarator);
                 } else {
                     pend(declarator);
                 }
@@ -408,7 +408,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         for (auto declarator: type->constants) {
             auto enum_constant = declarator->enum_constant();
             if (enum_constant->expr) {
-                resolve(enum_constant->expr);
+                enum_constant->expr = accept_expr(enum_constant->expr).expr;
                 auto value = fold_expr(enum_constant->expr);
                 if (value.is_const_integer()) {
                     next = LLVMConstIntGetSExtValue(value.get_const());                
@@ -434,8 +434,8 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
     }
 
     virtual const Type* visit(const TypeOfType* type) override {
-        resolve(type->expr);
-        return get_expr_type(type->expr);
+        auto expr = accept_expr(type->expr).expr;
+        return get_expr_type(expr);
     }
 
     virtual const Type* visit(const TypeDefType* type) override {
@@ -454,10 +454,11 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
             resolved_element_type = IntegerType::default_type();
         }
 
-        if (type->size) {
-            resolve(type->size);
+        Expr* size = type->size;
+        if (size) {
+            size = accept_expr(size).expr;
             unsigned long long size_int = 1;
-            auto size_constant = fold_expr(type->size);
+            auto size_constant = fold_expr(size);
             if (!size_constant.is_const_integer()) {
                 message(Severity::ERROR, type->size->location) << "size of array must have integer type\n";
             } else {
@@ -472,9 +473,12 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
 
     virtual VisitStatementOutput visit(CompoundStatement* statement) override {
         for (auto node: statement->nodes) {
-            resolve(node);
+            if (auto declaration = dynamic_cast<Declaration*>(node)) {
+                declaration->type = resolve(declaration->type);
+            }
         }
-        return VisitStatementOutput();
+
+        return Base::visit(statement);
     }
 
     virtual VisitExpressionOutput visit(CastExpr* expr) override {
@@ -494,7 +498,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
             return Base::visit(IntegerConstant::default_expr(expr->location));
         }
 
-        resolve(expr->declarator);
+        accept_declarator(expr->declarator);
         expr->declarator = expr->declarator->primary;
         return Base::visit(expr);
     }
@@ -508,7 +512,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         if (auto entity = dynamic_cast<EntityExpr*>(expr->object)) {
             if (!entity->declarator->type_delegate()) return nullptr;
 
-            resolve(entity->declarator);
+            accept_declarator(entity->declarator);
             return entity->declarator->primary->type;
         }
 
@@ -533,7 +537,6 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
             member_expr->type = enclosing_type;
             member_expr->object = nullptr;
         } else {
-            resolve(member_expr->object);            
             enclosing_type = get_expr_type(member_expr->object);
             enclosing_type = resolve(enclosing_type);
         }
@@ -692,25 +695,6 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         return resolved_type = unresolved_type->accept(*this);
     }
     
-    void resolve(LocationNode* node) {
-        if (!node) return;
-
-        if (auto declaration = dynamic_cast<Declaration*>(node)) {
-            declaration->type = resolve(declaration->type);
-            for (auto declarator: declaration->declarators) {
-                resolve(declarator);
-            }
-        } else if (auto declarator = dynamic_cast<Declarator*>(node)) {
-            accept_declarator(declarator);         
-        } else if (auto statement = dynamic_cast<Statement*>(node)) {
-            accept_statement(statement);
-        } else if (auto expr = dynamic_cast<Expr*>(node)) {
-            accept_expr(expr);
-        } else {
-            assert(false);
-        }
-    }
-    
     void resolve(const vector<Declaration*>& declarations) {
         for (auto declaration: declarations) {
             declaration->type = resolve(declaration->type);
@@ -723,7 +707,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
             done.insert(node);
 
             resume_messages();
-            resolve(node);
+            accept_declarator(node);
         }
     
         resume_messages();
