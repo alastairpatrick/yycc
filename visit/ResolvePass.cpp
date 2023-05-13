@@ -112,15 +112,10 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         }
     }
 
-virtual VisitDeclaratorOutput visit(Declarator* primary, Variable* primary_entity, const VisitDeclaratorInput& input) override {
+    virtual VisitDeclaratorOutput visit(Declarator* primary, Variable* primary_entity, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
         if (!secondary) {
-            if (primary_entity->member) {
-                if (primary_entity->member->bit_field) resolve(primary_entity->member->bit_field->expr);
-            }
-
             if (primary_entity->initializer) {
-                resolve(primary_entity->initializer);
                 if (auto array_type = dynamic_cast<const ResolvedArrayType*>(primary->type)) {
                     // C99 6.7.8p22
                     if (auto string_constant = dynamic_cast<StringConstant*>(primary_entity->initializer)) {
@@ -148,7 +143,7 @@ virtual VisitDeclaratorOutput visit(Declarator* primary, Variable* primary_entit
                 primary->type = IntegerType::default_type();
             }
 
-            return VisitDeclaratorOutput();
+            return Base::visit(primary, primary_entity, input);
         }
 
         auto secondary_entity = secondary->variable();
@@ -176,12 +171,9 @@ virtual VisitDeclaratorOutput visit(Declarator* primary, Variable* primary_entit
             auto function_type = dynamic_cast<const FunctionType*>(primary->type);
             for (size_t i = 0; i < primary_entity->parameters.size(); ++i) {
                 primary_entity->parameters[i]->type = resolve(function_type->parameter_types[i]);
-                resolve(primary_entity->parameters[i]);
             }
 
-            if (primary_entity->body) resolve(primary_entity->body);
-
-            return VisitDeclaratorOutput();
+            return Base::visit(primary, primary_entity, input);
         }
 
         auto secondary_entity = secondary->function();

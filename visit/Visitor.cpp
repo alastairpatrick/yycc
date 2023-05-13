@@ -139,10 +139,25 @@ VisitExpressionOutput Visitor::visit(StringConstant* constant) {
 /* Declarations */
 
 VisitDeclaratorOutput DepthFirstVisitor::visit(Declarator* declarator, Variable* variable, const VisitDeclaratorInput& input) {
+    if (variable->member && variable->member->bit_field) {
+        variable->member->bit_field->expr = accept_expr(variable->member->bit_field->expr).expr;
+    }
+
+    variable->initializer = accept_expr(variable->initializer).expr;
+
     return VisitDeclaratorOutput();
 }
 
 VisitDeclaratorOutput DepthFirstVisitor::visit(Declarator* declarator, Function* function, const VisitDeclaratorInput& input) {
+    auto function_type = dynamic_cast<const FunctionType*>(declarator->type);
+    for (size_t i = 0; i < function->parameters.size(); ++i) {
+        accept_declarator(function->parameters[i]);
+    }
+
+    if (function->body) {
+        accept_statement(function->body);
+    }
+
     return VisitDeclaratorOutput();
 }
 
