@@ -32,31 +32,31 @@ VisitStatementOutput Visitor::accept_statement(Statement* statement) {
 }
 
 VisitStatementOutput Visitor::visit(CompoundStatement* statement) {
-    return VisitStatementOutput();
+    return VisitStatementOutput(statement);
 }
 
 VisitStatementOutput Visitor::visit(ExprStatement* statement) {
-    return VisitStatementOutput();
+    return VisitStatementOutput(statement);
 }
 
 VisitStatementOutput Visitor::visit(ForStatement* statement) {
-    return VisitStatementOutput();
+    return VisitStatementOutput(statement);
 }
 
 VisitStatementOutput Visitor::visit(GoToStatement* statement) {
-    return VisitStatementOutput();
+    return VisitStatementOutput(statement);
 }
 
 VisitStatementOutput Visitor::visit(IfElseStatement* statement) {
-    return VisitStatementOutput();
+    return VisitStatementOutput(statement);
 }
 
 VisitStatementOutput Visitor::visit(ReturnStatement* statement) {
-    return VisitStatementOutput();
+    return VisitStatementOutput(statement);
 }
 
 VisitStatementOutput Visitor::visit(SwitchStatement* statement) {
-    return VisitStatementOutput();
+    return VisitStatementOutput(statement);
 }
 
 /* Expressions */

@@ -62,7 +62,7 @@ struct ReturnStatement: Statement {
 
 struct SwitchStatement: Statement {
     Expr* expr{};
-    CompoundStatement* body{};
+    Statement* body{};
     vector<Expr*> cases;
     int num_defaults{};
 

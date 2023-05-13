@@ -56,21 +56,21 @@ VisitStatementOutput DepthFirstVisitor::accept_statement(Statement* statement) {
 }
 
 VisitStatementOutput DepthFirstVisitor::visit(CompoundStatement* statement) {
-    for (auto node: statement->nodes) {
+    for (auto& node: statement->nodes) {
         if (auto declaration = dynamic_cast<Declaration*>(node)) {
             visit_declaration(this, declaration);
         }
 
         if (auto statement = dynamic_cast<Statement*>(node)) {
-            accept_statement(statement);
+            node = accept_statement(statement).statement;
         }
     }
-    return VisitStatementOutput();
+    return VisitStatementOutput(statement);
 }
 
 VisitStatementOutput DepthFirstVisitor::visit(ExprStatement* statement) {
     statement->expr = accept_expr(statement->expr).expr;
-    return VisitStatementOutput();
+    return VisitStatementOutput(statement);
 }
 
 VisitStatementOutput DepthFirstVisitor::visit(ForStatement* statement) {
@@ -78,36 +78,36 @@ VisitStatementOutput DepthFirstVisitor::visit(ForStatement* statement) {
     statement->initialize = accept_expr(statement->initialize).expr;
     statement->condition = accept_expr(statement->condition).expr;
     statement->iterate = accept_expr(statement->iterate).expr;
-    accept_statement(statement->body);
+    statement->body = accept_statement(statement->body).statement;
 
-    return VisitStatementOutput();
+    return VisitStatementOutput(statement);
 }
 
 VisitStatementOutput DepthFirstVisitor::visit(GoToStatement* statement) {
-    return VisitStatementOutput();
+    return VisitStatementOutput(statement);
 }
 
 VisitStatementOutput DepthFirstVisitor::visit(IfElseStatement* statement) {
     statement->condition = accept_expr(statement->condition).expr;
-    accept_statement(statement->then_statement);
-    accept_statement(statement->else_statement);
-    return VisitStatementOutput();
+    statement->then_statement = accept_statement(statement->then_statement).statement;
+    statement->else_statement = accept_statement(statement->else_statement).statement;
+    return VisitStatementOutput(statement);
 }
 
 VisitStatementOutput DepthFirstVisitor::visit(ReturnStatement* statement) {
     statement->expr = accept_expr(statement->expr).expr;
-    return VisitStatementOutput();
+    return VisitStatementOutput(statement);
 }
 
 VisitStatementOutput DepthFirstVisitor::visit(SwitchStatement* statement) {
     statement->expr = accept_expr(statement->expr).expr;
-    accept_statement(statement->body);
+    statement->body = accept_statement(statement->body).statement;
     
     for (auto& case_expr: statement->cases) {
         case_expr = accept_expr(case_expr).expr;
     }
 
-    return VisitStatementOutput();
+    return VisitStatementOutput(statement);
 }
 
 /* Expressions */

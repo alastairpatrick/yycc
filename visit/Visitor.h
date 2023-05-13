@@ -19,6 +19,10 @@ struct VisitDeclaratorOutput {
 };
 
 struct VisitStatementOutput {
+    Statement* statement{};
+
+    VisitStatementOutput() = default;
+    explicit VisitStatementOutput(Statement* statement): statement(statement) {}
 };
 
 struct VisitExpressionOutput {
