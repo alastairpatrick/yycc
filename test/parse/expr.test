@@ -435,6 +435,12 @@ EXPECT_AST
 ["sizeof",["typeof",["Fd",1]]]
 
 
+BEGIN Sizeof cast expression
+sizeof((float) 1)
+EXPECT_AST
+["sizeof",["typeof",["cast","Ff",1]]]
+
+
 BEGIN Call expression (1)
 1()
 EXPECT_AST

@@ -1273,7 +1273,12 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
               if (type) {
                   result = new SizeOfExpr(type, location);
               } else {
-                  auto expr = parse_sub_expr(SubExpressionKind::UNARY);
+                  Expr* expr{};
+                  if (consumed_paren) {
+                      expr = parse_expr(SEQUENCE_PRECEDENCE);
+                  } else {
+                      expr = parse_sub_expr(SubExpressionKind::UNARY);
+                  }
                   result = new SizeOfExpr(new TypeOfType(expr, location), location);
               }
 
