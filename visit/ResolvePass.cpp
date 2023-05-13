@@ -98,13 +98,36 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         }
     }
 
-    virtual VisitDeclaratorOutput visit(Declarator* primary, Variable* primary_entity, const VisitDeclaratorInput& input) override {
+    const Type* adjust_parameter_type(const Type* param_type) {
+        if (auto array_type = dynamic_cast<const ArrayType*>(param_type->unqualified())) {
+            // Instead of tranforming array type parameters to pointer type, pass arrays by reference.
+            param_type = PassByReferenceType::of(param_type);
+
+            // C99 6.7.5.3p7
+            // param_type = QualifiedType::of(array_type->element_type->pointer_to(), param_type->qualifiers());
+        }
+
+        // C99 6.7.5.3p8
+        if (auto function_type = dynamic_cast<const FunctionType*>(param_type)) {
+            param_type = param_type->pointer_to();
+        }
+
+        return param_type;
+    }
+
+    virtual VisitDeclaratorOutput visit(Declarator* primary, Variable* primary_variable, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
         if (!secondary) {
-            if (primary_entity->initializer) {
+            auto output = Base::visit(primary, primary_variable, input);
+
+            if (primary->scope && primary->scope->kind == ScopeKind::PROTOTYPE) {
+                primary->type = adjust_parameter_type(primary->type);
+            }
+
+            if (primary_variable->initializer) {
                 if (auto array_type = dynamic_cast<const ResolvedArrayType*>(primary->type)) {
                     // C99 6.7.8p22
-                    if (auto string_constant = dynamic_cast<StringConstant*>(primary_entity->initializer)) {
+                    if (auto string_constant = dynamic_cast<StringConstant*>(primary_variable->initializer)) {
                         auto string_size = string_constant->value.length + 1;
                         if (auto resolved = compose_array_type_with_initializer_size(array_type, string_size)) {
                             primary->type = resolved;
@@ -114,7 +137,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
                     }
 
                     // C99 6.7.8p22
-                    if (auto init_expr = dynamic_cast<InitializerExpr*>(primary_entity->initializer)) {
+                    if (auto init_expr = dynamic_cast<InitializerExpr*>(primary_variable->initializer)) {
                         if (auto resolved = compose_array_type_with_initializer_size(array_type, init_expr->elements.size())) {
                             primary->type = resolved;
                         } else if (array_type->kind == ArrayKind::COMPLETE && init_expr->elements.size() > array_type->size) {
@@ -129,52 +152,47 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
                 primary->type = IntegerType::default_type();
             }
 
-            return Base::visit(primary, primary_entity, input);
+            return output;
         }
 
         auto secondary_entity = secondary->variable();
 
-        composite_entity(primary, primary_entity, secondary, secondary_entity);
+        composite_entity(primary, primary_variable, secondary, secondary_entity);
 
         if (secondary_entity->initializer) {
-            if (primary_entity->initializer) {
+            if (primary_variable->initializer) {
                 // todo: allow this on globals if they evaluate to the same constant
                 redeclaration_message(Severity::ERROR, secondary, primary->location, nullptr);
             } else {
-                primary_entity->initializer = secondary_entity->initializer;
+                primary_variable->initializer = secondary_entity->initializer;
             }
         }
 
-        assert(secondary_entity->storage_duration == primary_entity->storage_duration);
+        assert(secondary_entity->storage_duration == primary_variable->storage_duration);
 
         return VisitDeclaratorOutput();
     }
     
-    virtual VisitDeclaratorOutput visit(Declarator* primary, Function* primary_entity, const VisitDeclaratorInput& input) override {
+    virtual VisitDeclaratorOutput visit(Declarator* primary, Function* primary_function, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
         if (!secondary) {
-            auto function_type = dynamic_cast<const FunctionType*>(primary->type);
-            for (size_t i = 0; i < primary_entity->parameters.size(); ++i) {
-                primary_entity->parameters[i]->type = resolve(function_type->parameter_types[i]);
-            }
-
-            return Base::visit(primary, primary_entity, input);
+            return Base::visit(primary, primary_function, input);
         }
 
         auto secondary_entity = secondary->function();
 
-        composite_entity(primary, primary_entity, secondary, secondary_entity);
+        composite_entity(primary, primary_function, secondary, secondary_entity);
     
         if (secondary_entity->body) {
-            if (primary_entity->body) {
+            if (primary_function->body) {
                 redeclaration_message(Severity::ERROR, secondary, primary->location, nullptr);
             } else {
-                primary_entity->body = secondary_entity->body;
-                primary_entity->parameters = move(secondary_entity->parameters);
+                primary_function->body = secondary_entity->body;
+                primary_function->parameters = move(secondary_entity->parameters);
             }
         }
   
-        primary_entity->inline_definition = secondary_entity->inline_definition && primary_entity->inline_definition;
+        primary_function->inline_definition = secondary_entity->inline_definition && primary_function->inline_definition;
 
         return VisitDeclaratorOutput();
     }
@@ -182,8 +200,9 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
     virtual VisitDeclaratorOutput visit(Declarator* primary, EnumConstant* primary_enum_constant, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
         if (!secondary) {
+            auto output = Base::visit(primary, primary_enum_constant, input);
             primary_enum_constant->type = dynamic_cast<const EnumType*>(resolve(primary_enum_constant->type));
-            return VisitDeclaratorOutput();
+            return output;
         }
 
         redeclaration_message(Severity::ERROR, secondary, primary->location, nullptr);
@@ -308,21 +327,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         auto resolved_return_type = resolve(type->return_type);
         auto resolved_param_types(type->parameter_types);
         for (auto& param_type : resolved_param_types) {
-            param_type = resolve(param_type);
-
-            if (auto array_type = dynamic_cast<const ArrayType*>(param_type->unqualified())) {
-                // Instead of tranforming array type parameters to pointer type, pass arrays by reference.
-                param_type = PassByReferenceType::of(param_type);
-
-                // C99 6.7.5.3p7
-                // param_type = QualifiedType::of(array_type->element_type->pointer_to(), param_type->qualifiers());
-            }
-
-            // C99 6.7.5.3p8
-            if (auto function_type = dynamic_cast<const FunctionType*>(param_type)) {
-                param_type = param_type->pointer_to();
-            }
-
+            param_type = adjust_parameter_type(resolve(param_type));
         }
         return FunctionType::of(resolved_return_type, resolved_param_types, type->variadic);
     }
@@ -456,22 +461,27 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
     }
 
     virtual VisitStatementOutput visit(CompoundStatement* statement) override {
+        auto output = Base::visit(statement);
+
         for (auto node: statement->nodes) {
             if (auto declaration = dynamic_cast<Declaration*>(node)) {
                 declaration->type = resolve(declaration->type);
             }
         }
 
-        return Base::visit(statement);
+        return output;
     }
 
     virtual VisitExpressionOutput visit(CastExpr* expr) override {
+        auto output = Base::visit(expr);
         expr->type = resolve(expr->type);
-        return Base::visit(expr);
+        return output;
     }
 
 
     virtual VisitExpressionOutput visit(EntityExpr* expr) override {
+        auto output = Base::visit(expr);
+
         expr->declarator = expr->scope->lookup_declarator(expr->identifier);
         if (!expr->declarator) {
             auto& stream = message(Severity::ERROR, expr->location) << "identifier '" << *expr->identifier.text << "' ";
@@ -484,7 +494,8 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
 
         accept_declarator(expr->declarator);
         expr->declarator = expr->declarator->primary;
-        return Base::visit(expr);
+
+        return output;
     }
 
     // If the LHS of a MemberExpr is a type, return that resolved type, else null.
@@ -514,7 +525,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
     }
 
     virtual VisitExpressionOutput visit(MemberExpr* member_expr) override {
-        auto result = Base::visit(member_expr);
+        auto output = Base::visit(member_expr);
 
         auto enclosing_type = wrangle_member_expr_enclosing_type(member_expr);
         if (enclosing_type) {
@@ -549,16 +560,18 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
             }
 
             member_expr->member = member->primary;
-            return result;
+            return output;
         }
 
         Location location = member_expr->object ? member_expr->object->location : member_expr->location;
         message(Severity::ERROR, location) << "type '" << PrintType(enclosing_type) << "' does not have members\n";
         pause_messages();
-        return result;
+        return output;
     }
 
     virtual VisitExpressionOutput visit(SizeOfExpr* expr) override {
+        auto output = Base::visit(expr);
+        
         expr->type = resolve(expr->type);
         if (expr->type->partition() == TypePartition::INCOMPLETE) {
             message(Severity::ERROR, expr->location) << "sizeof applied to incomplete type\n";
@@ -566,7 +579,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
             return Base::visit(expr);
         }
 
-        return Base::visit(expr);
+        return output;
     }
 
     bool is_trivially_cyclic(Declarator* primary, const Type* type) {
