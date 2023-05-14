@@ -215,7 +215,7 @@ struct Emitter: Visitor {
         return convert_to_type(value, dest_type, kind, expr->location);
     }
 
-    Value convert_to_type(Value value, const Type* dest_type, ConvKind kind, const Location& location) {
+    Value convert_to_type(const Value& value, const Type* dest_type, ConvKind kind, const Location& location) {
         assert(value.type->qualifiers() == 0);
         
         dest_type = dest_type->unqualified();
@@ -225,8 +225,9 @@ struct Emitter: Visitor {
         }
 
         if (value.type == dest_type) {
-            if (kind == ConvKind::EXPLICIT) value.is_null_literal = false;
-            return value;
+            Value result = value;
+            if (kind == ConvKind::EXPLICIT) result.is_null_literal = false;
+            return result;
         }
 
         auto output = ::convert_to_type(value, dest_type, module, builder, outcome);
@@ -306,7 +307,7 @@ struct Emitter: Visitor {
         }
     }
 
-    void emit_auto_initializer(Value dest, Expr* expr) {
+    void emit_auto_initializer(const Value& dest, Expr* expr) {
         auto context = TranslationUnitContext::it;
 
         if (auto uninitializer = dynamic_cast<UninitializedExpr*>(expr)) {
@@ -949,7 +950,7 @@ struct Emitter: Visitor {
         return Value();
     }
 
-    Value convert_array_to_pointer(Value value) {
+    Value convert_array_to_pointer(const Value& value) {
         auto zero = TranslationUnitContext::it->zero_size;
 
         if (auto array_type = type_cast<ArrayType>(value.type)) {
