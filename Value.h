@@ -77,6 +77,7 @@ struct Value {
 
     LLVMValueRef get_lvalue() const{
         assert(llvm && kind == ValueKind::LVALUE);
+        assert(!bit_field);
         return llvm;
     }
 

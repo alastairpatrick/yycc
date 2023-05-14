@@ -66,6 +66,8 @@ LLVMValueRef Value::get_rvalue(LLVMBuilderRef builder, EmitOutcome outcome) cons
 }
 
 void Value::store(LLVMBuilderRef builder, const Value& new_value) const {
+    assert(llvm && kind == ValueKind::LVALUE);
+
     auto value = new_value.dangerously_get_rvalue(builder);
 
     if (bit_field) {
@@ -74,7 +76,7 @@ void Value::store(LLVMBuilderRef builder, const Value& new_value) const {
         value = LLVMBuildAnd(builder, LLVMBuildShl(builder, value, bit_field->bits_to_right, ""), bit_field->mask, "");
 
         // existing = (*p) & ~mask
-        LLVMValueRef existing = LLVMBuildLoad2(builder, bit_field->storage_type, get_lvalue(), "");
+        LLVMValueRef existing = LLVMBuildLoad2(builder, bit_field->storage_type, llvm, "");
         LLVMSetVolatile(existing, qualifiers & QUALIFIER_VOLATILE);
         existing = LLVMBuildAnd(builder, existing, LLVMBuildNot(builder, bit_field->mask, ""), "");
 
@@ -82,7 +84,7 @@ void Value::store(LLVMBuilderRef builder, const Value& new_value) const {
         value = LLVMBuildOr(builder, value, existing, "");
     }
 
-    LLVMSetVolatile(LLVMBuildStore(builder, value, get_lvalue()),
+    LLVMSetVolatile(LLVMBuildStore(builder, value, llvm),
                     qualifiers & QUALIFIER_VOLATILE);
 }
 
