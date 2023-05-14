@@ -99,14 +99,13 @@ struct Emitter: Visitor {
         scopes.pop_back();
     }
 
-    Value pend_destructor(const Value& value) {
+    void pend_destructor(const Value& value) {
         if (auto structured_type = type_cast<StructuredType>(value.type->unqualified())) {
             if (auto destructor = structured_type->destructor) {
                 auto function = destructor->function();
                 scopes.back().destructors.push_back(PendingDestructor(value, destructor));
             }
         }
-        return value;
     }
 
     virtual VisitDeclaratorOutput accept_declarator(Declarator* declarator) override {
