@@ -226,6 +226,7 @@ struct TagType: LocationNode, CachedType {
 // A StructuredType corresponds to an LLVM struct type. In C terms, it could be a struct type or a union type.
 struct StructuredType: TagType {
     vector<Declaration*> declarations;
+    mutable Declarator* destructor{};
 
     StructuredType(const Location& location);
     virtual TypePartition partition() const override;

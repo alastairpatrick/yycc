@@ -32,6 +32,15 @@ struct SwitchConstruct: Construct {
     ~SwitchConstruct();
 };
 
+struct PendingDestructor {
+    Value value;
+    Declarator* declarator{};
+};
+
+struct EmitterScope {
+    vector<PendingDestructor> destructors;
+};
+
 struct Emitter: Visitor {
     EmitOutcome outcome;
     const EmitOptions& options;
@@ -41,6 +50,7 @@ struct Emitter: Visitor {
 
     Declarator* function_declarator{};
     const FunctionType* function_type{};
+    list<EmitterScope> scopes;
     LLVMBuilderRef builder{};
     LLVMBuilderRef temp_builder{};
     LLVMValueRef function{};
@@ -68,6 +78,37 @@ struct Emitter: Visitor {
         if (temp_builder) LLVMDisposeBuilder(temp_builder);
     }
 
+    void push_scope() {
+        scopes.emplace_back();
+    }
+
+    void call_destructors() {
+        auto& destructors = scopes.back().destructors;
+        for (auto it = destructors.rbegin(); it != destructors.rend(); ++it) {
+            auto destructor = *it;
+
+            auto function = destructor.declarator->function();
+
+            LLVMValueRef llvm_param = destructor.value.get_lvalue();
+            LLVMBuildCall2(builder, destructor.declarator->type->llvm_type(), function->value.get_lvalue(), &llvm_param, 1, "");
+        }
+    }
+
+    void pop_scope() {
+        call_destructors();
+        scopes.pop_back();
+    }
+
+    Value pend_destructor(const Value& value) {
+        if (auto structured_type = type_cast<StructuredType>(value.type->unqualified())) {
+            if (auto destructor = structured_type->destructor) {
+                auto function = destructor->function();
+                scopes.back().destructors.push_back(PendingDestructor(value, destructor));
+            }
+        }
+        return value;
+    }
+
     virtual VisitDeclaratorOutput accept_declarator(Declarator* declarator) override {
         declarator = declarator->primary;
         if (declarator->status >= DeclaratorStatus::EMITTED) return VisitDeclaratorOutput();
@@ -81,7 +122,15 @@ struct Emitter: Visitor {
     }
 
     LLVMValueRef get_rvalue(const Value &value) {
-        return value.get_rvalue(builder, outcome);
+        auto rvalue = value.get_rvalue(builder, outcome);
+
+        if (auto structured_type = type_cast<StructuredType>(value.type->unqualified())) {
+            if (value.kind == ValueKind::LVALUE && structured_type->destructor) {
+                LLVMBuildStore(builder, LLVMConstNull(structured_type->llvm_type()), value.get_lvalue());
+            }
+        }
+
+        return rvalue;
     }
 
     void store_value(const Value& lvalue, const Value& rvalue, const Location& location) {
@@ -123,6 +172,13 @@ struct Emitter: Visitor {
             }
             throw FoldError(true);
         }
+    }
+
+    Value emit_full_expr(Expr* expr) {
+        push_scope();
+        auto value = accept_expr(expr).value;
+        pop_scope();
+        return value;
     }
 
     virtual VisitStatementOutput accept_statement(Statement* statement) override {
@@ -327,7 +383,7 @@ struct Emitter: Visitor {
 
         return get_rvalue(convert_to_type(expr, dest_type, ConvKind::IMPLICIT));
     }
-
+    
     void use_temp_builder() {
         auto first_insn = LLVMGetFirstInstruction(entry_block);
         if (first_insn) {
@@ -350,8 +406,12 @@ struct Emitter: Visitor {
         if (entity->storage_duration == StorageDuration::AUTO) {
             entity->value = allocate_auto_storage(type, c_str(declarator->identifier));
 
+            pend_destructor(entity->value);
+
             if (entity->initializer) {
+                push_scope();
                 emit_auto_initializer(entity->value, entity->initializer);
+                pop_scope();
             } else if (options.initialize_variables) {
                 entity->value.store(builder, Value::of_null(type));
             }
@@ -404,6 +464,8 @@ struct Emitter: Visitor {
     }
 
     VisitStatementOutput visit(CompoundStatement* statement) {
+        push_scope();
+
         for (auto node: statement->nodes) {
             if (auto declaration = dynamic_cast<Declaration*>(node)) {
                 for (auto declarator: declaration->declarators) {
@@ -416,11 +478,13 @@ struct Emitter: Visitor {
             }
         }
 
+        pop_scope();
+
         return VisitStatementOutput();
     }
 
     VisitStatementOutput visit(ExprStatement* statement) {
-        accept_expr(statement->expr);
+        emit_full_expr(statement->expr);
         return VisitStatementOutput();
     }
 
@@ -434,7 +498,7 @@ struct Emitter: Visitor {
         }
 
         if (statement->initialize) {
-            accept_expr(statement->initialize);
+            emit_full_expr(statement->initialize);
         }
 
         auto loop_block = append_block("for_l");
@@ -456,7 +520,7 @@ struct Emitter: Visitor {
             LLVMBuildBr(builder, iterate_block);
 
             LLVMPositionBuilderAtEnd(builder, iterate_block);
-            accept_expr(statement->iterate);
+            emit_full_expr(statement->iterate);
         }
 
         LLVMBuildBr(builder, loop_block);
@@ -520,6 +584,8 @@ struct Emitter: Visitor {
                     function_declarator->message_see_declaration("return type");
                 }
             }
+
+            call_destructors();
             LLVMBuildRetVoid(builder);
         } else {
             Value value;
@@ -530,7 +596,10 @@ struct Emitter: Visitor {
                 function_declarator->message_see_declaration("return type");
                 value = Value(function_type->return_type, LLVMConstNull(function_type->return_type->llvm_type()));
             }
-            LLVMBuildRet(builder, get_rvalue(value));
+
+            auto llvm_value = get_rvalue(value);
+            call_destructors();
+            LLVMBuildRet(builder, llvm_value);
         }
 
         LLVMPositionBuilderAtEnd(builder, unreachable_block);
@@ -550,7 +619,7 @@ struct Emitter: Visitor {
             default_block = construct.break_block;
         }
 
-        auto expr_value = accept_expr(statement->expr).value.unqualified();
+        auto expr_value = emit_full_expr(statement->expr).unqualified();
         auto switch_value = LLVMBuildSwitch(builder, get_rvalue(expr_value), default_block, statement->cases.size());
 
         for (auto case_expr: statement->cases) {

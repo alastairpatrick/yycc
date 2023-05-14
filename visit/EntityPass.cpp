@@ -62,8 +62,20 @@ void entity_pass(const ResolvedModule& resolved_module, LLVMModuleRef llvm_modul
     EntityPass pass;
     pass.llvm_module = llvm_module;
 
+    Identifier destructor_id = { .text = intern_string("destructor") };
+
     pass.accept_scope(resolved_module.file_scope);
     for (auto scope: resolved_module.type_scopes) {
+        if (scope->type) {
+            if (auto destructor = scope->lookup_member(destructor_id)) {
+                if (auto function = destructor->function()) {
+                    if (function->parameters.size() == 1 && function->parameters[0]->type->unqualified() == PassByReferenceType::of(scope->type)) {
+                        scope->type->destructor = destructor;
+                    }
+                }
+            }
+        }
+
         pass.accept_scope(scope);
     }
 }

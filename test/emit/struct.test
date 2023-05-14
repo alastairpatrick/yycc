@@ -1,0 +1,98 @@
+BEGIN Calls destructor before end of function
+struct S {
+    void destructor(S&) {}
+};
+void f() {
+    S s;
+}
+EXPECT_IR
+%S = type {}
+
+define void @f() {
+  %s = alloca %S, align 8
+  call void @destructor(ptr %s)
+  ret void
+}
+
+define void @destructor(ptr %0) {
+  ret void
+}
+END
+
+
+BEGIN Calls destructor before explicit return
+struct S {
+    void destructor(S&) {}
+};
+void f() {
+    S s;
+    return;
+}
+EXPECT_IR
+%S = type {}
+
+define void @f() {
+  %s = alloca %S, align 8
+  call void @destructor(ptr %s)
+  ret void
+}
+
+define void @destructor(ptr %0) {
+  ret void
+}
+END
+
+
+BEGIN Calls destructor at end of compound statement
+struct S {
+    void destructor(S&) {}
+};
+void f() {
+    if (1) {
+        S s;
+    }
+}
+EXPECT_IR
+%S = type {}
+
+define void @f() {
+  %s = alloca %S, align 8
+  br i1 true, label %if_c, label %if_e
+
+if_c:                                             ; preds = %0
+  call void @destructor(ptr %s)
+  br label %if_e
+
+if_e:                                             ; preds = %if_c, %0
+  ret void
+}
+
+define void @destructor(ptr %0) {
+  ret void
+}
+END
+
+
+BEGIN Resets lvalue on move before calling destructor
+struct S {
+    void destructor(S&) {}
+};
+S f() {
+    S s;
+    return s;
+}
+EXPECT_IR
+%S = type {}
+
+define %S @f() {
+  %s = alloca %S, align 8
+  %1 = load %S, ptr %s, align 1
+  store %S zeroinitializer, ptr %s, align 1
+  call void @destructor(ptr %s)
+  ret %S %1
+}
+
+define void @destructor(ptr %0) {
+  ret void
+}
+END
