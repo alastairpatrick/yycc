@@ -37,6 +37,7 @@ VisitDeclaratorOutput DepthFirstVisitor::visit(Declarator* declarator, EnumConst
 
 /* Statements */
 
+// todo: rename to accept_declaration
 static void visit_declaration(DepthFirstVisitor* visitor, Declaration* declaration) {
     if (!declaration) return;
 
