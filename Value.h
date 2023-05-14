@@ -97,10 +97,6 @@ struct Value {
 
     void store(LLVMBuilderRef builder, const Value& new_value) const;
 
-    Value address_of() const {
-        return Value(type->pointer_to(), get_lvalue());
-    }
-
 private:
     LLVMValueRef llvm{};
 };
