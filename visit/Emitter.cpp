@@ -35,6 +35,7 @@ struct SwitchConstruct: Construct {
 struct PendingDestructor {
     Value value;
     Declarator* declarator{};
+    LLVMValueRef enabled_value{};
 };
 
 struct EmitterScope {
@@ -61,6 +62,8 @@ struct Emitter: Visitor {
     SwitchConstruct* innermost_switch{};
     InternedString this_string;
     Value this_value;
+    LLVMTypeRef destructor_wrapper_type{};
+    LLVMValueRef destructor_wrapper{};
 
     Emitter(EmitOutcome outcome, const EmitOptions& options): outcome(outcome), options(options) {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
@@ -78,20 +81,68 @@ struct Emitter: Visitor {
         if (temp_builder) LLVMDisposeBuilder(temp_builder);
     }
 
+    void emit_destructor_wrapper() {
+        if (destructor_wrapper) return;
+
+        auto context = TranslationUnitContext::it;
+
+        LLVMTypeRef param_types[] = {
+            context->llvm_pointer_type,
+            context->llvm_pointer_type,
+            context->llvm_pointer_type,
+        };
+        destructor_wrapper_type = LLVMFunctionType(context->llvm_void_type, param_types, 3, false);
+        destructor_wrapper = LLVMAddFunction(module->llvm_module, "destructor_wrapper", destructor_wrapper_type);
+
+        if (!options.emit_helpers) return;
+
+        const char alwaysinline_name[] = "alwaysinline";
+        auto alwaysinline_attr = LLVMCreateEnumAttribute(context->llvm_context, LLVMGetEnumAttributeKindForName(alwaysinline_name, sizeof(alwaysinline_name)-1), 0);
+        LLVMAddAttributeAtIndex(destructor_wrapper, LLVMAttributeFunctionIndex, alwaysinline_attr);
+
+        auto entry_block = LLVMAppendBasicBlockInContext(context->llvm_context, destructor_wrapper, "");
+        LLVMPositionBuilderAtEnd(temp_builder, entry_block);
+
+        auto enabled = LLVMBuildLoad2(temp_builder, context->llvm_bool_type, LLVMGetParam(destructor_wrapper, 2), "");
+
+        auto then_block = LLVMAppendBasicBlockInContext(context->llvm_context, destructor_wrapper, "");
+        auto else_block = LLVMAppendBasicBlockInContext(context->llvm_context, destructor_wrapper, "");
+        LLVMBuildCondBr(temp_builder, enabled, then_block, else_block);
+
+        LLVMPositionBuilderAtEnd(temp_builder, then_block);
+        LLVMValueRef llvm_param = LLVMGetParam(destructor_wrapper, 0);
+        auto destructor_type = LLVMFunctionType(context->llvm_void_type, &context->llvm_pointer_type, 1, false);
+        LLVMBuildCall2(temp_builder, destructor_type, LLVMGetParam(destructor_wrapper, 1), &llvm_param, 1, "");
+        LLVMBuildBr(temp_builder, else_block);
+
+        LLVMPositionBuilderAtEnd(temp_builder, else_block);
+        LLVMBuildRetVoid(temp_builder);
+    }
+
     void push_scope() {
         scopes.emplace_back();
     }
 
     void call_destructors() {
+        auto context = TranslationUnitContext::it;
+
         auto& destructors = scopes.back().destructors;
         for (auto it = destructors.rbegin(); it != destructors.rend(); ++it) {
             auto destructor = *it;
 
             auto function = destructor.declarator->function();
 
-            LLVMValueRef llvm_param = destructor.value.get_lvalue();
-            LLVMBuildCall2(builder, destructor.declarator->type->llvm_type(), function->value.get_lvalue(), &llvm_param, 1, "");
+            emit_destructor_wrapper();
+
+            LLVMValueRef wrapper_args[] = {
+                destructor.value.get_lvalue(),
+                function->value.get_lvalue(),
+                destructor.enabled_value,
+            };
+            LLVMBuildCall2(builder, destructor_wrapper_type, destructor_wrapper, wrapper_args, 3, "");
         }
+
+        destructors.clear();
     }
 
     void pop_scope() {
@@ -100,10 +151,14 @@ struct Emitter: Visitor {
     }
 
     void pend_destructor(const Value& value) {
+        auto context = TranslationUnitContext::it;
+
         if (auto structured_type = type_cast<StructuredType>(value.type->unqualified())) {
             if (auto destructor = structured_type->destructor) {
-                auto function = destructor->function();
-                scopes.back().destructors.push_back(PendingDestructor(value, destructor));
+                use_temp_builder();
+                auto enabled_value = LLVMBuildAlloca(temp_builder, context->llvm_bool_type, "");
+                LLVMBuildStore(builder, context->llvm_true, enabled_value);
+                scopes.back().destructors.push_back(PendingDestructor(value, destructor, enabled_value));
             }
         }
     }

@@ -16,6 +16,7 @@ struct Module {
 
 struct EmitOptions {
     bool initialize_variables = true;
+    bool emit_helpers = true;
 };
 
 const Type* get_expr_type(const Expr* expr);

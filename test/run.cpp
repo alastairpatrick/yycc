@@ -184,6 +184,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
                 if (test_type >= TestType::EMIT) {
                     EmitOptions options;
                     options.initialize_variables = false;
+                    options.emit_helpers = false;
 
                     auto module = emit_pass(resolved_module, options);
                     char* module_string = LLVMPrintModuleToString(module);

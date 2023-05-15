@@ -9,14 +9,18 @@ EXPECT_IR
 %S = type {}
 
 define void @f() {
+  %1 = alloca i1, align 1
   %s = alloca %S, align 8
-  call void @destructor(ptr %s)
+  store i1 true, ptr %1, align 1
+  call void @destructor_wrapper(ptr %s, ptr @destructor, ptr %1)
   ret void
 }
 
 define void @destructor(ptr %0) {
   ret void
 }
+
+declare void @destructor_wrapper(ptr, ptr, ptr)
 END
 
 
@@ -32,14 +36,18 @@ EXPECT_IR
 %S = type {}
 
 define void @f() {
+  %1 = alloca i1, align 1
   %s = alloca %S, align 8
-  call void @destructor(ptr %s)
+  store i1 true, ptr %1, align 1
+  call void @destructor_wrapper(ptr %s, ptr @destructor, ptr %1)
   ret void
 }
 
 define void @destructor(ptr %0) {
   ret void
 }
+
+declare void @destructor_wrapper(ptr, ptr, ptr)
 END
 
 
@@ -56,11 +64,13 @@ EXPECT_IR
 %S = type {}
 
 define void @f() {
+  %1 = alloca i1, align 1
   %s = alloca %S, align 8
   br i1 true, label %if_c, label %if_e
 
 if_c:                                             ; preds = %0
-  call void @destructor(ptr %s)
+  store i1 true, ptr %1, align 1
+  call void @destructor_wrapper(ptr %s, ptr @destructor, ptr %1)
   br label %if_e
 
 if_e:                                             ; preds = %if_c, %0
@@ -70,6 +80,8 @@ if_e:                                             ; preds = %if_c, %0
 define void @destructor(ptr %0) {
   ret void
 }
+
+declare void @destructor_wrapper(ptr, ptr, ptr)
 END
 
 
@@ -85,14 +97,18 @@ EXPECT_IR
 %S = type {}
 
 define %S @f() {
+  %1 = alloca i1, align 1
   %s = alloca %S, align 8
-  %1 = load %S, ptr %s, align 1
+  store i1 true, ptr %1, align 1
+  %2 = load %S, ptr %s, align 1
   store %S zeroinitializer, ptr %s, align 1
-  call void @destructor(ptr %s)
-  ret %S %1
+  call void @destructor_wrapper(ptr %s, ptr @destructor, ptr %1)
+  ret %S %2
 }
 
 define void @destructor(ptr %0) {
   ret void
 }
+
+declare void @destructor_wrapper(ptr, ptr, ptr)
 END

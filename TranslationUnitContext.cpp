@@ -19,7 +19,9 @@ TranslationUnitContext::TranslationUnitContext(ostream& message_stream): message
     // 8 bytes instead of 4 bytes.
     llvm_target_data = LLVMCreateTargetDataLayout(g_llvm_target_machine);
 
-    llvm_bool_type = LLVMInt1Type();
+    llvm_bool_type = LLVMInt1TypeInContext(llvm_context);
+    llvm_pointer_type = LLVMPointerTypeInContext(llvm_context, 0);
+    llvm_void_type = LLVMVoidTypeInContext(llvm_context);
 
     zero_size = LLVMConstInt(IntegerType::of_size(IntegerSignedness::UNSIGNED)->llvm_type(), 0, false);
     zero_int = LLVMConstInt(IntegerType::default_type()->llvm_type(), 0, false);
