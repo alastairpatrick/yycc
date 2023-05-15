@@ -259,6 +259,20 @@ void SubscriptExpr::print(ostream& stream) const {
     stream << "[\"subs\", " << left << ", " << right << "]";
 }
 
+
+UnaryExpr::UnaryExpr(Expr* expr, TokenKind op, const Location& location)
+    : Expr(location), expr(expr), op(op) {
+}
+
+VisitExpressionOutput UnaryExpr::accept(Visitor& visitor) {
+    return visitor.visit(this);
+}
+
+void UnaryExpr::print(ostream& stream) const {
+    stream << "[\"" << char(op) << "\", " << expr << "]";
+}
+
+
 UninitializedExpr::UninitializedExpr(const Location& location): Expr(location) {
 }
 

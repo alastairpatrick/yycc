@@ -66,6 +66,7 @@ struct Visitor {
     virtual VisitExpressionOutput visit(MemberExpr* expr);
     virtual VisitExpressionOutput visit(SizeOfExpr* expr);
     virtual VisitExpressionOutput visit(SubscriptExpr* expr);
+    virtual VisitExpressionOutput visit(UnaryExpr* expr);
     virtual VisitExpressionOutput visit(UninitializedExpr* expr);
 
     virtual VisitExpressionOutput visit(IntegerConstant* constant);

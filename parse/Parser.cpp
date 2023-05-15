@@ -1255,6 +1255,16 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
               result = new DereferenceExpr(expr, location);
               break;
 
+          } case '+':
+            case '-':
+            case '~':
+            case '!': {
+              auto op = token;
+              consume();
+              auto expr = parse_sub_expr(SubExpressionKind::CAST);
+              result = new UnaryExpr(expr, op, location);
+              break;
+
           } case TOK_INC_OP:
             case TOK_DEC_OP: {
               auto op = token;

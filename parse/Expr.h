@@ -118,6 +118,15 @@ struct SubscriptExpr: Expr {
     virtual void print(ostream& stream) const override;
 };
 
+struct UnaryExpr: Expr {
+    TokenKind op;
+    Expr* expr{};
+
+    UnaryExpr(Expr* expr, TokenKind op, const Location& location);
+    virtual VisitExpressionOutput accept(Visitor& visitor) override;
+    virtual void print(ostream& stream) const override;
+};
+
 struct UninitializedExpr: Expr {
     UninitializedExpr(const Location& location);
     virtual VisitExpressionOutput accept(Visitor& visitor) override;

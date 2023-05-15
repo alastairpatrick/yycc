@@ -115,6 +115,10 @@ VisitExpressionOutput Visitor::visit(SubscriptExpr* expr) {
     return VisitExpressionOutput(expr);
 }
 
+VisitExpressionOutput Visitor::visit(UnaryExpr* expr) {
+    return VisitExpressionOutput(expr);
+}
+
 VisitExpressionOutput Visitor::visit(UninitializedExpr* expr) {
     return VisitExpressionOutput(expr);
 }

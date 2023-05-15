@@ -180,6 +180,11 @@ VisitExpressionOutput DepthFirstVisitor::visit(SubscriptExpr* expr) {
     return VisitExpressionOutput(expr);
 }
 
+VisitExpressionOutput DepthFirstVisitor::visit(UnaryExpr* expr) {
+    expr->expr = accept_expr(expr->expr).expr;
+    return VisitExpressionOutput(expr);
+}
+
 VisitExpressionOutput DepthFirstVisitor::visit(UninitializedExpr* expr) {
     return VisitExpressionOutput(expr);
 }

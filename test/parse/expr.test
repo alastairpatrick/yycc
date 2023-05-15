@@ -1,3 +1,27 @@
+BEGIN Unary plus
++1
+EXPECT_AST
+["+", 1]
+
+
+BEGIN Unary minus
+-1
+EXPECT_AST
+["-", 1]
+
+
+BEGIN Twiddle
+~1
+EXPECT_AST
+["~", 1]
+
+
+BEGIN Bang
+!1
+EXPECT_AST
+["!", 1]
+
+
 BEGIN Pre-decrement
 --1
 EXPECT_AST
