@@ -234,6 +234,19 @@ void MemberExpr::print(ostream& stream) const {
 }
 
 
+MoveExpr::MoveExpr(Expr* expr, const Location& location)
+    : Expr(location), expr(expr) {
+}
+
+VisitExpressionOutput MoveExpr::accept(Visitor& visitor) {
+    return visitor.visit(this);
+}
+
+void MoveExpr::print(ostream& stream) const {
+    stream << "[\"move\", " << expr << "]";
+}
+
+
 SizeOfExpr::SizeOfExpr(const Type* type, const Location& location)
     : Expr(location), type(type) {
 }

@@ -22,6 +22,12 @@ EXPECT_AST
 ["!", 1]
 
 
+BEGIN Move
+&&1
+EXPECT_AST
+["move", 1]
+
+
 BEGIN Pre-decrement
 --1
 EXPECT_AST

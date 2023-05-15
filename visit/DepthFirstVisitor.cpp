@@ -170,6 +170,11 @@ VisitExpressionOutput DepthFirstVisitor::visit(MemberExpr* expr) {
     return VisitExpressionOutput(expr);
 }
 
+VisitExpressionOutput DepthFirstVisitor::visit(MoveExpr* expr) {
+    expr->expr = accept_expr(expr->expr).expr;
+    return VisitExpressionOutput(expr);
+}
+
 VisitExpressionOutput DepthFirstVisitor::visit(SizeOfExpr* expr) {
     return VisitExpressionOutput(expr);
 }

@@ -101,6 +101,14 @@ struct MemberExpr: Expr {
     virtual void print(ostream& stream) const override;
 };
 
+struct MoveExpr: Expr {
+    Expr* expr{};
+
+    MoveExpr(Expr* expr, const Location& location);
+    virtual VisitExpressionOutput accept(Visitor& visitor) override;
+    virtual void print(ostream& stream) const override;
+};
+
 struct SizeOfExpr: Expr {
     const Type* type{};
 

@@ -95,6 +95,7 @@ unary_operator
 	| '-'
 	| '~'
 	| '!'
+    | AND_OP                                // ADDITION
 	;
 
 cast_expression

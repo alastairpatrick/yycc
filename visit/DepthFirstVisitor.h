@@ -30,6 +30,7 @@ struct DepthFirstVisitor: Visitor {
     virtual VisitExpressionOutput visit(IncDecExpr* expr) override;
     virtual VisitExpressionOutput visit(InitializerExpr* expr) override;
     virtual VisitExpressionOutput visit(MemberExpr* expr) override;
+    virtual VisitExpressionOutput visit(MoveExpr* expr) override;
     virtual VisitExpressionOutput visit(SizeOfExpr* expr) override;
     virtual VisitExpressionOutput visit(SubscriptExpr* expr) override;
     virtual VisitExpressionOutput visit(UnaryExpr* expr) override;

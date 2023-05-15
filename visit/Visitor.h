@@ -64,6 +64,7 @@ struct Visitor {
     virtual VisitExpressionOutput visit(IncDecExpr* expr);
     virtual VisitExpressionOutput visit(InitializerExpr* expr);
     virtual VisitExpressionOutput visit(MemberExpr* expr);
+    virtual VisitExpressionOutput visit(MoveExpr* expr);
     virtual VisitExpressionOutput visit(SizeOfExpr* expr);
     virtual VisitExpressionOutput visit(SubscriptExpr* expr);
     virtual VisitExpressionOutput visit(UnaryExpr* expr);

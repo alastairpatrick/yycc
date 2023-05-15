@@ -107,6 +107,10 @@ VisitExpressionOutput Visitor::visit(MemberExpr* expr) {
     return VisitExpressionOutput(expr);
 }
 
+VisitExpressionOutput Visitor::visit(MoveExpr* expr) {
+    return VisitExpressionOutput(expr);
+}
+
 VisitExpressionOutput Visitor::visit(SizeOfExpr* expr) {
     return VisitExpressionOutput(expr);
 }
