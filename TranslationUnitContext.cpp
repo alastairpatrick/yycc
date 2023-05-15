@@ -19,8 +19,12 @@ TranslationUnitContext::TranslationUnitContext(ostream& message_stream): message
     // 8 bytes instead of 4 bytes.
     llvm_target_data = LLVMCreateTargetDataLayout(g_llvm_target_machine);
 
+    llvm_bool_type = LLVMInt1Type();
+
     zero_size = LLVMConstInt(IntegerType::of_size(IntegerSignedness::UNSIGNED)->llvm_type(), 0, false);
     zero_int = LLVMConstInt(IntegerType::default_type()->llvm_type(), 0, false);
+    llvm_false = LLVMConstInt(llvm_bool_type, 0, false);
+    llvm_true = LLVMConstInt(llvm_bool_type, 1, false);
 
     null_message_stream.setstate(ios_base::badbit);
 }

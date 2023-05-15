@@ -30,8 +30,12 @@ struct TranslationUnitContext {
 
     LLVMContextRef llvm_context{};
     LLVMTargetDataRef llvm_target_data{};
+
+    LLVMTypeRef llvm_bool_type;
     LLVMValueRef zero_size{};
     LLVMValueRef zero_int{};
+    LLVMValueRef llvm_false{};
+    LLVMValueRef llvm_true{};
 };
 
 #endif
