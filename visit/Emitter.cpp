@@ -33,8 +33,8 @@ struct SwitchConstruct: Construct {
 };
 
 struct PendingDestructor {
-    Value value;
-    Declarator* declarator{};
+    Value lvalue;
+    Declarator* function_declarator{};
     LLVMValueRef enabled_value{};
 };
 
@@ -130,12 +130,12 @@ struct Emitter: Visitor {
         for (auto it = destructors.rbegin(); it != destructors.rend(); ++it) {
             auto destructor = *it;
 
-            auto function = destructor.declarator->function();
+            auto function = destructor.function_declarator->function();
 
             emit_destructor_wrapper();
 
             LLVMValueRef wrapper_args[] = {
-                destructor.value.get_lvalue(),
+                destructor.lvalue.get_lvalue(),
                 function->value.get_lvalue(),
                 destructor.enabled_value,
             };
