@@ -73,7 +73,7 @@ define void @destructor(ptr %0) {
 END
 
 
-BEGIN Resets lvalue on move before calling destructor
+BEGIN Move expression resets object to default value and updates object 
 struct S {
     void destructor(S&) {}
 };
@@ -91,6 +91,44 @@ define void @f() {
   %2 = load %S, ptr %s, align 1
   store %S zeroinitializer, ptr %s, align 1
   store i1 false, ptr %1, align 1
+  call void @destructor_wrapper(ptr %s, ptr @destructor, ptr %1)
+  ret void
+}
+
+define void @destructor(ptr %0) {
+  ret void
+}
+
+declare void @destructor_wrapper(ptr, ptr, ptr)
+END
+
+
+BEGIN Calls destructor after move if object might have beemn re-enabled
+struct S {
+    void destructor(S&) {}
+};
+void g(S&) {}
+void f() {
+    S s;
+    &&s;
+    g(s);  // now destructor must be called
+}
+EXPECT_IR
+%S = type {}
+
+define void @g(ptr %0) {
+  ret void
+}
+
+define void @f() {
+  %1 = alloca i1, align 1
+  %s = alloca %S, align 8
+  store i1 true, ptr %1, align 1
+  %2 = load %S, ptr %s, align 1
+  store %S zeroinitializer, ptr %s, align 1
+  store i1 false, ptr %1, align 1
+  store i1 true, ptr %1, align 1
+  call void @g(ptr %s)
   call void @destructor_wrapper(ptr %s, ptr @destructor, ptr %1)
   ret void
 }

@@ -54,7 +54,7 @@ struct TypeConverter: TypeVisitor {
         if (auto source_type = type_cast<ResolvedArrayType>(value.type)) {
             if (value.kind == ValueKind::LVALUE) {
                 auto pointer_type = source_type->element_type->pointer_to();
-                value = Value(pointer_type, value.get_lvalue());
+                value = Value(pointer_type, value.dangerously_get_lvalue());
             }
         }
     }
@@ -106,7 +106,7 @@ struct TypeConverter: TypeVisitor {
 
         if (auto source_type = type_cast<FunctionType>(value.type)) {
             ConvKind kind = dest_type->base_type->unqualified() == source_type ? ConvKind::IMPLICIT : ConvKind::EXPLICIT;
-            result = ConvertTypeResult(dest_type, value.get_lvalue(), kind);
+            result = ConvertTypeResult(dest_type, value.dangerously_get_lvalue(), kind);
         } else if (auto source_type = type_cast<IntegerType>(value.type)) {
             result = ConvertTypeResult(dest_type, LLVMBuildIntToPtr(builder, get_rvalue(value), dest_type->llvm_type(), ""), ConvKind::EXPLICIT);
         } else if (auto source_type = type_cast<PointerType>(value.type)) {

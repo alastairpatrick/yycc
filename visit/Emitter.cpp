@@ -38,8 +38,7 @@ struct PendingDestructor {
     LLVMValueRef enabled_value{};
 
     bool at_least_one_move{};
-    LLVMValueRef enabled_alloca_instruction{};
-    LLVMValueRef enabled_initialize_instruction{};
+    vector<LLVMValueRef> tracking_instructions;
 };
 
 struct EmitterScope {
@@ -141,17 +140,18 @@ struct Emitter: Visitor {
                 emit_destructor_wrapper();
 
                 LLVMValueRef wrapper_args[] = {
-                    destructor.lvalue.get_lvalue(),
-                    function->value.get_lvalue(),
+                    destructor.lvalue.dangerously_get_lvalue(),
+                    get_lvalue(function->value),
                     destructor.enabled_value,
                 };
                 LLVMBuildCall2(builder, destructor_wrapper_type, destructor_wrapper, wrapper_args, 3, "");
             } else {
-                LLVMValueRef arg = destructor.lvalue.get_lvalue();
-                LLVMBuildCall2(builder, destructor.destructor_declarator->type->llvm_type(), function->value.get_lvalue(), &arg, 1, "");
+                LLVMValueRef arg = destructor.lvalue.dangerously_get_lvalue();
+                LLVMBuildCall2(builder, destructor.destructor_declarator->type->llvm_type(), get_lvalue(function->value), &arg, 1, "");
 
-                LLVMInstructionEraseFromParent(destructor.enabled_initialize_instruction);
-                LLVMInstructionEraseFromParent(destructor.enabled_alloca_instruction);
+                for (auto it = destructor.tracking_instructions.rbegin(); it != destructor.tracking_instructions.rend(); ++it) {
+                    LLVMInstructionEraseFromParent(*it);
+                }
             }
         }
 
@@ -176,10 +176,10 @@ struct Emitter: Visitor {
                 scope.destructors.push_back(PendingDestructor(value, destructor_declarator, enabled_value));
 
                 auto& destructor = scope.destructors.back();
-                destructor.enabled_initialize_instruction = enabled_store;
-                destructor.enabled_alloca_instruction = enabled_value;
+                destructor.tracking_instructions.push_back(enabled_value);
+                destructor.tracking_instructions.push_back(enabled_store);
 
-                destructor_index[value.get_lvalue()] = &destructor;
+                destructor_index[get_lvalue(value)] = &destructor;
             }
         }
     }
@@ -196,6 +196,22 @@ struct Emitter: Visitor {
         return VisitDeclaratorOutput();
     }
 
+    LLVMValueRef get_lvalue(const Value &value) {
+        auto context = TranslationUnitContext::it;
+
+        auto lvalue = value.dangerously_get_lvalue();
+
+        auto it = destructor_index.find(lvalue);
+        if (it != destructor_index.end()) {
+            auto destructor = it->second;
+
+            auto enabled_store = LLVMBuildStore(builder, context->llvm_true, destructor->enabled_value);
+            destructor->tracking_instructions.push_back(enabled_store);
+        }
+
+        return lvalue;
+    }
+
     LLVMValueRef get_rvalue(const Value &value) {
         auto context = TranslationUnitContext::it;
 
@@ -203,12 +219,13 @@ struct Emitter: Visitor {
 
         if (auto structured_type = type_cast<StructuredType>(value.type->unqualified())) {
             if (value.kind == ValueKind::LVALUE && structured_type->destructor) {
-                LLVMValueRef lvalue = value.get_lvalue();
+                LLVMValueRef lvalue = value.dangerously_get_lvalue();
                 auto destructor = destructor_index[lvalue];
                 destructor->at_least_one_move = true;
 
                 LLVMBuildStore(builder, LLVMConstNull(structured_type->llvm_type()), lvalue);
-                LLVMBuildStore(builder, context->llvm_false, destructor->enabled_value);
+                auto enabled_store = LLVMBuildStore(builder, context->llvm_false, destructor->enabled_value);
+                destructor->tracking_instructions.push_back(enabled_store);
             }
         }
 
@@ -338,7 +355,7 @@ struct Emitter: Visitor {
     void emit_function_definition(Declarator* declarator, Function* entity) {
         function_declarator = declarator;
         function_type = type_cast<FunctionType>(declarator->primary->type);
-        function = entity->value.get_lvalue();
+        function = get_lvalue(entity->value);
 
         entry_block = append_block("");
         unreachable_block = append_block("");
@@ -402,7 +419,7 @@ struct Emitter: Visitor {
             if (auto array_type = type_cast<ResolvedArrayType>(dest.type)) {
                 for (size_t i = 0; i < array_type->size; ++i) {
                     LLVMValueRef indices[] = { context->zero_size, size_const_int(i) };
-                    LLVMValueRef dest_element = LLVMBuildGEP2(builder, array_type->llvm_type(), dest.get_lvalue(), indices, 2, "");
+                    LLVMValueRef dest_element = LLVMBuildGEP2(builder, array_type->llvm_type(), get_lvalue(dest), indices, 2, "");
                     emit_auto_initializer(Value(ValueKind::LVALUE, array_type->element_type, dest_element), initializer->elements[i]);
                 }
                 return;
@@ -413,7 +430,7 @@ struct Emitter: Visitor {
                 for (auto declaration: struct_type->declarations) {
                     for (auto member: declaration->declarators) {
                         if (auto member_variable = member->variable()) {
-                            LLVMValueRef dest_element = LLVMBuildInBoundsGEP2(builder, struct_type->llvm_type(), dest.get_lvalue(),
+                            LLVMValueRef dest_element = LLVMBuildInBoundsGEP2(builder, struct_type->llvm_type(), get_lvalue(dest),
                                                                               member_variable->member->gep_indices.data(), member_variable->member->gep_indices.size(),
                                                                               c_str(member->identifier));
                             emit_auto_initializer(Value(ValueKind::LVALUE, member->type, dest_element), initializer->elements[initializer_idx++]);
@@ -429,7 +446,7 @@ struct Emitter: Visitor {
             scalar_value = convert_to_type(expr, dest.type, ConvKind::IMPLICIT);
         }
 
-        LLVMBuildStore(builder, get_rvalue(scalar_value), dest.get_lvalue());
+        LLVMBuildStore(builder, get_rvalue(scalar_value), get_lvalue(dest));
     }
 
     LLVMValueRef emit_static_initializer(const Type* dest_type, Expr* expr) {
@@ -500,7 +517,7 @@ struct Emitter: Visitor {
             }
 
         } else if (entity->storage_duration == StorageDuration::STATIC) {
-            auto global = entity->value.get_lvalue();
+            auto global = get_lvalue(entity->value);
 
             LLVMValueRef initial = LLVMConstNull(llvm_type);
             if (entity->initializer) {
@@ -733,7 +750,7 @@ struct Emitter: Visitor {
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
         // todo: error if not an lvalue
-        return VisitExpressionOutput(result_type, value.get_lvalue());
+        return VisitExpressionOutput(result_type, get_lvalue(value));
     }
 
     Value emit_logical_binary_operation(BinaryExpr* expr, const Value& left_value, const Location& left_location) {
@@ -1042,7 +1059,7 @@ struct Emitter: Visitor {
 
             LLVMValueRef indices[2] = {zero, zero};
             return Value(result_type,
-                         LLVMBuildGEP2(builder, array_type->llvm_type(), value.get_lvalue(), indices, 2, ""));
+                         LLVMBuildGEP2(builder, array_type->llvm_type(), get_lvalue(value), indices, 2, ""));
         }
 
         return value;
@@ -1186,7 +1203,7 @@ struct Emitter: Visitor {
                         pause_messages();
                     } else {
                         return VisitExpressionOutput(Value(ValueKind::LVALUE, declarator->type,
-                            LLVMBuildGEP2(builder, this_type->llvm_type(), this_value.get_lvalue(), variable->member->gep_indices.data(), variable->member->gep_indices.size(), "")));
+                            LLVMBuildGEP2(builder, this_type->llvm_type(), get_lvalue(this_value), variable->member->gep_indices.data(), variable->member->gep_indices.size(), "")));
                     }
                 }
             }
@@ -1262,7 +1279,7 @@ struct Emitter: Visitor {
                 
                 auto llvm_struct_type = struct_type->llvm_type();
 
-                output.value = Value(ValueKind::LVALUE, result_type, LLVMBuildInBoundsGEP2(builder, llvm_struct_type, object.get_lvalue(),
+                output.value = Value(ValueKind::LVALUE, result_type, LLVMBuildInBoundsGEP2(builder, llvm_struct_type, get_lvalue(object),
                                                                                   member_variable->member->gep_indices.data(), member_variable->member->gep_indices.size(),
                                                                                   expr->identifier.c_str()));
                 output.value.bit_field = member_variable->member->bit_field.get();
@@ -1364,7 +1381,7 @@ struct Emitter: Visitor {
                         param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, member_expr->location);
                         auto lvalue = allocate_auto_storage(param_value.type, "");
                         lvalue.store(builder, param_value);
-                        llvm_params[i] = lvalue.get_lvalue();
+                        llvm_params[i] = get_lvalue(lvalue);
                     } else if (param_value.kind != ValueKind::LVALUE) {
                         message(Severity::ERROR, param_location) << "rvalue type '" << PrintType(param_value.type) << "' incompatible with non-const pass-by-reference parameter type '"
                                                                  << PrintType(function_type->parameter_types[i]) << "'\n";
@@ -1381,7 +1398,7 @@ struct Emitter: Visitor {
                         }
 
                         param_value = param_value.unqualified();
-                        llvm_params[i] = param_value.get_lvalue();
+                        llvm_params[i] = get_lvalue(param_value);
                     }
                 } else {
                     param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, member_expr->location);
@@ -1389,7 +1406,7 @@ struct Emitter: Visitor {
                 }
             }
 
-            auto result = LLVMBuildCall2(builder, function_type->llvm_type(), function_value.get_lvalue(), llvm_params.data(), llvm_params.size(), "");
+            auto result = LLVMBuildCall2(builder, function_type->llvm_type(), get_lvalue(function_value), llvm_params.data(), llvm_params.size(), "");
             return VisitExpressionOutput(result_type, result);
         }
 
@@ -1442,7 +1459,7 @@ struct Emitter: Visitor {
             return VisitExpressionOutput(Value(
                 ValueKind::LVALUE,
                 result_type,
-                LLVMBuildGEP2(builder, array_type->llvm_type(), left_value.get_lvalue(), indices, 2, "")));
+                LLVMBuildGEP2(builder, array_type->llvm_type(), get_lvalue(left_value), indices, 2, "")));
         }
 
         return VisitExpressionOutput();

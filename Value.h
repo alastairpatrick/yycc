@@ -75,7 +75,9 @@ struct Value {
         return llvm;
     }
 
-    LLVMValueRef get_lvalue() const{
+    // Use Emitter::get_lvalue instead
+    // Safe to call if value does not have a destructor, e.g. if it is not a structured type
+    LLVMValueRef dangerously_get_lvalue() const{
         assert(llvm && kind == ValueKind::LVALUE);
         assert(!bit_field);
         return llvm;
