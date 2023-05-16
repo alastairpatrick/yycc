@@ -34,8 +34,12 @@ struct SwitchConstruct: Construct {
 
 struct PendingDestructor {
     Value lvalue;
-    Declarator* function_declarator{};
+    Declarator* destructor_declarator{};
     LLVMValueRef enabled_value{};
+
+    bool at_least_one_move{};
+    LLVMValueRef enabled_alloca_instruction{};
+    LLVMValueRef enabled_initialize_instruction{};
 };
 
 struct EmitterScope {
@@ -64,6 +68,7 @@ struct Emitter: Visitor {
     Value this_value;
     LLVMTypeRef destructor_wrapper_type{};
     LLVMValueRef destructor_wrapper{};
+    unordered_map<LLVMValueRef, PendingDestructor*> destructor_index;
 
     Emitter(EmitOutcome outcome, const EmitOptions& options): outcome(outcome), options(options) {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
@@ -130,16 +135,24 @@ struct Emitter: Visitor {
         for (auto it = destructors.rbegin(); it != destructors.rend(); ++it) {
             auto destructor = *it;
 
-            auto function = destructor.function_declarator->function();
+            auto function = destructor.destructor_declarator->function();
 
-            emit_destructor_wrapper();
+            if (destructor.at_least_one_move) {
+                emit_destructor_wrapper();
 
-            LLVMValueRef wrapper_args[] = {
-                destructor.lvalue.get_lvalue(),
-                function->value.get_lvalue(),
-                destructor.enabled_value,
-            };
-            LLVMBuildCall2(builder, destructor_wrapper_type, destructor_wrapper, wrapper_args, 3, "");
+                LLVMValueRef wrapper_args[] = {
+                    destructor.lvalue.get_lvalue(),
+                    function->value.get_lvalue(),
+                    destructor.enabled_value,
+                };
+                LLVMBuildCall2(builder, destructor_wrapper_type, destructor_wrapper, wrapper_args, 3, "");
+            } else {
+                LLVMValueRef arg = destructor.lvalue.get_lvalue();
+                LLVMBuildCall2(builder, destructor.destructor_declarator->type->llvm_type(), function->value.get_lvalue(), &arg, 1, "");
+
+                LLVMInstructionEraseFromParent(destructor.enabled_initialize_instruction);
+                LLVMInstructionEraseFromParent(destructor.enabled_alloca_instruction);
+            }
         }
 
         destructors.clear();
@@ -154,11 +167,19 @@ struct Emitter: Visitor {
         auto context = TranslationUnitContext::it;
 
         if (auto structured_type = type_cast<StructuredType>(value.type->unqualified())) {
-            if (auto destructor = structured_type->destructor) {
+            if (auto destructor_declarator = structured_type->destructor) {
                 use_temp_builder();
                 auto enabled_value = LLVMBuildAlloca(temp_builder, context->llvm_bool_type, "");
-                LLVMBuildStore(builder, context->llvm_true, enabled_value);
-                scopes.back().destructors.push_back(PendingDestructor(value, destructor, enabled_value));
+                auto enabled_store = LLVMBuildStore(builder, context->llvm_true, enabled_value);
+
+                auto& scope = scopes.back();
+                scope.destructors.push_back(PendingDestructor(value, destructor_declarator, enabled_value));
+
+                auto& destructor = scope.destructors.back();
+                destructor.enabled_initialize_instruction = enabled_store;
+                destructor.enabled_alloca_instruction = enabled_value;
+
+                destructor_index[value.get_lvalue()] = &destructor;
             }
         }
     }
@@ -176,11 +197,18 @@ struct Emitter: Visitor {
     }
 
     LLVMValueRef get_rvalue(const Value &value) {
+        auto context = TranslationUnitContext::it;
+
         auto rvalue = value.get_rvalue(builder, outcome);
 
         if (auto structured_type = type_cast<StructuredType>(value.type->unqualified())) {
             if (value.kind == ValueKind::LVALUE && structured_type->destructor) {
-                LLVMBuildStore(builder, LLVMConstNull(structured_type->llvm_type()), value.get_lvalue());
+                LLVMValueRef lvalue = value.get_lvalue();
+                auto destructor = destructor_index[lvalue];
+                destructor->at_least_one_move = true;
+
+                LLVMBuildStore(builder, LLVMConstNull(structured_type->llvm_type()), lvalue);
+                LLVMBuildStore(builder, context->llvm_false, destructor->enabled_value);
             }
         }
 
@@ -1250,7 +1278,14 @@ struct Emitter: Visitor {
 
         return VisitExpressionOutput(Value::of_zero_int());
     }
-    
+
+    virtual VisitExpressionOutput visit(MoveExpr* expr) override {
+        auto value = accept_expr(expr->expr).value.unqualified();
+        if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(value.type);
+
+        return VisitExpressionOutput(value.type, get_rvalue(value));
+    }
+
     virtual VisitExpressionOutput visit(CallExpr* expr) override {
         if (outcome == EmitOutcome::FOLD) {
             message(Severity::ERROR, expr->location) << "cannot call function in constant expression\n";
