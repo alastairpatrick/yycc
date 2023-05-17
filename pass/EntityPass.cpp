@@ -1,6 +1,6 @@
+#include "Module.h"
 #include "DepthFirstVisitor.h"
 #include "parse/Declaration.h"
-#include "ResolvePass.h"
 
 // This pass creates LLVM globals for all variables with static duration and LLVM functions, including those nested within functions.
 struct EntityPass: DepthFirstVisitor {
@@ -58,14 +58,14 @@ struct EntityPass: DepthFirstVisitor {
     }
 };
 
-void entity_pass(Module& module) {
+void Module::entity_pass() {
     EntityPass pass;
-    pass.llvm_module = module.llvm_module;
+    pass.llvm_module = llvm_module;
 
     Identifier destructor_id = { .text = intern_string("destructor") };
 
-    pass.accept_scope(module.file_scope);
-    for (auto scope: module.type_scopes) {
+    pass.accept_scope(file_scope);
+    for (auto scope: type_scopes) {
         if (scope->type) {
             if (auto destructor = scope->lookup_member(destructor_id)) {
                 if (auto function = destructor->function()) {

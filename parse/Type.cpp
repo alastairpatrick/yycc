@@ -7,7 +7,7 @@
 #include "IdentifierMap.h"
 #include "InternedString.h"
 #include "Message.h"
-#include "pass/Emitter.h"
+#include "pass/Module.h"
 #include "pass/TypeVisitor.h"
 #include "TranslationUnitContext.h"
 

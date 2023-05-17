@@ -2,6 +2,15 @@
 #include "parse/Type.h"
 #include "TranslationUnitContext.h"
 
+Module::Module() {
+    auto context = TranslationUnitContext::it;
+    llvm_module = LLVMModuleCreateWithNameInContext("my_module", context->llvm_context);
+}
+
+Module::~Module() {
+    LLVMDisposeModule(llvm_module);
+}
+
 Module::DestructorPlaceholder Module::get_destructor_placeholder(const StructuredType* type) {
     auto context = TranslationUnitContext::it;
 

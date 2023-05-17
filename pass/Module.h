@@ -2,6 +2,16 @@
 #define VISIT_RESOLVED_MODULE_H
 
 #include "parse/Scope.h"
+#include "parse/Type.h"
+#include "Value.h"
+
+struct EmitOptions {
+    bool initialize_variables = true;
+    bool emit_helpers = true;
+};
+
+const Type* get_expr_type(const Expr* expr);
+Value fold_expr(const Expr* expr);
 
 struct Module {
     Scope* file_scope;
@@ -22,7 +32,15 @@ struct Module {
     unordered_map<const StructuredType*, DestructorPlaceholder> destructor_placeholders;
     unordered_set<LLVMValueRef> destructor_placeholder_functions;
 
+    Module();
+    ~Module();
+
     DestructorPlaceholder get_destructor_placeholder(const StructuredType* type);
+
+    void resolve_pass(const vector<Declaration*>& declarations, Scope& file_scope);
+    void entity_pass();
+    void emit_pass(const EmitOptions& options);
+    void post_analysis_pass();
 };
 
 #endif

@@ -1,4 +1,4 @@
-#include "Emitter.h"
+#include "Module.h"
 #include "lex/StringLiteral.h"
 #include "LLVM.h"
 #include "Message.h"
@@ -1476,21 +1476,16 @@ Value fold_expr(const Expr* expr) {
     }
 }
 
-void emit_pass(Module& module, const EmitOptions& options) {
-    auto llvm_context = TranslationUnitContext::it->llvm_context;
-
-    module.llvm_module = LLVMModuleCreateWithNameInContext("my_module", llvm_context);
-
-    void entity_pass(Module& module);
-    entity_pass(module);
+void Module::emit_pass(const EmitOptions& options) {
+    entity_pass();
 
     Emitter emitter(EmitOutcome::IR, options);
-    emitter.module = &module;
+    emitter.module = this;
 
-    emitter.accept_scope(module.file_scope);
-    for (auto scope: module.type_scopes) {
+    emitter.accept_scope(file_scope);
+    for (auto scope: type_scopes) {
         emitter.accept_scope(scope);
     }
 
-    LLVMVerifyModule(module.llvm_module, LLVMPrintMessageAction, nullptr);
+    LLVMVerifyModule(llvm_module, LLVMPrintMessageAction, nullptr);
 }

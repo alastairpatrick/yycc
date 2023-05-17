@@ -4,8 +4,7 @@
 #include "parse/Declaration.h"
 #include "parse/Parser.h"
 #include "parse/Statement.h"
-#include "pass/Emitter.h"
-#include "pass/ResolvePass.h"
+#include "pass/Module.h"
 #include "preprocess/Preprocessor.h"
 #include "TranslationUnitContext.h"
 
@@ -44,10 +43,10 @@ int main(int argc, const char* argv[]) {
     }
 
     Module module;
-    resolve_pass(module, declarations, *identifiers.file_scope());
+    module.resolve_pass(declarations, *identifiers.file_scope());
+    module.entity_pass();
+    module.emit_pass({});
 
-    EmitOptions options;
-    emit_pass(module, options);
     
     // todo: post analysis pass
 

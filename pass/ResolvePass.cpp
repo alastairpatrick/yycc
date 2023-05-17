@@ -1,7 +1,6 @@
-#include "ResolvePass.h"
+#include "Module.h"
 
 #include "DepthFirstVisitor.h"
-#include "Emitter.h"
 #include "Message.h"
 #include "parse/Declaration.h"
 #include "parse/ArrayType.h"
@@ -732,8 +731,8 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
     }
 };
 
-void resolve_pass(Module& module, const vector<Declaration*>& declarations, Scope& file_scope) {
-    ResolvePass pass(module);
+void Module::resolve_pass(const vector<Declaration*>& declarations, Scope& file_scope) {
+    ResolvePass pass(*this);
     pass.result.file_scope = &file_scope;
     pass.resolve(declarations);
 }

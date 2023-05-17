@@ -8,9 +8,7 @@
 #include "parse/Parser.h"
 #include "parse/Statement.h"
 #include "TranslationUnitContext.h"
-#include "pass/Emitter.h"
-#include "pass/ResolvePass.h"
-#include "pass/PostAnalysisPass.h"
+#include "pass/Module.h"
 
 using json = nlohmann::json;
 
@@ -184,14 +182,14 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
 
             if (test_type >= TestType::RESOLVE) {
                 Module module;
-                resolve_pass(module, declarations, *identifiers.file_scope());
+                module.resolve_pass(declarations, *identifiers.file_scope());
 
                 if (test_type >= TestType::EMIT) {
                     EmitOptions options;
                     options.initialize_variables = false;
                     options.emit_helpers = false;
 
-                    emit_pass(module, options);
+                    module.emit_pass(options);
                     
                     if (test_type >= TestType::ANALYSIS) {
                         auto pass_builder_options = LLVMCreatePassBuilderOptions();
@@ -200,13 +198,12 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
 
                         LLVMDisposePassBuilderOptions(pass_builder_options);
 
-                        post_analysis_pass(module);
+                        module.post_analysis_pass();
                     }
 
                     char* module_string = LLVMPrintModuleToString(module.llvm_module);
                     module_ir = module_string;
                     LLVMDisposeMessage(module_string);
-                    LLVMDisposeModule(module.llvm_module);
 
                     // Erase first three lines:
                     module_ir.erase(0, module_ir.find("\n") + 1);

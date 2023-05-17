@@ -1,6 +1,5 @@
-#include "PostAnalysisPass.h"
+#include "Module.h"
 #include "LLVM.h"
-#include "pass/Emitter.h"
 #include "TranslationUnitContext.h"
 
 #pragma warning(disable: 4624)
@@ -60,7 +59,7 @@ struct PostAnalysisPass {
     }
 };
 
-void post_analysis_pass(Module& module) {
-    PostAnalysisPass pass(module);
+void Module::post_analysis_pass() {
+    PostAnalysisPass pass(*this);
     pass.go();
 }
