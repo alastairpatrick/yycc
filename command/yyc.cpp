@@ -46,9 +46,8 @@ int main(int argc, const char* argv[]) {
     module.resolve_pass(declarations, *identifiers.file_scope());
     module.entity_pass();
     module.emit_pass({});
-
-    
-    // todo: post analysis pass
+    module.analysis_pass();
+    module.post_analysis_pass();
 
     auto pass_builder_options = LLVMCreatePassBuilderOptions();
 

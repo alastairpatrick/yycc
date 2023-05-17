@@ -40,6 +40,7 @@ struct Module {
     void resolve_pass(const vector<Declaration*>& declarations, Scope& file_scope);
     void entity_pass();
     void emit_pass(const EmitOptions& options);
+    void analysis_pass();
     void post_analysis_pass();
 };
 

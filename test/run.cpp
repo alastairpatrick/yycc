@@ -1,7 +1,6 @@
 #include "nlohmann/json.hpp"
 
 #include "FileCache.h"
-#include "LLVM.h"
 #include "parse/ASTNode.h"
 #include "parse/Expr.h"
 #include "parse/Declaration.h"
@@ -192,12 +191,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
                     module.emit_pass(options);
                     
                     if (test_type >= TestType::ANALYSIS) {
-                        auto pass_builder_options = LLVMCreatePassBuilderOptions();
-
-                        LLVMRunPasses(module.llvm_module, "instcombine,sccp", g_llvm_target_machine, pass_builder_options);
-
-                        LLVMDisposePassBuilderOptions(pass_builder_options);
-
+                        module.analysis_pass();
                         module.post_analysis_pass();
                     }
 

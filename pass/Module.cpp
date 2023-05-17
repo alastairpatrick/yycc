@@ -1,4 +1,5 @@
 #include "Module.h"
+#include "LLVM.h"
 #include "parse/Type.h"
 #include "TranslationUnitContext.h"
 
@@ -33,4 +34,13 @@ Module::DestructorPlaceholder Module::get_destructor_placeholder(const Structure
     destructor_placeholder_functions.insert(placeholder.function);
 
     return placeholder;
+}
+
+void Module::analysis_pass() {
+    auto pass_builder_options = LLVMCreatePassBuilderOptions();
+    SCOPE_EXIT {
+        LLVMDisposePassBuilderOptions(pass_builder_options);
+    };
+
+    LLVMRunPasses(llvm_module, "instcombine,sccp", g_llvm_target_machine, pass_builder_options);
 }
