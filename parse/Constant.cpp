@@ -4,8 +4,8 @@
 #include "Expr.h"
 #include "lex/StringLiteral.h"
 #include "Message.h"
+#include "pass/Visitor.h"
 #include "TranslationUnitContext.h"
-#include "visit/Visitor.h"
 
 using json = nlohmann::json;
 

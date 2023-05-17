@@ -1,8 +1,8 @@
 #include "Expr.h"
 #include "Declaration.h"
 #include "Message.h"
+#include "pass/Visitor.h"
 #include "TranslationUnitContext.h"
-#include "visit/Visitor.h"
 
 Expr::Expr(const Location& location): LocationNode(location) {
 }

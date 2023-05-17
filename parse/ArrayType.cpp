@@ -2,8 +2,8 @@
 #include "Constant.h"
 #include "Expr.h"
 #include "Message.h"
+#include "pass/TypeVisitor.h"
 #include "TranslationUnitContext.h"
-#include "visit/TypeVisitor.h"
 
 ArrayType::ArrayType(const Type* element_type): element_type(element_type) {
 }

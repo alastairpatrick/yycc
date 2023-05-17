@@ -4,10 +4,10 @@
 #include "parse/Declaration.h"
 #include "parse/Parser.h"
 #include "parse/Statement.h"
+#include "pass/Emitter.h"
+#include "pass/ResolvePass.h"
 #include "preprocess/Preprocessor.h"
 #include "TranslationUnitContext.h"
-#include "visit/Emitter.h"
-#include "visit/ResolvePass.h"
 
 struct TranslationInput {
     explicit TranslationInput(IdentifierMap& identifiers, File&& f): file(f), preprocessor(file.text, false), parser(preprocessor, identifiers) {

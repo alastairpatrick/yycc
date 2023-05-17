@@ -3,8 +3,8 @@
 #include "Constant.h"
 #include "IdentifierMap.h"
 #include "Message.h"
+#include "pass/Visitor.h"
 #include "Type.h"
-#include "visit/Visitor.h"
 
 ostream& operator<<(ostream& stream, Linkage linkage) {
     switch (linkage) {

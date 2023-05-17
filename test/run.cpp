@@ -8,9 +8,9 @@
 #include "parse/Parser.h"
 #include "parse/Statement.h"
 #include "TranslationUnitContext.h"
-#include "visit/Emitter.h"
-#include "visit/ResolvePass.h"
-#include "visit/PostAnalysisPass.h"
+#include "pass/Emitter.h"
+#include "pass/ResolvePass.h"
+#include "pass/PostAnalysisPass.h"
 
 using json = nlohmann::json;
 

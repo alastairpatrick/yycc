@@ -7,9 +7,9 @@
 #include "IdentifierMap.h"
 #include "InternedString.h"
 #include "Message.h"
+#include "pass/Emitter.h"
+#include "pass/TypeVisitor.h"
 #include "TranslationUnitContext.h"
-#include "visit/Emitter.h"
-#include "visit/TypeVisitor.h"
 
 // Type codes
 // A array

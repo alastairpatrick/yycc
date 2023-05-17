@@ -1,7 +1,7 @@
 #include "PostAnalysisPass.h"
 #include "LLVM.h"
+#include "pass/Emitter.h"
 #include "TranslationUnitContext.h"
-#include "visit/Emitter.h"
 
 #pragma warning(disable: 4624)
 

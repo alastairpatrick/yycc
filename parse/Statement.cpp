@@ -1,6 +1,6 @@
 #include "Statement.h"
 #include "Declaration.h"
-#include "visit/Visitor.h"
+#include "pass/Visitor.h"
 
 Statement::Statement(const Location& location): LocationNode(location) {
 }
