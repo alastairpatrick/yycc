@@ -1,4 +1,4 @@
-#include "TypeConverter.h"
+#include "ValueWrangler.h"
 #include "Module.h"
 #include "Message.h"
 #include "TranslationUnitContext.h"
@@ -9,11 +9,11 @@ const T* type_cast(const U* type) {
     return dynamic_cast<const T*>(type);
 }
 
-TypeConverter::TypeConverter(Module* module, LLVMBuilderRef builder, EmitOutcome outcome)
+ValueWrangler::ValueWrangler(Module* module, LLVMBuilderRef builder, EmitOutcome outcome)
     : module(module), builder(builder), outcome(outcome) {
 }
 
-ConvKind TypeConverter::check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type) {
+ConvKind ValueWrangler::check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type) {
     auto unqualified_source_base_type = source_base_type->unqualified();
     auto unqualified_dest_base_type = dest_base_type->unqualified();
 
@@ -43,7 +43,7 @@ ConvKind TypeConverter::check_pointer_conversion(const Type* source_base_type, c
     return result;
 }
 
-LLVMValueRef TypeConverter::get_rvalue(const Value &value, const Location& location, bool for_move_expr) {
+LLVMValueRef ValueWrangler::get_rvalue(const Value &value, const Location& location, bool for_move_expr) {
     auto context = TranslationUnitContext::it;
 
     if (value.type == &VoidType::it) {
@@ -67,11 +67,11 @@ LLVMValueRef TypeConverter::get_rvalue(const Value &value, const Location& locat
 }
 
 
-LLVMValueRef TypeConverter::get_rvalue(const Value &value) {
+LLVMValueRef ValueWrangler::get_rvalue(const Value &value) {
     return get_rvalue(value, location, false);
 }
 
-void TypeConverter::convert_array_to_pointer() {
+void ValueWrangler::convert_array_to_pointer() {
     if (auto source_type = type_cast<ResolvedArrayType>(value.type)) {
         if (value.kind == ValueKind::LVALUE) {
             auto pointer_type = source_type->element_type->pointer_to();
@@ -80,13 +80,13 @@ void TypeConverter::convert_array_to_pointer() {
     }
 }
 
-void TypeConverter::convert_enum_to_int() {
+void ValueWrangler::convert_enum_to_int() {
     if (auto source_type = type_cast<EnumType>(value.type)) {
         value = value.bit_cast(source_type->base_type);
     }
 }
 
-const Type* TypeConverter::visit(const ResolvedArrayType* dest_type) {
+const Type* ValueWrangler::visit(const ResolvedArrayType* dest_type) {
     if (auto source_type = type_cast<ResolvedArrayType>(value.type)) {
         if (value.is_const() && source_type->element_type == dest_type->element_type && source_type->size <= dest_type->size) {
             LLVMValueRef source_array = value.get_const();
@@ -108,7 +108,7 @@ const Type* TypeConverter::visit(const ResolvedArrayType* dest_type) {
     return nullptr;
 }
 
-const Type* TypeConverter::visit(const PointerType* dest_type) {
+const Type* ValueWrangler::visit(const PointerType* dest_type) {
     if (auto source_type = type_cast<ResolvedArrayType>(value.type)) {
         if (module && value.is_const()) {
             auto& global = module->reified_constants[value.get_const()];
@@ -137,7 +137,7 @@ const Type* TypeConverter::visit(const PointerType* dest_type) {
     return nullptr;
 }
 
-const Type* TypeConverter::visit(const IntegerType* dest_type) {
+const Type* ValueWrangler::visit(const IntegerType* dest_type) {
     convert_array_to_pointer();
     convert_enum_to_int();
 
@@ -157,7 +157,7 @@ const Type* TypeConverter::visit(const IntegerType* dest_type) {
     return nullptr;
 }
 
-const Type* TypeConverter::visit(const FloatingPointType* dest_type) {
+const Type* ValueWrangler::visit(const FloatingPointType* dest_type) {
     convert_enum_to_int();
 
     if (type_cast<FloatingPointType>(value.type)) {
@@ -172,7 +172,7 @@ const Type* TypeConverter::visit(const FloatingPointType* dest_type) {
     return nullptr;
 }
 
-const Type* TypeConverter::visit(const EnumType* dest_type) {
+const Type* ValueWrangler::visit(const EnumType* dest_type) {
     dest_type->base_type->accept(*this);
     if (result.value.is_valid()) {
         result.value = result.value.bit_cast(dest_type);
@@ -181,13 +181,13 @@ const Type* TypeConverter::visit(const EnumType* dest_type) {
     return nullptr;
 }
 
-const Type* TypeConverter::visit(const VoidType* dest_type) {
+const Type* ValueWrangler::visit(const VoidType* dest_type) {
     result = ConvertTypeResult(Value(dest_type));
     return nullptr;
 }
 
 
-ConvertTypeResult TypeConverter::convert_to_type(const Value& value, const Type* dest_type, const Location& location) {
+ConvertTypeResult ValueWrangler::convert_to_type(const Value& value, const Type* dest_type, const Location& location) {
     assert(dest_type->qualifiers() == 0);
 
     this->value = value;

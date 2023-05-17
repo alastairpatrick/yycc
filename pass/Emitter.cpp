@@ -5,8 +5,8 @@
 #include "parse/AssocPrec.h"
 #include "parse/Declaration.h"
 #include "TranslationUnitContext.h"
-#include "TypeConverter.h"
 #include "TypeVisitor.h"
+#include "ValueWrangler.h"
 #include "Visitor.h"
 
 struct Emitter;
@@ -47,7 +47,7 @@ struct Emitter: Visitor {
 
     Module* module{};
     Emitter* parent{};
-    unique_ptr<TypeConverter> type_converter;
+    unique_ptr<ValueWrangler> wrangler;
 
     Declarator* function_declarator{};
     const FunctionType* function_type{};
@@ -73,7 +73,7 @@ struct Emitter: Visitor {
         if (outcome == EmitOutcome::IR) {
             temp_builder = LLVMCreateBuilderInContext(llvm_context);
         }
-        type_converter.reset(new TypeConverter(module, builder, outcome));
+        wrangler.reset(new ValueWrangler(module, builder, outcome));
         this_string = intern_string("this");
     }
 
@@ -145,7 +145,7 @@ struct Emitter: Visitor {
     }
 
     LLVMValueRef get_rvalue(const Value &value, const Location& location, bool for_move_expr = false) {
-        return type_converter->get_rvalue(value, location, for_move_expr);
+        return wrangler->get_rvalue(value, location, for_move_expr);
     }
 
     void store_value(const Value& dest, LLVMValueRef source_rvalue, const Location& location) {
@@ -241,7 +241,7 @@ struct Emitter: Visitor {
             return result;
         }
 
-        auto output = type_converter->convert_to_type(value, dest_type, location);
+        auto output = wrangler->convert_to_type(value, dest_type, location);
         auto result = output.value;
 
         if (!result.is_valid()) {
@@ -937,8 +937,8 @@ struct Emitter: Visitor {
         if (op_flags & OP_COMPARISON) {
             bool valid = false;
             if (left_pointer_type && right_pointer_type) {
-                valid = type_converter->check_pointer_conversion(left_pointer_type->base_type, right_pointer_type->base_type) == ConvKind::IMPLICIT
-                     || type_converter->check_pointer_conversion(right_pointer_type->base_type, left_pointer_type->base_type) == ConvKind::IMPLICIT;
+                valid = wrangler->check_pointer_conversion(left_pointer_type->base_type, right_pointer_type->base_type) == ConvKind::IMPLICIT
+                     || wrangler->check_pointer_conversion(right_pointer_type->base_type, left_pointer_type->base_type) == ConvKind::IMPLICIT;
             }
 
             if (op == TOK_EQ_OP || op == TOK_NE_OP) {
