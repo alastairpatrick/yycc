@@ -3,8 +3,8 @@
 
 #include "parse/Declaration.h"
 #include "parse/Scope.h"
-#include "ResolvedModule.h"
+#include "Module.h"
 
-ResolvedModule resolve_pass(const vector<Declaration*>& declarations, Scope& file_scope);
+void resolve_pass(Module& module, const vector<Declaration*>& declarations, Scope& file_scope);
 
 #endif

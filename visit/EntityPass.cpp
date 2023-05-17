@@ -58,14 +58,14 @@ struct EntityPass: DepthFirstVisitor {
     }
 };
 
-void entity_pass(const ResolvedModule& resolved_module, LLVMModuleRef llvm_module) {
+void entity_pass(Module& module) {
     EntityPass pass;
-    pass.llvm_module = llvm_module;
+    pass.llvm_module = module.llvm_module;
 
     Identifier destructor_id = { .text = intern_string("destructor") };
 
-    pass.accept_scope(resolved_module.file_scope);
-    for (auto scope: resolved_module.type_scopes) {
+    pass.accept_scope(module.file_scope);
+    for (auto scope: module.type_scopes) {
         if (scope->type) {
             if (auto destructor = scope->lookup_member(destructor_id)) {
                 if (auto function = destructor->function()) {

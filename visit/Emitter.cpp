@@ -35,10 +35,6 @@ struct SwitchConstruct: Construct {
 struct PendingDestructor {
     Value lvalue;
     Declarator* destructor_declarator{};
-    LLVMValueRef enabled_value{};
-
-    bool at_least_one_move{};
-    vector<LLVMValueRef> tracking_instructions;
 };
 
 struct EmitterScope {
@@ -67,7 +63,6 @@ struct Emitter: Visitor {
     Value this_value;
     LLVMTypeRef destructor_wrapper_type{};
     LLVMValueRef destructor_wrapper{};
-    unordered_map<LLVMValueRef, PendingDestructor*> destructor_index;
 
     Emitter(EmitOutcome outcome, const EmitOptions& options): outcome(outcome), options(options) {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
@@ -85,44 +80,6 @@ struct Emitter: Visitor {
         if (temp_builder) LLVMDisposeBuilder(temp_builder);
     }
 
-    void emit_destructor_wrapper() {
-        if (destructor_wrapper) return;
-
-        auto context = TranslationUnitContext::it;
-
-        LLVMTypeRef param_types[] = {
-            context->llvm_pointer_type,
-            context->llvm_pointer_type,
-            context->llvm_pointer_type,
-        };
-        destructor_wrapper_type = LLVMFunctionType(context->llvm_void_type, param_types, 3, false);
-        destructor_wrapper = LLVMAddFunction(module->llvm_module, "destructor_wrapper", destructor_wrapper_type);
-
-        if (!options.emit_helpers) return;
-
-        const char alwaysinline_name[] = "alwaysinline";
-        auto alwaysinline_attr = LLVMCreateEnumAttribute(context->llvm_context, LLVMGetEnumAttributeKindForName(alwaysinline_name, sizeof(alwaysinline_name)-1), 0);
-        LLVMAddAttributeAtIndex(destructor_wrapper, LLVMAttributeFunctionIndex, alwaysinline_attr);
-
-        auto entry_block = LLVMAppendBasicBlockInContext(context->llvm_context, destructor_wrapper, "");
-        LLVMPositionBuilderAtEnd(temp_builder, entry_block);
-
-        auto enabled = LLVMBuildLoad2(temp_builder, context->llvm_bool_type, LLVMGetParam(destructor_wrapper, 2), "");
-
-        auto then_block = LLVMAppendBasicBlockInContext(context->llvm_context, destructor_wrapper, "");
-        auto else_block = LLVMAppendBasicBlockInContext(context->llvm_context, destructor_wrapper, "");
-        LLVMBuildCondBr(temp_builder, enabled, then_block, else_block);
-
-        LLVMPositionBuilderAtEnd(temp_builder, then_block);
-        LLVMValueRef llvm_param = LLVMGetParam(destructor_wrapper, 0);
-        auto destructor_type = LLVMFunctionType(context->llvm_void_type, &context->llvm_pointer_type, 1, false);
-        LLVMBuildCall2(temp_builder, destructor_type, LLVMGetParam(destructor_wrapper, 1), &llvm_param, 1, "");
-        LLVMBuildBr(temp_builder, else_block);
-
-        LLVMPositionBuilderAtEnd(temp_builder, else_block);
-        LLVMBuildRetVoid(temp_builder);
-    }
-
     void push_scope() {
         scopes.emplace_back();
     }
@@ -133,26 +90,17 @@ struct Emitter: Visitor {
         auto& destructors = scopes.back().destructors;
         for (auto it = destructors.rbegin(); it != destructors.rend(); ++it) {
             auto destructor = *it;
-
             auto function = destructor.destructor_declarator->function();
+            auto structured_type = type_cast<StructuredType>(destructor.lvalue.type->unqualified());
+            auto placeholder = module->get_destructor_placeholder(structured_type);
 
-            if (destructor.at_least_one_move) {
-                emit_destructor_wrapper();
-
-                LLVMValueRef wrapper_args[] = {
-                    destructor.lvalue.dangerously_get_lvalue(),
-                    get_lvalue(function->value),
-                    destructor.enabled_value,
-                };
-                LLVMBuildCall2(builder, destructor_wrapper_type, destructor_wrapper, wrapper_args, 3, "");
-            } else {
-                LLVMValueRef arg = destructor.lvalue.dangerously_get_lvalue();
-                LLVMBuildCall2(builder, destructor.destructor_declarator->type->llvm_type(), get_lvalue(function->value), &arg, 1, "");
-
-                for (auto it = destructor.tracking_instructions.rbegin(); it != destructor.tracking_instructions.rend(); ++it) {
-                    LLVMInstructionEraseFromParent(*it);
-                }
-            }
+            LLVMValueRef args[] = {
+                destructor.lvalue.dangerously_get_lvalue(),
+                get_lvalue(function->value),
+                destructor.lvalue.dangerously_get_rvalue(builder),
+                LLVMConstNull(destructor.lvalue.type->llvm_type()),
+            };
+            LLVMBuildCall2(builder, placeholder.type, placeholder.function, args, 4, "");
         }
 
         destructors.clear();
@@ -163,25 +111,18 @@ struct Emitter: Visitor {
         scopes.pop_back();
     }
 
-    void pend_destructor(const Value& value) {
+    bool pend_destructor(const Value& value) {
         auto context = TranslationUnitContext::it;
 
         if (auto structured_type = type_cast<StructuredType>(value.type->unqualified())) {
             if (auto destructor_declarator = structured_type->destructor) {
-                use_temp_builder();
-                auto enabled_value = LLVMBuildAlloca(temp_builder, context->llvm_bool_type, "");
-                auto enabled_store = LLVMBuildStore(builder, context->llvm_true, enabled_value);
-
                 auto& scope = scopes.back();
-                scope.destructors.push_back(PendingDestructor(value, destructor_declarator, enabled_value));
-
-                auto& destructor = scope.destructors.back();
-                destructor.tracking_instructions.push_back(enabled_value);
-                destructor.tracking_instructions.push_back(enabled_store);
-
-                destructor_index[get_lvalue(value)] = &destructor;
+                scope.destructors.push_back(PendingDestructor(value, destructor_declarator));
+                return true;
             }
         }
+
+        return false;
     }
 
     virtual VisitDeclaratorOutput accept_declarator(Declarator* declarator) override {
@@ -196,20 +137,9 @@ struct Emitter: Visitor {
         return VisitDeclaratorOutput();
     }
 
+    // todo: not dangerous
     LLVMValueRef get_lvalue(const Value &value) {
-        auto context = TranslationUnitContext::it;
-
-        auto lvalue = value.dangerously_get_lvalue();
-
-        auto it = destructor_index.find(lvalue);
-        if (it != destructor_index.end()) {
-            auto destructor = it->second;
-
-            auto enabled_store = LLVMBuildStore(builder, context->llvm_true, destructor->enabled_value);
-            destructor->tracking_instructions.push_back(enabled_store);
-        }
-
-        return lvalue;
+        return value.dangerously_get_lvalue();
     }
 
     LLVMValueRef get_rvalue(const Value &value) {
@@ -220,12 +150,7 @@ struct Emitter: Visitor {
         if (auto structured_type = type_cast<StructuredType>(value.type->unqualified())) {
             if (value.kind == ValueKind::LVALUE && structured_type->destructor) {
                 LLVMValueRef lvalue = value.dangerously_get_lvalue();
-                auto destructor = destructor_index[lvalue];
-                destructor->at_least_one_move = true;
-
                 LLVMBuildStore(builder, LLVMConstNull(structured_type->llvm_type()), lvalue);
-                auto enabled_store = LLVMBuildStore(builder, context->llvm_false, destructor->enabled_value);
-                destructor->tracking_instructions.push_back(enabled_store);
             }
         }
 
@@ -506,13 +431,13 @@ struct Emitter: Visitor {
         if (entity->storage_duration == StorageDuration::AUTO) {
             entity->value = allocate_auto_storage(type, c_str(declarator->identifier));
 
-            pend_destructor(entity->value);
+            bool has_destructor = pend_destructor(entity->value);
 
             if (entity->initializer) {
                 push_scope();
                 emit_auto_initializer(entity->value, entity->initializer);
                 pop_scope();
-            } else if (options.initialize_variables) {
+            } else if (options.initialize_variables || has_destructor) {
                 entity->value.store(builder, Value::of_null(type));
             }
 
@@ -1541,24 +1466,21 @@ Value fold_expr(const Expr* expr) {
     }
 }
 
-LLVMModuleRef emit_pass(const ResolvedModule& resolved_module, const EmitOptions& options) {
+void emit_pass(Module& module, const EmitOptions& options) {
     auto llvm_context = TranslationUnitContext::it->llvm_context;
 
-    Module module;
     module.llvm_module = LLVMModuleCreateWithNameInContext("my_module", llvm_context);
 
-    void entity_pass(const ResolvedModule& resolved_module, LLVMModuleRef llvm_module);
-    entity_pass(resolved_module, module.llvm_module);
+    void entity_pass(Module& module);
+    entity_pass(module);
 
     Emitter emitter(EmitOutcome::IR, options);
     emitter.module = &module;
 
-    emitter.accept_scope(resolved_module.file_scope);
-    for (auto scope: resolved_module.type_scopes) {
+    emitter.accept_scope(module.file_scope);
+    for (auto scope: module.type_scopes) {
         emitter.accept_scope(scope);
     }
 
     LLVMVerifyModule(module.llvm_module, LLVMPrintMessageAction, nullptr);
-
-    return module.llvm_module;
 }

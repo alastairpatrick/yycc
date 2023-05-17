@@ -1,15 +1,42 @@
-BEGIN Calls destructor before end of function
+BEGIN Does not call destructor on object known to be in default state
 struct S {
+    int x;
     void destructor(S&) {}
 };
 void f() {
     S s;
 }
 EXPECT_IR
-%S = type {}
+%S = type { i32 }
 
 define void @f() {
   %s = alloca %S, align 8
+  store i32 0, ptr %s, align 8
+  ret void
+}
+
+define void @destructor(ptr %0) {
+  ret void
+}
+
+declare void @destructor_placeholder(ptr, ptr, %S, %S)
+END
+
+
+BEGIN On object with non-default state, calls destructor before end of function
+struct S {
+    int x;
+    void destructor(S&) {}
+};
+void f() {
+    S s = {1};
+}
+EXPECT_IR
+%S = type { i32 }
+
+define void @f() {
+  %s = alloca %S, align 8
+  store i32 1, ptr %s, align 8
   call void @destructor(ptr %s)
   ret void
 }
@@ -17,22 +44,26 @@ define void @f() {
 define void @destructor(ptr %0) {
   ret void
 }
+
+declare void @destructor_placeholder(ptr, ptr, %S, %S)
 END
 
 
 BEGIN Calls destructor before explicit return
 struct S {
+    int x;
     void destructor(S&) {}
 };
 void f() {
-    S s;
+    S s = {1};
     return;
 }
 EXPECT_IR
-%S = type {}
+%S = type { i32 }
 
 define void @f() {
   %s = alloca %S, align 8
+  store i32 1, ptr %s, align 8
   call void @destructor(ptr %s)
   ret void
 }
@@ -40,58 +71,60 @@ define void @f() {
 define void @destructor(ptr %0) {
   ret void
 }
+
+declare void @destructor_placeholder(ptr, ptr, %S, %S)
 END
 
 
 BEGIN Calls destructor at end of compound statement
 struct S {
+    int x;
     void destructor(S&) {}
 };
 void f() {
     if (1) {
-        S s;
+        S s = {1};
     }
 }
 EXPECT_IR
-%S = type {}
+%S = type { i32 }
 
 define void @f() {
   %s = alloca %S, align 8
-  br i1 true, label %if_c, label %if_e
+  br label %if_c
 
 if_c:                                             ; preds = %0
+  store i32 1, ptr %s, align 8
   call void @destructor(ptr %s)
   br label %if_e
 
-if_e:                                             ; preds = %if_c, %0
+if_e:                                             ; preds = %if_c
   ret void
 }
 
 define void @destructor(ptr %0) {
   ret void
 }
+
+declare void @destructor_placeholder(ptr, ptr, %S, %S)
 END
 
 
-BEGIN Move expression resets object to default value and updates object 
+BEGIN Move expression resets object to default state, preventing destructor
 struct S {
+    int x;
     void destructor(S&) {}
 };
 void f() {
-    S s;
+    S s = {1};
     &&s;
 }
 EXPECT_IR
-%S = type {}
+%S = type { i32 }
 
 define void @f() {
-  %1 = alloca i1, align 1
   %s = alloca %S, align 8
-  store i1 true, ptr %1, align 1
-  %2 = load %S, ptr %s, align 1
-  store %S zeroinitializer, ptr %s, align 1
-  store i1 false, ptr %1, align 1
-  call void @destructor_wrapper(ptr %s, ptr @destructor, ptr %1)
+  store i32 0, ptr %s, align 8
   ret void
 }
 
@@ -99,37 +132,27 @@ define void @destructor(ptr %0) {
   ret void
 }
 
-declare void @destructor_wrapper(ptr, ptr, ptr)
+declare void @destructor_placeholder(ptr, ptr, %S, %S)
 END
 
 
-BEGIN Calls destructor after move if object might have beemn re-enabled
+BEGIN Calls destructor after move if object is no longer be in default state
 struct S {
+    int x;
     void destructor(S&) {}
 };
-void g(S&) {}
 void f() {
-    S s;
+    S s = {1};
     &&s;
-    g(s);  // now destructor must be called
+    s.x = 2;
 }
 EXPECT_IR
-%S = type {}
-
-define void @g(ptr %0) {
-  ret void
-}
+%S = type { i32 }
 
 define void @f() {
-  %1 = alloca i1, align 1
   %s = alloca %S, align 8
-  store i1 true, ptr %1, align 1
-  %2 = load %S, ptr %s, align 1
-  store %S zeroinitializer, ptr %s, align 1
-  store i1 false, ptr %1, align 1
-  store i1 true, ptr %1, align 1
-  call void @g(ptr %s)
-  call void @destructor_wrapper(ptr %s, ptr @destructor, ptr %1)
+  store i32 2, ptr %s, align 8
+  call void @destructor(ptr %s)
   ret void
 }
 
@@ -137,5 +160,5 @@ define void @destructor(ptr %0) {
   ret void
 }
 
-declare void @destructor_wrapper(ptr, ptr, ptr)
+declare void @destructor_placeholder(ptr, ptr, %S, %S)
 END

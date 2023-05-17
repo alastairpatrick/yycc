@@ -1,6 +1,7 @@
 #include "nlohmann/json.hpp"
 
 #include "FileCache.h"
+#include "LLVM.h"
 #include "parse/ASTNode.h"
 #include "parse/Expr.h"
 #include "parse/Declaration.h"
@@ -9,6 +10,7 @@
 #include "TranslationUnitContext.h"
 #include "visit/Emitter.h"
 #include "visit/ResolvePass.h"
+#include "visit/PostAnalysisPass.h"
 
 using json = nlohmann::json;
 
@@ -21,6 +23,7 @@ enum class TestType {
     PARSE,
     RESOLVE,
     EMIT,
+    ANALYSIS,
 
     NUM
 };
@@ -103,8 +106,9 @@ static const Test tests[] = {
     { "emit/emit",                  TestType::EMIT },
     { "emit/expr",                  TestType::EMIT },
     { "emit/statement",             TestType::EMIT },
-    { "emit/struct",                TestType::EMIT },
     { "emit/variable",              TestType::EMIT },
+
+    { "emit/struct",                TestType::ANALYSIS },
 };
 
 static ostream& print_error(const string& name, const string& file, int line) {
@@ -179,18 +183,30 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
             auto declarations = parse_declarations(identifiers, test_type == TestType::PREPARSE, sections[INPUT]);
 
             if (test_type >= TestType::RESOLVE) {
-                auto resolved_module = resolve_pass(declarations, *identifiers.file_scope());
+                Module module;
+                resolve_pass(module, declarations, *identifiers.file_scope());
 
                 if (test_type >= TestType::EMIT) {
                     EmitOptions options;
                     options.initialize_variables = false;
                     options.emit_helpers = false;
 
-                    auto module = emit_pass(resolved_module, options);
-                    char* module_string = LLVMPrintModuleToString(module);
+                    emit_pass(module, options);
+                    
+                    if (test_type >= TestType::ANALYSIS) {
+                        auto pass_builder_options = LLVMCreatePassBuilderOptions();
+
+                        LLVMRunPasses(module.llvm_module, "instcombine,sccp", g_llvm_target_machine, pass_builder_options);
+
+                        LLVMDisposePassBuilderOptions(pass_builder_options);
+
+                        post_analysis_pass(module);
+                    }
+
+                    char* module_string = LLVMPrintModuleToString(module.llvm_module);
                     module_ir = module_string;
                     LLVMDisposeMessage(module_string);
-                    LLVMDisposeModule(module);
+                    LLVMDisposeModule(module.llvm_module);
 
                     // Erase first three lines:
                     module_ir.erase(0, module_ir.find("\n") + 1);

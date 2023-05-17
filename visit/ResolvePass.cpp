@@ -11,7 +11,7 @@
 #include "TypeVisitor.h"
 
 struct ResolvePass: DepthFirstVisitor, TypeVisitor {
-    ResolvedModule result;
+    Module& result;
     unordered_set<const TagType*> tag_types;
     unordered_map<const Type*, const Type*> resolved_types;
 
@@ -23,6 +23,9 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
 
     set<Declarator*, TodoLess> todo;
     unordered_set<Declarator*> done;
+
+    explicit ResolvePass(Module& module): result(module) {
+    }
 
     void see_other_message(const Location& location) {
         message(Severity::INFO, location) << "...see other\n";
@@ -729,9 +732,8 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
     }
 };
 
-ResolvedModule resolve_pass(const vector<Declaration*>& declarations, Scope& file_scope) {
-    ResolvePass pass;
+void resolve_pass(Module& module, const vector<Declaration*>& declarations, Scope& file_scope) {
+    ResolvePass pass(module);
     pass.result.file_scope = &file_scope;
     pass.resolve(declarations);
-    return move(pass.result);
 }
