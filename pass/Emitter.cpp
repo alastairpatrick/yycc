@@ -41,12 +41,13 @@ struct EmitterScope {
     vector<PendingDestructor> destructors;
 };
 
-struct Emitter: Visitor, RValueResolver {
+struct Emitter: Visitor {
     EmitOutcome outcome;
     const EmitOptions& options;
 
     Module* module{};
     Emitter* parent{};
+    unique_ptr<TypeConverter> type_converter;
 
     Declarator* function_declarator{};
     const FunctionType* function_type{};
@@ -64,7 +65,7 @@ struct Emitter: Visitor, RValueResolver {
     LLVMTypeRef destructor_wrapper_type{};
     LLVMValueRef destructor_wrapper{};
 
-    Emitter(EmitOutcome outcome, const EmitOptions& options): outcome(outcome), options(options) {
+    Emitter(Module* module, EmitOutcome outcome, const EmitOptions& options): module(module), outcome(outcome), options(options) {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
         if (outcome != EmitOutcome::TYPE) {
             builder = LLVMCreateBuilderInContext(llvm_context);
@@ -72,6 +73,7 @@ struct Emitter: Visitor, RValueResolver {
         if (outcome == EmitOutcome::IR) {
             temp_builder = LLVMCreateBuilderInContext(llvm_context);
         }
+        type_converter.reset(new TypeConverter(module, builder, outcome));
         this_string = intern_string("this");
     }
 
@@ -143,26 +145,7 @@ struct Emitter: Visitor, RValueResolver {
     }
 
     LLVMValueRef get_rvalue(const Value &value, const Location& location, bool for_move_expr = false) {
-        auto context = TranslationUnitContext::it;
-
-        if (value.type == &VoidType::it) {
-            return nullptr;
-        }
-
-        auto rvalue = value.dangerously_get_rvalue(builder, outcome);
-
-        if (auto structured_type = type_cast<StructuredType>(value.type->unqualified())) {
-            if (value.kind == ValueKind::LVALUE && structured_type->destructor) {
-                LLVMValueRef lvalue = value.dangerously_get_lvalue();
-                LLVMBuildStore(builder, LLVMConstNull(structured_type->llvm_type()), lvalue);
-
-                if (!for_move_expr) {
-                    message(Severity::ERROR, location) << "lvalue with destructor is not copyable; consider '&&' prefix move operator\n";
-                }
-            }
-        }
-
-        return rvalue;
+        return type_converter->get_rvalue(value, location, for_move_expr);
     }
 
     void store_value(const Value& dest, LLVMValueRef source_rvalue, const Location& location) {
@@ -258,7 +241,7 @@ struct Emitter: Visitor, RValueResolver {
             return result;
         }
 
-        auto output = ::convert_to_type(value, dest_type, module, builder, this, location);
+        auto output = type_converter->convert_to_type(value, dest_type, location);
         auto result = output.value;
 
         if (!result.is_valid()) {
@@ -462,15 +445,11 @@ struct Emitter: Visitor, RValueResolver {
 
             LLVMValueRef initial = LLVMConstNull(llvm_type);
             if (entity->initializer) {
-                auto old_outcome = outcome;
-                outcome = EmitOutcome::FOLD;
-                SCOPE_EXIT {
-                    outcome = old_outcome;
-                };
+                Emitter initializer_emitter(module, EmitOutcome::FOLD, options);
 
                 Value value;
                 try {
-                    initial = emit_static_initializer(type, entity->initializer);
+                    initial = initializer_emitter.emit_static_initializer(type, entity->initializer);
                 } catch (FoldError& e) {
                     if (!e.error_reported) {
                         message(Severity::ERROR, entity->initializer->location) << "static initializer is not a constant expression\n";
@@ -495,8 +474,7 @@ struct Emitter: Visitor, RValueResolver {
         assert(declarator == declarator->primary);
           
         if (function->body) {
-            Emitter function_emitter(EmitOutcome::IR, options);
-            function_emitter.module = module;
+            Emitter function_emitter(module, EmitOutcome::IR, options);
             function_emitter.parent = this;
             function_emitter.emit_function_definition(declarator, function);
         }
@@ -959,8 +937,8 @@ struct Emitter: Visitor, RValueResolver {
         if (op_flags & OP_COMPARISON) {
             bool valid = false;
             if (left_pointer_type && right_pointer_type) {
-                valid = check_pointer_conversion(left_pointer_type->base_type, right_pointer_type->base_type) == ConvKind::IMPLICIT
-                     || check_pointer_conversion(right_pointer_type->base_type, left_pointer_type->base_type) == ConvKind::IMPLICIT;
+                valid = type_converter->check_pointer_conversion(left_pointer_type->base_type, right_pointer_type->base_type) == ConvKind::IMPLICIT
+                     || type_converter->check_pointer_conversion(right_pointer_type->base_type, left_pointer_type->base_type) == ConvKind::IMPLICIT;
             }
 
             if (op == TOK_EQ_OP || op == TOK_NE_OP) {
@@ -1477,13 +1455,13 @@ SwitchConstruct::~SwitchConstruct() {
 
 const Type* get_expr_type(const Expr* expr) {
     static const EmitOptions options;
-    Emitter emitter(EmitOutcome::TYPE, options);
+    Emitter emitter(nullptr, EmitOutcome::TYPE, options);
     return emitter.accept_expr(const_cast<Expr*>(expr)).value.type;
 }
 
 Value fold_expr(const Expr* expr) {
     static const EmitOptions options;
-    Emitter emitter(EmitOutcome::FOLD, options);
+    Emitter emitter(nullptr, EmitOutcome::FOLD, options);
     try {
         return emitter.accept_expr(const_cast<Expr*>(expr)).value;
     } catch (FoldError&) {
@@ -1492,8 +1470,7 @@ Value fold_expr(const Expr* expr) {
 }
 
 void Module::emit_pass(const EmitOptions& options) {
-    Emitter emitter(EmitOutcome::IR, options);
-    emitter.module = this;
+    Emitter emitter(this, EmitOutcome::IR, options);
 
     emitter.accept_scope(file_scope);
     for (auto scope: type_scopes) {

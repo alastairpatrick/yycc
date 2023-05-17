@@ -1,6 +1,7 @@
 #ifndef VISIT_TYPE_CONVERTER_H
 #define VISIT_TYPE_CONVERTER_H
 
+#include "TypeVisitor.h"
 #include "Value.h"
 
 struct Module;
@@ -20,12 +21,35 @@ struct ConvertTypeResult {
     explicit ConvertTypeResult(const Type* type, LLVMValueRef value = nullptr, ConvKind kind = ConvKind::IMPLICIT): value(type, value), conv_kind(kind) {}
 };
 
-struct RValueResolver {
-    virtual LLVMValueRef get_rvalue(const Value &value, const Location& location, bool for_move_expr = false) = 0;
+struct TypeConverter: TypeVisitor {
+private:
+    Module* module{};
+    LLVMBuilderRef builder{};
+    EmitOutcome outcome{};
+    Value value;
+
+    Location location;
+    ConvertTypeResult result;
+
+public:
+    TypeConverter(Module* module, LLVMBuilderRef builder, EmitOutcome outcome);
+
+    ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type);
+    ConvertTypeResult convert_to_type(const Value& value, const Type* dest_type, const Location& location);
+    LLVMValueRef get_rvalue(const Value &value, const Location& location, bool for_move_expr = false);
+
+    virtual const Type* visit(const ResolvedArrayType* dest_type) override;
+    virtual const Type* visit(const PointerType* dest_type) override;
+    virtual const Type* visit(const IntegerType* dest_type) override;
+    virtual const Type* visit(const FloatingPointType* dest_type) override;
+    virtual const Type* visit(const EnumType* dest_type) override;
+    virtual const Type* visit(const VoidType* dest_type) override;
+
+private:
+    void convert_array_to_pointer();
+    void convert_enum_to_int();
+    LLVMValueRef get_rvalue(const Value &value);
 };
 
-ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type);
-
-ConvertTypeResult convert_to_type(const Value& value, const Type* dest_type, Module* module, LLVMBuilderRef builder, RValueResolver* resolver, const Location& location);
 
 #endif
