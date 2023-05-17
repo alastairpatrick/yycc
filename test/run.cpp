@@ -47,6 +47,13 @@ enum Section {
 };
 
 static const Test tests[] = {
+    { "emit/assignment",            TestType::EMIT },
+
+
+
+
+
+
     { "parse/preprocess",           TestType::PREPROCESS },
     { "parse/sweep",                TestType::SWEEP },
 

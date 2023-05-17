@@ -41,7 +41,7 @@ struct EmitterScope {
     vector<PendingDestructor> destructors;
 };
 
-struct Emitter: Visitor {
+struct Emitter: Visitor, RValueResolver {
     EmitOutcome outcome;
     const EmitOptions& options;
 
@@ -142,29 +142,33 @@ struct Emitter: Visitor {
         return value.dangerously_get_lvalue();
     }
 
-    LLVMValueRef get_rvalue(const Value &value, const Location& location) {
+    LLVMValueRef get_rvalue(const Value &value, const Location& location, bool for_move_expr = false) {
         auto context = TranslationUnitContext::it;
 
         if (value.type == &VoidType::it) {
             return nullptr;
         }
 
-        auto rvalue = value.get_rvalue(builder, outcome);
+        auto rvalue = value.dangerously_get_rvalue(builder, outcome);
 
         if (auto structured_type = type_cast<StructuredType>(value.type->unqualified())) {
             if (value.kind == ValueKind::LVALUE && structured_type->destructor) {
                 LLVMValueRef lvalue = value.dangerously_get_lvalue();
                 LLVMBuildStore(builder, LLVMConstNull(structured_type->llvm_type()), lvalue);
+
+                if (!for_move_expr) {
+                    message(Severity::ERROR, location) << "lvalue with destructor is not copyable; consider '&&' prefix move operator\n";
+                }
             }
         }
 
         return rvalue;
     }
 
-    void store_value(const Value& dest, const Value& source, const Location& location) {
+    void store_value(const Value& dest, LLVMValueRef source_rvalue, const Location& location) {
         if (outcome == EmitOutcome::IR) {
             if (dest.kind == ValueKind::LVALUE) {
-                dest.store(builder, source);
+                dest.store(builder, source_rvalue);
             } else {
                 message(Severity::ERROR, location) << "expression is not assignable\n";
             }
@@ -254,7 +258,7 @@ struct Emitter: Visitor {
             return result;
         }
 
-        auto output = ::convert_to_type(value, dest_type, module, builder, outcome);
+        auto output = ::convert_to_type(value, dest_type, module, builder, this, location);
         auto result = output.value;
 
         if (!result.is_valid()) {
@@ -450,7 +454,7 @@ struct Emitter: Visitor {
                 emit_auto_initializer(entity->value, entity->initializer);
                 pop_scope();
             } else if (options.initialize_variables || has_destructor) {
-                entity->value.store(builder, Value::of_null(type));
+                entity->value.store(builder, Value::of_null(type).get_const());
             }
 
         } else if (entity->storage_duration == StorageDuration::STATIC) {
@@ -694,9 +698,9 @@ struct Emitter: Visitor {
         auto result_type = left_value.type->unqualified();
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-        auto right_value = convert_to_type(expr->right, result_type, ConvKind::IMPLICIT);
-        store_value(left_value, right_value, expr->location);
-        return VisitExpressionOutput(right_value);
+        auto right_rvalue = convert_to_rvalue(expr->right, result_type, ConvKind::IMPLICIT);
+        store_value(left_value, right_rvalue, expr->location);
+        return VisitExpressionOutput(result_type, right_rvalue);
     }
 
     Value emit_logical_binary_operation(BinaryExpr* expr, const Value& left_value, const Location& left_location) {
@@ -1045,7 +1049,7 @@ struct Emitter: Visitor {
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(intermediate);
 
         if (operator_flags(expr->op) & OP_ASSIGN) {
-            store_value(left_value, intermediate, expr->location);
+            store_value(left_value, get_rvalue(intermediate, expr->location), expr->location);
         }
 
         return VisitExpressionOutput(intermediate);
@@ -1177,25 +1181,24 @@ struct Emitter: Visitor {
     virtual VisitExpressionOutput visit(IncDecExpr* expr) override {
         auto lvalue = accept_expr(expr->expr).value.unqualified();
         auto before_rvalue = get_rvalue(lvalue, expr->location);
-        auto before_value = Value(lvalue.type, before_rvalue);
 
-        const Type* result_type = before_value.type;
+        const Type* result_type = lvalue.type;
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
         LLVMValueRef one = LLVMConstInt(result_type->llvm_type(), 1, false);
 
-        Value after_value;
+        LLVMValueRef after_rvalue;
         switch (expr->op) {
           case TOK_INC_OP:
-            after_value = Value(result_type, LLVMBuildAdd(builder, before_rvalue, one, ""));
+            after_rvalue = LLVMBuildAdd(builder, before_rvalue, one, "");
             break;
           case TOK_DEC_OP:
-            after_value = Value(result_type, LLVMBuildSub(builder, before_rvalue, one, ""));
+            after_rvalue = LLVMBuildSub(builder, before_rvalue, one, "");
             break;
         }
 
-        store_value(lvalue, after_value, expr->location);
-        return VisitExpressionOutput(expr->postfix ? before_value : after_value);
+        store_value(lvalue, after_rvalue, expr->location);
+        return VisitExpressionOutput(Value(result_type, expr->postfix ? before_rvalue : after_rvalue));
     }
 
     Value emit_object_of_member_expr(MemberExpr* expr) {
@@ -1247,7 +1250,7 @@ struct Emitter: Visitor {
         auto value = accept_expr(expr->expr).value.unqualified();
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(value.type);
 
-        return VisitExpressionOutput(value.type, get_rvalue(value, expr->expr->location));
+        return VisitExpressionOutput(value.type, get_rvalue(value, expr->expr->location, true));
     }
 
     virtual VisitExpressionOutput visit(CallExpr* expr) override {
@@ -1282,7 +1285,7 @@ struct Emitter: Visitor {
 
                 if (object_value.kind != ValueKind::LVALUE) {
                     auto lvalue = allocate_auto_storage(object_value.type, "");
-                    lvalue.store(builder, object_value);
+                    lvalue.store(builder, get_rvalue(object_value, member_expr->location));
                     object_value = lvalue;
                 }
 
@@ -1325,9 +1328,9 @@ struct Emitter: Visitor {
 
                 if (pass_by_ref_type) {
                     if (param_value.kind != ValueKind::LVALUE && (expected_type->qualifiers() & QUALIFIER_CONST)) {
-                        param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, member_expr->location);
+                        param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, param_location);
                         auto lvalue = allocate_auto_storage(param_value.type, "");
-                        lvalue.store(builder, param_value);
+                        lvalue.store(builder, get_rvalue(param_value, param_location));
                         llvm_params[i] = get_lvalue(lvalue);
                     } else if (param_value.kind != ValueKind::LVALUE) {
                         message(Severity::ERROR, param_location) << "rvalue type '" << PrintType(param_value.type) << "' incompatible with non-const pass-by-reference parameter type '"
@@ -1348,7 +1351,7 @@ struct Emitter: Visitor {
                         llvm_params[i] = get_lvalue(param_value);
                     }
                 } else {
-                    param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, member_expr->location);
+                    param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, param_location);
                     llvm_params[i] = get_rvalue(param_value, param_location);
                 }
             }

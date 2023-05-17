@@ -20,8 +20,12 @@ struct ConvertTypeResult {
     explicit ConvertTypeResult(const Type* type, LLVMValueRef value = nullptr, ConvKind kind = ConvKind::IMPLICIT): value(type, value), conv_kind(kind) {}
 };
 
+struct RValueResolver {
+    virtual LLVMValueRef get_rvalue(const Value &value, const Location& location, bool for_move_expr = false) = 0;
+};
+
 ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type);
 
-ConvertTypeResult convert_to_type(const Value& value, const Type* dest_type, Module* module, LLVMBuilderRef builder, EmitOutcome outcome);
+ConvertTypeResult convert_to_type(const Value& value, const Type* dest_type, Module* module, LLVMBuilderRef builder, RValueResolver* resolver, const Location& location);
 
 #endif

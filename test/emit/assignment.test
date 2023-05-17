@@ -284,3 +284,16 @@ define void @f(%S %0) {
   ret void
 }
 END
+
+
+BEGIN Cannot assign struct with destructor
+struct S {
+    int x;
+    void destructor(S&) {}
+};
+void f(S s) {
+    s = s;
+}
+EXPECT_MESSAGE
+:6:9: error lvalue with destructor is not copyable; consider '&&' prefix move operator
+END

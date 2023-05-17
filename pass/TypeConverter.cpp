@@ -40,14 +40,15 @@ ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest
 }
 
 struct TypeConverter: TypeVisitor {
-    Module* module;
-    LLVMBuilderRef builder;
-    EmitOutcome outcome;
+    Module* module{};
+    LLVMBuilderRef builder{};
+    RValueResolver* resolver{};
     Value value;
+    Location location;
     ConvertTypeResult result;
 
     LLVMValueRef get_rvalue(const Value &value) {
-        return value.get_rvalue(builder, outcome);
+        return resolver->get_rvalue(value, location, false);
     }
 
     void convert_array_to_pointer() {
@@ -166,15 +167,16 @@ struct TypeConverter: TypeVisitor {
     }
 };
 
-ConvertTypeResult convert_to_type(const Value& value, const Type* dest_type, Module* module, LLVMBuilderRef builder, EmitOutcome outcome) {
+ConvertTypeResult convert_to_type(const Value& value, const Type* dest_type, Module* module, LLVMBuilderRef builder, RValueResolver* resolver, const Location& location) {
     assert(dest_type->qualifiers() == 0);
 
     TypeConverter converter;
     ConvertTypeResult& result = converter.result;
     converter.module = module;
     converter.builder = builder;
-    converter.outcome = outcome;
+    converter.resolver = resolver;
     converter.value = value;
+    converter.location = location;
 
     dest_type->accept(converter);
 

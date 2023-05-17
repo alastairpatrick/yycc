@@ -50,7 +50,7 @@ LLVMValueRef Value::dangerously_get_rvalue(LLVMBuilderRef builder) const {
     return LLVMBuildIntCast2(builder, value, type->llvm_type(), integer_type->is_signed(), "");
 }
 
-LLVMValueRef Value::get_rvalue(LLVMBuilderRef builder, EmitOutcome outcome) const {
+LLVMValueRef Value::dangerously_get_rvalue(LLVMBuilderRef builder, EmitOutcome outcome) const {
     if (outcome == EmitOutcome::IR) {
         return dangerously_get_rvalue(builder);
     } else {
@@ -65,15 +65,13 @@ LLVMValueRef Value::get_rvalue(LLVMBuilderRef builder, EmitOutcome outcome) cons
     }
 }
 
-void Value::store(LLVMBuilderRef builder, const Value& new_value) const {
+void Value::store(LLVMBuilderRef builder, LLVMValueRef new_rvalue) const {
     assert(llvm && kind == ValueKind::LVALUE);
-
-    auto value = new_value.dangerously_get_rvalue(builder);
 
     if (bit_field) {
         // value = (value << bits_to_right) & mask
-        value = LLVMBuildIntCast2(builder, value, bit_field->storage_type, false, "");  // mask renders sign extension irrelevant
-        value = LLVMBuildAnd(builder, LLVMBuildShl(builder, value, bit_field->bits_to_right, ""), bit_field->mask, "");
+        new_rvalue = LLVMBuildIntCast2(builder, new_rvalue, bit_field->storage_type, false, "");  // mask renders sign extension irrelevant
+        new_rvalue = LLVMBuildAnd(builder, LLVMBuildShl(builder, new_rvalue, bit_field->bits_to_right, ""), bit_field->mask, "");
 
         // existing = (*p) & ~mask
         LLVMValueRef existing = LLVMBuildLoad2(builder, bit_field->storage_type, llvm, "");
@@ -81,10 +79,10 @@ void Value::store(LLVMBuilderRef builder, const Value& new_value) const {
         existing = LLVMBuildAnd(builder, existing, LLVMBuildNot(builder, bit_field->mask, ""), "");
 
         // value = existing | value
-        value = LLVMBuildOr(builder, value, existing, "");
+        new_rvalue = LLVMBuildOr(builder, new_rvalue, existing, "");
     }
 
-    LLVMSetVolatile(LLVMBuildStore(builder, value, llvm),
+    LLVMSetVolatile(LLVMBuildStore(builder, new_rvalue, llvm),
                     qualifiers & QUALIFIER_VOLATILE);
 }
 
