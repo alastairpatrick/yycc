@@ -148,16 +148,8 @@ struct Emitter: Visitor {
         return wrangler->get_rvalue(value, location, for_move_expr);
     }
 
-    void store_value(const Value& dest, LLVMValueRef source_rvalue, const Location& location) {
-        if (outcome == EmitOutcome::IR) {
-            if (dest.kind == ValueKind::LVALUE) {
-                dest.store(builder, source_rvalue);
-            } else {
-                message(Severity::ERROR, location) << "expression is not assignable\n";
-            }
-        } else {
-            message(Severity::ERROR, location) << "assignment in constant expression\n";
-        }
+    void store(const Value& dest, LLVMValueRef source_rvalue, const Location& location) {
+        wrangler->store(dest, source_rvalue, location);
     }
 
     LLVMValueRef size_const_int(unsigned long long i) {
@@ -677,7 +669,7 @@ struct Emitter: Visitor {
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
         auto right_rvalue = convert_to_rvalue(expr->right, result_type, ConvKind::IMPLICIT);
-        store_value(left_value, right_rvalue, expr->location);
+        store(left_value, right_rvalue, expr->location);
         return VisitExpressionOutput(result_type, right_rvalue);
     }
 
@@ -1027,7 +1019,7 @@ struct Emitter: Visitor {
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(intermediate);
 
         if (operator_flags(expr->op) & OP_ASSIGN) {
-            store_value(left_value, get_rvalue(intermediate, expr->location), expr->location);
+            store(left_value, get_rvalue(intermediate, expr->location), expr->location);
         }
 
         return VisitExpressionOutput(intermediate);
@@ -1175,7 +1167,7 @@ struct Emitter: Visitor {
             break;
         }
 
-        store_value(lvalue, after_rvalue, expr->location);
+        store(lvalue, after_rvalue, expr->location);
         return VisitExpressionOutput(Value(result_type, expr->postfix ? before_rvalue : after_rvalue));
     }
 

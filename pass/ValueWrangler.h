@@ -37,6 +37,7 @@ public:
     ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type);
     ConvertTypeResult convert_to_type(const Value& value, const Type* dest_type, const Location& location);
     LLVMValueRef get_rvalue(const Value &value, const Location& location, bool for_move_expr = false);
+    void store(const Value& dest, LLVMValueRef source_rvalue, const Location& location);
 
     virtual const Type* visit(const ResolvedArrayType* dest_type) override;
     virtual const Type* visit(const PointerType* dest_type) override;
