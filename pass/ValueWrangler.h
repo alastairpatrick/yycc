@@ -22,17 +22,18 @@ struct ConvertTypeResult {
 };
 
 struct ValueWrangler: TypeVisitor {
-private:
     Module* module{};
     LLVMBuilderRef builder{};
     EmitOutcome outcome{};
-    Value value;
 
+private:
+    Value value;
     Location location;
     ConvertTypeResult result;
 
 public:
-    ValueWrangler(Module* module, LLVMBuilderRef builder, EmitOutcome outcome);
+    ValueWrangler(Module* module, EmitOutcome outcome);
+    ~ValueWrangler();
 
     ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type);
     ConvertTypeResult convert_to_type(const Value& value, const Type* dest_type, const Location& location);

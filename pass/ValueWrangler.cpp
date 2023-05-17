@@ -9,8 +9,16 @@ const T* type_cast(const U* type) {
     return dynamic_cast<const T*>(type);
 }
 
-ValueWrangler::ValueWrangler(Module* module, LLVMBuilderRef builder, EmitOutcome outcome)
-    : module(module), builder(builder), outcome(outcome) {
+ValueWrangler::ValueWrangler(Module* module, EmitOutcome outcome)
+    : module(module), outcome(outcome) {
+    auto llvm_context = TranslationUnitContext::it->llvm_context;
+    if (outcome != EmitOutcome::TYPE) {
+        builder = LLVMCreateBuilderInContext(llvm_context);
+    }
+}
+
+ValueWrangler::~ValueWrangler() {
+    if (builder) LLVMDisposeBuilder(builder);
 }
 
 ConvKind ValueWrangler::check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type) {

@@ -47,7 +47,7 @@ struct Emitter: Visitor {
 
     Module* module{};
     Emitter* parent{};
-    unique_ptr<ValueWrangler> wrangler;
+    ValueWrangler wrangler;
 
     Declarator* function_declarator{};
     const FunctionType* function_type{};
@@ -65,20 +65,18 @@ struct Emitter: Visitor {
     LLVMTypeRef destructor_wrapper_type{};
     LLVMValueRef destructor_wrapper{};
 
-    Emitter(Module* module, EmitOutcome outcome, const EmitOptions& options): module(module), outcome(outcome), options(options) {
+    Emitter(Module* module, EmitOutcome outcome, const EmitOptions& options)
+        : module(module), outcome(outcome), options(options), wrangler(module, outcome), builder(wrangler.builder) {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
-        if (outcome != EmitOutcome::TYPE) {
-            builder = LLVMCreateBuilderInContext(llvm_context);
-        }
+
         if (outcome == EmitOutcome::IR) {
             temp_builder = LLVMCreateBuilderInContext(llvm_context);
         }
-        wrangler.reset(new ValueWrangler(module, builder, outcome));
+
         this_string = intern_string("this");
     }
 
     ~Emitter() {
-        if (builder) LLVMDisposeBuilder(builder);
         if (temp_builder) LLVMDisposeBuilder(temp_builder);
     }
 
@@ -145,11 +143,11 @@ struct Emitter: Visitor {
     }
 
     LLVMValueRef get_rvalue(const Value &value, const Location& location, bool for_move_expr = false) {
-        return wrangler->get_rvalue(value, location, for_move_expr);
+        return wrangler.get_rvalue(value, location, for_move_expr);
     }
 
     void store(const Value& dest, LLVMValueRef source_rvalue, const Location& location) {
-        wrangler->store(dest, source_rvalue, location);
+        wrangler.store(dest, source_rvalue, location);
     }
 
     LLVMValueRef size_const_int(unsigned long long i) {
@@ -233,7 +231,7 @@ struct Emitter: Visitor {
             return result;
         }
 
-        auto output = wrangler->convert_to_type(value, dest_type, location);
+        auto output = wrangler.convert_to_type(value, dest_type, location);
         auto result = output.value;
 
         if (!result.is_valid()) {
@@ -929,8 +927,8 @@ struct Emitter: Visitor {
         if (op_flags & OP_COMPARISON) {
             bool valid = false;
             if (left_pointer_type && right_pointer_type) {
-                valid = wrangler->check_pointer_conversion(left_pointer_type->base_type, right_pointer_type->base_type) == ConvKind::IMPLICIT
-                     || wrangler->check_pointer_conversion(right_pointer_type->base_type, left_pointer_type->base_type) == ConvKind::IMPLICIT;
+                valid = wrangler.check_pointer_conversion(left_pointer_type->base_type, right_pointer_type->base_type) == ConvKind::IMPLICIT
+                     || wrangler.check_pointer_conversion(right_pointer_type->base_type, left_pointer_type->base_type) == ConvKind::IMPLICIT;
             }
 
             if (op == TOK_EQ_OP || op == TOK_NE_OP) {
