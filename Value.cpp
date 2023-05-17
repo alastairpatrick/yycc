@@ -65,7 +65,7 @@ LLVMValueRef Value::dangerously_get_rvalue(LLVMBuilderRef builder, EmitOutcome o
     }
 }
 
-void Value::store(LLVMBuilderRef builder, LLVMValueRef new_rvalue) const {
+void Value::dangerously_store(LLVMBuilderRef builder, LLVMValueRef new_rvalue) const {
     assert(llvm && kind == ValueKind::LVALUE);
 
     if (bit_field) {

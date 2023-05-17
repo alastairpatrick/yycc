@@ -429,7 +429,7 @@ struct Emitter: Visitor {
                 emit_auto_initializer(entity->value, entity->initializer);
                 pop_scope();
             } else if (options.initialize_variables || has_destructor) {
-                entity->value.store(builder, Value::of_null(type).get_const());
+                store(entity->value, Value::of_null(type).get_const(), declarator->location);
             }
 
         } else if (entity->storage_duration == StorageDuration::STATIC) {
@@ -1255,7 +1255,7 @@ struct Emitter: Visitor {
 
                 if (object_value.kind != ValueKind::LVALUE) {
                     auto lvalue = allocate_auto_storage(object_value.type, "");
-                    lvalue.store(builder, get_rvalue(object_value, member_expr->location));
+                    store(lvalue, get_rvalue(object_value, member_expr->location), member_expr->location);
                     object_value = lvalue;
                 }
 
@@ -1300,7 +1300,7 @@ struct Emitter: Visitor {
                     if (param_value.kind != ValueKind::LVALUE && (expected_type->qualifiers() & QUALIFIER_CONST)) {
                         param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, param_location);
                         auto lvalue = allocate_auto_storage(param_value.type, "");
-                        lvalue.store(builder, get_rvalue(param_value, param_location));
+                        store(lvalue, get_rvalue(param_value, param_location), param_location);
                         llvm_params[i] = get_lvalue(lvalue);
                     } else if (param_value.kind != ValueKind::LVALUE) {
                         message(Severity::ERROR, param_location) << "rvalue type '" << PrintType(param_value.type) << "' incompatible with non-const pass-by-reference parameter type '"

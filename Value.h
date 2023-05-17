@@ -83,9 +83,12 @@ struct Value {
         return llvm;
     }
 
-    // Use Emitter::get_rvalue instead
+    // Use ValueWrangler::get_rvalue instead
     LLVMValueRef dangerously_get_rvalue(LLVMBuilderRef builder) const;
     LLVMValueRef dangerously_get_rvalue(LLVMBuilderRef builder, EmitOutcome outcome) const;
+
+    // Use ValueWrangler::store instead
+    void dangerously_store(LLVMBuilderRef builder, LLVMValueRef new_rvalue) const;
 
     Value unqualified() const {
         return bit_cast(type->unqualified());
@@ -96,8 +99,6 @@ struct Value {
         result.type = type;
         return result;
     }
-
-    void store(LLVMBuilderRef builder, LLVMValueRef new_rvalue) const;
 
 private:
     LLVMValueRef llvm{};

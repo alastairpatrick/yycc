@@ -69,7 +69,7 @@ LLVMValueRef ValueWrangler::get_rvalue(const Value &value, const Location& locat
 void ValueWrangler::store(const Value& dest, LLVMValueRef source_rvalue, const Location& location) {
     if (outcome == EmitOutcome::IR) {
         if (dest.kind == ValueKind::LVALUE) {
-            dest.store(builder, source_rvalue);
+            dest.dangerously_store(builder, source_rvalue);
         } else {
             message(Severity::ERROR, location) << "expression is not assignable\n";
         }
