@@ -162,3 +162,35 @@ define void @destructor(ptr %0) {
 
 declare void @destructor_placeholder(ptr, ptr, %S, %S)
 END
+
+
+BEGIN Move expression in initializer expression
+struct S {
+    int x;
+    void destructor(S&) {}
+};
+void f() {
+    S s = {1};
+    S t = &&s;  // now t should be destroyed but not s
+}
+EXPECT_IR
+%S = type { i32 }
+
+define void @f() {
+  %t = alloca %S, align 8
+  %s = alloca %S, align 8
+  store i32 0, ptr %s, align 8
+  store i32 1, ptr %t, align 8
+  call void @destructor(ptr %t)
+  %.unpack = load i32, ptr %s, align 8
+  %1 = insertvalue %S undef, i32 %.unpack, 0
+  ret void
+}
+
+define void @destructor(ptr %0) {
+  ret void
+}
+
+declare void @destructor_placeholder(ptr, ptr, %S, %S)
+END
+

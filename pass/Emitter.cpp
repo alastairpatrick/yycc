@@ -157,10 +157,10 @@ struct Emitter: Visitor {
         return rvalue;
     }
 
-    void store_value(const Value& lvalue, const Value& rvalue, const Location& location) {
+    void store_value(const Value& dest, const Value& source, const Location& location) {
         if (outcome == EmitOutcome::IR) {
-            if (lvalue.kind == ValueKind::LVALUE) {
-                lvalue.store(builder, rvalue);
+            if (dest.kind == ValueKind::LVALUE) {
+                dest.store(builder, source);
             } else {
                 message(Severity::ERROR, location) << "expression is not assignable\n";
             }
@@ -676,6 +676,16 @@ struct Emitter: Visitor {
 
         // todo: error if not an lvalue
         return VisitExpressionOutput(result_type, get_lvalue(value));
+    }
+
+    virtual VisitExpressionOutput visit(AssignExpr* expr) override {
+        auto left_value = accept_expr(expr->left).value;
+        auto result_type = left_value.type->unqualified();
+        if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
+
+        auto right_value = convert_to_type(expr->right, result_type, ConvKind::IMPLICIT);
+        store_value(left_value, right_value, expr->location);
+        return VisitExpressionOutput(right_value);
     }
 
     Value emit_logical_binary_operation(BinaryExpr* expr, const Value& left_value, const Location& left_location) {

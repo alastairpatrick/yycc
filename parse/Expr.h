@@ -13,6 +13,16 @@ struct AddressExpr: Expr {
     virtual void print(ostream& stream) const override;
 };
 
+// Only used for '=' operator. All others, e.g. "+=" are BinaryExpr.
+struct AssignExpr: Expr {
+    Expr* left{};
+    Expr* right{};
+    
+    AssignExpr(Expr* left, Expr* right, const Location& location);
+    virtual VisitExpressionOutput accept(Visitor& visitor) override;
+    virtual void print(ostream& stream) const override;
+};
+
 struct BinaryExpr: Expr {
     Expr* left{};
     Expr* right{};

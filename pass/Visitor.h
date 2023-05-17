@@ -55,6 +55,7 @@ struct Visitor {
 
     virtual VisitExpressionOutput accept_expr(Expr* expr);
     virtual VisitExpressionOutput visit(AddressExpr* expr);
+    virtual VisitExpressionOutput visit(AssignExpr* expr);
     virtual VisitExpressionOutput visit(BinaryExpr* expr);
     virtual VisitExpressionOutput visit(CallExpr* expr);
     virtual VisitExpressionOutput visit(CastExpr* expr);

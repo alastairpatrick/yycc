@@ -108,7 +108,7 @@ static const Test tests[] = {
     { "emit/statement",             TestType::EMIT },
     { "emit/variable",              TestType::EMIT },
 
-    { "emit/struct",                TestType::ANALYSIS },
+    { "emit/destructor",            TestType::ANALYSIS },
 };
 
 static ostream& print_error(const string& name, const string& file, int line) {

@@ -1194,7 +1194,12 @@ Expr* Parser::continue_parse_expr(Expr* expr, OperatorPrec min_prec, Identifier*
             }
 
             auto right = parse_expr(next_min_prec);
-            expr = new BinaryExpr(expr, right, op, location);
+
+            if (op == '=') {
+                expr = new AssignExpr(expr, right, location);
+            } else {
+                expr = new BinaryExpr(expr, right, op, location);
+            }
         }
     }
 

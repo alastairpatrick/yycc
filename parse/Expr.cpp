@@ -19,6 +19,18 @@ void AddressExpr::print(ostream& stream) const {
     stream << "[\"address\", " << expr << ']';
 }
 
+AssignExpr::AssignExpr(Expr* left, Expr* right, const Location& location)
+    : Expr(location), left(left), right(right) {
+}
+
+VisitExpressionOutput AssignExpr::accept(Visitor& visitor) {
+    return visitor.visit(this);
+}
+
+void AssignExpr::print(ostream& stream) const {
+    stream << "[\"=\", " << left << ", " << right << "]";
+}
+
 
 BinaryExpr::BinaryExpr(Expr* left, Expr* right, TokenKind op, const Location& location)
     : Expr(location), left(left), right(right), op(op) {

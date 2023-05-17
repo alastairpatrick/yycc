@@ -71,6 +71,10 @@ VisitExpressionOutput Visitor::visit(AddressExpr* expr) {
     return VisitExpressionOutput(expr);
 }
 
+VisitExpressionOutput Visitor::visit(AssignExpr* expr) {
+    return VisitExpressionOutput(expr);
+}
+
 VisitExpressionOutput Visitor::visit(BinaryExpr* expr) {
     return VisitExpressionOutput(expr);
 }

@@ -247,6 +247,9 @@ define void @f(float %0) {
 END
 
 
+REM ******** Other ********
+
+
 BEGIN += pointer parameter value
 void f(int* x) {
     x += 1;
@@ -258,6 +261,26 @@ define void @f(ptr %0) {
   %2 = load ptr, ptr %x, align 8
   %3 = getelementptr i32, ptr %2, i32 1
   store ptr %3, ptr %x, align 8
+  ret void
+}
+END
+
+
+BEGIN = struct value
+struct S {
+    int x;
+};
+void f(S s) {
+    s = s;
+}
+EXPECT_IR
+%S = type { i32 }
+
+define void @f(%S %0) {
+  %s = alloca %S, align 8
+  store %S %0, ptr %s, align 4
+  %2 = load %S, ptr %s, align 4
+  store %S %2, ptr %s, align 4
   ret void
 }
 END
