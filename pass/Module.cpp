@@ -44,3 +44,15 @@ void Module::analysis_pass() {
 
     LLVMRunPasses(llvm_module, "instcombine,sccp", g_llvm_target_machine, pass_builder_options);
 }
+
+void Module::back_end_pass() {
+    auto pass_builder_options = LLVMCreatePassBuilderOptions();
+
+    LLVMRunPasses(llvm_module, "default<O0>", g_llvm_target_machine, pass_builder_options);
+
+    LLVMDisposePassBuilderOptions(pass_builder_options);
+
+    char* error{};
+    LLVMTargetMachineEmitToFile(g_llvm_target_machine, llvm_module, "generated.asm", LLVMAssemblyFile, &error);
+    LLVMDisposeMessage(error);
+}

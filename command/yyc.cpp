@@ -48,16 +48,7 @@ int main(int argc, const char* argv[]) {
     module.emit_pass({});
     module.analysis_pass();
     module.post_analysis_pass();
-
-    auto pass_builder_options = LLVMCreatePassBuilderOptions();
-
-    LLVMRunPasses(module.llvm_module, "default<O0>", g_llvm_target_machine, pass_builder_options);
-
-    LLVMDisposePassBuilderOptions(pass_builder_options);
-
-    char* error{};
-    LLVMTargetMachineEmitToFile(g_llvm_target_machine, module.llvm_module, "generated.asm", LLVMAssemblyFile, &error);
-    LLVMDisposeMessage(error);
+    module.back_end_pass();
 
     return context.highest_severity == Severity::INFO ? EXIT_SUCCESS : EXIT_FAILURE;
 }

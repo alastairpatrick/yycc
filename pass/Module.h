@@ -42,6 +42,7 @@ struct Module {
     void emit_pass(const EmitOptions& options);
     void analysis_pass();
     void post_analysis_pass();
+    void back_end_pass();
 };
 
 #endif
