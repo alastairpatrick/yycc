@@ -1477,8 +1477,6 @@ Value fold_expr(const Expr* expr) {
 }
 
 void Module::emit_pass(const EmitOptions& options) {
-    entity_pass();
-
     Emitter emitter(EmitOutcome::IR, options);
     emitter.module = this;
 

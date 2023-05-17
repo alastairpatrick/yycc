@@ -184,6 +184,8 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
                 module.resolve_pass(declarations, *identifiers.file_scope());
 
                 if (test_type >= TestType::EMIT) {
+                    module.entity_pass();
+
                     EmitOptions options;
                     options.initialize_variables = false;
                     options.emit_helpers = false;
