@@ -625,7 +625,7 @@ struct Emitter: Visitor {
 
         auto right_rvalue = convert_to_rvalue(expr->right, result_type, ConvKind::IMPLICIT);
         store(left_value, right_rvalue, expr->location);
-        return VisitExpressionOutput(result_type, right_rvalue);
+        return VisitExpressionOutput(left_value);
     }
 
     Value emit_logical_binary_operation(BinaryExpr* expr, const Value& left_value, const Location& left_location) {
@@ -971,6 +971,7 @@ struct Emitter: Visitor {
 
         if (operator_flags(expr->op) & OP_ASSIGN) {
             store(left_value, get_rvalue(intermediate, expr->location), expr->location);
+            return VisitExpressionOutput(left_value);
         }
 
         return VisitExpressionOutput(intermediate);

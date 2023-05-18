@@ -7,6 +7,50 @@ EXPECT_MESSAGE
 END
 
 
+BEGIN Assignment yields an lvalue (1)
+void f(int&) {
+}
+void g() {
+    int x;
+    f(x = 1);
+}
+EXPECT_IR
+define void @f(ptr %0) {
+  ret void
+}
+
+define void @g() {
+  %x = alloca i32, align 4
+  store i32 1, ptr %x, align 4
+  call void @f(ptr %x)
+  ret void
+}
+END
+
+
+BEGIN Assignment yields an lvalue (2)
+void f(int&) {
+}
+void g() {
+    int x;
+    f(x += 1);
+}
+EXPECT_IR
+define void @f(ptr %0) {
+  ret void
+}
+
+define void @g() {
+  %x = alloca i32, align 4
+  %1 = load i32, ptr %x, align 4
+  %2 = add i32 %1, 1
+  store i32 %2, ptr %x, align 4
+  call void @f(ptr %x)
+  ret void
+}
+END
+
+
 REM ******** Integer ********
 
 BEGIN Assign integer parameter value
