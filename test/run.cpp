@@ -20,7 +20,7 @@ enum class TestType {
     PARSE,
     RESOLVE,
     EMIT,
-    ANALYSIS,
+    MIDDLE_END,
 
     NUM
 };
@@ -47,13 +47,6 @@ enum Section {
 };
 
 static const Test tests[] = {
-    { "emit/assignment",            TestType::EMIT },
-
-
-
-
-
-
     { "parse/preprocess",           TestType::PREPROCESS },
     { "parse/sweep",                TestType::SWEEP },
 
@@ -112,7 +105,7 @@ static const Test tests[] = {
     { "emit/statement",             TestType::EMIT },
     { "emit/variable",              TestType::EMIT },
 
-    { "emit/destructor",            TestType::ANALYSIS },
+    { "emit/destructor",            TestType::MIDDLE_END },
 };
 
 static ostream& print_error(const string& name, const string& file, int line) {
@@ -199,9 +192,9 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
 
                     module.emit_pass(options);
                     
-                    if (test_type >= TestType::ANALYSIS) {
-                        module.analysis_pass();
-                        module.post_analysis_pass();
+                    if (test_type >= TestType::MIDDLE_END) {
+                        module.middle_end_passes("default<O2>");
+                        module.substitution_pass();
                     }
 
                     char* module_string = LLVMPrintModuleToString(module.llvm_module);

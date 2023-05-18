@@ -9,17 +9,18 @@ void f() {
 EXPECT_IR
 %S = type { i32 }
 
-define void @f() {
+define void @f() local_unnamed_addr {
   %s = alloca %S, align 8
   store i32 0, ptr %s, align 8
   ret void
 }
 
-define void @destructor(ptr %0) {
+; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
+define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
 
-declare void @destructor_placeholder(ptr, ptr, %S, %S)
+attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
 
 
@@ -34,18 +35,19 @@ void f() {
 EXPECT_IR
 %S = type { i32 }
 
-define void @f() {
+define void @f() local_unnamed_addr {
   %s = alloca %S, align 8
   store i32 1, ptr %s, align 8
   call void @destructor(ptr %s)
   ret void
 }
 
-define void @destructor(ptr %0) {
+; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
+define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
 
-declare void @destructor_placeholder(ptr, ptr, %S, %S)
+attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
 
 
@@ -61,18 +63,19 @@ void f() {
 EXPECT_IR
 %S = type { i32 }
 
-define void @f() {
+define void @f() local_unnamed_addr {
   %s = alloca %S, align 8
   store i32 1, ptr %s, align 8
   call void @destructor(ptr %s)
   ret void
 }
 
-define void @destructor(ptr %0) {
+; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
+define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
 
-declare void @destructor_placeholder(ptr, ptr, %S, %S)
+attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
 
 
@@ -81,36 +84,43 @@ struct S {
     int x;
     void destructor(S&) {}
 };
+int g();
 void f() {
-    if (1) {
+    if (g()) {
         S s = {1};
     }
 }
 EXPECT_IR
 %S = type { i32 }
 
-define void @f() {
+declare i32 @g() local_unnamed_addr
+
+define void @f() local_unnamed_addr {
   %s = alloca %S, align 8
-  br label %if_c
+  %1 = tail call i32 @g()
+  %2 = and i32 %1, 1
+  %.not = icmp eq i32 %2, 0
+  br i1 %.not, label %if_e, label %if_c
 
 if_c:                                             ; preds = %0
   store i32 1, ptr %s, align 8
   call void @destructor(ptr %s)
   br label %if_e
 
-if_e:                                             ; preds = %if_c
+if_e:                                             ; preds = %if_c, %0
   ret void
 }
 
-define void @destructor(ptr %0) {
+; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
+define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
 
-declare void @destructor_placeholder(ptr, ptr, %S, %S)
+attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
 
 
-BEGIN Move expression resets object to default state, preventing destructor
+BEGIN Move expression resets object to default state, preventing destructor TODO the resulting temporary still has to be destroyed though
 struct S {
     int x;
     void destructor(S&) {}
@@ -122,21 +132,22 @@ void f() {
 EXPECT_IR
 %S = type { i32 }
 
-define void @f() {
+define void @f() local_unnamed_addr {
   %s = alloca %S, align 8
   store i32 0, ptr %s, align 8
   ret void
 }
 
-define void @destructor(ptr %0) {
+; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
+define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
 
-declare void @destructor_placeholder(ptr, ptr, %S, %S)
+attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
 
 
-BEGIN Calls destructor after move if object is no longer be in default state
+BEGIN Calls destructor after move if object is no longer in default state
 struct S {
     int x;
     void destructor(S&) {}
@@ -149,18 +160,19 @@ void f() {
 EXPECT_IR
 %S = type { i32 }
 
-define void @f() {
+define void @f() local_unnamed_addr {
   %s = alloca %S, align 8
   store i32 2, ptr %s, align 8
   call void @destructor(ptr %s)
   ret void
 }
 
-define void @destructor(ptr %0) {
+; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
+define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
 
-declare void @destructor_placeholder(ptr, ptr, %S, %S)
+attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
 
 
@@ -176,21 +188,55 @@ void f() {
 EXPECT_IR
 %S = type { i32 }
 
-define void @f() {
+define void @f() local_unnamed_addr {
   %t = alloca %S, align 8
   %s = alloca %S, align 8
   store i32 0, ptr %s, align 8
   store i32 1, ptr %t, align 8
   call void @destructor(ptr %t)
-  %.unpack = load i32, ptr %s, align 8
-  %1 = insertvalue %S undef, i32 %.unpack, 0
   ret void
 }
 
-define void @destructor(ptr %0) {
+; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
+define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
 
-declare void @destructor_placeholder(ptr, ptr, %S, %S)
+attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
+
+
+BEGIN Object destructor is called because an external function might have set it to non-default state
+struct S {
+    int x;
+    void destructor(S&) {}
+};
+void e(S&);
+void f() {
+    S s;
+    e(s);
+}
+EXPECT_IR
+%S = type { i32 }
+
+declare void @e(ptr) local_unnamed_addr
+
+define void @f() local_unnamed_addr {
+  %s = alloca %S, align 8
+  store i32 0, ptr %s, align 8
+  call void @e(ptr nonnull %s)
+  %.fca.0.load = load i32, ptr %s, align 8
+  %.fca.0.insert = insertvalue %S poison, i32 %.fca.0.load, 0
+  call void @destructor(ptr %s)
+  ret void
+}
+
+; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
+define void @destructor(ptr nocapture readnone %0) #0 {
+  ret void
+}
+
+attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
+END
+
 

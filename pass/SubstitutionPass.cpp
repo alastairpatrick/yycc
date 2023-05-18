@@ -11,10 +11,10 @@ LLVMValueRef LLVMGetArgOperand2(LLVMValueRef Instr, unsigned i) {
   return llvm::wrap(llvm::unwrap<llvm::CallBase>(Instr)->getArgOperand(i));
 }
 
-struct PostAnalysisPass {
+struct SubstitutionPass {
     Module& module;
 
-    PostAnalysisPass(Module& module): module(module) {
+    SubstitutionPass(Module& module): module(module) {
     }
 
     void go() {
@@ -41,7 +41,8 @@ struct PostAnalysisPass {
                             auto actual_state = LLVMGetArgOperand2(instruction, 2);
                             auto default_state = LLVMGetArgOperand2(instruction, 3);
 
-                            if (LLVMIsAConstant(actual_state) && actual_state != default_state) {
+                            if (actual_state != default_state) {
+                                assert(LLVMIsAConstant(default_state));
                                 LLVMPositionBuilderBefore(builder, instruction);
                                 LLVMBuildCall2(builder, destructor_type, destructor_function, &receiver, 1, "");
                             }
@@ -56,10 +57,18 @@ struct PostAnalysisPass {
         }
 
         LLVMDisposeBuilder(builder);
+
+        for (auto function: module.destructor_placeholder_functions) {
+            LLVMDeleteFunction(function);
+        }
+
+        module.destructor_placeholders.clear();
+        module.destructor_placeholder_functions.clear();
     }
 };
 
-void Module::post_analysis_pass() {
-    PostAnalysisPass pass(*this);
+
+void Module::substitution_pass() {
+    SubstitutionPass pass(*this);
     pass.go();
 }

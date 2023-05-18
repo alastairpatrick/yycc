@@ -36,22 +36,16 @@ Module::DestructorPlaceholder Module::get_destructor_placeholder(const Structure
     return placeholder;
 }
 
-void Module::analysis_pass() {
+void Module::middle_end_passes(const char* passes) {
     auto pass_builder_options = LLVMCreatePassBuilderOptions();
     SCOPE_EXIT {
         LLVMDisposePassBuilderOptions(pass_builder_options);
     };
 
-    LLVMRunPasses(llvm_module, "instcombine,sccp", g_llvm_target_machine, pass_builder_options);
+    LLVMRunPasses(llvm_module, passes, g_llvm_target_machine, pass_builder_options);
 }
 
-void Module::back_end_pass() {
-    auto pass_builder_options = LLVMCreatePassBuilderOptions();
-
-    LLVMRunPasses(llvm_module, "default<O0>", g_llvm_target_machine, pass_builder_options);
-
-    LLVMDisposePassBuilderOptions(pass_builder_options);
-
+void Module::back_end_passes() {
     char* error{};
     LLVMTargetMachineEmitToFile(g_llvm_target_machine, llvm_module, "generated.asm", LLVMAssemblyFile, &error);
     LLVMDisposeMessage(error);
