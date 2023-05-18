@@ -1,3 +1,48 @@
+REM ******** General ********
+
+BEGIN Calls destructor on temporary after full expression
+struct S {
+    int x;
+    void destructor(S&) {}
+};
+S g();
+void f() {
+    g(), g();
+    g();
+}
+EXPECT_IR
+%S = type { i32 }
+
+declare %S @g()
+
+define void @f() {
+  %1 = alloca %S, align 8
+  %2 = alloca %S, align 8
+  %3 = alloca %S, align 8
+  %4 = call %S @g()
+  store %S %4, ptr %3, align 4
+  %5 = call %S @g()
+  store %S %5, ptr %2, align 4
+  %6 = load %S, ptr %2, align 4
+  call void @destructor_placeholder(ptr %2, ptr @destructor, %S %6, %S zeroinitializer)
+  %7 = load %S, ptr %3, align 4
+  call void @destructor_placeholder(ptr %3, ptr @destructor, %S %7, %S zeroinitializer)
+  %8 = call %S @g()
+  store %S %8, ptr %1, align 4
+  %9 = load %S, ptr %1, align 4
+  call void @destructor_placeholder(ptr %1, ptr @destructor, %S %9, %S zeroinitializer)
+  ret void
+}
+
+define void @destructor(ptr %0) {
+  ret void
+}
+
+declare void @destructor_placeholder(ptr, ptr, %S, %S)
+END
+
+
+
 REM ******** ConditionExpr ********
 
 BEGIN Condition operator applies usual arithmetic conversions
