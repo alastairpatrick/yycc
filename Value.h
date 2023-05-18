@@ -54,6 +54,11 @@ struct Value {
         return Value(type, LLVMConstInt(type->llvm_type(), int_value, type->is_signed()));
     }
 
+    static Value of_size(unsigned long long i) {
+        auto type = IntegerType::of_size(IntegerSignedness::UNSIGNED);
+        return of_int(type, i);
+    }
+
     static Value of_zero_int();
 
     static Value of_recover(const Type* type);

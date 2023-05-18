@@ -150,11 +150,6 @@ struct Emitter: Visitor {
         wrangler.store(dest, source_rvalue, location);
     }
 
-    LLVMValueRef size_const_int(unsigned long long i) {
-        auto llvm_context = TranslationUnitContext::it->llvm_context;
-        return LLVMConstInt(LLVMInt64TypeInContext(llvm_context), i, false);
-    }
-
     LLVMBasicBlockRef append_block(const char* name) {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
         return LLVMAppendBasicBlockInContext(llvm_context, function, name);
@@ -299,7 +294,7 @@ struct Emitter: Visitor {
         if (auto initializer = dynamic_cast<InitializerExpr*>(expr)) {
             if (auto array_type = type_cast<ResolvedArrayType>(dest.type)) {
                 for (size_t i = 0; i < array_type->size; ++i) {
-                    LLVMValueRef indices[] = { context->zero_size, size_const_int(i) };
+                    LLVMValueRef indices[] = { context->zero_size, Value::of_size(i).get_const() };
                     LLVMValueRef dest_element = LLVMBuildGEP2(builder, array_type->llvm_type(), get_lvalue(dest), indices, 2, "");
                     emit_auto_initializer(Value(ValueKind::LVALUE, array_type->element_type, dest_element), initializer->elements[i]);
                 }
@@ -1313,7 +1308,7 @@ struct Emitter: Visitor {
 
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-        return VisitExpressionOutput(result_type, size_const_int(LLVMStoreSizeOfType(llvm_target_data, expr->type->llvm_type())));
+        return VisitExpressionOutput(result_type, Value::of_size(LLVMStoreSizeOfType(llvm_target_data, expr->type->llvm_type())).get_const());
     }
 
     virtual VisitExpressionOutput visit(SubscriptExpr* expr) override {
