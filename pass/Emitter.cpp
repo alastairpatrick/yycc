@@ -1098,7 +1098,7 @@ struct Emitter: Visitor {
             return VisitExpressionOutput(result_type, result);
         }
 
-        message(Severity::ERROR, expr->location) << "called object type '" << PrintType(function_value.type) << "' is not a function or function pointer\n";
+        message(Severity::ERROR, expr->location) << "type '" << PrintType(function_value.type) << "' is not a function or function pointer\n";
 
         return VisitExpressionOutput();
     }

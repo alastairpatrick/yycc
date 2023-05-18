@@ -457,12 +457,12 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN Integer may not be subject of call
+BEGIN Integer may not be called
 void f() {
     1();
 }
 EXPECT_MESSAGE
-:2:6: error called object type 'int' is not a function or function pointer
+:2:6: error type 'int' is not a function or function pointer
 END
 
 
