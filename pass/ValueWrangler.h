@@ -26,12 +26,6 @@ struct ValueWrangler: TypeVisitor {
     LLVMBuilderRef builder{};
     EmitOutcome outcome{};
 
-private:
-    Value value;
-    Location location;
-    ConvertTypeResult result;
-
-public:
     ValueWrangler(Module* module, EmitOutcome outcome);
     ~ValueWrangler();
 
@@ -40,6 +34,11 @@ public:
     LLVMValueRef get_rvalue(const Value &value, const Location& location, bool for_move_expr = false);
     void store(const Value& dest, LLVMValueRef source_rvalue, const Location& location);
 
+private:
+    Value value;
+    Location location;
+    ConvertTypeResult result;
+
     virtual const Type* visit(const ResolvedArrayType* dest_type) override;
     virtual const Type* visit(const PointerType* dest_type) override;
     virtual const Type* visit(const IntegerType* dest_type) override;
@@ -47,7 +46,6 @@ public:
     virtual const Type* visit(const EnumType* dest_type) override;
     virtual const Type* visit(const VoidType* dest_type) override;
 
-private:
     void convert_array_to_pointer();
     void convert_enum_to_int();
     LLVMValueRef get_rvalue(const Value &value);
