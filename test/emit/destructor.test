@@ -189,19 +189,47 @@ struct S {
 };
 void f() {
     S s = {1};
-    S t = &&s;  // now t should be destroyed but not s. TODO the temporary should not be destroyed because it initialized t
+    S t = &&s;  // now t should be destroyed but not s
 }
 EXPECT_IR
 %S = type { i32 }
 
 define void @f() local_unnamed_addr {
-  %1 = alloca %S, align 8
   %t = alloca %S, align 8
   %s = alloca %S, align 8
   store i32 0, ptr %s, align 8
-  store i32 1, ptr %1, align 8
   store i32 1, ptr %t, align 8
-  call void @destructor(ptr %1)
+  call void @destructor(ptr %t)
+  ret void
+}
+
+; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
+define void @destructor(ptr nocapture readnone %0) #0 {
+  ret void
+}
+
+attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
+END
+
+
+BEGIN Move expression in assignment expression
+struct S {
+    int x;
+    void destructor(S&) {}
+};
+void f() {
+    S s = {1};
+    S t;
+    t = &&s;  // only one destructor should be called: for t after s is moved in
+}
+EXPECT_IR
+%S = type { i32 }
+
+define void @f() local_unnamed_addr {
+  %t = alloca %S, align 8
+  %s = alloca %S, align 8
+  store i32 0, ptr %s, align 8
+  store i32 1, ptr %t, align 8
   call void @destructor(ptr %t)
   ret void
 }

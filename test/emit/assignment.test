@@ -355,7 +355,7 @@ define void @f(%S %0) {
 END
 
 
-BEGIN Cannot assign struct with destructor
+BEGIN Cannot assign struct lvalue with destructor
 struct S {
     int x;
     void destructor(S&) {}
@@ -365,4 +365,35 @@ void f(S s) {
 }
 EXPECT_MESSAGE
 :6:9: error lvalue with destructor is not copyable; consider '&&' prefix move operator
+END
+
+
+BEGIN Can assign struct rvalue with destructor
+struct S {
+    int x;
+    void destructor(S&) {}
+};
+void f() {
+    S s;
+    s = &&s;
+}
+EXPECT_IR
+%S = type { i32 }
+
+define void @f() {
+  %s = alloca %S, align 8
+  store %S zeroinitializer, ptr %s, align 4
+  %1 = load %S, ptr %s, align 4
+  store %S zeroinitializer, ptr %s, align 4
+  store %S %1, ptr %s, align 4
+  %2 = load %S, ptr %s, align 4
+  call void @destructor_placeholder(ptr %s, ptr @destructor, %S %2, %S zeroinitializer)
+  ret void
+}
+
+define void @destructor(ptr %0) {
+  ret void
+}
+
+declare void @destructor_placeholder(ptr, ptr, %S, %S)
 END

@@ -163,9 +163,28 @@ struct Emitter: Visitor {
         return block;
     }
 
-    VisitExpressionOutput accept_expr(Expr* expr) {
+    // Destruction Of Temporaries
+    // 
+    // By default, emit_expr pends a destructor call whenever it encounters an expression that evaluated to
+    // an rvalue with a destructor. There are two cases when this is not the right thing to do.
+    
+    // The first is case is where a value "passes through" an expression, such as the conditional expression,
+    // and emit_expr must not pend a second destructor call for the same object. In this case, pass false to
+    // pend_temporary_destructor.
+    //
+    // The second case is where there is an lvalue where the result could be stored if they have the same
+    // unqualified type. In this case, use store_expr, which will store the result directly in the lvalue if
+    // possible or otherwise convert and pend a destructor call for the temporary.
+
+    VisitExpressionOutput emit_expr(Expr* expr, bool pend_temporary_destructor = true) {
         try {
-            return expr->accept(*this);
+            auto result =  expr->accept(*this);
+
+            if (pend_temporary_destructor && outcome == EmitOutcome::IR && result.value.kind == ValueKind::RVALUE) {
+                pend_destructor(result.value);
+            }
+
+            return result;
         } catch (FoldError& e) {
             if (!e.error_reported) {
                 message(Severity::ERROR, expr->location) << "not a constant expression\n";
@@ -174,9 +193,22 @@ struct Emitter: Visitor {
         }
     }
 
+    void store_expr(const Value& dest, Expr* expr, const Location& store_location) {
+        auto value = emit_expr(expr, false).value;
+
+        if (dest.type->unqualified() == value.type->unqualified()) {
+            // Destructor was already pended for the dest lvalue
+            store(dest, get_value(value, expr->location, false), store_location);
+        } else {
+            value = convert_to_type(value, dest.type, ConvKind::IMPLICIT, expr->location);
+            pend_destructor(value);
+            store(dest, get_value(value, expr->location, false), store_location);
+        }
+    }
+
     Value emit_full_expr(Expr* expr) {
         push_scope();
-        auto value = accept_expr(expr).value;
+        auto value = emit_expr(expr).value;
         pop_scope();
         return value;
     }
@@ -214,7 +246,7 @@ struct Emitter: Visitor {
     }
 
     Value convert_to_type(Expr* expr, const Type* dest_type, ConvKind kind) {
-        auto value = accept_expr(expr).value.unqualified();
+        auto value = emit_expr(expr).value.unqualified();
         return convert_to_type(value, dest_type, kind, expr->location);
     }
 
@@ -313,7 +345,8 @@ struct Emitter: Visitor {
 
             scalar_value = emit_scalar_initializer(dest.type, initializer);
         } else {
-            scalar_value = convert_to_type(expr, dest.type, ConvKind::IMPLICIT);
+            store_expr(dest, expr, initializer->location);
+            return;
         }
 
         LLVMBuildStore(builder, get_value(scalar_value, expr->location), get_address(dest));
@@ -609,7 +642,7 @@ struct Emitter: Visitor {
     }
 
     virtual VisitExpressionOutput visit(AddressExpr* expr) override {
-        auto value = accept_expr(expr->expr).value;
+        auto value = emit_expr(expr->expr).value;
         auto result_type = value.type->pointer_to();
 
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
@@ -619,20 +652,15 @@ struct Emitter: Visitor {
             return VisitExpressionOutput(Value::of_recover(result_type));
         }
 
-        // Don't pend destructor because result is always pointer
-
         return VisitExpressionOutput(result_type, get_address(value));
     }
 
     virtual VisitExpressionOutput visit(AssignExpr* expr) override {
-        auto left_value = accept_expr(expr->left).value;
+        auto left_value = emit_expr(expr->left).value;
         auto result_type = left_value.type->unqualified();
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-        auto right_rvalue = convert_to_rvalue(expr->right, result_type, ConvKind::IMPLICIT);
-        store(left_value, right_rvalue, expr->location);
-
-        // Don't pend destructor because result is always lvalue
+        store_expr(left_value, expr->right, expr->location);
 
         return VisitExpressionOutput(left_value);
     }
@@ -948,7 +976,7 @@ struct Emitter: Visitor {
     virtual VisitExpressionOutput visit(BinaryExpr* expr) override {
         auto op = expr->op;
         Value intermediate;
-        Value left_value = accept_expr(expr->left).value.unqualified();
+        Value left_value = emit_expr(expr->left).value.unqualified();
 
         if (op == TOK_AND_OP || op == TOK_OR_OP) {
             intermediate = emit_logical_binary_operation(expr, left_value, expr->left->location);
@@ -956,7 +984,7 @@ struct Emitter: Visitor {
             left_value = convert_array_to_pointer(left_value);
             auto left_pointer_type = unqualified_type_cast<PointerType>(left_value.type);
 
-            auto right_value = accept_expr(expr->right).value.unqualified();
+            auto right_value = emit_expr(expr->right).value.unqualified();
             right_value = convert_array_to_pointer(right_value);
             auto right_pointer_type = unqualified_type_cast<PointerType>(right_value.type);
 
@@ -983,8 +1011,6 @@ struct Emitter: Visitor {
             return VisitExpressionOutput(left_value);
         }
 
-        // Don't pend destructor because result type cannot be structured
-
         return VisitExpressionOutput(intermediate);
     }
 
@@ -994,7 +1020,7 @@ struct Emitter: Visitor {
             throw FoldError(true);
         }
 
-        auto function_output = accept_expr(expr->function);
+        auto function_output = emit_expr(expr->function);
         auto function_value = function_output.value.unqualified();
 
         if (auto pointer_type = unqualified_type_cast<PointerType>(function_value.type)) {
@@ -1057,7 +1083,7 @@ struct Emitter: Visitor {
                     param_location = member_expr->object->location;
                 } else {
                     auto param_expr = expr->parameters[param_expr_idx++];
-                    param_value = accept_expr(param_expr).value;
+                    param_value = emit_expr(param_expr).value;
                     param_location = param_expr->location;
                 }
 
@@ -1092,10 +1118,7 @@ struct Emitter: Visitor {
                 }
             }
 
-            auto result = Value(result_type, LLVMBuildCall2(builder, function_type->llvm_type(), get_address(function_value), llvm_params.data(), llvm_params.size(), ""));
-            pend_destructor(result);
-
-            return VisitExpressionOutput(result);
+            return VisitExpressionOutput(result_type, LLVMBuildCall2(builder, function_type->llvm_type(), get_address(function_value), llvm_params.data(), llvm_params.size(), ""));
         }
 
         message(Severity::ERROR, expr->location) << "type '" << PrintType(function_value.type) << "' is not a function or function pointer\n";
@@ -1107,9 +1130,6 @@ struct Emitter: Visitor {
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(expr->type);
 
         auto value = convert_to_type(expr->expr, expr->type, ConvKind::EXPLICIT);
-
-        // Don't pend destructor because cannot cast to structured type
-
         return VisitExpressionOutput(value);
     }
 
@@ -1158,19 +1178,15 @@ struct Emitter: Visitor {
             result = Value(result_type);
         }
 
-        // Don't pend destructor because it would aleady have been pended by emitting the then or else expressions
-
         return VisitExpressionOutput(result);
     }
 
     virtual VisitExpressionOutput visit(DereferenceExpr* expr) override {
 
-        auto value = accept_expr(expr->expr).value.unqualified();
+        auto value = emit_expr(expr->expr).value.unqualified();
         auto pointer_type = unqualified_type_cast<PointerType>(value.type);
         auto result_type = pointer_type->base_type;
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
-
-        // Don't pend destructor because result is always lvalue
 
         return VisitExpressionOutput(Value(ValueKind::LVALUE, result_type, get_value(value, expr->location)));
     }
@@ -1194,8 +1210,6 @@ struct Emitter: Visitor {
 
             auto int_type = unqualified_type_cast<IntegerType>(type);
 
-            // Don't pend destructor because result is always enum type
-
             return VisitExpressionOutput(Value::of_int(int_type, enum_constant->value).bit_cast(result_type));
 
         }
@@ -1210,7 +1224,6 @@ struct Emitter: Visitor {
                         declarator->message_see_declaration();
                         pause_messages();
                     } else {
-                        // Don't pend destructor because result is always lvalue
                         return VisitExpressionOutput(Value(ValueKind::LVALUE, declarator->type,
                             LLVMBuildGEP2(builder, this_type->llvm_type(), get_address(this_value), variable->member->gep_indices.data(), variable->member->gep_indices.size(), "")));
                     }
@@ -1220,7 +1233,6 @@ struct Emitter: Visitor {
         
         if (auto entity = declarator->entity()) {
             if (entity->value.kind == ValueKind::LVALUE) {
-                // Don't pend destructor because result is always lvalue
                 return VisitExpressionOutput(entity->value);
             }
         }
@@ -1235,13 +1247,11 @@ struct Emitter: Visitor {
             pause_messages();
         }
 
-        // Don't pend destructor because an error was reported
-
         return VisitExpressionOutput(Value::of_recover(declarator->type));
     }
 
     virtual VisitExpressionOutput visit(IncDecExpr* expr) override {
-        auto lvalue = accept_expr(expr->expr).value.unqualified();
+        auto lvalue = emit_expr(expr->expr).value.unqualified();
         auto before_rvalue = get_value(lvalue, expr->location);
 
         const Type* result_type = lvalue.type;
@@ -1261,13 +1271,11 @@ struct Emitter: Visitor {
 
         store(lvalue, after_rvalue, expr->location);
 
-        // Don't pend destructor because type is not structured
-
         return VisitExpressionOutput(expr->postfix ? Value(result_type, before_rvalue) : lvalue);
     }
 
     Value emit_object_of_member_expr(MemberExpr* expr) {
-        auto object = accept_expr(expr->object).value;
+        auto object = emit_expr(expr->object).value;
         if (auto pointer_type = unqualified_type_cast<PointerType>(object.type)) {
             object = Value(ValueKind::LVALUE, pointer_type->base_type, get_value(object, expr->object->location));
         }
@@ -1298,8 +1306,6 @@ struct Emitter: Visitor {
                                                                                   member_variable->member->gep_indices.data(), member_variable->member->gep_indices.size(),
                                                                                   expr->identifier.c_str()));
                 output.value.bit_field = member_variable->member->bit_field.get();
-
-                // Don't pend destructor because result is always lvalue
                 return output;
             }
             
@@ -1307,25 +1313,18 @@ struct Emitter: Visitor {
                 assert(member_entity->value.is_valid());
                 output.value = member_entity->value;
 
-                // Don't pend destructor because result is always lvalue
-                assert(output.value.kind == ValueKind::LVALUE);
-
                 return output;
             }
         }
-
-        // Don't pend destructor because result is zero
 
         return VisitExpressionOutput(Value::of_zero_int());
     }
 
     virtual VisitExpressionOutput visit(MoveExpr* expr) override {
-        auto value = accept_expr(expr->expr).value.unqualified();
+        auto value = emit_expr(expr->expr).value.unqualified();
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(value.type);
 
         auto result = Value(value.type, get_value(value, expr->expr->location, true));
-        pend_destructor(result);
-
         return VisitExpressionOutput(result);
     }
 
@@ -1341,16 +1340,14 @@ struct Emitter: Visitor {
 
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-        // Don't pend destructor because result is integer
-
         return VisitExpressionOutput(result_type, Value::of_size(LLVMStoreSizeOfType(llvm_target_data, expr->type->llvm_type())).get_const());
     }
 
     virtual VisitExpressionOutput visit(SubscriptExpr* expr) override {
         auto zero = TranslationUnitContext::it->zero_size;
 
-        auto left_value = accept_expr(expr->left).value.unqualified();
-        auto index_value = accept_expr(expr->right).value.unqualified();
+        auto left_value = emit_expr(expr->left).value.unqualified();
+        auto index_value = emit_expr(expr->right).value.unqualified();
 
         if (unqualified_type_cast<IntegerType>(left_value.type)) {
             swap(left_value, index_value);
@@ -1361,8 +1358,6 @@ struct Emitter: Visitor {
             if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
             LLVMValueRef index = get_value(index_value, expr->right->location);
-
-            // Don't pend destructor because result is lvalue
 
             return VisitExpressionOutput(Value(
                 ValueKind::LVALUE,
@@ -1375,8 +1370,6 @@ struct Emitter: Visitor {
             if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
             LLVMValueRef indices[2] = { zero, get_value(index_value, expr->right->location) };
-
-            // Don't pend destructor because result is lvalue
 
             return VisitExpressionOutput(Value(
                 ValueKind::LVALUE,
@@ -1450,14 +1443,14 @@ SwitchConstruct::~SwitchConstruct() {
 const Type* get_expr_type(const Expr* expr) {
     static const EmitOptions options;
     Emitter emitter(nullptr, EmitOutcome::TYPE, options);
-    return emitter.accept_expr(const_cast<Expr*>(expr)).value.type;
+    return emitter.emit_expr(const_cast<Expr*>(expr)).value.type;
 }
 
 Value fold_expr(const Expr* expr) {
     static const EmitOptions options;
     Emitter emitter(nullptr, EmitOutcome::FOLD, options);
     try {
-        return emitter.accept_expr(const_cast<Expr*>(expr)).value;
+        return emitter.emit_expr(const_cast<Expr*>(expr)).value;
     } catch (FoldError&) {
         return Value::of_recover(get_expr_type(expr));
     }
