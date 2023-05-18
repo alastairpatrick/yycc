@@ -51,6 +51,29 @@ define void @g() {
 END
 
 
+BEGIN Preincrement yields an lvalue (1)
+void f(int&) {
+}
+void g() {
+    int x;
+    f(++x);
+}
+EXPECT_IR
+define void @f(ptr %0) {
+  ret void
+}
+
+define void @g() {
+  %x = alloca i32, align 4
+  %1 = load i32, ptr %x, align 4
+  %2 = add i32 %1, 1
+  store i32 %2, ptr %x, align 4
+  call void @f(ptr %x)
+  ret void
+}
+END
+
+
 REM ******** Integer ********
 
 BEGIN Assign integer parameter value
@@ -158,7 +181,8 @@ define i32 @f(i32 %0) {
   %2 = load i32, ptr %x, align 4
   %3 = add i32 %2, 1
   store i32 %3, ptr %x, align 4
-  ret i32 %3
+  %4 = load i32, ptr %x, align 4
+  ret i32 %4
 }
 END
 
@@ -190,7 +214,8 @@ define i32 @f(i32 %0) {
   %2 = load i32, ptr %x, align 4
   %3 = sub i32 %2, 1
   store i32 %3, ptr %x, align 4
-  ret i32 %3
+  %4 = load i32, ptr %x, align 4
+  ret i32 %4
 }
 END
 

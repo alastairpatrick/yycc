@@ -1233,7 +1233,7 @@ struct Emitter: Visitor {
         }
 
         store(lvalue, after_rvalue, expr->location);
-        return VisitExpressionOutput(Value(result_type, expr->postfix ? before_rvalue : after_rvalue));
+        return VisitExpressionOutput(expr->postfix ? Value(result_type, before_rvalue) : lvalue);
     }
 
     Value emit_object_of_member_expr(MemberExpr* expr) {
