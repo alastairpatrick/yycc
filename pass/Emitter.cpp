@@ -217,20 +217,6 @@ struct Emitter: Visitor {
     }
 
     Value convert_to_type(const Value& value, const Type* dest_type, ConvKind kind, const Location& location) {
-        assert(value.type->qualifiers() == 0);
-        
-        dest_type = dest_type->unqualified();
-
-        if (value.is_null_literal && kind == ConvKind::IMPLICIT && type_cast<PointerType>(dest_type)) {
-            return Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
-        }
-
-        if (value.type == dest_type) {
-            Value result = value;
-            if (kind == ConvKind::EXPLICIT) result.is_null_literal = false;
-            return result;
-        }
-
         return wrangler.convert_to_type(value, dest_type, kind, location).value;
     }
 
