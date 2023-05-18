@@ -1023,6 +1023,118 @@ struct Emitter: Visitor {
         return VisitExpressionOutput(intermediate);
     }
 
+    virtual VisitExpressionOutput visit(CallExpr* expr) override {
+        if (outcome == EmitOutcome::FOLD) {
+            message(Severity::ERROR, expr->location) << "cannot call function in constant expression\n";
+            throw FoldError(true);
+        }
+
+        auto function_output = accept_expr(expr->function);
+        auto function_value = function_output.value.unqualified();
+
+        if (auto pointer_type = type_cast<PointerType>(function_value.type)) {
+            function_value = Value(ValueKind::LVALUE, pointer_type->base_type, get_rvalue(function_value, expr->function->location));
+        }
+
+        if (auto function_type = type_cast<FunctionType>(function_value.type)) {
+            auto result_type = function_type->return_type;
+            if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
+
+            Declarator* function_declarator{};
+            if (auto entity_expr = dynamic_cast<EntityExpr*>(expr->function)) {
+                function_declarator = entity_expr->declarator;
+            }
+
+            size_t actual_num_params = expr->parameters.size();
+
+            Value object_value;
+            MemberExpr* member_expr = dynamic_cast<MemberExpr*>(expr->function);
+            if (member_expr) {
+                function_declarator = member_expr->member;
+                object_value = emit_object_of_member_expr(member_expr);
+
+                if (object_value.kind != ValueKind::LVALUE) {
+                    auto lvalue = allocate_auto_storage(object_value.type, "");
+                    store(lvalue, get_rvalue(object_value, member_expr->location), member_expr->location);
+                    object_value = lvalue;
+                }
+
+                ++actual_num_params;
+            }
+
+            size_t expected_num_params = function_type->parameter_types.size();
+            if (actual_num_params != expected_num_params) {
+                message(Severity::ERROR, expr->location) << "expected " << expected_num_params << " parameter(s) but got " << actual_num_params << "\n";
+
+                if (function_declarator) {
+                    function_declarator->message_see_declaration("prototype");
+                }
+
+                return VisitExpressionOutput(Value::of_recover(result_type));
+            }
+
+            vector<LLVMValueRef> llvm_params;
+            llvm_params.resize(expected_num_params);
+
+            size_t param_expr_idx{};
+            for (size_t i = 0; i < expected_num_params; ++i) {
+                Value param_value;
+                auto expected_type = function_type->parameter_types[i];
+
+                const PassByReferenceType* pass_by_ref_type{};
+                if (pass_by_ref_type = type_cast<PassByReferenceType>(expected_type)) {
+                    expected_type = pass_by_ref_type->base_type;
+                }
+
+                Location param_location;
+                if (member_expr && i == 0) {
+                    param_value = object_value;
+                    param_location = member_expr->object->location;
+                } else {
+                    auto param_expr = expr->parameters[param_expr_idx++];
+                    param_value = accept_expr(param_expr).value;
+                    param_location = param_expr->location;
+                }
+
+                if (pass_by_ref_type) {
+                    if (param_value.kind != ValueKind::LVALUE && (expected_type->qualifiers() & QUALIFIER_CONST)) {
+                        param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, param_location);
+                        auto lvalue = allocate_auto_storage(param_value.type, "");
+                        store(lvalue, get_rvalue(param_value, param_location), param_location);
+                        llvm_params[i] = get_lvalue(lvalue);
+                    } else if (param_value.kind != ValueKind::LVALUE) {
+                        message(Severity::ERROR, param_location) << "rvalue type '" << PrintType(param_value.type) << "' incompatible with non-const pass-by-reference parameter type '"
+                                                                 << PrintType(function_type->parameter_types[i]) << "'\n";
+                        llvm_params[i] = LLVMConstNull(pass_by_ref_type->llvm_type());
+                    } else {
+                        if (param_value.type->unqualified() != expected_type->unqualified()) {
+                            message(Severity::ERROR, param_location) << "lvalue type '" << PrintType(param_value.type) << "' incompatible with pass-by-reference parameter type '"
+                                                                     << PrintType(function_type->parameter_types[i]) << "'\n";
+                        }
+
+                        if (param_value.qualifiers > expected_type->qualifiers()) {
+                            message(Severity::ERROR, param_location) << "lvalue type '" << PrintType(param_value.type) << "' has more type qualifiers than pass-by-reference parameter type '"
+                                                                     << PrintType(function_type->parameter_types[i]) << "'\n";
+                        }
+
+                        param_value = param_value.unqualified();
+                        llvm_params[i] = get_lvalue(param_value);
+                    }
+                } else {
+                    param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, param_location);
+                    llvm_params[i] = get_rvalue(param_value, param_location);
+                }
+            }
+
+            auto result = LLVMBuildCall2(builder, function_type->llvm_type(), get_lvalue(function_value), llvm_params.data(), llvm_params.size(), "");
+            return VisitExpressionOutput(result_type, result);
+        }
+
+        message(Severity::ERROR, expr->location) << "called object type '" << PrintType(function_value.type) << "' is not a function or function pointer\n";
+
+        return VisitExpressionOutput();
+    }
+
     virtual VisitExpressionOutput visit(CastExpr* expr) override {
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(expr->type);
 
@@ -1219,118 +1331,6 @@ struct Emitter: Visitor {
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(value.type);
 
         return VisitExpressionOutput(value.type, get_rvalue(value, expr->expr->location, true));
-    }
-
-    virtual VisitExpressionOutput visit(CallExpr* expr) override {
-        if (outcome == EmitOutcome::FOLD) {
-            message(Severity::ERROR, expr->location) << "cannot call function in constant expression\n";
-            throw FoldError(true);
-        }
-
-        auto function_output = accept_expr(expr->function);
-        auto function_value = function_output.value.unqualified();
-
-        if (auto pointer_type = type_cast<PointerType>(function_value.type)) {
-            function_value = Value(ValueKind::LVALUE, pointer_type->base_type, get_rvalue(function_value, expr->function->location));
-        }
-
-        if (auto function_type = type_cast<FunctionType>(function_value.type)) {
-            auto result_type = function_type->return_type;
-            if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
-
-            Declarator* function_declarator{};
-            if (auto entity_expr = dynamic_cast<EntityExpr*>(expr->function)) {
-                function_declarator = entity_expr->declarator;
-            }
-
-            size_t actual_num_params = expr->parameters.size();
-
-            Value object_value;
-            MemberExpr* member_expr = dynamic_cast<MemberExpr*>(expr->function);
-            if (member_expr) {
-                function_declarator = member_expr->member;
-                object_value = emit_object_of_member_expr(member_expr);
-
-                if (object_value.kind != ValueKind::LVALUE) {
-                    auto lvalue = allocate_auto_storage(object_value.type, "");
-                    store(lvalue, get_rvalue(object_value, member_expr->location), member_expr->location);
-                    object_value = lvalue;
-                }
-
-                ++actual_num_params;
-            }
-
-            size_t expected_num_params = function_type->parameter_types.size();
-            if (actual_num_params != expected_num_params) {
-                message(Severity::ERROR, expr->location) << "expected " << expected_num_params << " parameter(s) but got " << actual_num_params << "\n";
-
-                if (function_declarator) {
-                    function_declarator->message_see_declaration("prototype");
-                }
-
-                return VisitExpressionOutput(Value::of_recover(result_type));
-            }
-
-            vector<LLVMValueRef> llvm_params;
-            llvm_params.resize(expected_num_params);
-
-            size_t param_expr_idx{};
-            for (size_t i = 0; i < expected_num_params; ++i) {
-                Value param_value;
-                auto expected_type = function_type->parameter_types[i];
-
-                const PassByReferenceType* pass_by_ref_type{};
-                if (pass_by_ref_type = type_cast<PassByReferenceType>(expected_type)) {
-                    expected_type = pass_by_ref_type->base_type;
-                }
-
-                Location param_location;
-                if (member_expr && i == 0) {
-                    param_value = object_value;
-                    param_location = member_expr->object->location;
-                } else {
-                    auto param_expr = expr->parameters[param_expr_idx++];
-                    param_value = accept_expr(param_expr).value;
-                    param_location = param_expr->location;
-                }
-
-                if (pass_by_ref_type) {
-                    if (param_value.kind != ValueKind::LVALUE && (expected_type->qualifiers() & QUALIFIER_CONST)) {
-                        param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, param_location);
-                        auto lvalue = allocate_auto_storage(param_value.type, "");
-                        store(lvalue, get_rvalue(param_value, param_location), param_location);
-                        llvm_params[i] = get_lvalue(lvalue);
-                    } else if (param_value.kind != ValueKind::LVALUE) {
-                        message(Severity::ERROR, param_location) << "rvalue type '" << PrintType(param_value.type) << "' incompatible with non-const pass-by-reference parameter type '"
-                                                                 << PrintType(function_type->parameter_types[i]) << "'\n";
-                        llvm_params[i] = LLVMConstNull(pass_by_ref_type->llvm_type());
-                    } else {
-                        if (param_value.type->unqualified() != expected_type->unqualified()) {
-                            message(Severity::ERROR, param_location) << "lvalue type '" << PrintType(param_value.type) << "' incompatible with pass-by-reference parameter type '"
-                                                                     << PrintType(function_type->parameter_types[i]) << "'\n";
-                        }
-
-                        if (param_value.qualifiers > expected_type->qualifiers()) {
-                            message(Severity::ERROR, param_location) << "lvalue type '" << PrintType(param_value.type) << "' has more type qualifiers than pass-by-reference parameter type '"
-                                                                     << PrintType(function_type->parameter_types[i]) << "'\n";
-                        }
-
-                        param_value = param_value.unqualified();
-                        llvm_params[i] = get_lvalue(param_value);
-                    }
-                } else {
-                    param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, param_location);
-                    llvm_params[i] = get_rvalue(param_value, param_location);
-                }
-            }
-
-            auto result = LLVMBuildCall2(builder, function_type->llvm_type(), get_lvalue(function_value), llvm_params.data(), llvm_params.size(), "");
-            return VisitExpressionOutput(result_type, result);
-        }
-
-        message(Severity::ERROR, expr->location) << "called object type '" << PrintType(function_value.type) << "' is not a function or function pointer\n";
-
-        return VisitExpressionOutput();
     }
 
     virtual VisitExpressionOutput visit(SizeOfExpr* expr) override {
