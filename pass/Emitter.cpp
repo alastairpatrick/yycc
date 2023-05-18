@@ -34,7 +34,6 @@ struct SwitchConstruct: Construct {
 
 struct PendingDestructor {
     Value addressible_value;
-    Declarator* destructor_declarator{};
 };
 
 struct EmitterScope {
@@ -84,45 +83,55 @@ struct Emitter: Visitor {
         scopes.emplace_back();
     }
 
-    void call_destructors() {
+    bool call_destructor_immediately(const Value& value) {
+        if (!value.has_address) return false;
+
+        auto structured_type = unqualified_type_cast<StructuredType>(value.type->unqualified());
+        if (!structured_type) return false;
+
+        auto destructor = structured_type->destructor;
+        if (!destructor) return false;
+
+        auto placeholder = module->get_destructor_placeholder(structured_type);
+        auto function = destructor->function();
+
+        LLVMValueRef args[] = {
+            value.dangerously_get_address(),
+            get_address(function->value),
+            value.dangerously_get_value(builder, outcome),
+            LLVMConstNull(value.type->llvm_type()),
+        };
+        LLVMBuildCall2(builder, placeholder.type, placeholder.function, args, 4, "");
+
+        return true;
+    }
+
+    void call_pending_destructors() {
         auto& destructors = scopes.back().destructors;
         for (auto it = destructors.rbegin(); it != destructors.rend(); ++it) {
-            auto destructor = *it;
-            auto function = destructor.destructor_declarator->function();
-            auto structured_type = unqualified_type_cast<StructuredType>(destructor.addressible_value.type->unqualified());
-            auto placeholder = module->get_destructor_placeholder(structured_type);
-            auto addressible_value = destructor.addressible_value;
-
-            LLVMValueRef args[] = {
-                addressible_value.dangerously_get_address(),
-                get_address(function->value),
-                addressible_value.dangerously_get_value(builder, outcome),
-                LLVMConstNull(addressible_value.type->llvm_type()),
-            };
-            LLVMBuildCall2(builder, placeholder.type, placeholder.function, args, 4, "");
+            call_destructor_immediately(it->addressible_value);
         }
 
         destructors.clear();
     }
 
     void pop_scope() {
-        call_destructors();
+        call_pending_destructors();
         scopes.pop_back();
     }
 
     bool pend_destructor(Value& value) {
-        if (auto structured_type = unqualified_type_cast<StructuredType>(value.type->unqualified())) {
-            if (auto destructor_declarator = structured_type->destructor) {
-                use_temp_builder();
-                value.make_addressible(temp_builder, builder);
+        auto structured_type = unqualified_type_cast<StructuredType>(value.type->unqualified());
+        if (!structured_type) return false;
 
-                auto& scope = scopes.back();
-                scope.destructors.push_back(PendingDestructor(value, destructor_declarator));
-                return true;
-            }
-        }
+        if (!structured_type->destructor) return false;
 
-        return false;
+        use_temp_builder();
+        value.make_addressible(temp_builder, builder);
+
+        auto& scope = scopes.back();
+        scope.destructors.push_back(PendingDestructor(value));
+        return true;
     }
 
     virtual VisitDeclaratorOutput accept_declarator(Declarator* declarator) override {
@@ -173,8 +182,8 @@ struct Emitter: Visitor {
     // pend_temporary_destructor.
     //
     // The second case is where there is an lvalue where the result could be stored if they have the same
-    // unqualified type. In this case, use store_expr, which will store the result directly in the lvalue if
-    // possible or otherwise convert and pend a destructor call for the temporary.
+    // unqualified type. In this case, use store_and_pend_destructor, which will store the result directly in
+    // the lvalue if possible or otherwise convert and pend a destructor call for the temporary.
 
     VisitExpressionOutput emit_expr(Expr* expr, bool pend_temporary_destructor = true) {
         try {
@@ -193,16 +202,14 @@ struct Emitter: Visitor {
         }
     }
 
-    void store_expr(const Value& dest, Expr* expr, const Location& store_location) {
-        auto value = emit_expr(expr, false).value;
-
-        if (dest.type->unqualified() == value.type->unqualified()) {
+    void store_and_pend_destructor(const Value& dest, Value source, const Location& dest_location, const Location& source_location) {
+        if (dest.type->unqualified() == source.type->unqualified()) {
             // Destructor was already pended for the dest lvalue
-            store(dest, get_value(value, expr->location, false), store_location);
+            store(dest, get_value(source, source_location, false), dest_location);
         } else {
-            value = convert_to_type(value, dest.type, ConvKind::IMPLICIT, expr->location);
-            pend_destructor(value);
-            store(dest, get_value(value, expr->location, false), store_location);
+            source = convert_to_type(source, dest.type, ConvKind::IMPLICIT, source_location);
+            pend_destructor(source);
+            store(dest, get_value(source, source_location, false), dest_location);
         }
     }
 
@@ -345,7 +352,8 @@ struct Emitter: Visitor {
 
             scalar_value = emit_scalar_initializer(dest.type, initializer);
         } else {
-            store_expr(dest, expr, initializer->location);
+            auto source = emit_expr(expr, false).value;
+            store_and_pend_destructor(dest, source, expr->location, expr->location);
             return;
         }
 
@@ -583,7 +591,7 @@ struct Emitter: Visitor {
                 }
             }
 
-            call_destructors();
+            call_pending_destructors();
             LLVMBuildRetVoid(builder);
         } else {
             LLVMValueRef rvalue;
@@ -595,7 +603,7 @@ struct Emitter: Visitor {
                 rvalue = LLVMConstNull(function_type->return_type->llvm_type());
             }
 
-            call_destructors();
+            call_pending_destructors();
             LLVMBuildRet(builder, rvalue);
         }
 
@@ -657,10 +665,13 @@ struct Emitter: Visitor {
 
     virtual VisitExpressionOutput visit(AssignExpr* expr) override {
         auto left_value = emit_expr(expr->left).value;
+
         auto result_type = left_value.type->unqualified();
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-        store_expr(left_value, expr->right, expr->location);
+        auto right_value = emit_expr(expr->right, false).value;
+        call_destructor_immediately(left_value);
+        store_and_pend_destructor(left_value, right_value, expr->location, expr->right->location);
 
         return VisitExpressionOutput(left_value);
     }

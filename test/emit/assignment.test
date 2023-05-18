@@ -368,7 +368,7 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN Can assign struct rvalue with destructor
+BEGIN Calls destructor on struct before assigning it a new value
 struct S {
     int x;
     void destructor(S&) {}
@@ -385,9 +385,11 @@ define void @f() {
   store %S zeroinitializer, ptr %s, align 4
   %1 = load %S, ptr %s, align 4
   store %S zeroinitializer, ptr %s, align 4
-  store %S %1, ptr %s, align 4
   %2 = load %S, ptr %s, align 4
   call void @destructor_placeholder(ptr %s, ptr @destructor, %S %2, %S zeroinitializer)
+  store %S %1, ptr %s, align 4
+  %3 = load %S, ptr %s, align 4
+  call void @destructor_placeholder(ptr %s, ptr @destructor, %S %3, %S zeroinitializer)
   ret void
 }
 

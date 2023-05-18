@@ -228,6 +228,7 @@ EXPECT_IR
 define void @f() local_unnamed_addr {
   %t = alloca %S, align 8
   %s = alloca %S, align 8
+  store i32 0, ptr %t, align 8
   store i32 0, ptr %s, align 8
   store i32 1, ptr %t, align 8
   call void @destructor(ptr %t)
