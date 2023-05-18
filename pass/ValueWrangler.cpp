@@ -52,8 +52,6 @@ ConvKind ValueWrangler::check_pointer_conversion(const Type* source_base_type, c
 }
 
 LLVMValueRef ValueWrangler::get_rvalue(const Value &value, const Location& location, bool for_move_expr) {
-    auto context = TranslationUnitContext::it;
-
     if (value.type == &VoidType::it) {
         return nullptr;
     }
