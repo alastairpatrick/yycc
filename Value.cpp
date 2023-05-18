@@ -20,11 +20,22 @@ Value Value::of_recover(const Type* type) {
     }
 }
 
-LLVMValueRef Value::dangerously_get_rvalue(LLVMBuilderRef builder) const {
+LLVMValueRef Value::dangerously_get_rvalue(LLVMBuilderRef builder, EmitOutcome outcome) const {
     assert(kind != ValueKind::INVALID);
     assert(type != &VoidType::it);
     assert(!dynamic_cast<const FunctionType*>(type));
     assert(llvm);
+
+    if (outcome != EmitOutcome::IR) {
+        // If outcome is TYPE, something ought to have earlied out before control flow got here.
+        assert(outcome == EmitOutcome::FOLD);
+
+        if (is_const()) {
+            return get_const();
+        } else {
+            throw FoldError(false);
+        }
+    }
 
     if (kind == ValueKind::RVALUE) return llvm;
 
@@ -50,21 +61,6 @@ LLVMValueRef Value::dangerously_get_rvalue(LLVMBuilderRef builder) const {
     }
 
     return value;
-}
-
-LLVMValueRef Value::dangerously_get_rvalue(LLVMBuilderRef builder, EmitOutcome outcome) const {
-    if (outcome == EmitOutcome::IR) {
-        return dangerously_get_rvalue(builder);
-    } else {
-        // If outcome is TYPE, something ought to have earlied out before control flow got here.
-        assert(outcome == EmitOutcome::FOLD);
-
-        if (is_const()) {
-            return get_const();
-        } else {
-            throw FoldError(false);
-        }
-    }
 }
 
 void Value::dangerously_store(LLVMBuilderRef builder, LLVMValueRef new_rvalue) const {

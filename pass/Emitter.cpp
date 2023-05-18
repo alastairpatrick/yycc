@@ -97,7 +97,7 @@ struct Emitter: Visitor {
             LLVMValueRef args[] = {
                 destructor.lvalue.dangerously_get_lvalue(),
                 get_lvalue(function->value),
-                destructor.lvalue.dangerously_get_rvalue(builder),
+                destructor.lvalue.dangerously_get_rvalue(builder, outcome),
                 LLVMConstNull(destructor.lvalue.type->llvm_type()),
             };
             LLVMBuildCall2(builder, placeholder.type, placeholder.function, args, 4, "");

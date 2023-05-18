@@ -89,7 +89,6 @@ struct Value {
     }
 
     // Use ValueWrangler::get_rvalue instead
-    LLVMValueRef dangerously_get_rvalue(LLVMBuilderRef builder) const;
     LLVMValueRef dangerously_get_rvalue(LLVMBuilderRef builder, EmitOutcome outcome) const;
 
     // Use ValueWrangler::store instead
