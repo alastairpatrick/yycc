@@ -655,9 +655,14 @@ struct Emitter: Visitor {
     virtual VisitExpressionOutput visit(AddressExpr* expr) override {
         auto value = accept_expr(expr->expr).value;
         auto result_type = value.type->pointer_to();
+
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-        // todo: error if not an lvalue
+        if (value.kind != ValueKind::LVALUE) {
+            message(Severity::ERROR, expr->location) << "cannot take address of rvalue of type '" << PrintType(value.type) <<"'\n";
+            return VisitExpressionOutput(Value::of_recover(result_type));
+        }
+
         return VisitExpressionOutput(result_type, get_lvalue(value));
     }
 

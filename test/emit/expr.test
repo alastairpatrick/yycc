@@ -199,6 +199,13 @@ EXPECT_IR
 END
 
 
+BEGIN May not take address of rvalue
+int *p = &1;
+EXPECT_MESSAGE
+:1:10: error cannot take address of rvalue of type 'int'
+END
+
+
 REM ******** CallExpr ********
 
 
