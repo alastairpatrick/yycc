@@ -377,7 +377,11 @@ LLVMTypeRef PassByReferenceType::cache_llvm_type() const {
 
 void PassByReferenceType::message_print(ostream& stream, int section) const {
     if (section == 2) {
-        stream << '&';
+        if (kind == Kind::LVALUE) {
+            stream << '&';
+        } else {
+            stream << "&&";
+        }
     }
 
     base_type->message_print(stream, section);

@@ -1050,7 +1050,7 @@ struct Emitter: Visitor {
                 }
 
                 if (pass_by_ref_type) {
-                    if (param_value.kind != ValueKind::LVALUE && (expected_type->qualifiers() & QUALIFIER_CONST)) {
+                    if (param_value.kind == ValueKind::RVALUE && (pass_by_ref_type->kind == PassByReferenceType::Kind::RVALUE || expected_type->qualifiers() & QUALIFIER_CONST)) {
                         param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, param_location);
                         auto lvalue = allocate_auto_storage(param_value.type, "");
                         store(lvalue, get_rvalue(param_value, param_location), param_location);
@@ -1060,12 +1060,13 @@ struct Emitter: Visitor {
                                                                  << PrintType(function_type->parameter_types[i]) << "'\n";
                         llvm_params[i] = LLVMConstNull(pass_by_ref_type->llvm_type());
                     } else {
-                        if (param_value.type->unqualified() != expected_type->unqualified()) {
+                        if (pass_by_ref_type->kind == PassByReferenceType::Kind::RVALUE && param_value.kind == ValueKind::LVALUE) {
+                            message(Severity::ERROR, param_location) << "cannot pass lvalue to pass-by-rvalue-reference parameter type '"
+                                                                     << PrintType(function_type->parameter_types[i]) << "'; consider postfix '&&' move expression\n";
+                        } else if (param_value.type->unqualified() != expected_type->unqualified()) {
                             message(Severity::ERROR, param_location) << "lvalue type '" << PrintType(param_value.type) << "' incompatible with pass-by-reference parameter type '"
                                                                      << PrintType(function_type->parameter_types[i]) << "'\n";
-                        }
-
-                        if (param_value.qualifiers > expected_type->qualifiers()) {
+                        } else if (param_value.qualifiers > expected_type->qualifiers()) {
                             message(Severity::ERROR, param_location) << "lvalue type '" << PrintType(param_value.type) << "' has more type qualifiers than pass-by-reference parameter type '"
                                                                      << PrintType(function_type->parameter_types[i]) << "'\n";
                         }

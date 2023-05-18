@@ -401,7 +401,7 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN Error if value passed by reference has different type
+BEGIN Error if value passed by lvalue-reference has different type
 struct S {};
 struct T {};
 void f(S&) {}
@@ -414,7 +414,7 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN Error if lvalue has more qualifiers than pass-by-reference parameter
+BEGIN Error if lvalue has more qualifiers than pass-by-lvalue-reference parameter
 struct S {
   int f(S&) {
     return 7;
@@ -428,7 +428,7 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN Rvalue passed to const parameter by reference is converted
+BEGIN Rvalue passed to const parameter by lvalue-reference is converted
 void f(const int&) {}
 void g() {
     f(1.0);
@@ -447,13 +447,65 @@ define void @g() {
 END
 
 
-BEGIN Rvalue passed to non-const parameter by reference yields error
+BEGIN Rvalue passed to non-const parameter by lvalue-reference yields error
 void f(int&) {}
 void g() {
     f(1.0);
 }
 EXPECT_MESSAGE
 :3:7: error rvalue type 'double' incompatible with non-const pass-by-reference parameter type 'int&'
+END
+
+
+BEGIN Rvalue passed by rvalue-reference is converted
+void f(int&&) {}
+void g() {
+    f(1.0);
+}
+EXPECT_IR
+define void @f(ptr %0) {
+  ret void
+}
+
+define void @g() {
+  %1 = alloca i32, align 4
+  store i32 1, ptr %1, align 4
+  call void @f(ptr %1)
+  ret void
+}
+END
+
+
+BEGIN Cannot pass lvalue directly to pass-by-rvalue-reference parameter
+void f(int&&) {}
+void g() {
+    int x;
+    f(x);
+}
+EXPECT_MESSAGE
+:4:7: error cannot pass lvalue to pass-by-rvalue-reference parameter type 'int&&'; consider postfix '&&' move expression
+END
+
+
+BEGIN Pass move expression by rvalue-reference
+void f(int&&) {}
+void g() {
+    int x;
+    f(&&x);
+}
+EXPECT_IR
+define void @f(ptr %0) {
+  ret void
+}
+
+define void @g() {
+  %1 = alloca i32, align 4
+  %x = alloca i32, align 4
+  %2 = load i32, ptr %x, align 4
+  store i32 %2, ptr %1, align 4
+  call void @f(ptr %1)
+  ret void
+}
 END
 
 
