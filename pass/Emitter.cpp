@@ -85,8 +85,6 @@ struct Emitter: Visitor {
     }
 
     void call_destructors() {
-        auto context = TranslationUnitContext::it;
-
         auto& destructors = scopes.back().destructors;
         for (auto it = destructors.rbegin(); it != destructors.rend(); ++it) {
             auto destructor = *it;
@@ -112,8 +110,6 @@ struct Emitter: Visitor {
     }
 
     bool pend_destructor(const Value& value) {
-        auto context = TranslationUnitContext::it;
-
         if (auto structured_type = unqualified_type_cast<StructuredType>(value.type->unqualified())) {
             if (auto destructor_declarator = structured_type->destructor) {
                 auto& scope = scopes.back();
