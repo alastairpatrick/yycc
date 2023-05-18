@@ -12,6 +12,13 @@ enum class ConvKind {
     EXPLICIT,
 };
 
+
+template <typename T, typename U>
+inline const T* unqualified_type_cast(const U* type) {
+    assert(type->qualifiers() == 0);
+    return dynamic_cast<const T*>(type);
+}
+
 struct ConvertTypeResult {
     Value value;
     ConvKind conv_kind = ConvKind::IMPLICIT;

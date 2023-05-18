@@ -91,7 +91,7 @@ struct Emitter: Visitor {
         for (auto it = destructors.rbegin(); it != destructors.rend(); ++it) {
             auto destructor = *it;
             auto function = destructor.destructor_declarator->function();
-            auto structured_type = type_cast<StructuredType>(destructor.lvalue.type->unqualified());
+            auto structured_type = unqualified_type_cast<StructuredType>(destructor.lvalue.type->unqualified());
             auto placeholder = module->get_destructor_placeholder(structured_type);
 
             LLVMValueRef args[] = {
@@ -114,7 +114,7 @@ struct Emitter: Visitor {
     bool pend_destructor(const Value& value) {
         auto context = TranslationUnitContext::it;
 
-        if (auto structured_type = type_cast<StructuredType>(value.type->unqualified())) {
+        if (auto structured_type = unqualified_type_cast<StructuredType>(value.type->unqualified())) {
             if (auto destructor_declarator = structured_type->destructor) {
                 auto& scope = scopes.back();
                 scope.destructors.push_back(PendingDestructor(value, destructor_declarator));
@@ -205,12 +205,6 @@ struct Emitter: Visitor {
         return VisitStatementOutput();
     }
 
-    template <typename T, typename U>
-    const T* type_cast(const U* type) {
-        assert(type->qualifiers() == 0);
-        return dynamic_cast<const T*>(type);
-    }
-
     Value convert_to_type(const Value& value, const Type* dest_type, ConvKind kind, const Location& location) {
         return wrangler.convert_to_type(value, dest_type, kind, location).value;
     }
@@ -230,7 +224,7 @@ struct Emitter: Visitor {
 
     void emit_function_definition(Declarator* declarator, Function* entity) {
         function_declarator = declarator;
-        function_type = type_cast<FunctionType>(declarator->primary->type);
+        function_type = unqualified_type_cast<FunctionType>(declarator->primary->type);
         function = get_lvalue(entity->value);
 
         entry_block = append_block("");
@@ -292,7 +286,7 @@ struct Emitter: Visitor {
 
         Value scalar_value;
         if (auto initializer = dynamic_cast<InitializerExpr*>(expr)) {
-            if (auto array_type = type_cast<ResolvedArrayType>(dest.type)) {
+            if (auto array_type = unqualified_type_cast<ResolvedArrayType>(dest.type)) {
                 for (size_t i = 0; i < array_type->size; ++i) {
                     LLVMValueRef indices[] = { context->zero_size, Value::of_size(i).get_const() };
                     LLVMValueRef dest_element = LLVMBuildGEP2(builder, array_type->llvm_type(), get_lvalue(dest), indices, 2, "");
@@ -301,7 +295,7 @@ struct Emitter: Visitor {
                 return;
             }
 
-            if (auto struct_type = type_cast<StructType>(dest.type)) {
+            if (auto struct_type = unqualified_type_cast<StructType>(dest.type)) {
                 size_t initializer_idx{};
                 for (auto declaration: struct_type->declarations) {
                     for (auto member: declaration->declarators) {
@@ -331,7 +325,7 @@ struct Emitter: Visitor {
         }
 
         if (auto initializer = dynamic_cast<InitializerExpr*>(expr)) {
-            if (auto array_type = type_cast<ResolvedArrayType>(dest_type)) {
+            if (auto array_type = unqualified_type_cast<ResolvedArrayType>(dest_type)) {
                 vector<LLVMValueRef> values(array_type->size);
                 for (size_t i = 0; i < array_type->size; ++i) {
                     values[i] = emit_static_initializer(array_type->element_type, initializer->elements[i]);
@@ -340,7 +334,7 @@ struct Emitter: Visitor {
                 return LLVMConstArray(array_type->element_type->llvm_type(), values.data(), values.size());
             }
 
-            if (auto struct_type = type_cast<StructType>(dest_type)) {
+            if (auto struct_type = unqualified_type_cast<StructType>(dest_type)) {
                 size_t initializer_idx{};
                 vector<LLVMValueRef> values;
                 for (auto declaration: struct_type->declarations) {
@@ -670,11 +664,11 @@ struct Emitter: Visitor {
     const Type* promote_integer(const Type* type) {
         auto int_type = IntegerType::default_type();
 
-        while (auto enum_type = type_cast<EnumType>(type)) {
+        while (auto enum_type = unqualified_type_cast<EnumType>(type)) {
             type = enum_type->base_type;
         }
 
-        if (auto type_as_int = type_cast<IntegerType>(type)) {
+        if (auto type_as_int = unqualified_type_cast<IntegerType>(type)) {
             // Integer types smaller than int are promoted when an operation is performed on them.
             if (type_as_int->size < int_type->size || (type_as_int->signedness == IntegerSignedness::SIGNED && type_as_int->size == int_type->size)) {
                 // If all values of the original type can be represented as an int, the value of the smaller type is converted to an int; otherwise, it is converted to an unsigned int.
@@ -693,8 +687,8 @@ struct Emitter: Visitor {
         // If both operands have the same type, no further conversion is needed.
         if (left == right) return left;
 
-        auto left_as_float = type_cast<FloatingPointType>(left);
-        auto right_as_float = type_cast<FloatingPointType>(right);
+        auto left_as_float = unqualified_type_cast<FloatingPointType>(left);
+        auto right_as_float = unqualified_type_cast<FloatingPointType>(right);
         if (left_as_float) {
             if (right_as_float) {
                 return FloatingPointType::of(max(left_as_float->size, right_as_float->size));
@@ -703,8 +697,8 @@ struct Emitter: Visitor {
         }
         if (right_as_float) return right_as_float;
 
-        auto left_as_int = type_cast<IntegerType>(left);
-        auto right_as_int = type_cast<IntegerType>(right);
+        auto left_as_int = unqualified_type_cast<IntegerType>(left);
+        auto right_as_int = unqualified_type_cast<IntegerType>(right);
 
         if (left_as_int && right_as_int) {
             // char was promoted to signed int so DEFAULT is impossible.
@@ -774,7 +768,7 @@ struct Emitter: Visitor {
         auto left_rvalue = convert_to_rvalue(left_value, convert_type, ConvKind::IMPLICIT, left_location);
         auto right_rvalue = convert_to_rvalue(right_value, convert_type, ConvKind::IMPLICIT, right_location);
 
-        if (auto as_int = type_cast<IntegerType>(convert_type)) {
+        if (auto as_int = unqualified_type_cast<IntegerType>(convert_type)) {
             switch (expr->op) {
               default:
                 assert(false); // TODO
@@ -827,7 +821,7 @@ struct Emitter: Visitor {
             }
         }
 
-        if (auto as_float = type_cast<FloatingPointType>(convert_type)) {
+        if (auto as_float = unqualified_type_cast<FloatingPointType>(convert_type)) {
             switch (expr->op) {
               default:
                 assert(false); // TODO
@@ -864,8 +858,8 @@ struct Emitter: Visitor {
         auto op_flags = operator_flags(op);
 
         auto llvm_target_data = TranslationUnitContext::it->llvm_target_data;
-        auto left_pointer_type = type_cast<PointerType>(left_value.type);
-        auto right_pointer_type = type_cast<PointerType>(right_value.type);
+        auto left_pointer_type = unqualified_type_cast<PointerType>(left_value.type);
+        auto right_pointer_type = unqualified_type_cast<PointerType>(right_value.type);
 
         if (left_pointer_type && right_pointer_type) {
             if (op == '-' && left_pointer_type->base_type->unqualified() == right_pointer_type->base_type->unqualified()) {
@@ -915,7 +909,7 @@ struct Emitter: Visitor {
 
         if (op == '+'|| op == TOK_ADD_ASSIGN || op == '-' || op == TOK_SUB_ASSIGN) {
             right_value = convert_to_type(right_value, promote_integer(right_value.type), ConvKind::IMPLICIT, right_location);
-            if (!type_cast<IntegerType>(right_value.type)) return Value();
+            if (!unqualified_type_cast<IntegerType>(right_value.type)) return Value();
 
             if (outcome == EmitOutcome::TYPE) return Value(left_pointer_type);
 
@@ -934,7 +928,7 @@ struct Emitter: Visitor {
     Value convert_array_to_pointer(const Value& value) {
         auto zero = TranslationUnitContext::it->zero_size;
 
-        if (auto array_type = type_cast<ArrayType>(value.type)) {
+        if (auto array_type = unqualified_type_cast<ArrayType>(value.type)) {
             auto result_type = array_type->element_type->pointer_to();
             if (outcome == EmitOutcome::TYPE) return Value(result_type);
 
@@ -955,11 +949,11 @@ struct Emitter: Visitor {
             intermediate = emit_logical_binary_operation(expr, left_value, expr->left->location);
         } else {
             left_value = convert_array_to_pointer(left_value);
-            auto left_pointer_type = type_cast<PointerType>(left_value.type);
+            auto left_pointer_type = unqualified_type_cast<PointerType>(left_value.type);
 
             auto right_value = accept_expr(expr->right).value.unqualified();
             right_value = convert_array_to_pointer(right_value);
-            auto right_pointer_type = type_cast<PointerType>(right_value.type);
+            auto right_pointer_type = unqualified_type_cast<PointerType>(right_value.type);
 
             if (left_pointer_type || right_pointer_type) {
                 intermediate = emit_pointer_binary_operation(expr, left_value, right_value, expr->left->location, expr->right->location);
@@ -995,11 +989,11 @@ struct Emitter: Visitor {
         auto function_output = accept_expr(expr->function);
         auto function_value = function_output.value.unqualified();
 
-        if (auto pointer_type = type_cast<PointerType>(function_value.type)) {
+        if (auto pointer_type = unqualified_type_cast<PointerType>(function_value.type)) {
             function_value = Value(ValueKind::LVALUE, pointer_type->base_type, get_rvalue(function_value, expr->function->location));
         }
 
-        if (auto function_type = type_cast<FunctionType>(function_value.type)) {
+        if (auto function_type = unqualified_type_cast<FunctionType>(function_value.type)) {
             auto result_type = function_type->return_type;
             if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
@@ -1045,7 +1039,7 @@ struct Emitter: Visitor {
                 auto expected_type = function_type->parameter_types[i];
 
                 const PassByReferenceType* pass_by_ref_type{};
-                if (pass_by_ref_type = type_cast<PassByReferenceType>(expected_type)) {
+                if (pass_by_ref_type = unqualified_type_cast<PassByReferenceType>(expected_type)) {
                     expected_type = pass_by_ref_type->base_type;
                 }
 
@@ -1156,7 +1150,7 @@ struct Emitter: Visitor {
     virtual VisitExpressionOutput visit(DereferenceExpr* expr) override {
 
         auto value = accept_expr(expr->expr).value.unqualified();
-        auto pointer_type = type_cast<PointerType>(value.type);
+        auto pointer_type = unqualified_type_cast<PointerType>(value.type);
         auto result_type = pointer_type->base_type;
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
@@ -1176,18 +1170,18 @@ struct Emitter: Visitor {
             }
 
             auto type = result_type;
-            while (auto enum_type = type_cast<EnumType>(type->unqualified())) {
+            while (auto enum_type = unqualified_type_cast<EnumType>(type->unqualified())) {
                 type = enum_type->base_type;
             }
 
-            auto int_type = type_cast<IntegerType>(type);
+            auto int_type = unqualified_type_cast<IntegerType>(type);
             return VisitExpressionOutput(Value::of_int(int_type, enum_constant->value).bit_cast(result_type));
 
         }
 
         if (auto variable = declarator->variable()) {
             if (outcome == EmitOutcome::IR && this_value.is_valid() && !variable->value.is_valid()) {
-                if (auto this_type = type_cast<StructuredType>(this_value.type->unqualified())) {
+                if (auto this_type = unqualified_type_cast<StructuredType>(this_value.type->unqualified())) {
                     assert(variable->member);
 
                     if (declarator->scope != this_type->scope) {
@@ -1246,7 +1240,7 @@ struct Emitter: Visitor {
 
     Value emit_object_of_member_expr(MemberExpr* expr) {
         auto object = accept_expr(expr->object).value;
-        if (auto pointer_type = type_cast<PointerType>(object.type)) {
+        if (auto pointer_type = unqualified_type_cast<PointerType>(object.type)) {
             object = Value(ValueKind::LVALUE, pointer_type->base_type, get_rvalue(object, expr->object->location));
         }
         return object;
@@ -1257,11 +1251,11 @@ struct Emitter: Visitor {
 
         auto object_type = get_expr_type(expr->object)->unqualified();
 
-        if (auto pointer_type = type_cast<PointerType>(object_type)) {
+        if (auto pointer_type = unqualified_type_cast<PointerType>(object_type)) {
             object_type = pointer_type->base_type->unqualified();
         }
 
-        if (auto struct_type = type_cast<StructuredType>(object_type)) {
+        if (auto struct_type = unqualified_type_cast<StructuredType>(object_type)) {
             VisitExpressionOutput output;
 
             auto result_type = expr->member->type;
@@ -1317,11 +1311,11 @@ struct Emitter: Visitor {
         auto left_value = accept_expr(expr->left).value.unqualified();
         auto index_value = accept_expr(expr->right).value.unqualified();
 
-        if (type_cast<IntegerType>(left_value.type)) {
+        if (unqualified_type_cast<IntegerType>(left_value.type)) {
             swap(left_value, index_value);
         }
 
-        if (auto pointer_type = type_cast<PointerType>(left_value.type)) {
+        if (auto pointer_type = unqualified_type_cast<PointerType>(left_value.type)) {
             auto result_type = pointer_type->base_type;
             if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
@@ -1332,7 +1326,7 @@ struct Emitter: Visitor {
                 LLVMBuildGEP2(builder, result_type->llvm_type(), get_rvalue(left_value, expr->left->location), &index, 1, "")));
         }
 
-        if (auto array_type = type_cast<ArrayType>(left_value.type)) {
+        if (auto array_type = unqualified_type_cast<ArrayType>(left_value.type)) {
             auto result_type = array_type->element_type;
             if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
