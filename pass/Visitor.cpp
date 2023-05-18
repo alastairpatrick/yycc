@@ -115,6 +115,10 @@ VisitExpressionOutput Visitor::visit(MoveExpr* expr) {
     return VisitExpressionOutput(expr);
 }
 
+VisitExpressionOutput Visitor::visit(SequenceExpr* expr) {
+    return VisitExpressionOutput(expr);
+}
+
 VisitExpressionOutput Visitor::visit(SizeOfExpr* expr) {
     return VisitExpressionOutput(expr);
 }

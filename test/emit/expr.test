@@ -799,6 +799,44 @@ define i32 @f(%S %0) {
 END
 
 
+REM ******** SequenceExpr ********
+
+BEGIN Sequence operator in constant expression
+int x = (1, 2);
+EXPECT_IR
+@x = global i32 2
+END
+
+
+BEGIN Sequence operator in non-constant expression
+void f() {
+    int x = (1, 2);
+}
+EXPECT_IR
+define void @f() {
+  %x = alloca i32, align 4
+  store i32 2, ptr %x, align 4
+  ret void
+}
+END
+
+
+BEGIN Sequence operator with void result
+void g();
+void f() {
+    g(), g();
+}
+EXPECT_IR
+declare void @g()
+
+define void @f() {
+  call void @g()
+  call void @g()
+  ret void
+}
+END
+
+
 REM ******** SubscriptExpr ********
 
 BEGIN Subscript operator on pointer (1)

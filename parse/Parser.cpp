@@ -1192,6 +1192,7 @@ Expr* Parser::continue_parse_expr(Expr* expr, OperatorPrec min_prec, Identifier*
               case TOK_AND_ASSIGN:
               case TOK_OR_ASSIGN:
               case TOK_XOR_ASSIGN:
+              case ',':
                 location = preprocessor.location();
                 op = token;
                 consume();
@@ -1202,6 +1203,8 @@ Expr* Parser::continue_parse_expr(Expr* expr, OperatorPrec min_prec, Identifier*
 
             if (op == '=') {
                 expr = new AssignExpr(expr, right, location);
+            } else if (op ==',') {
+                expr = new SequenceExpr(expr, right, location);
             } else {
                 expr = new BinaryExpr(expr, right, op, location);
             }

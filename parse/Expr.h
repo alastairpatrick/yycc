@@ -127,6 +127,15 @@ struct SizeOfExpr: Expr {
     virtual void print(ostream& stream) const override;
 };
 
+struct SequenceExpr: Expr {
+    Expr* left{};
+    Expr* right{};
+
+    SequenceExpr(Expr* left, Expr* right, const Location& location);
+    virtual VisitExpressionOutput accept(Visitor& visitor) override;
+    virtual void print(ostream& stream) const override;
+};
+
 struct SubscriptExpr: Expr {
     Expr* left{};
     Expr* right{};

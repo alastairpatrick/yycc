@@ -185,6 +185,12 @@ VisitExpressionOutput DepthFirstVisitor::visit(SizeOfExpr* expr) {
     return VisitExpressionOutput(expr);
 }
 
+VisitExpressionOutput DepthFirstVisitor::visit(SequenceExpr* expr) {
+    expr->left = accept_expr(expr->left).expr;
+    expr->right = accept_expr(expr->right).expr;
+    return VisitExpressionOutput(expr);
+}
+
 VisitExpressionOutput DepthFirstVisitor::visit(SubscriptExpr* expr) {
     expr->left = accept_expr(expr->left).expr;
     expr->right = accept_expr(expr->right).expr;

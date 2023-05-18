@@ -272,6 +272,19 @@ void SizeOfExpr::print(ostream& stream) const {
 }
 
 
+SequenceExpr::SequenceExpr(Expr* left, Expr* right, const Location& location)
+    : Expr(location), left(left), right(right) {
+}
+
+VisitExpressionOutput SequenceExpr::accept(Visitor& visitor) {
+    return visitor.visit(this);
+}
+
+void SequenceExpr::print(ostream& stream) const {
+    stream << "[\",\", " << left << ", " << right << "]";
+}
+
+
 SubscriptExpr::SubscriptExpr(Expr* left, Expr* right, const Location& location)
     : Expr(location), left(left), right(right) {
 }

@@ -1339,6 +1339,12 @@ struct Emitter: Visitor {
         return VisitExpressionOutput(result);
     }
 
+    virtual VisitExpressionOutput visit(SequenceExpr* expr) override {
+        auto left_value = emit_expr(expr->left).value.unqualified();
+        auto right_value = emit_expr(expr->right, false).value.unqualified();
+        return VisitExpressionOutput(right_value);
+    }
+
     virtual VisitExpressionOutput visit(SizeOfExpr* expr) override {
         auto zero = TranslationUnitContext::it->zero_size;
         auto llvm_target_data = TranslationUnitContext::it->llvm_target_data;
