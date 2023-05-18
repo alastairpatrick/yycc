@@ -120,7 +120,7 @@ attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willret
 END
 
 
-BEGIN Move expression resets object to default state, preventing destructor TODO the resulting temporary still has to be destroyed though
+BEGIN Move expression resets object to default state, preventing destructor
 struct S {
     int x;
     void destructor(S&) {}
@@ -133,8 +133,11 @@ EXPECT_IR
 %S = type { i32 }
 
 define void @f() local_unnamed_addr {
+  %1 = alloca %S, align 8
   %s = alloca %S, align 8
   store i32 0, ptr %s, align 8
+  store i32 1, ptr %1, align 8
+  call void @destructor(ptr %1)
   ret void
 }
 
@@ -161,7 +164,10 @@ EXPECT_IR
 %S = type { i32 }
 
 define void @f() local_unnamed_addr {
+  %1 = alloca %S, align 8
   %s = alloca %S, align 8
+  store i32 1, ptr %1, align 8
+  call void @destructor(ptr %1)
   store i32 2, ptr %s, align 8
   call void @destructor(ptr %s)
   ret void
@@ -183,16 +189,19 @@ struct S {
 };
 void f() {
     S s = {1};
-    S t = &&s;  // now t should be destroyed but not s
+    S t = &&s;  // now t should be destroyed but not s. TODO the temporary should not be destroyed because it initialized t
 }
 EXPECT_IR
 %S = type { i32 }
 
 define void @f() local_unnamed_addr {
+  %1 = alloca %S, align 8
   %t = alloca %S, align 8
   %s = alloca %S, align 8
   store i32 0, ptr %s, align 8
+  store i32 1, ptr %1, align 8
   store i32 1, ptr %t, align 8
+  call void @destructor(ptr %1)
   call void @destructor(ptr %t)
   ret void
 }

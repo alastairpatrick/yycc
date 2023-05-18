@@ -33,7 +33,7 @@ struct SwitchConstruct: Construct {
 };
 
 struct PendingDestructor {
-    Value lvalue;
+    Value addressible_value;
     Declarator* destructor_declarator{};
 };
 
@@ -89,14 +89,15 @@ struct Emitter: Visitor {
         for (auto it = destructors.rbegin(); it != destructors.rend(); ++it) {
             auto destructor = *it;
             auto function = destructor.destructor_declarator->function();
-            auto structured_type = unqualified_type_cast<StructuredType>(destructor.lvalue.type->unqualified());
+            auto structured_type = unqualified_type_cast<StructuredType>(destructor.addressible_value.type->unqualified());
             auto placeholder = module->get_destructor_placeholder(structured_type);
+            auto addressible_value = destructor.addressible_value;
 
             LLVMValueRef args[] = {
-                destructor.lvalue.dangerously_get_lvalue(),
-                get_lvalue(function->value),
-                destructor.lvalue.dangerously_get_rvalue(builder, outcome),
-                LLVMConstNull(destructor.lvalue.type->llvm_type()),
+                addressible_value.dangerously_get_address(),
+                get_address(function->value),
+                addressible_value.dangerously_get_value(builder, outcome),
+                LLVMConstNull(addressible_value.type->llvm_type()),
             };
             LLVMBuildCall2(builder, placeholder.type, placeholder.function, args, 4, "");
         }
@@ -109,9 +110,12 @@ struct Emitter: Visitor {
         scopes.pop_back();
     }
 
-    bool pend_destructor(const Value& value) {
+    bool pend_destructor(Value& value) {
         if (auto structured_type = unqualified_type_cast<StructuredType>(value.type->unqualified())) {
             if (auto destructor_declarator = structured_type->destructor) {
+                use_temp_builder();
+                value.make_addressible(temp_builder, builder);
+
                 auto& scope = scopes.back();
                 scope.destructors.push_back(PendingDestructor(value, destructor_declarator));
                 return true;
@@ -134,12 +138,12 @@ struct Emitter: Visitor {
     }
 
     // todo: not dangerous
-    LLVMValueRef get_lvalue(const Value &value) {
-        return value.dangerously_get_lvalue();
+    LLVMValueRef get_address(const Value &value) {
+        return value.dangerously_get_address();
     }
 
-    LLVMValueRef get_rvalue(const Value &value, const Location& location, bool for_move_expr = false) {
-        return wrangler.get_rvalue(value, location, for_move_expr);
+    LLVMValueRef get_value(const Value &value, const Location& location, bool for_move_expr = false) {
+        return wrangler.get_value(value, location, for_move_expr);
     }
 
     void store(const Value& dest, LLVMValueRef source_rvalue, const Location& location) {
@@ -206,7 +210,7 @@ struct Emitter: Visitor {
     }
 
     LLVMValueRef convert_to_rvalue(const Value& value, const Type* dest_type, ConvKind kind, const Location& location) {
-        return get_rvalue(convert_to_type(value, dest_type, kind, location), location);
+        return get_value(convert_to_type(value, dest_type, kind, location), location);
     }
 
     Value convert_to_type(Expr* expr, const Type* dest_type, ConvKind kind) {
@@ -215,13 +219,13 @@ struct Emitter: Visitor {
     }
 
     LLVMValueRef convert_to_rvalue(Expr* expr, const Type* dest_type, ConvKind kind) {
-        return get_rvalue(convert_to_type(expr, dest_type, kind), expr->location);
+        return get_value(convert_to_type(expr, dest_type, kind), expr->location);
     }
 
     void emit_function_definition(Declarator* declarator, Function* entity) {
         function_declarator = declarator;
         function_type = unqualified_type_cast<FunctionType>(declarator->primary->type);
-        function = get_lvalue(entity->value);
+        function = get_address(entity->value);
 
         entry_block = append_block("");
         unreachable_block = append_block("");
@@ -285,7 +289,7 @@ struct Emitter: Visitor {
             if (auto array_type = unqualified_type_cast<ResolvedArrayType>(dest.type)) {
                 for (size_t i = 0; i < array_type->size; ++i) {
                     LLVMValueRef indices[] = { context->zero_size, Value::of_size(i).get_const() };
-                    LLVMValueRef dest_element = LLVMBuildGEP2(builder, array_type->llvm_type(), get_lvalue(dest), indices, 2, "");
+                    LLVMValueRef dest_element = LLVMBuildGEP2(builder, array_type->llvm_type(), get_address(dest), indices, 2, "");
                     emit_auto_initializer(Value(ValueKind::LVALUE, array_type->element_type, dest_element), initializer->elements[i]);
                 }
                 return;
@@ -296,7 +300,7 @@ struct Emitter: Visitor {
                 for (auto declaration: struct_type->declarations) {
                     for (auto member: declaration->declarators) {
                         if (auto member_variable = member->variable()) {
-                            LLVMValueRef dest_element = LLVMBuildInBoundsGEP2(builder, struct_type->llvm_type(), get_lvalue(dest),
+                            LLVMValueRef dest_element = LLVMBuildInBoundsGEP2(builder, struct_type->llvm_type(), get_address(dest),
                                                                               member_variable->member->gep_indices.data(), member_variable->member->gep_indices.size(),
                                                                               c_str(member->identifier));
                             emit_auto_initializer(Value(ValueKind::LVALUE, member->type, dest_element), initializer->elements[initializer_idx++]);
@@ -312,7 +316,7 @@ struct Emitter: Visitor {
             scalar_value = convert_to_type(expr, dest.type, ConvKind::IMPLICIT);
         }
 
-        LLVMBuildStore(builder, get_rvalue(scalar_value, expr->location), get_lvalue(dest));
+        LLVMBuildStore(builder, get_value(scalar_value, expr->location), get_address(dest));
     }
 
     LLVMValueRef emit_static_initializer(const Type* dest_type, Expr* expr) {
@@ -344,7 +348,7 @@ struct Emitter: Visitor {
                 return LLVMConstNamedStruct(struct_type->llvm_type(), values.data(), values.size());
             }
 
-            return get_rvalue(emit_scalar_initializer(dest_type, initializer), initializer->location);
+            return get_value(emit_scalar_initializer(dest_type, initializer), initializer->location);
         }
 
         return convert_to_rvalue(expr, dest_type, ConvKind::IMPLICIT);
@@ -383,7 +387,7 @@ struct Emitter: Visitor {
             }
 
         } else if (entity->storage_duration == StorageDuration::STATIC) {
-            auto global = get_lvalue(entity->value);
+            auto global = get_address(entity->value);
 
             LLVMValueRef initial = LLVMConstNull(llvm_type);
             if (entity->initializer) {
@@ -580,7 +584,7 @@ struct Emitter: Visitor {
         }
 
         auto expr_value = emit_full_expr(statement->expr).unqualified();
-        auto switch_value = LLVMBuildSwitch(builder, get_rvalue(expr_value, statement->expr->location), default_block, statement->cases.size());
+        auto switch_value = LLVMBuildSwitch(builder, get_value(expr_value, statement->expr->location), default_block, statement->cases.size());
 
         for (auto case_expr: statement->cases) {
             auto case_label = append_block("");
@@ -615,7 +619,9 @@ struct Emitter: Visitor {
             return VisitExpressionOutput(Value::of_recover(result_type));
         }
 
-        return VisitExpressionOutput(result_type, get_lvalue(value));
+        // Don't pend destructor because result is always pointer
+
+        return VisitExpressionOutput(result_type, get_address(value));
     }
 
     virtual VisitExpressionOutput visit(AssignExpr* expr) override {
@@ -625,6 +631,9 @@ struct Emitter: Visitor {
 
         auto right_rvalue = convert_to_rvalue(expr->right, result_type, ConvKind::IMPLICIT);
         store(left_value, right_rvalue, expr->location);
+
+        // Don't pend destructor because result is always lvalue
+
         return VisitExpressionOutput(left_value);
     }
 
@@ -862,8 +871,8 @@ struct Emitter: Visitor {
                 auto result_type = IntegerType::of_size(IntegerSignedness::SIGNED);
                 if (outcome == EmitOutcome::TYPE) return Value(result_type);
             
-                auto left_int = LLVMBuildPtrToInt(builder, get_rvalue(left_value, left_location), result_type->llvm_type(), "");
-                auto right_int = LLVMBuildPtrToInt(builder, get_rvalue(right_value, right_location), result_type->llvm_type(), "");
+                auto left_int = LLVMBuildPtrToInt(builder, get_value(left_value, left_location), result_type->llvm_type(), "");
+                auto right_int = LLVMBuildPtrToInt(builder, get_value(right_value, right_location), result_type->llvm_type(), "");
                 auto byte_diff = LLVMBuildSub(builder, left_int, right_int, "");
                 auto size_of_base_type = LLVMStoreSizeOfType(llvm_target_data, left_pointer_type->base_type->llvm_type());
                 auto result = LLVMBuildSDiv(builder, byte_diff, LLVMConstInt(result_type->llvm_type(), size_of_base_type, true), "");
@@ -899,7 +908,7 @@ struct Emitter: Visitor {
 
             return Value(result_type, LLVMBuildICmp(builder,
                                                     llvm_int_predicate(false, op),
-                                                    get_rvalue(left_value, left_location), get_rvalue(right_value, right_location),
+                                                    get_value(left_value, left_location), get_value(right_value, right_location),
                                                     ""));
         }
 
@@ -909,13 +918,13 @@ struct Emitter: Visitor {
 
             if (outcome == EmitOutcome::TYPE) return Value(left_pointer_type);
 
-            LLVMValueRef index = get_rvalue(right_value, right_location);
+            LLVMValueRef index = get_value(right_value, right_location);
 
             if (op == '-' || op == TOK_SUB_ASSIGN) {
                 index = LLVMBuildNeg(builder, index, "");
             }
 
-            return Value(left_pointer_type, LLVMBuildGEP2(builder, left_pointer_type->base_type->llvm_type(), get_rvalue(left_value, left_location), &index, 1, ""));
+            return Value(left_pointer_type, LLVMBuildGEP2(builder, left_pointer_type->base_type->llvm_type(), get_value(left_value, left_location), &index, 1, ""));
         }
 
         return Value();
@@ -930,7 +939,7 @@ struct Emitter: Visitor {
 
             LLVMValueRef indices[2] = {zero, zero};
             return Value(result_type,
-                         LLVMBuildGEP2(builder, array_type->llvm_type(), get_lvalue(value), indices, 2, ""));
+                         LLVMBuildGEP2(builder, array_type->llvm_type(), get_address(value), indices, 2, ""));
         }
 
         return value;
@@ -970,9 +979,11 @@ struct Emitter: Visitor {
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(intermediate);
 
         if (operator_flags(expr->op) & OP_ASSIGN) {
-            store(left_value, get_rvalue(intermediate, expr->location), expr->location);
+            store(left_value, get_value(intermediate, expr->location), expr->location);
             return VisitExpressionOutput(left_value);
         }
+
+        // Don't pend destructor because result type cannot be structured
 
         return VisitExpressionOutput(intermediate);
     }
@@ -987,7 +998,7 @@ struct Emitter: Visitor {
         auto function_value = function_output.value.unqualified();
 
         if (auto pointer_type = unqualified_type_cast<PointerType>(function_value.type)) {
-            function_value = Value(ValueKind::LVALUE, pointer_type->base_type, get_rvalue(function_value, expr->function->location));
+            function_value = Value(ValueKind::LVALUE, pointer_type->base_type, get_value(function_value, expr->function->location));
         }
 
         if (auto function_type = unqualified_type_cast<FunctionType>(function_value.type)) {
@@ -1009,7 +1020,7 @@ struct Emitter: Visitor {
 
                 if (object_value.kind != ValueKind::LVALUE) {
                     auto lvalue = allocate_auto_storage(object_value.type, "");
-                    store(lvalue, get_rvalue(object_value, member_expr->location), member_expr->location);
+                    store(lvalue, get_value(object_value, member_expr->location), member_expr->location);
                     object_value = lvalue;
                 }
 
@@ -1053,9 +1064,9 @@ struct Emitter: Visitor {
                 if (pass_by_ref_type) {
                     if (param_value.kind == ValueKind::RVALUE && (pass_by_ref_type->kind == PassByReferenceType::Kind::RVALUE || expected_type->qualifiers() & QUALIFIER_CONST)) {
                         param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, param_location);
-                        auto lvalue = allocate_auto_storage(param_value.type, "");
-                        store(lvalue, get_rvalue(param_value, param_location), param_location);
-                        llvm_params[i] = get_lvalue(lvalue);
+                        use_temp_builder();
+                        param_value.make_addressible(temp_builder, builder);
+                        llvm_params[i] = get_address(param_value);
                     } else if (param_value.kind != ValueKind::LVALUE) {
                         message(Severity::ERROR, param_location) << "rvalue type '" << PrintType(param_value.type) << "' incompatible with non-const pass-by-reference parameter type '"
                                                                  << PrintType(function_type->parameter_types[i]) << "'\n";
@@ -1073,16 +1084,18 @@ struct Emitter: Visitor {
                         }
 
                         param_value = param_value.unqualified();
-                        llvm_params[i] = get_lvalue(param_value);
+                        llvm_params[i] = get_address(param_value);
                     }
                 } else {
                     param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, param_location);
-                    llvm_params[i] = get_rvalue(param_value, param_location);
+                    llvm_params[i] = get_value(param_value, param_location);
                 }
             }
 
-            auto result = LLVMBuildCall2(builder, function_type->llvm_type(), get_lvalue(function_value), llvm_params.data(), llvm_params.size(), "");
-            return VisitExpressionOutput(result_type, result);
+            auto result = Value(result_type, LLVMBuildCall2(builder, function_type->llvm_type(), get_address(function_value), llvm_params.data(), llvm_params.size(), ""));
+            pend_destructor(result);
+
+            return VisitExpressionOutput(result);
         }
 
         message(Severity::ERROR, expr->location) << "type '" << PrintType(function_value.type) << "' is not a function or function pointer\n";
@@ -1094,6 +1107,9 @@ struct Emitter: Visitor {
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(expr->type);
 
         auto value = convert_to_type(expr->expr, expr->type, ConvKind::EXPLICIT);
+
+        // Don't pend destructor because cannot cast to structured type
+
         return VisitExpressionOutput(value);
     }
 
@@ -1142,6 +1158,8 @@ struct Emitter: Visitor {
             result = Value(result_type);
         }
 
+        // Don't pend destructor because it would aleady have been pended by emitting the then or else expressions
+
         return VisitExpressionOutput(result);
     }
 
@@ -1152,7 +1170,9 @@ struct Emitter: Visitor {
         auto result_type = pointer_type->base_type;
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-        return VisitExpressionOutput(Value(ValueKind::LVALUE, result_type, get_rvalue(value, expr->location)));
+        // Don't pend destructor because result is always lvalue
+
+        return VisitExpressionOutput(Value(ValueKind::LVALUE, result_type, get_value(value, expr->location)));
     }
 
     virtual VisitExpressionOutput visit(EntityExpr* expr) override {
@@ -1173,6 +1193,9 @@ struct Emitter: Visitor {
             }
 
             auto int_type = unqualified_type_cast<IntegerType>(type);
+
+            // Don't pend destructor because result is always enum type
+
             return VisitExpressionOutput(Value::of_int(int_type, enum_constant->value).bit_cast(result_type));
 
         }
@@ -1187,8 +1210,9 @@ struct Emitter: Visitor {
                         declarator->message_see_declaration();
                         pause_messages();
                     } else {
+                        // Don't pend destructor because result is always lvalue
                         return VisitExpressionOutput(Value(ValueKind::LVALUE, declarator->type,
-                            LLVMBuildGEP2(builder, this_type->llvm_type(), get_lvalue(this_value), variable->member->gep_indices.data(), variable->member->gep_indices.size(), "")));
+                            LLVMBuildGEP2(builder, this_type->llvm_type(), get_address(this_value), variable->member->gep_indices.data(), variable->member->gep_indices.size(), "")));
                     }
                 }
             }
@@ -1196,6 +1220,7 @@ struct Emitter: Visitor {
         
         if (auto entity = declarator->entity()) {
             if (entity->value.kind == ValueKind::LVALUE) {
+                // Don't pend destructor because result is always lvalue
                 return VisitExpressionOutput(entity->value);
             }
         }
@@ -1210,12 +1235,14 @@ struct Emitter: Visitor {
             pause_messages();
         }
 
+        // Don't pend destructor because an error was reported
+
         return VisitExpressionOutput(Value::of_recover(declarator->type));
     }
 
     virtual VisitExpressionOutput visit(IncDecExpr* expr) override {
         auto lvalue = accept_expr(expr->expr).value.unqualified();
-        auto before_rvalue = get_rvalue(lvalue, expr->location);
+        auto before_rvalue = get_value(lvalue, expr->location);
 
         const Type* result_type = lvalue.type;
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
@@ -1233,13 +1260,16 @@ struct Emitter: Visitor {
         }
 
         store(lvalue, after_rvalue, expr->location);
+
+        // Don't pend destructor because type is not structured
+
         return VisitExpressionOutput(expr->postfix ? Value(result_type, before_rvalue) : lvalue);
     }
 
     Value emit_object_of_member_expr(MemberExpr* expr) {
         auto object = accept_expr(expr->object).value;
         if (auto pointer_type = unqualified_type_cast<PointerType>(object.type)) {
-            object = Value(ValueKind::LVALUE, pointer_type->base_type, get_rvalue(object, expr->object->location));
+            object = Value(ValueKind::LVALUE, pointer_type->base_type, get_value(object, expr->object->location));
         }
         return object;
     }
@@ -1264,19 +1294,27 @@ struct Emitter: Visitor {
                 
                 auto llvm_struct_type = struct_type->llvm_type();
 
-                output.value = Value(ValueKind::LVALUE, result_type, LLVMBuildInBoundsGEP2(builder, llvm_struct_type, get_lvalue(object),
+                output.value = Value(ValueKind::LVALUE, result_type, LLVMBuildInBoundsGEP2(builder, llvm_struct_type, get_address(object),
                                                                                   member_variable->member->gep_indices.data(), member_variable->member->gep_indices.size(),
                                                                                   expr->identifier.c_str()));
                 output.value.bit_field = member_variable->member->bit_field.get();
+
+                // Don't pend destructor because result is always lvalue
                 return output;
             }
             
             if (auto member_entity = expr->member->entity()) {
                 assert(member_entity->value.is_valid());
                 output.value = member_entity->value;
+
+                // Don't pend destructor because result is always lvalue
+                assert(output.value.kind == ValueKind::LVALUE);
+
                 return output;
             }
         }
+
+        // Don't pend destructor because result is zero
 
         return VisitExpressionOutput(Value::of_zero_int());
     }
@@ -1285,7 +1323,10 @@ struct Emitter: Visitor {
         auto value = accept_expr(expr->expr).value.unqualified();
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(value.type);
 
-        return VisitExpressionOutput(value.type, get_rvalue(value, expr->expr->location, true));
+        auto result = Value(value.type, get_value(value, expr->expr->location, true));
+        pend_destructor(result);
+
+        return VisitExpressionOutput(result);
     }
 
     virtual VisitExpressionOutput visit(SizeOfExpr* expr) override {
@@ -1299,6 +1340,8 @@ struct Emitter: Visitor {
         }
 
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
+
+        // Don't pend destructor because result is integer
 
         return VisitExpressionOutput(result_type, Value::of_size(LLVMStoreSizeOfType(llvm_target_data, expr->type->llvm_type())).get_const());
     }
@@ -1317,22 +1360,28 @@ struct Emitter: Visitor {
             auto result_type = pointer_type->base_type;
             if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-            LLVMValueRef index = get_rvalue(index_value, expr->right->location);
+            LLVMValueRef index = get_value(index_value, expr->right->location);
+
+            // Don't pend destructor because result is lvalue
+
             return VisitExpressionOutput(Value(
                 ValueKind::LVALUE,
                 result_type,
-                LLVMBuildGEP2(builder, result_type->llvm_type(), get_rvalue(left_value, expr->left->location), &index, 1, "")));
+                LLVMBuildGEP2(builder, result_type->llvm_type(), get_value(left_value, expr->left->location), &index, 1, "")));
         }
 
         if (auto array_type = unqualified_type_cast<ArrayType>(left_value.type)) {
             auto result_type = array_type->element_type;
             if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-            LLVMValueRef indices[2] = { zero, get_rvalue(index_value, expr->right->location) };
+            LLVMValueRef indices[2] = { zero, get_value(index_value, expr->right->location) };
+
+            // Don't pend destructor because result is lvalue
+
             return VisitExpressionOutput(Value(
                 ValueKind::LVALUE,
                 result_type,
-                LLVMBuildGEP2(builder, array_type->llvm_type(), get_lvalue(left_value), indices, 2, "")));
+                LLVMBuildGEP2(builder, array_type->llvm_type(), get_address(left_value), indices, 2, "")));
         }
 
         return VisitExpressionOutput();

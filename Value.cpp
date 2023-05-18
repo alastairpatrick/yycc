@@ -20,7 +20,7 @@ Value Value::of_recover(const Type* type) {
     }
 }
 
-LLVMValueRef Value::dangerously_get_rvalue(LLVMBuilderRef builder, EmitOutcome outcome) const {
+LLVMValueRef Value::dangerously_get_value(LLVMBuilderRef builder, EmitOutcome outcome) const {
     assert(kind != ValueKind::INVALID);
     assert(type != &VoidType::it);
     assert(!dynamic_cast<const FunctionType*>(type));
@@ -37,7 +37,7 @@ LLVMValueRef Value::dangerously_get_rvalue(LLVMBuilderRef builder, EmitOutcome o
         }
     }
 
-    if (kind == ValueKind::RVALUE) return llvm;
+    if (!has_address) return llvm;
 
     auto value = LLVMBuildLoad2(builder, bit_field ? bit_field->storage_type : type->llvm_type(), llvm, "");
     if (qualifiers & QUALIFIER_VOLATILE) {
@@ -64,7 +64,7 @@ LLVMValueRef Value::dangerously_get_rvalue(LLVMBuilderRef builder, EmitOutcome o
 }
 
 void Value::dangerously_store(LLVMBuilderRef builder, LLVMValueRef new_rvalue) const {
-    assert(llvm && kind == ValueKind::LVALUE);
+    assert(llvm && has_address);
 
     if (bit_field) {
         // value = (value << bits_to_right) & mask
@@ -84,3 +84,11 @@ void Value::dangerously_store(LLVMBuilderRef builder, LLVMValueRef new_rvalue) c
                     qualifiers & QUALIFIER_VOLATILE);
 }
 
+void Value::make_addressible(LLVMBuilderRef alloc_builder, LLVMBuilderRef store_builder) {
+    if (has_address) return;
+
+    auto storage = LLVMBuildAlloca(alloc_builder, type->llvm_type(), "");
+    LLVMBuildStore(store_builder, llvm, storage);
+    llvm = storage;
+    has_address = true;
+}

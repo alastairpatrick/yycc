@@ -28,22 +28,31 @@ struct BitField;
 
 struct Value {
     ValueKind kind = ValueKind::INVALID;
-    bool is_null_literal{};
+    struct {
+        bool is_null_literal  : 1 = false;
+        bool has_address      : 1 = false;
+    };
     QualifierSet qualifiers{};
     const Type* type{};
     BitField* bit_field{};
 
     Value() = default;
 
-    explicit Value(const Type* type, LLVMValueRef llvm = nullptr)
-            : kind(llvm ? ValueKind::RVALUE : ValueKind::TYPE_ONLY), llvm(llvm), type(type), qualifiers(type->qualifiers()) {
+    explicit Value(const Type* type)
+        : kind(ValueKind::TYPE_ONLY), type(type), qualifiers(type->qualifiers()) {
+        assert(type);
+    }
+
+    Value(const Type* type, LLVMValueRef llvm)
+        : kind(ValueKind::RVALUE), llvm(llvm), type(type), qualifiers(type->qualifiers()) {
         assert(type);
     }
 
     Value(ValueKind kind, const Type* type, LLVMValueRef llvm)
         : kind(kind), llvm(llvm), type(type), qualifiers(type->qualifiers()) {
         assert(type);
-        assert(kind == ValueKind::TYPE_ONLY || llvm);
+        assert(llvm);
+        has_address = kind == ValueKind::LVALUE;
     }
 
     static Value of_null(const Type* type) {
@@ -68,11 +77,11 @@ struct Value {
     }
 
     bool is_const() const {
-        return kind == ValueKind::RVALUE && LLVMIsConstant(llvm);
+        return !has_address && LLVMIsConstant(llvm);
     }
 
     bool is_const_integer() const{
-        return kind == ValueKind::RVALUE && LLVMIsAConstantInt(llvm);
+        return !has_address && LLVMIsAConstantInt(llvm);
     }
 
     LLVMValueRef get_const() const{
@@ -81,17 +90,20 @@ struct Value {
     }
 
     // Use Emitter::get_lvalue instead
-    LLVMValueRef dangerously_get_lvalue() const{
-        assert(llvm && kind == ValueKind::LVALUE);
+    LLVMValueRef dangerously_get_address() const{
+        assert(llvm);
+        assert(has_address);
         assert(!bit_field);
         return llvm;
     }
 
     // Use ValueWrangler::get_rvalue instead
-    LLVMValueRef dangerously_get_rvalue(LLVMBuilderRef builder, EmitOutcome outcome) const;
+    LLVMValueRef dangerously_get_value(LLVMBuilderRef builder, EmitOutcome outcome) const;
 
     // Use ValueWrangler::store instead
     void dangerously_store(LLVMBuilderRef builder, LLVMValueRef new_rvalue) const;
+
+    void make_addressible(LLVMBuilderRef alloc_builder, LLVMBuilderRef store_builder);
 
     Value unqualified() const {
         return bit_cast(type->unqualified());

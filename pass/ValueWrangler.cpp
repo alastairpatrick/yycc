@@ -45,16 +45,16 @@ ConvKind ValueWrangler::check_pointer_conversion(const Type* source_base_type, c
     return result;
 }
 
-LLVMValueRef ValueWrangler::get_rvalue(const Value &value, const Location& location, bool for_move_expr) {
+LLVMValueRef ValueWrangler::get_value(const Value &value, const Location& location, bool for_move_expr) {
     if (value.type == &VoidType::it) {
         return nullptr;
     }
 
-    auto rvalue = value.dangerously_get_rvalue(builder, outcome);
+    auto rvalue = value.dangerously_get_value(builder, outcome);
 
     if (auto structured_type = unqualified_type_cast<StructuredType>(value.type->unqualified())) {
         if (value.kind == ValueKind::LVALUE && structured_type->destructor) {
-            LLVMValueRef lvalue = value.dangerously_get_lvalue();
+            LLVMValueRef lvalue = value.dangerously_get_address();
             LLVMBuildStore(builder, LLVMConstNull(structured_type->llvm_type()), lvalue);
 
             if (!for_move_expr) {
@@ -79,15 +79,15 @@ void ValueWrangler::store(const Value& dest, LLVMValueRef source_rvalue, const L
 }
 
 
-LLVMValueRef ValueWrangler::get_rvalue(const Value &value) {
-    return get_rvalue(value, location, false);
+LLVMValueRef ValueWrangler::get_value(const Value &value) {
+    return get_value(value, location, false);
 }
 
 void ValueWrangler::convert_array_to_pointer() {
     if (auto source_type = unqualified_type_cast<ResolvedArrayType>(value.type)) {
         if (value.kind == ValueKind::LVALUE) {
             auto pointer_type = source_type->element_type->pointer_to();
-            value = Value(pointer_type, value.dangerously_get_lvalue());
+            value = Value(pointer_type, value.dangerously_get_address());
         }
     }
 }
@@ -139,9 +139,9 @@ const Type* ValueWrangler::visit(const PointerType* dest_type) {
 
     if (auto source_type = unqualified_type_cast<FunctionType>(value.type)) {
         ConvKind kind = dest_type->base_type->unqualified() == source_type ? ConvKind::IMPLICIT : ConvKind::EXPLICIT;
-        result = ConvertTypeResult(dest_type, value.dangerously_get_lvalue(), kind);
+        result = ConvertTypeResult(dest_type, value.dangerously_get_address(), kind);
     } else if (auto source_type = unqualified_type_cast<IntegerType>(value.type)) {
-        result = ConvertTypeResult(dest_type, LLVMBuildIntToPtr(builder, get_rvalue(value), dest_type->llvm_type(), ""), ConvKind::EXPLICIT);
+        result = ConvertTypeResult(dest_type, LLVMBuildIntToPtr(builder, get_value(value), dest_type->llvm_type(), ""), ConvKind::EXPLICIT);
     } else if (auto source_type = unqualified_type_cast<PointerType>(value.type)) {
         result = ConvertTypeResult(value.bit_cast(dest_type), check_pointer_conversion(source_type->base_type, dest_type->base_type));
     }
@@ -154,16 +154,16 @@ const Type* ValueWrangler::visit(const IntegerType* dest_type) {
     convert_enum_to_int();
 
     if (auto source_type = unqualified_type_cast<IntegerType>(value.type)) {
-        result = ConvertTypeResult(dest_type, LLVMBuildIntCast2(builder, get_rvalue(value), dest_type->llvm_type(), source_type->is_signed(), ""));
+        result = ConvertTypeResult(dest_type, LLVMBuildIntCast2(builder, get_value(value), dest_type->llvm_type(), source_type->is_signed(), ""));
     } else if (auto source_type = unqualified_type_cast<FloatingPointType>(value.type)) {
         if (dest_type->is_signed()) {
-            result = ConvertTypeResult(dest_type, LLVMBuildFPToSI(builder, get_rvalue(value), dest_type->llvm_type(), ""));
+            result = ConvertTypeResult(dest_type, LLVMBuildFPToSI(builder, get_value(value), dest_type->llvm_type(), ""));
         } else {
-            result = ConvertTypeResult(dest_type, LLVMBuildFPToUI(builder, get_rvalue(value), dest_type->llvm_type(), ""));
+            result = ConvertTypeResult(dest_type, LLVMBuildFPToUI(builder, get_value(value), dest_type->llvm_type(), ""));
         }
     } else if (auto source_type = unqualified_type_cast<PointerType>(value.type)) {
         auto kind = dest_type->size == IntegerSize::BOOL ? ConvKind::IMPLICIT : ConvKind::EXPLICIT;
-        result = ConvertTypeResult(dest_type, LLVMBuildPtrToInt(builder, get_rvalue(value), dest_type->llvm_type(), ""), kind);
+        result = ConvertTypeResult(dest_type, LLVMBuildPtrToInt(builder, get_value(value), dest_type->llvm_type(), ""), kind);
     }
 
     return nullptr;
@@ -173,12 +173,12 @@ const Type* ValueWrangler::visit(const FloatingPointType* dest_type) {
     convert_enum_to_int();
 
     if (unqualified_type_cast<FloatingPointType>(value.type)) {
-        result = ConvertTypeResult(dest_type, LLVMBuildFPCast(builder, get_rvalue(value), dest_type->llvm_type(), ""));
+        result = ConvertTypeResult(dest_type, LLVMBuildFPCast(builder, get_value(value), dest_type->llvm_type(), ""));
     } else if (auto source_type = unqualified_type_cast<IntegerType>(value.type)) {
         if (source_type->is_signed()) {
-            result = ConvertTypeResult(dest_type, LLVMBuildSIToFP(builder, get_rvalue(value), dest_type->llvm_type(), ""));
+            result = ConvertTypeResult(dest_type, LLVMBuildSIToFP(builder, get_value(value), dest_type->llvm_type(), ""));
         } else {
-            result = ConvertTypeResult(dest_type, LLVMBuildUIToFP(builder, get_rvalue(value), dest_type->llvm_type(), ""));
+            result = ConvertTypeResult(dest_type, LLVMBuildUIToFP(builder, get_value(value), dest_type->llvm_type(), ""));
         }
     }
     return nullptr;
