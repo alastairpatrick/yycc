@@ -817,8 +817,6 @@ struct Emitter: Visitor {
               default:
                 assert(false); // TODO
                 break;
-              case '=':
-                return right_value;
               case '+':
               case TOK_ADD_ASSIGN:
                 return Value(result_type, LLVMBuildAdd(builder, left_rvalue, right_rvalue, ""));
@@ -871,8 +869,6 @@ struct Emitter: Visitor {
             switch (expr->op) {
               default:
                 assert(false); // TODO
-              case '=':
-                return right_value;
               case '+':
               case TOK_ADD_ASSIGN:
                 return Value(result_type, LLVMBuildFAdd(builder, left_rvalue, right_rvalue, ""));
