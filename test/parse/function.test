@@ -119,13 +119,13 @@ EXPECT_AST
 BEGIN Function with pass-by-reference parameter (1)
 void foo(int x&);
 EXPECT_AST
-[["fun","E",["F","V",["Pr","Si"]],"foo"]]
+[["fun","E",["F","V",["Bl","Si"]],"foo"]]
 
 
 BEGIN Function with pass-by-reference parameter (2)
 void foo(int (x)&);
 EXPECT_AST
-[["fun","E",["F","V",["Pr","Si"]],"foo"]]
+[["fun","E",["F","V",["Bl","Si"]],"foo"]]
 
 
 BEGIN Pointer to pass-by-reference is invalid
@@ -158,6 +158,18 @@ EXPECT_MESSAGE
 :1:9: error pass-by-reference '&' only valid on function parameters
 EXPECT_AST
 [["fun","E",["F","V","Si"],"foo"]]
+
+
+BEGIN Function with pass-by-rvalue-reference parameter (1)
+void foo(int x&&);
+EXPECT_AST
+[["fun","E",["F","V",["Br","Si"]],"foo"]]
+
+
+BEGIN Function with pass-by-rvalue-reference parameter (2)
+void foo(int (x)&&);
+EXPECT_AST
+[["fun","E",["F","V",["Br","Si"]],"foo"]]
 
 
 BEGIN Function definition with local variables

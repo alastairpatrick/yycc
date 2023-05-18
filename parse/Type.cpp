@@ -13,6 +13,7 @@
 
 // Type codes
 // A array
+// B by reference
 // C char
 // D declaration
 // F float: Ff float, Fd double, Fl long double
@@ -360,9 +361,9 @@ PointerType::PointerType(const Type* base_type)
 }
 
 
-const PassByReferenceType* PassByReferenceType::of(const Type* base_type) {
+const PassByReferenceType* PassByReferenceType::of(const Type* base_type, Kind kind) {
     auto& type_context = TranslationUnitContext::it->type;
-    return type_context.get_pass_by_reference_type(base_type);
+    return type_context.get_pass_by_reference_type(base_type, kind);
 }
 
 const Type* PassByReferenceType::accept(TypeVisitor& visitor) const {
@@ -383,11 +384,19 @@ void PassByReferenceType::message_print(ostream& stream, int section) const {
 }
 
 void PassByReferenceType::print(std::ostream& stream) const {
-    stream << "[\"Pr\", " << base_type << ']';
+    stream << "[\"B";
+    
+    if (kind == Kind::LVALUE) {
+        stream << 'l';
+    } else {
+        stream << 'r';
+    }
+
+    stream << "\", " << base_type << ']';
 }
 
-PassByReferenceType::PassByReferenceType(const Type* base_type)
-    : base_type(base_type) {
+PassByReferenceType::PassByReferenceType(const Type* base_type, Kind kind)
+    : base_type(base_type), kind(kind) {
 }
 
 

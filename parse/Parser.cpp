@@ -807,16 +807,21 @@ DeclaratorTransform Parser::parse_declarator_transform(ParseDeclaratorFlags flag
     for (int depth = 0; token; ++depth) {
         auto location = preprocessor.location();
 
-        if (consume('&')) {
+        if (token == '&' || token == TOK_AND_OP) {
+            PassByReferenceType::Kind kind = token == '&' ? PassByReferenceType::Kind::LVALUE : PassByReferenceType::Kind::RVALUE;
+
             if (identifiers.scope_kind() != ScopeKind::PROTOTYPE) {
-                message(Severity::ERROR, location) << "pass-by-reference '&' only valid on function parameters\n";
+                message(Severity::ERROR, location) << "pass-by-reference '" << preprocessor.text() << "' only valid on function parameters\n";
             } else if (pass_by_reference_too_late) {
-                message(Severity::ERROR, location) << "pass-by-reference '&' at invalid position\n";
+                message(Severity::ERROR, location) << "pass-by-reference '" << preprocessor.text() << "' at invalid position\n";
             } else {
-                right_transform = [right_transform](const Type* type) {
-                    return PassByReferenceType::of(type);
+                right_transform = [right_transform, kind](const Type* type) {
+                    return PassByReferenceType::of(type, kind);
                 };
             }
+
+            consume();
+
         } else if (consume('[')) {
             // C99 6.7.5.3p7
             SpecifierSet array_qualifier_set{};

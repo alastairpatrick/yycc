@@ -1,6 +1,5 @@
 #include "TypeContext.h"
 #include "ArrayType.h"
-#include "Type.h"
 
 TypeContext::TypeContext() {
 }
@@ -21,10 +20,16 @@ const PointerType* TypeContext::get_pointer_type(const Type* base_type) {
     return derived.pointer.get();
 }
 
-const PassByReferenceType* TypeContext::get_pass_by_reference_type(const Type* base_type) {
+const PassByReferenceType* TypeContext::get_pass_by_reference_type(const Type* base_type, PassByReferenceType::Kind kind) {
     auto& derived = derived_types[base_type];
-    if (!derived.pass_by_reference) derived.pass_by_reference.reset(new PassByReferenceType(base_type));
-    return derived.pass_by_reference.get();
+    switch (kind) {
+      case PassByReferenceType::Kind::LVALUE:
+        if (!derived.pass_by_lvalue_reference) derived.pass_by_lvalue_reference.reset(new PassByReferenceType(base_type, kind));
+        return derived.pass_by_lvalue_reference.get();
+      case PassByReferenceType::Kind::RVALUE:
+        if (!derived.pass_by_rvalue_reference) derived.pass_by_rvalue_reference.reset(new PassByReferenceType(base_type, kind));
+        return derived.pass_by_rvalue_reference.get();
+    }
 }
 
 const ResolvedArrayType* TypeContext::get_array_type(ArrayKind kind, const Type* element_type, unsigned long long size) {

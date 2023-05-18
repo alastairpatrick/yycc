@@ -360,6 +360,7 @@ direct_declarator
 	| direct_declarator '(' ')'
 	| direct_declarator '(' identifier_list ')'
 	| direct_declarator '&'             // ADDITION pass-by-reference
+	| direct_declarator TOK_AND_OP      // ADDITION pass-by-reference
 	;
 
 pointer
