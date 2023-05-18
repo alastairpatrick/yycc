@@ -207,13 +207,30 @@ const Type* ValueWrangler::visit(const VoidType* dest_type) {
 }
 
 
-ConvertTypeResult ValueWrangler::convert_to_type(const Value& value, const Type* dest_type, const Location& location) {
+ConvertTypeResult ValueWrangler::convert_to_type(const Value& value, const Type* dest_type, ConvKind kind, const Location& location) {
     assert(dest_type->qualifiers() == 0);
 
     this->value = value;
     this->location = location;
 
     dest_type->accept(*this);
+    
+    if (!result.value.is_valid()) {
+        message(Severity::ERROR, location) << "cannot convert from type '" << PrintType(value.type)
+                                            << "' to type '" << PrintType(dest_type) << "'\n";
+        pause_messages();
+        if (dest_type != &VoidType::it) {
+            result.value = Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
+        } else {
+            result.value = Value::of_zero_int();
+        }
+    } else if ((result.conv_kind != ConvKind::IMPLICIT) && kind == ConvKind::IMPLICIT) {
+        auto severity = result.conv_kind == ConvKind::C_IMPLICIT ? Severity::CONTEXTUAL_ERROR : Severity::ERROR;
+        message(severity, location) << "conversion from type '" << PrintType(value.type)
+                                    << "' to type '" << PrintType(dest_type) << "' requires explicit cast\n";
+    }
+
+    assert(result.value.type == dest_type);
 
     return result;
 }

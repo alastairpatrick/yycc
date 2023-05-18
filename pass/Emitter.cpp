@@ -231,26 +231,7 @@ struct Emitter: Visitor {
             return result;
         }
 
-        auto output = wrangler.convert_to_type(value, dest_type, location);
-        auto result = output.value;
-
-        if (!result.is_valid()) {
-            message(Severity::ERROR, location) << "cannot convert from type '" << PrintType(value.type)
-                                               << "' to type '" << PrintType(dest_type) << "'\n";
-            pause_messages();
-            if (dest_type != &VoidType::it) {
-                result = Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
-            } else {
-                return Value::of_zero_int();
-            }
-        } else if ((output.conv_kind != ConvKind::IMPLICIT) && kind == ConvKind::IMPLICIT) {
-            auto severity = output.conv_kind == ConvKind::C_IMPLICIT ? Severity::CONTEXTUAL_ERROR : Severity::ERROR;
-            message(severity, location) << "conversion from type '" << PrintType(value.type)
-                                        << "' to type '" << PrintType(dest_type) << "' requires explicit cast\n";
-        }
-
-        assert(result.type == dest_type);
-        return result;
+        return wrangler.convert_to_type(value, dest_type, kind, location).value;
     }
 
     LLVMValueRef convert_to_rvalue(const Value& value, const Type* dest_type, ConvKind kind, const Location& location) {
