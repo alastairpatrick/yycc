@@ -33,21 +33,23 @@ LLVMValueRef Value::dangerously_get_rvalue(LLVMBuilderRef builder) const {
         LLVMSetVolatile(value, true);
     }
 
-    if (!bit_field) return value;
+    if (bit_field) {
+        auto integer_type = dynamic_cast<const IntegerType*>(type);
 
-    auto integer_type = dynamic_cast<const IntegerType*>(type);
+        value = LLVMBuildAnd(builder, value, bit_field->mask, "");
 
-    value = LLVMBuildAnd(builder, value, bit_field->mask, "");
+        if (integer_type->is_signed()) {
+            // value = (value << bits_to_left) >> (bits_to_left + bits_to_right)
+            value = LLVMBuildAShr(builder, LLVMBuildShl(builder, value, bit_field->bits_to_left, ""), LLVMConstAdd(bit_field->bits_to_left, bit_field->bits_to_right), "");
+        } else {
+            // value = value >> bits_to_right
+            value = LLVMBuildLShr(builder, value, bit_field->bits_to_right, "");
+        }
 
-    if (integer_type->is_signed()) {
-        // value = (value << bits_to_left) >> (bits_to_left + bits_to_right)
-        value = LLVMBuildAShr(builder, LLVMBuildShl(builder, value, bit_field->bits_to_left, ""), LLVMConstAdd(bit_field->bits_to_left, bit_field->bits_to_right), "");
-    } else {
-        // value = value >> bits_to_right
-        value = LLVMBuildLShr(builder, value, bit_field->bits_to_right, "");
+        return LLVMBuildIntCast2(builder, value, type->llvm_type(), integer_type->is_signed(), "");
     }
 
-    return LLVMBuildIntCast2(builder, value, type->llvm_type(), integer_type->is_signed(), "");
+    return value;
 }
 
 LLVMValueRef Value::dangerously_get_rvalue(LLVMBuilderRef builder, EmitOutcome outcome) const {
