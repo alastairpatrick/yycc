@@ -25,12 +25,23 @@ ostream& message(Severity severity, const Location& location, bool filter) {
     return stream;
 }
 
-void pause_messages() {
+bool pause_messages() {
     auto context = TranslationUnitContext::it;
+    bool was_active = context->messages_active;
     context->messages_active = false;
+    return was_active;
 }
 
 void resume_messages() {
     auto context = TranslationUnitContext::it;
     context->messages_active = true;
 }
+
+ScopedMessagePauser::ScopedMessagePauser() {
+    was_active = pause_messages();
+}
+
+ScopedMessagePauser::~ScopedMessagePauser() {
+    if (was_active) resume_messages();
+}
+

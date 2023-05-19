@@ -1254,7 +1254,11 @@ struct Emitter: Visitor {
 
         if (auto variable = declarator->variable()) {
             if (outcome == EmitOutcome::FOLD && variable->initializer && (declarator->type->qualifiers() & QUALIFIER_CONST)) {
-                return VisitExpressionOutput(convert_to_type(fold_expr(variable->initializer), result_type, ConvKind::IMPLICIT, variable->initializer->location));
+                try {
+                    ScopedMessagePauser pauser;
+                    return VisitExpressionOutput(convert_to_type(emit_expr(variable->initializer).value, result_type, ConvKind::IMPLICIT, variable->initializer->location));
+                } catch (FoldError&) {
+                }
             }
 
             if (outcome == EmitOutcome::IR && this_value.is_valid() && !variable->value.is_valid()) {

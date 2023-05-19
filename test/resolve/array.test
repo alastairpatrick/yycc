@@ -12,6 +12,48 @@ EXPECT_AST
 [["var","ES",["A","Si",2],"x"]]
 
 
+BEGIN Array size can be const qualified global
+#var size
+int x[size];
+const int size = 2;
+EXPECT_AST
+[["var","ES",["A","Si",2],"x"]
+,["var","ES",["Qc","Si"],"size",2]]
+
+
+BEGIN Array size can be const qualified global where non-integer initializer is converted to integer
+#var size
+int x[size];
+const int size = 2.1;
+EXPECT_AST
+[["var","ES",["A","Si",2],"x"]
+,["var","ES",["Qc","Si"],"size",["Fd",2.1]]]
+
+
+BEGIN Array types local variable array size may be const qualified local initalized with constant expression
+void f() {
+    const int as = 3;
+    int a[as];
+}
+EXPECT_AST
+[["fun","E",["F","V"],"f",[],["block",[
+    ["var","",["Qc","Si"],"as",3]
+    ,["var","",["A","Si",3],"a"]
+]]]]
+
+
+BEGIN Constant integer array size may not be variable with non-constant expression initializer
+void f() {
+    int var = 2;
+    const int not_const = var;
+    int a[not_const];
+}
+EXPECT_MESSAGE
+:4:11: error variable 'not_const' is not a constant
+:3:15: see definition of variable 'not_const'
+END
+
+
 BEGIN Array size must be constant expression (1)
 int x[1 = 1];
 EXPECT_MESSAGE

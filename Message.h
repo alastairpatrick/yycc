@@ -11,7 +11,13 @@ enum class Severity {
 };
 
 ostream& message(Severity severity, const Location& location, bool filter = true);
-void pause_messages();
+bool pause_messages();
 void resume_messages();
+
+struct ScopedMessagePauser {
+    bool was_active;
+    ScopedMessagePauser();
+    ~ScopedMessagePauser();
+};
 
 #endif
