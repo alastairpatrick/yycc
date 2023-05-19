@@ -680,6 +680,17 @@ struct Emitter: Visitor {
         auto result_type = IntegerType::of_bool();
         if (outcome == EmitOutcome::TYPE) return Value(result_type);
 
+        if (outcome == EmitOutcome::FOLD) {
+            auto llvm_left = convert_to_rvalue(left_value, IntegerType::of_bool(), ConvKind::IMPLICIT, left_location);
+            auto llvm_right = convert_to_rvalue(expr->right, IntegerType::of_bool(), ConvKind::IMPLICIT);
+
+            if (expr->op == TOK_AND_OP) {
+                return Value(result_type, LLVMBuildAnd(builder, llvm_left, llvm_right, ""));
+            } else {
+                return Value(result_type, LLVMBuildOr(builder, llvm_left, llvm_right, ""));
+            }
+        }
+
         LLVMBasicBlockRef alt_blocks[2] = {
             LLVMGetInsertBlock(builder),
             append_block(""),
@@ -1145,6 +1156,8 @@ struct Emitter: Visitor {
     }
 
     virtual VisitExpressionOutput visit(ConditionExpr* expr) override {
+        auto context = TranslationUnitContext::it;
+
         auto then_type = get_expr_type(expr->then_expr)->unqualified();
         auto else_type = get_expr_type(expr->else_expr)->unqualified();
 
@@ -1158,13 +1171,27 @@ struct Emitter: Visitor {
 
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
+        auto condition_rvalue = convert_to_rvalue(expr->condition, IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL), ConvKind::IMPLICIT);
+
+        if (outcome == EmitOutcome::FOLD) {
+            return VisitExpressionOutput(result_type, LLVMBuildSelect(builder, condition_rvalue,
+                                                                      convert_to_rvalue(expr->then_expr, result_type, ConvKind::IMPLICIT),
+                                                                      convert_to_rvalue(expr->else_expr, result_type, ConvKind::IMPLICIT),
+                                                                      ""));
+        }
+
+        if (condition_rvalue == context->llvm_true) {
+            return VisitExpressionOutput(convert_to_type(expr->then_expr, result_type, ConvKind::IMPLICIT));
+        } else if (condition_rvalue == context->llvm_false) {
+            return VisitExpressionOutput(convert_to_type(expr->else_expr, result_type, ConvKind::IMPLICIT));
+        }
+
         LLVMBasicBlockRef alt_blocks[2] = {
             append_block("then"),
             append_block("else"),
         };
         auto merge_block = append_block("merge");
 
-        auto condition_rvalue = convert_to_rvalue(expr->condition, IntegerType::of(IntegerSignedness::UNSIGNED, IntegerSize::BOOL), ConvKind::IMPLICIT);
         LLVMBuildCondBr(builder, condition_rvalue, alt_blocks[0], alt_blocks[1]);
 
         LLVMValueRef alt_values[2];

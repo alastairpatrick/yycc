@@ -308,6 +308,34 @@ define i1 @f(float %0, float %1) {
 END
 
 
+BEGIN Logical AND constant expression (1)
+int x = 0 && 0;
+EXPECT_IR
+@x = global i32 0
+END
+
+
+BEGIN Logical AND constant expression (2)
+int x = 0 && 1;
+EXPECT_IR
+@x = global i32 0
+END
+
+
+BEGIN Logical AND constant expression (3)
+int x = 1 && 0;
+EXPECT_IR
+@x = global i32 0
+END
+
+
+BEGIN Logical AND constant expression (4)
+int x = 1 && 1;
+EXPECT_IR
+@x = global i32 1
+END
+
+
 BEGIN Logical OR
 _Bool f(int* x) {
     float y[1];
@@ -330,6 +358,34 @@ define i1 @f(ptr %0) {
   %7 = phi i1 [ %3, %1 ], [ %5, %4 ]
   ret i1 %7
 }
+END
+
+
+BEGIN Logical AND constant expression (1)
+int x = 0 || 0;
+EXPECT_IR
+@x = global i32 0
+END
+
+
+BEGIN Logical AND constant expression (2)
+int x = 0 || 1;
+EXPECT_IR
+@x = global i32 1
+END
+
+
+BEGIN Logical AND constant expression (3)
+int x = 1 || 0;
+EXPECT_IR
+@x = global i32 1
+END
+
+
+BEGIN Logical AND constant expression (4)
+int x = 1 || 1;
+EXPECT_IR
+@x = global i32 1
 END
 
 

@@ -45,7 +45,57 @@ END
 
 REM ******** ConditionExpr ********
 
-BEGIN Condition operator applies usual arithmetic conversions
+BEGIN Condition expression in constant expression (1)
+int a = 1 ? 2 : 3;
+EXPECT_IR
+@a = global i32 2
+END
+
+
+BEGIN Condition expression in constant expression (2)
+int a = 0 ? 2 : 3;
+EXPECT_IR
+@a = global i32 3
+END
+
+
+BEGIN Emits select instruction for condition expression where condition is a constant expressions (1)
+int g();
+int h();
+int f() {
+    return 1 ? g() : h();
+}
+EXPECT_IR
+declare i32 @g()
+
+declare i32 @h()
+
+define i32 @f() {
+  %1 = call i32 @g()
+  ret i32 %1
+}
+END
+
+
+BEGIN Emits select instruction for condition expression where condition is a constant expressions (2)
+int g();
+int h();
+int f() {
+    return 0 ? g() : h();
+}
+EXPECT_IR
+declare i32 @g()
+
+declare i32 @h()
+
+define i32 @f() {
+  %1 = call i32 @h()
+  ret i32 %1
+}
+END
+
+
+BEGIN Condition expression applies usual arithmetic conversions
 int f(_Bool c, _Bool a, short b) {
     return c ? (a+1) : (b-1);
 }
