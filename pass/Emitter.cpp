@@ -240,6 +240,8 @@ struct Emitter: ValueWrangler, Visitor {
         unreachable_block = append_block("");
         LLVMPositionBuilderAtEnd(builder, entry_block);
 
+        push_scope();
+
         this_value = Value();
         for (size_t i = 0; i < entity->parameters.size(); ++i) {
             auto param = entity->parameters[i];
@@ -249,10 +251,16 @@ struct Emitter: ValueWrangler, Visitor {
 
             if (auto reference_type = dynamic_cast<const PassByReferenceType*>(param->type)) {
                 param_entity->value = Value(ValueKind::LVALUE, reference_type->base_type, llvm_param);
+
+                if (reference_type->kind == PassByReferenceType::Kind::RVALUE) {
+                    pend_destructor(param_entity->value);
+                }
             } else {
                 auto storage = LLVMBuildAlloca(builder, param->type->llvm_type(), c_str(param->identifier));
                 param_entity->value = Value(ValueKind::LVALUE, param->type, storage);
                 LLVMBuildStore(builder, llvm_param, storage);
+
+                pend_destructor(param_entity->value);
             }
 
             if (param->identifier == this_string) {
@@ -261,6 +269,8 @@ struct Emitter: ValueWrangler, Visitor {
         }
 
         accept_statement(entity->body);
+
+        pop_scope();
 
         if (function_type->return_type->unqualified() == &VoidType::it) {
             LLVMBuildRetVoid(builder);

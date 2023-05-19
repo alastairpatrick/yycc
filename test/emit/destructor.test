@@ -120,6 +120,81 @@ attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willret
 END
 
 
+BEGIN Calls destructor on parameter passed by value
+struct S {
+    int x;
+    void destructor(S&) {}
+};
+void f(S s) {
+}
+EXPECT_IR
+%S = type { i32 }
+
+define void @f(%S %0) local_unnamed_addr {
+  %s = alloca %S, align 8
+  %.fca.0.extract = extractvalue %S %0, 0
+  store i32 %.fca.0.extract, ptr %s, align 8
+  call void @destructor(ptr %s)
+  ret void
+}
+
+; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
+define void @destructor(ptr nocapture readnone %0) #0 {
+  ret void
+}
+
+attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
+END
+
+
+BEGIN Calls destructor on parameter passed by rvalue reference
+struct S {
+    int x;
+    void destructor(S&) {}
+};
+void f(S s&&) {
+}
+EXPECT_IR
+%S = type { i32 }
+
+define void @f(ptr %0) local_unnamed_addr {
+  %.unpack = load i32, ptr %0, align 4
+  %2 = insertvalue %S undef, i32 %.unpack, 0
+  call void @destructor(ptr %0)
+  ret void
+}
+
+; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
+define void @destructor(ptr nocapture readnone %0) #0 {
+  ret void
+}
+
+attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
+END
+
+
+BEGIN Does not call destructor on parameter passed by lvalue reference
+struct S {
+    int x;
+    void destructor(S&) {}
+};
+void f(S s&) {
+}
+EXPECT_IR
+; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
+define void @f(ptr nocapture readnone %0) local_unnamed_addr #0 {
+  ret void
+}
+
+; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
+define void @destructor(ptr nocapture readnone %0) local_unnamed_addr #0 {
+  ret void
+}
+
+attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
+END
+
+
 BEGIN Move expression resets object to default state, preventing destructor
 struct S {
     int x;
