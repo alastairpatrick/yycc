@@ -40,20 +40,15 @@ struct EmitterScope {
     vector<PendingDestructor> destructors;
 };
 
-struct Emitter: Visitor {
-    EmitOutcome outcome;
+struct Emitter: ValueWrangler, Visitor {
     const EmitOptions& options;
 
-    Module* module{};
     Emitter* parent{};
-    ValueWrangler wrangler;
 
     Declarator* function_declarator{};
     const FunctionType* function_type{};
     list<EmitterScope> scopes;
-    LLVMBuilderRef builder{};
     LLVMValueRef function{};
-    LLVMBasicBlockRef entry_block{};
     LLVMBasicBlockRef unreachable_block{};
     unordered_map<InternedString, LLVMBasicBlockRef> goto_labels;
     Construct* innermost_construct{};
@@ -64,7 +59,7 @@ struct Emitter: Visitor {
     LLVMValueRef destructor_wrapper{};
 
     Emitter(Module* module, EmitOutcome outcome, const EmitOptions& options)
-        : module(module), outcome(outcome), options(options), wrangler(module, outcome), builder(wrangler.builder) {
+        : ValueWrangler(module, outcome), options(options) {
         this_string = intern_string("this");
     }
 
@@ -115,7 +110,7 @@ struct Emitter: Visitor {
 
         if (!structured_type->destructor) return false;
 
-        wrangler.make_addressable(value, entry_block);
+        make_addressable(value);
 
         auto& scope = scopes.back();
         scope.destructors.push_back(PendingDestructor(value));
@@ -132,18 +127,6 @@ struct Emitter: Visitor {
         declarator->status = DeclaratorStatus::EMITTED;
 
         return VisitDeclaratorOutput();
-    }
-
-    LLVMValueRef get_address(const Value &value) {
-        return wrangler.get_address(value);
-    }
-
-    LLVMValueRef get_value(const Value &value, const Location& location, bool for_move_expr = false) {
-        return wrangler.get_value(value, location, for_move_expr);
-    }
-
-    void store(const Value& dest, LLVMValueRef source_rvalue, const Location& location) {
-        wrangler.store(dest, source_rvalue, location);
     }
 
     LLVMBasicBlockRef append_block(const char* name) {
@@ -232,7 +215,7 @@ struct Emitter: Visitor {
     }
 
     Value convert_to_type(const Value& value, const Type* dest_type, ConvKind kind, const Location& location) {
-        return wrangler.convert_to_type(value, dest_type, kind, location).value;
+        return ValueWrangler::convert_to_type(value, dest_type, kind, location);
     }
 
     LLVMValueRef convert_to_rvalue(const Value& value, const Type* dest_type, ConvKind kind, const Location& location) {
@@ -387,7 +370,7 @@ struct Emitter: Visitor {
         auto llvm_type = type->llvm_type();
 
         if (entity->storage_duration == StorageDuration::AUTO) {
-            entity->value = wrangler.allocate_auto_storage(type, c_str(declarator->identifier), entry_block);
+            entity->value = allocate_auto_storage(type, c_str(declarator->identifier));
 
             bool has_destructor = pend_destructor(entity->value);
 
@@ -911,8 +894,8 @@ struct Emitter: Visitor {
         if (op_flags & OP_COMPARISON) {
             bool valid = false;
             if (left_pointer_type && right_pointer_type) {
-                valid = wrangler.check_pointer_conversion(left_pointer_type->base_type, right_pointer_type->base_type) == ConvKind::IMPLICIT
-                     || wrangler.check_pointer_conversion(right_pointer_type->base_type, left_pointer_type->base_type) == ConvKind::IMPLICIT;
+                valid = check_pointer_conversion(left_pointer_type->base_type, right_pointer_type->base_type) == ConvKind::IMPLICIT
+                     || check_pointer_conversion(right_pointer_type->base_type, left_pointer_type->base_type) == ConvKind::IMPLICIT;
             }
 
             if (op == TOK_EQ_OP || op == TOK_NE_OP) {
@@ -1076,7 +1059,7 @@ struct Emitter: Visitor {
                 if (pass_by_ref_type) {
                     if (param_value.kind == ValueKind::RVALUE && (pass_by_ref_type->kind == PassByReferenceType::Kind::RVALUE || expected_type->qualifiers() & QUALIFIER_CONST || (member_expr && i == 0))) {
                         param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, param_location);
-                        wrangler.make_addressable(param_value, entry_block);
+                        make_addressable(param_value);
                         llvm_params[i] = get_address(param_value);
                     } else if (param_value.kind != ValueKind::LVALUE) {
                         message(Severity::ERROR, param_location) << "rvalue type '" << PrintType(param_value.type) << "' incompatible with non-const pass-by-reference parameter type '"

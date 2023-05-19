@@ -88,7 +88,7 @@ void ValueWrangler::store(const Value& dest, LLVMValueRef source_rvalue, const L
     }
 }
     
-void ValueWrangler::position_temp_builder(LLVMBasicBlockRef entry_block) {
+void ValueWrangler::position_temp_builder() {
     auto first_insn = LLVMGetFirstInstruction(entry_block);
     if (first_insn) {
         LLVMPositionBuilderBefore(temp_builder, first_insn);
@@ -97,13 +97,13 @@ void ValueWrangler::position_temp_builder(LLVMBasicBlockRef entry_block) {
     }
 }
 
-void ValueWrangler::make_addressable(Value& value, LLVMBasicBlockRef entry_block) {
-    position_temp_builder(entry_block);
+void ValueWrangler::make_addressable(Value& value) {
+    position_temp_builder();
     value.make_addressable(temp_builder, builder);
 }
 
-Value ValueWrangler::allocate_auto_storage(const Type* type, const char* name, LLVMBasicBlockRef entry_block) {
-    position_temp_builder(entry_block);
+Value ValueWrangler::allocate_auto_storage(const Type* type, const char* name) {
+    position_temp_builder();
     auto storage = LLVMBuildAlloca(temp_builder, type->llvm_type(), name);
     return Value(ValueKind::LVALUE, type, storage);
 }
@@ -143,7 +143,7 @@ const Type* ValueWrangler::visit(const ResolvedArrayType* dest_type) {
 
             // TODO: LLVMConstArray2
             LLVMValueRef resized_array = LLVMConstArray(source_type->element_type->llvm_type(), resized_array_values.data(), resized_array_values.size());
-            result = ConvertTypeResult(dest_type, resized_array);
+            result = Value(dest_type, resized_array);
         }
     }
     return nullptr;
@@ -159,7 +159,7 @@ const Type* ValueWrangler::visit(const PointerType* dest_type) {
                 LLVMSetLinkage(global, LLVMPrivateLinkage);
                 LLVMSetInitializer(global, value.get_const());
             }
-            result = ConvertTypeResult(dest_type, global);
+            result = Value(dest_type, global);
             return nullptr;
         }
     }
@@ -167,12 +167,14 @@ const Type* ValueWrangler::visit(const PointerType* dest_type) {
     convert_array_to_pointer();
 
     if (auto source_type = unqualified_type_cast<FunctionType>(value.type)) {
-        ConvKind kind = dest_type->base_type->unqualified() == source_type ? ConvKind::IMPLICIT : ConvKind::EXPLICIT;
-        result = ConvertTypeResult(dest_type, value.dangerously_get_address(), kind);
+        conv_kind = dest_type->base_type->unqualified() == source_type ? ConvKind::IMPLICIT : ConvKind::EXPLICIT;
+        result = Value(dest_type, value.dangerously_get_address());
     } else if (auto source_type = unqualified_type_cast<IntegerType>(value.type)) {
-        result = ConvertTypeResult(dest_type, LLVMBuildIntToPtr(builder, get_value(value), dest_type->llvm_type(), ""), ConvKind::EXPLICIT);
+        conv_kind = ConvKind::EXPLICIT;
+        result = Value(dest_type, LLVMBuildIntToPtr(builder, get_value(value), dest_type->llvm_type(), ""));
     } else if (auto source_type = unqualified_type_cast<PointerType>(value.type)) {
-        result = ConvertTypeResult(value.bit_cast(dest_type), check_pointer_conversion(source_type->base_type, dest_type->base_type));
+        conv_kind = check_pointer_conversion(source_type->base_type, dest_type->base_type);
+        result = Value(value.bit_cast(dest_type));
     }
 
     return nullptr;
@@ -183,16 +185,16 @@ const Type* ValueWrangler::visit(const IntegerType* dest_type) {
     convert_enum_to_int();
 
     if (auto source_type = unqualified_type_cast<IntegerType>(value.type)) {
-        result = ConvertTypeResult(dest_type, LLVMBuildIntCast2(builder, get_value(value), dest_type->llvm_type(), source_type->is_signed(), ""));
+        result = Value(dest_type, LLVMBuildIntCast2(builder, get_value(value), dest_type->llvm_type(), source_type->is_signed(), ""));
     } else if (auto source_type = unqualified_type_cast<FloatingPointType>(value.type)) {
         if (dest_type->is_signed()) {
-            result = ConvertTypeResult(dest_type, LLVMBuildFPToSI(builder, get_value(value), dest_type->llvm_type(), ""));
+            result = Value(dest_type, LLVMBuildFPToSI(builder, get_value(value), dest_type->llvm_type(), ""));
         } else {
-            result = ConvertTypeResult(dest_type, LLVMBuildFPToUI(builder, get_value(value), dest_type->llvm_type(), ""));
+            result = Value(dest_type, LLVMBuildFPToUI(builder, get_value(value), dest_type->llvm_type(), ""));
         }
     } else if (auto source_type = unqualified_type_cast<PointerType>(value.type)) {
-        auto kind = dest_type->size == IntegerSize::BOOL ? ConvKind::IMPLICIT : ConvKind::EXPLICIT;
-        result = ConvertTypeResult(dest_type, LLVMBuildPtrToInt(builder, get_value(value), dest_type->llvm_type(), ""), kind);
+        conv_kind = dest_type->size == IntegerSize::BOOL ? ConvKind::IMPLICIT : ConvKind::EXPLICIT;
+        result = Value(dest_type, LLVMBuildPtrToInt(builder, get_value(value), dest_type->llvm_type(), ""));
     }
 
     return nullptr;
@@ -202,12 +204,12 @@ const Type* ValueWrangler::visit(const FloatingPointType* dest_type) {
     convert_enum_to_int();
 
     if (unqualified_type_cast<FloatingPointType>(value.type)) {
-        result = ConvertTypeResult(dest_type, LLVMBuildFPCast(builder, get_value(value), dest_type->llvm_type(), ""));
+        result = Value(dest_type, LLVMBuildFPCast(builder, get_value(value), dest_type->llvm_type(), ""));
     } else if (auto source_type = unqualified_type_cast<IntegerType>(value.type)) {
         if (source_type->is_signed()) {
-            result = ConvertTypeResult(dest_type, LLVMBuildSIToFP(builder, get_value(value), dest_type->llvm_type(), ""));
+            result = Value(dest_type, LLVMBuildSIToFP(builder, get_value(value), dest_type->llvm_type(), ""));
         } else {
-            result = ConvertTypeResult(dest_type, LLVMBuildUIToFP(builder, get_value(value), dest_type->llvm_type(), ""));
+            result = Value(dest_type, LLVMBuildUIToFP(builder, get_value(value), dest_type->llvm_type(), ""));
         }
     }
     return nullptr;
@@ -215,55 +217,56 @@ const Type* ValueWrangler::visit(const FloatingPointType* dest_type) {
 
 const Type* ValueWrangler::visit(const EnumType* dest_type) {
     dest_type->base_type->accept(*this);
-    if (result.value.is_valid()) {
-        result.value = result.value.bit_cast(dest_type);
-        result.conv_kind = ConvKind::EXPLICIT;
+    if (result.is_valid()) {
+        result = result.bit_cast(dest_type);
+        conv_kind = ConvKind::EXPLICIT;
     }
     return nullptr;
 }
 
 const Type* ValueWrangler::visit(const VoidType* dest_type) {
-    result = ConvertTypeResult(Value(dest_type));
+    result = Value(dest_type);
     return nullptr;
 }
 
 
-ConvertTypeResult ValueWrangler::convert_to_type(const Value& value, const Type* dest_type, ConvKind kind, const Location& location) {
+Value ValueWrangler::convert_to_type(const Value& value, const Type* dest_type, ConvKind kind, const Location& location) {
     assert(value.type->qualifiers() == 0);
-        
+    
     this->value = value;
     this->location = location;
+    conv_kind = ConvKind::IMPLICIT;
 
     dest_type = dest_type->unqualified();
 
     if (value.is_null_literal && kind == ConvKind::IMPLICIT && unqualified_type_cast<PointerType>(dest_type)) {
-        return ConvertTypeResult(dest_type, LLVMConstNull(dest_type->llvm_type()));
+        return Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
     }
 
     if (value.type == dest_type) {
         Value result = value;
         if (kind == ConvKind::EXPLICIT) result.is_null_literal = false;
-        return ConvertTypeResult(result);
+        return Value(result);
     }
 
     dest_type->accept(*this);
     
-    if (!result.value.is_valid()) {
+    if (!result.is_valid()) {
         message(Severity::ERROR, location) << "cannot convert from type '" << PrintType(value.type)
                                             << "' to type '" << PrintType(dest_type) << "'\n";
         pause_messages();
         if (dest_type != &VoidType::it) {
-            result.value = Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
+            result = Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
         } else {
-            result.value = Value::of_zero_int();
+            result = Value::of_zero_int();
         }
-    } else if ((result.conv_kind != ConvKind::IMPLICIT) && kind == ConvKind::IMPLICIT) {
-        auto severity = result.conv_kind == ConvKind::C_IMPLICIT ? Severity::CONTEXTUAL_ERROR : Severity::ERROR;
+    } else if ((conv_kind != ConvKind::IMPLICIT) && kind == ConvKind::IMPLICIT) {
+        auto severity = conv_kind == ConvKind::C_IMPLICIT ? Severity::CONTEXTUAL_ERROR : Severity::ERROR;
         message(severity, location) << "conversion from type '" << PrintType(value.type)
                                     << "' to type '" << PrintType(dest_type) << "' requires explicit cast\n";
     }
 
-    assert(result.value.type == dest_type);
+    assert(result.type == dest_type);
 
     return result;
 }

@@ -89,7 +89,7 @@ struct Value {
         return llvm;
     }
 
-    // Use Emitter::get_lvalue instead
+    // Use ValueWrangler::get_address instead
     LLVMValueRef dangerously_get_address() const{
         assert(llvm);
         assert(has_address);
@@ -97,7 +97,7 @@ struct Value {
         return llvm;
     }
 
-    // Use ValueWrangler::get_rvalue instead
+    // Use ValueWrangler::get_value instead
     LLVMValueRef dangerously_get_value(LLVMBuilderRef builder, EmitOutcome outcome) const;
 
     // Use ValueWrangler::store instead
