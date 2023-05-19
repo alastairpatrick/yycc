@@ -185,15 +185,15 @@ struct Emitter: Visitor {
     // unqualified type. In this case, use store_and_pend_destructor, which will store the result directly in
     // the lvalue if possible or otherwise convert and pend a destructor call for the temporary.
 
-    VisitExpressionOutput emit_expr(Expr* expr, bool pend_temporary_destructor = true) {
+    Value emit_expr(Expr* expr, bool pend_temporary_destructor = true) {
         try {
-            auto result =  expr->accept(*this);
+            auto output =  expr->accept(*this);
 
-            if (pend_temporary_destructor && outcome == EmitOutcome::IR && result.value.kind == ValueKind::RVALUE) {
-                pend_destructor(result.value);
+            if (pend_temporary_destructor && outcome == EmitOutcome::IR && output.value.kind == ValueKind::RVALUE) {
+                pend_destructor(output.value);
             }
 
-            return result;
+            return output.value;
         } catch (FoldError& e) {
             if (!e.error_reported) {
                 message(Severity::ERROR, expr->location) << "not a constant expression\n";
@@ -215,7 +215,7 @@ struct Emitter: Visitor {
 
     Value emit_full_expr(Expr* expr) {
         push_scope();
-        auto value = emit_expr(expr).value;
+        auto value = emit_expr(expr);
         pop_scope();
         return value;
     }
@@ -253,7 +253,7 @@ struct Emitter: Visitor {
     }
 
     Value convert_to_type(Expr* expr, const Type* dest_type, ConvKind kind) {
-        auto value = emit_expr(expr).value.unqualified();
+        auto value = emit_expr(expr).unqualified();
         return convert_to_type(value, dest_type, kind, expr->location);
     }
 
@@ -352,7 +352,7 @@ struct Emitter: Visitor {
 
             scalar_value = emit_scalar_initializer(dest.type, initializer);
         } else {
-            auto source = emit_expr(expr, false).value;
+            auto source = emit_expr(expr, false);
             store_and_pend_destructor(dest, source, expr->location, expr->location);
             return;
         }
@@ -650,7 +650,7 @@ struct Emitter: Visitor {
     }
 
     virtual VisitExpressionOutput visit(AddressExpr* expr) override {
-        auto value = emit_expr(expr->expr).value;
+        auto value = emit_expr(expr->expr);
         auto result_type = value.type->pointer_to();
 
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
@@ -664,12 +664,12 @@ struct Emitter: Visitor {
     }
 
     virtual VisitExpressionOutput visit(AssignExpr* expr) override {
-        auto left_value = emit_expr(expr->left).value;
+        auto left_value = emit_expr(expr->left);
 
         auto result_type = left_value.type->unqualified();
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-        auto right_value = emit_expr(expr->right, false).value;
+        auto right_value = emit_expr(expr->right, false);
         call_destructor_immediately(left_value);
         store_and_pend_destructor(left_value, right_value, expr->location, expr->right->location);
 
@@ -998,7 +998,7 @@ struct Emitter: Visitor {
     virtual VisitExpressionOutput visit(BinaryExpr* expr) override {
         auto op = expr->op;
         Value intermediate;
-        Value left_value = emit_expr(expr->left).value.unqualified();
+        Value left_value = emit_expr(expr->left).unqualified();
 
         if (op == TOK_AND_OP || op == TOK_OR_OP) {
             intermediate = emit_logical_binary_operation(expr, left_value, expr->left->location);
@@ -1006,7 +1006,7 @@ struct Emitter: Visitor {
             left_value = convert_array_to_pointer(left_value);
             auto left_pointer_type = unqualified_type_cast<PointerType>(left_value.type);
 
-            auto right_value = emit_expr(expr->right).value.unqualified();
+            auto right_value = emit_expr(expr->right).unqualified();
             right_value = convert_array_to_pointer(right_value);
             auto right_pointer_type = unqualified_type_cast<PointerType>(right_value.type);
 
@@ -1042,8 +1042,7 @@ struct Emitter: Visitor {
             throw FoldError(true);
         }
 
-        auto function_output = emit_expr(expr->function);
-        auto function_value = function_output.value.unqualified();
+        auto function_value = emit_expr(expr->function).unqualified();
 
         if (auto pointer_type = unqualified_type_cast<PointerType>(function_value.type)) {
             function_value = Value(ValueKind::LVALUE, pointer_type->base_type, get_value(function_value, expr->function->location));
@@ -1105,7 +1104,7 @@ struct Emitter: Visitor {
                     param_location = member_expr->object->location;
                 } else {
                     auto param_expr = expr->parameters[param_expr_idx++];
-                    param_value = emit_expr(param_expr).value;
+                    param_value = emit_expr(param_expr);
                     param_location = param_expr->location;
                 }
 
@@ -1221,7 +1220,7 @@ struct Emitter: Visitor {
 
     virtual VisitExpressionOutput visit(DereferenceExpr* expr) override {
 
-        auto value = emit_expr(expr->expr).value.unqualified();
+        auto value = emit_expr(expr->expr).unqualified();
         auto pointer_type = unqualified_type_cast<PointerType>(value.type);
         auto result_type = pointer_type->base_type;
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
@@ -1256,7 +1255,7 @@ struct Emitter: Visitor {
             if (outcome == EmitOutcome::FOLD && variable->initializer && (declarator->type->qualifiers() & QUALIFIER_CONST)) {
                 try {
                     ScopedMessagePauser pauser;
-                    return VisitExpressionOutput(convert_to_type(emit_expr(variable->initializer).value, result_type, ConvKind::IMPLICIT, variable->initializer->location));
+                    return VisitExpressionOutput(convert_to_type(emit_expr(variable->initializer), result_type, ConvKind::IMPLICIT, variable->initializer->location));
                 } catch (FoldError&) {
                 }
             }
@@ -1297,7 +1296,7 @@ struct Emitter: Visitor {
     }
 
     virtual VisitExpressionOutput visit(IncDecExpr* expr) override {
-        auto lvalue = emit_expr(expr->expr).value.unqualified();
+        auto lvalue = emit_expr(expr->expr).unqualified();
         auto before_rvalue = get_value(lvalue, expr->location);
 
         const Type* result_type = lvalue.type;
@@ -1321,7 +1320,7 @@ struct Emitter: Visitor {
     }
 
     Value emit_object_of_member_expr(MemberExpr* expr) {
-        auto object = emit_expr(expr->object).value;
+        auto object = emit_expr(expr->object);
         if (auto pointer_type = unqualified_type_cast<PointerType>(object.type)) {
             object = Value(ValueKind::LVALUE, pointer_type->base_type, get_value(object, expr->object->location));
         }
@@ -1367,7 +1366,7 @@ struct Emitter: Visitor {
     }
 
     virtual VisitExpressionOutput visit(MoveExpr* expr) override {
-        auto value = emit_expr(expr->expr).value.unqualified();
+        auto value = emit_expr(expr->expr).unqualified();
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(value.type);
 
         auto result = Value(value.type, get_value(value, expr->expr->location, true));
@@ -1375,8 +1374,8 @@ struct Emitter: Visitor {
     }
 
     virtual VisitExpressionOutput visit(SequenceExpr* expr) override {
-        auto left_value = emit_expr(expr->left).value.unqualified();
-        auto right_value = emit_expr(expr->right, false).value.unqualified();
+        auto left_value = emit_expr(expr->left).unqualified();
+        auto right_value = emit_expr(expr->right, false).unqualified();
         return VisitExpressionOutput(right_value);
     }
 
@@ -1398,8 +1397,8 @@ struct Emitter: Visitor {
     virtual VisitExpressionOutput visit(SubscriptExpr* expr) override {
         auto zero = TranslationUnitContext::it->zero_size;
 
-        auto left_value = emit_expr(expr->left).value.unqualified();
-        auto index_value = emit_expr(expr->right).value.unqualified();
+        auto left_value = emit_expr(expr->left).unqualified();
+        auto index_value = emit_expr(expr->right).unqualified();
 
         if (unqualified_type_cast<IntegerType>(left_value.type)) {
             swap(left_value, index_value);
@@ -1495,14 +1494,14 @@ SwitchConstruct::~SwitchConstruct() {
 const Type* get_expr_type(const Expr* expr) {
     static const EmitOptions options;
     Emitter emitter(nullptr, EmitOutcome::TYPE, options);
-    return emitter.emit_expr(const_cast<Expr*>(expr)).value.type;
+    return emitter.emit_expr(const_cast<Expr*>(expr)).type;
 }
 
 Value fold_expr(const Expr* expr) {
     static const EmitOptions options;
     Emitter emitter(nullptr, EmitOutcome::FOLD, options);
     try {
-        return emitter.emit_expr(const_cast<Expr*>(expr)).value;
+        return emitter.emit_expr(const_cast<Expr*>(expr));
     } catch (FoldError&) {
         return Value::of_recover(get_expr_type(expr));
     }
