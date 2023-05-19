@@ -52,7 +52,6 @@ struct Emitter: Visitor {
     const FunctionType* function_type{};
     list<EmitterScope> scopes;
     LLVMBuilderRef builder{};
-    LLVMBuilderRef temp_builder{};
     LLVMValueRef function{};
     LLVMBasicBlockRef entry_block{};
     LLVMBasicBlockRef unreachable_block{};
@@ -66,17 +65,7 @@ struct Emitter: Visitor {
 
     Emitter(Module* module, EmitOutcome outcome, const EmitOptions& options)
         : module(module), outcome(outcome), options(options), wrangler(module, outcome), builder(wrangler.builder) {
-        auto llvm_context = TranslationUnitContext::it->llvm_context;
-
-        if (outcome == EmitOutcome::IR) {
-            temp_builder = LLVMCreateBuilderInContext(llvm_context);
-        }
-
         this_string = intern_string("this");
-    }
-
-    ~Emitter() {
-        if (temp_builder) LLVMDisposeBuilder(temp_builder);
     }
 
     void push_scope() {
@@ -126,8 +115,7 @@ struct Emitter: Visitor {
 
         if (!structured_type->destructor) return false;
 
-        use_temp_builder();
-        value.make_addressable(temp_builder, builder);
+        wrangler.make_addressable(value, entry_block);
 
         auto& scope = scopes.back();
         scope.destructors.push_back(PendingDestructor(value));
@@ -146,9 +134,8 @@ struct Emitter: Visitor {
         return VisitDeclaratorOutput();
     }
 
-    // todo: not dangerous
     LLVMValueRef get_address(const Value &value) {
-        return value.dangerously_get_address();
+        return wrangler.get_address(value);
     }
 
     LLVMValueRef get_value(const Value &value, const Location& location, bool for_move_expr = false) {
@@ -394,28 +381,13 @@ struct Emitter: Visitor {
 
         return convert_to_rvalue(expr, dest_type, ConvKind::IMPLICIT);
     }
-    
-    void use_temp_builder() {
-        auto first_insn = LLVMGetFirstInstruction(entry_block);
-        if (first_insn) {
-            LLVMPositionBuilderBefore(temp_builder, first_insn);
-        } else {
-            LLVMPositionBuilderAtEnd(temp_builder, entry_block);
-        }
-    }
-
-    Value allocate_auto_storage(const Type* type, const char* name) {
-        use_temp_builder();
-        auto storage = LLVMBuildAlloca(temp_builder, type->llvm_type(), name);
-        return Value(ValueKind::LVALUE, type, storage);
-    }
 
     void emit_variable(Declarator* declarator, Variable* entity) {
         auto type = declarator->primary->type;
         auto llvm_type = type->llvm_type();
 
         if (entity->storage_duration == StorageDuration::AUTO) {
-            entity->value = allocate_auto_storage(type, c_str(declarator->identifier));
+            entity->value = wrangler.allocate_auto_storage(type, c_str(declarator->identifier), entry_block);
 
             bool has_destructor = pend_destructor(entity->value);
 
@@ -1104,8 +1076,7 @@ struct Emitter: Visitor {
                 if (pass_by_ref_type) {
                     if (param_value.kind == ValueKind::RVALUE && (pass_by_ref_type->kind == PassByReferenceType::Kind::RVALUE || expected_type->qualifiers() & QUALIFIER_CONST || (member_expr && i == 0))) {
                         param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, param_location);
-                        use_temp_builder();
-                        param_value.make_addressable(temp_builder, builder);
+                        wrangler.make_addressable(param_value, entry_block);
                         llvm_params[i] = get_address(param_value);
                     } else if (param_value.kind != ValueKind::LVALUE) {
                         message(Severity::ERROR, param_location) << "rvalue type '" << PrintType(param_value.type) << "' incompatible with non-const pass-by-reference parameter type '"

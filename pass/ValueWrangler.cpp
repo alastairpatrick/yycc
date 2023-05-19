@@ -6,12 +6,18 @@
 ValueWrangler::ValueWrangler(Module* module, EmitOutcome outcome)
     : module(module), outcome(outcome) {
     auto llvm_context = TranslationUnitContext::it->llvm_context;
+
     if (outcome != EmitOutcome::TYPE) {
         builder = LLVMCreateBuilderInContext(llvm_context);
+    }
+
+    if (outcome == EmitOutcome::IR) {
+        temp_builder = LLVMCreateBuilderInContext(llvm_context);
     }
 }
 
 ValueWrangler::~ValueWrangler() {
+    if (temp_builder) LLVMDisposeBuilder(temp_builder);
     if (builder) LLVMDisposeBuilder(builder);
 }
 
@@ -43,6 +49,10 @@ ConvKind ValueWrangler::check_pointer_conversion(const Type* source_base_type, c
     }
 
     return result;
+}
+
+LLVMValueRef ValueWrangler::get_address(const Value &value) {
+    return value.dangerously_get_address();
 }
 
 LLVMValueRef ValueWrangler::get_value(const Value &value, const Location& location, bool for_move_expr) {
@@ -77,7 +87,26 @@ void ValueWrangler::store(const Value& dest, LLVMValueRef source_rvalue, const L
         message(Severity::ERROR, location) << "assignment in constant expression\n";
     }
 }
+    
+void ValueWrangler::position_temp_builder(LLVMBasicBlockRef entry_block) {
+    auto first_insn = LLVMGetFirstInstruction(entry_block);
+    if (first_insn) {
+        LLVMPositionBuilderBefore(temp_builder, first_insn);
+    } else {
+        LLVMPositionBuilderAtEnd(temp_builder, entry_block);
+    }
+}
 
+void ValueWrangler::make_addressable(Value& value, LLVMBasicBlockRef entry_block) {
+    position_temp_builder(entry_block);
+    value.make_addressable(temp_builder, builder);
+}
+
+Value ValueWrangler::allocate_auto_storage(const Type* type, const char* name, LLVMBasicBlockRef entry_block) {
+    position_temp_builder(entry_block);
+    auto storage = LLVMBuildAlloca(temp_builder, type->llvm_type(), name);
+    return Value(ValueKind::LVALUE, type, storage);
+}
 
 LLVMValueRef ValueWrangler::get_value(const Value &value) {
     return get_value(value, location, false);

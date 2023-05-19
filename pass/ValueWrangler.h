@@ -31,6 +31,7 @@ struct ConvertTypeResult {
 struct ValueWrangler: TypeVisitor {
     Module* module{};
     LLVMBuilderRef builder{};
+    LLVMBuilderRef temp_builder{};
     EmitOutcome outcome{};
 
     ValueWrangler(Module* module, EmitOutcome outcome);
@@ -38,8 +39,12 @@ struct ValueWrangler: TypeVisitor {
 
     ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type);
     ConvertTypeResult convert_to_type(const Value& value, const Type* dest_type, ConvKind kind, const Location& location);
+    LLVMValueRef get_address(const Value &value);
     LLVMValueRef get_value(const Value &value, const Location& location, bool for_move_expr = false);
     void store(const Value& dest, LLVMValueRef source_rvalue, const Location& location);
+    void position_temp_builder(LLVMBasicBlockRef entry_block);
+    void make_addressable(Value& value, LLVMBasicBlockRef entry_block);
+    Value allocate_auto_storage(const Type* type, const char* name, LLVMBasicBlockRef entry_block);
 
 private:
     Value value;
