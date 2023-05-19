@@ -37,7 +37,7 @@ EXPECT_GLOBALS
 BEGIN Enum with scope must have dot before first enum constant
 enum E { A, .B } z;
 EXPECT_MESSAGE
-:1:14: error '.' must be applied to first enum constant of definition...
+:1:14: error '.' must be applied to first enum constant of definition
 :1:10: ... see first constant
 END
 

@@ -73,7 +73,7 @@ typedef int T;
 char a[T];
 EXPECT_MESSAGE
 :2:8: error typedef 'T' is not a constant
-:1:13: see definition of typedef 'T'
+:1:13: ... see definition of typedef 'T'
 EXPECT_GLOBALS
 [["typedef","Si","T"],["var","ES",["A","C"],"a"]]
 
@@ -90,8 +90,8 @@ BEGIN Redefinition of typedef with different type
 typedef int a;
 typedef unsigned a;
 EXPECT_MESSAGE
-:2:18: error redefinition of typedef 'a' with incompatible type...
-:1:13: ...see other
+:2:18: error redefinition of typedef 'a' with incompatible type
+:1:13: ... see other
 EXPECT_AST
 [["typedef", "Si", "a"]
 ,["typedef", "Ui", "a"]]
@@ -118,8 +118,8 @@ BEGIN Redefining typedef with compatible type that is not same type is an error 
 typedef int T[];
 typedef int T[1];
 EXPECT_MESSAGE
-:2:13: error redefinition of typedef 'T' with incompatible type...
-:1:13: ...see other
+:2:13: error redefinition of typedef 'T' with incompatible type
+:1:13: ... see other
 EXPECT_GLOBALS
 [["typedef",["A","Si",1],"T"]]
 
@@ -128,8 +128,8 @@ BEGIN Redefining typedef with compatible type that is not same type is an error 
 typedef int T[1];
 typedef int T[];
 EXPECT_MESSAGE
-:2:13: error redefinition of typedef 'T' with incompatible type...
-:1:13: ...see other
+:2:13: error redefinition of typedef 'T' with incompatible type
+:1:13: ... see other
 EXPECT_GLOBALS
 [["typedef",["A","Si", 1],"T"]]
 
@@ -138,8 +138,8 @@ BEGIN Typedef may not be redeclared as a variable of same type
 typedef int a;
 int a;
 EXPECT_MESSAGE
-:2:5: error redeclaration of variable 'a' with different kind of identifier...
-:1:13: ...see other
+:2:5: error redeclaration of variable 'a' with different kind of identifier
+:1:13: ... see other
 END
 
 

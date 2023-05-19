@@ -109,8 +109,8 @@ F foo = 7;
 void foo(int x) {
 }
 EXPECT_MESSAGE
-:3:6: error redefinition of function 'foo' with different kind of identifier...
-:2:3: ...see other
+:3:6: error redefinition of function 'foo' with different kind of identifier
+:2:3: ... see other
 END
 
 
@@ -128,8 +128,8 @@ void foo(int x) {
 void foo(int x) {
 }
 EXPECT_MESSAGE
-:3:6: error redefinition of function 'foo'...
-:1:6: ...see other
+:3:6: error redefinition of function 'foo'
+:1:6: ... see other
 END
 
 
@@ -171,8 +171,8 @@ void f() {
     extern float x;
 }
 EXPECT_MESSAGE
-:3:18: error redeclaration of variable 'x' with incompatible type...
-:1:5: ...see other
+:3:18: error redeclaration of variable 'x' with incompatible type
+:1:5: ... see other
 END
 
 
@@ -182,8 +182,8 @@ void f() {
 }
 int x;
 EXPECT_MESSAGE
-:4:5: error redeclaration of variable 'x' with incompatible type...
-:2:18: ...see other
+:4:5: error redeclaration of variable 'x' with incompatible type
+:2:18: ... see other
 END
 
 
@@ -191,10 +191,10 @@ BEGIN Resolves tag type declarators declared in function prototype scope
 void f(enum E { A } a, enum E { A } b) {
 }
 EXPECT_MESSAGE
-:1:24: error redefinition of typedef 'E' with incompatible type...
-:1:8: ...see other
-:1:33: error redefinition of enum constant 'A'...
-:1:17: ...see other
+:1:24: error redefinition of typedef 'E' with incompatible type
+:1:8: ... see other
+:1:33: error redefinition of enum constant 'A'
+:1:17: ... see other
 END
 
 
@@ -204,10 +204,10 @@ void f() {
     enum E { A };
 }
 EXPECT_MESSAGE
-:3:5: error redefinition of typedef 'E' with incompatible type...
-:2:5: ...see other
-:3:14: error redefinition of enum constant 'A'...
-:2:14: ...see other
+:3:5: error redefinition of typedef 'E' with incompatible type
+:2:5: ... see other
+:3:14: error redefinition of enum constant 'A'
+:2:14: ... see other
 END
 
 

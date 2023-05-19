@@ -50,7 +50,7 @@ void f() {
 }
 EXPECT_MESSAGE
 :4:11: error variable 'not_const' is not a constant
-:3:15: see definition of variable 'not_const'
+:3:15: ... see definition of variable 'not_const'
 END
 
 
@@ -94,8 +94,8 @@ BEGIN Complete arrays with different sizes are not compatible
 int x[2];
 int x[1];
 EXPECT_MESSAGE
-:2:5: error redeclaration of variable 'x' with incompatible type...
-:1:5: ...see other
+:2:5: error redeclaration of variable 'x' with incompatible type
+:1:5: ... see other
 EXPECT_GLOBALS
 [["var","ES",["A","Si",2],"x"]]
 

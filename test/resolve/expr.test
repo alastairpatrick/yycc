@@ -12,8 +12,8 @@ void f(S s) {
     s.x;
 }
 EXPECT_MESSAGE
-:4:6: error no member named 'x' in 'struct S'...
-:1:1: ...see 'struct S'
+:4:6: error no member named 'x' in 'struct S'
+:1:1: ... see 'struct S'
 END
 
 
@@ -34,8 +34,8 @@ void f(S s) {
     s.f();
 }
 EXPECT_MESSAGE
-:4:6: error no member named 'f' in 'struct S'...
-:1:1: ...see 'struct S'
+:4:6: error no member named 'f' in 'struct S'
+:1:1: ... see 'struct S'
 END
 
 
@@ -56,8 +56,8 @@ void f() {
     int x = S.f();
 }
 EXPECT_MESSAGE
-:4:14: error no member named 'f' in 'struct S'...
-:1:1: ...see 'struct S'
+:4:14: error no member named 'f' in 'struct S'
+:1:1: ... see 'struct S'
 END
 
 
@@ -90,8 +90,8 @@ void f() {
     (S).f();
 }
 EXPECT_MESSAGE
-:4:9: error no member named 'f' in 'struct S'...
-:1:1: ...see 'struct S'
+:4:9: error no member named 'f' in 'struct S'
+:1:1: ... see 'struct S'
 END
 
 
@@ -196,6 +196,6 @@ struct S {
 S s;
 int* p = &s.Z::x;
 EXPECT_MESSAGE
-:9:12: error no member named 'Z::x' in 'struct Y::S'...
-:2:1: ...see 'struct Y::S'
+:9:12: error no member named 'Z::x' in 'struct Y::S'
+:2:1: ... see 'struct Y::S'
 END

@@ -570,7 +570,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 if (consume('.')) {
                     if (!enum_type->scope) {
                         if (!first_constant) {
-                            message(Severity::ERROR, preprocessor.location()) << "'.' must be applied to first enum constant of definition...\n";
+                            message(Severity::ERROR, preprocessor.location()) << "'.' must be applied to first enum constant of definition\n";
                             message(Severity::INFO, first_constant_location) << "... see first constant\n";
                         }
 

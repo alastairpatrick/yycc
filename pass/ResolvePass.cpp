@@ -27,7 +27,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
     }
 
     void see_other_message(const Location& location) {
-        message(Severity::INFO, location) << "...see other\n";
+        message(Severity::INFO, location) << "... see other\n";
     }
 
     void redeclaration_message(Severity severity, const Declarator* secondary, const Location &primary_location, const char* problem) {
@@ -45,7 +45,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
             stream << ' ' << problem;
         }
 
-        stream << "...\n";
+        stream << "\n";
 
         see_other_message(primary_location);
         pause_messages();
@@ -81,7 +81,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
     void composite_entity(Declarator* primary, Entity* primary_entity, Declarator* secondary, Entity* secondary_entity) {
         if (primary_entity->linkage == Linkage::NONE || secondary_entity->linkage == Linkage::NONE) {
             if (primary->is_member()) {
-                message(Severity::ERROR, secondary->location) << "duplicate member '" << *primary->identifier << "'...\n";
+                message(Severity::ERROR, secondary->location) << "duplicate member '" << *primary->identifier << "'\n";
                 see_other_message(primary->location);
             } else {
                 redeclaration_message(Severity::ERROR, secondary, primary->location, nullptr);
@@ -263,22 +263,22 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         if (auto tag_type = dynamic_cast<const TagType*>(enclosing_type)) {
             if (!tag_type->complete) {
                 message(Severity::ERROR, lookup_location) << "incomplete type '" << PrintType(enclosing_type) << "' named in nested type specifier\n";
-                message(Severity::INFO, tag_type->location) << "...see '" << PrintType(enclosing_type) << "'\n";
+                message(Severity::INFO, tag_type->location) << "... see '" << PrintType(enclosing_type) << "'\n";
                 pause_messages();
                 return nullptr;
             }
 
             if (!tag_type->scope) {
-                message(Severity::ERROR, lookup_location) << "no member named '" << identifier << "' in '" << PrintType(tag_type) << "' because it is unscoped...\n";
-                message(Severity::INFO, tag_type->location) << "...see '" << PrintType(enclosing_type) << "'\n";
+                message(Severity::ERROR, lookup_location) << "no member named '" << identifier << "' in '" << PrintType(tag_type) << "' because it is unscoped\n";
+                message(Severity::INFO, tag_type->location) << "... see '" << PrintType(enclosing_type) << "'\n";
                 pause_messages();
                 return nullptr;
             }
 
             auto member = tag_type->scope->lookup_member(identifier);
             if (!member) {
-                message(Severity::ERROR, lookup_location) << "no member named '" << identifier << "' in '" << PrintType(tag_type) << "'...\n";
-                message(Severity::INFO, tag_type->location) << "...see '" << PrintType(enclosing_type) << "'\n";
+                message(Severity::ERROR, lookup_location) << "no member named '" << identifier << "' in '" << PrintType(tag_type) << "'\n";
+                message(Severity::INFO, tag_type->location) << "... see '" << PrintType(enclosing_type) << "'\n";
                 pause_messages();
                 return nullptr;
             }
@@ -302,7 +302,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         if (!member->type_delegate()) {
             message(Severity::ERROR, type->location) << "member '" << type->identifier << "' is not a nested type\n";
             if (auto tag_type = dynamic_cast<const TagType*>(enclosing_type)) {
-                message(Severity::INFO, tag_type->location) << "...see '" << PrintType(enclosing_type) << "'\n";
+                message(Severity::INFO, tag_type->location) << "... see '" << PrintType(enclosing_type) << "'\n";
             }
         }
 

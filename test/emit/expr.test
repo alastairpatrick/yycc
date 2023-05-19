@@ -355,7 +355,7 @@ void g() {
 }
 EXPECT_MESSAGE
 :3:6: error expected 1 parameter(s) but got 2
-:1:6: see prototype of function 'f'
+:1:6: ... see prototype of function 'f'
 END
 
 
@@ -492,7 +492,7 @@ int g(S* p) {
 }
 EXPECT_MESSAGE
 :7:14: error expected 0 parameter(s) but got 1
-:2:7: see prototype of function 'f'
+:2:7: ... see prototype of function 'f'
 END
 
 
@@ -696,7 +696,7 @@ int size;
 int x[1 + size];
 EXPECT_MESSAGE
 :2:11: error variable 'size' is not a constant
-:1:5: see declaration of variable 'size'
+:1:5: ... see declaration of variable 'size'
 END
 
 
@@ -811,8 +811,8 @@ int f(S s) {
     return s.y;
 }
 EXPECT_MESSAGE
-:3:13: error no member named 'y' in 'struct S'...
-:1:1: ...see 'struct S'
+:3:13: error no member named 'y' in 'struct S'
+:1:1: ... see 'struct S'
 END
 
 

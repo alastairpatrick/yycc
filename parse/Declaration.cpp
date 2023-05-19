@@ -104,7 +104,7 @@ bool Declarator::is_member() const {
 }
     
 void Declarator::message_see_declaration(const char* declaration_kind) const {
-    auto& stream = message(Severity::INFO, location) << "see ";
+    auto& stream = message(Severity::INFO, location) << "... see ";
     if (declaration_kind) {
         stream << declaration_kind;
     } else if (delegate->message_is_definition()) {

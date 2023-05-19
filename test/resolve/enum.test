@@ -13,8 +13,8 @@ EXPECT_AST
 BEGIN Enum constant names must be distinct
 enum E { A, A };
 EXPECT_MESSAGE
-:1:13: error redefinition of enum constant 'A'...
-:1:10: ...see other
+:1:13: error redefinition of enum constant 'A'
+:1:10: ... see other
 EXPECT_GLOBALS
 [["ec","A",0]
 ,["typedef",["ENUM",[["ec","A",0],["ec","A",1]]],"E"]]
@@ -24,8 +24,8 @@ BEGIN Tagged enum with multiple incompatible definitions
 enum E { A };
 enum E { B };
 EXPECT_MESSAGE
-:2:1: error redefinition of typedef 'E' with incompatible type...
-:1:1: ...see other
+:2:1: error redefinition of typedef 'E' with incompatible type
+:1:1: ... see other
 EXPECT_GLOBALS
 [["ec","A",0]
 ,["ec","B",0]
@@ -36,10 +36,10 @@ BEGIN Tagged enum with multiple compatible definitions
 enum E { A, };
 enum E { A };
 EXPECT_MESSAGE
-:2:1: error redefinition of typedef 'E' with incompatible type...
-:1:1: ...see other
-:2:10: error redefinition of enum constant 'A'...
-:1:10: ...see other
+:2:1: error redefinition of typedef 'E' with incompatible type
+:1:1: ... see other
+:2:10: error redefinition of enum constant 'A'
+:1:10: ... see other
 EXPECT_GLOBALS
 [["ec","A",0]
 ,["typedef",["ENUM",[["ec","A",0]]],"E"]]
@@ -67,8 +67,8 @@ BEGIN Different enums may not contain the same constants (1)
 enum { A, B } a;
 enum { A, C } b;
 EXPECT_MESSAGE
-:2:8: error redefinition of enum constant 'A'...
-:1:8: ...see other
+:2:8: error redefinition of enum constant 'A'
+:1:8: ... see other
 END
 
 
@@ -76,8 +76,8 @@ BEGIN Different enums may not contain the same constants (2)
 enum E1 { A, B };
 enum E2 { A, C };
 EXPECT_MESSAGE
-:2:11: error redefinition of enum constant 'A'...
-:1:11: ...see other
+:2:11: error redefinition of enum constant 'A'
+:1:11: ... see other
 END
 
 
@@ -139,7 +139,7 @@ BEGIN Enum constant may not refer to following constants (1)
 enum E { B = A, A = 1 };
 EXPECT_MESSAGE
 :1:14: error enum constant 'A' not yet available
-:1:17: see definition of enum constant 'A'
+:1:17: ... see definition of enum constant 'A'
 EXPECT_GLOBALS
 [["ec","A",1],["ec","B",0],["typedef",["ENUM",[["ec","B",0],["ec","A",1]]],"E"]]
 
@@ -149,7 +149,7 @@ BEGIN Enum constant may not refer to following constants (2)
 enum E { B = A, A = 1 };
 EXPECT_MESSAGE
 :2:14: error enum constant 'A' not yet available
-:2:17: see definition of enum constant 'A'
+:2:17: ... see definition of enum constant 'A'
 END
 
 
@@ -157,7 +157,7 @@ BEGIN Enum constant may not refer to self (1)
 enum E { A = A };
 EXPECT_MESSAGE
 :1:14: error enum constant 'A' not yet available
-:1:10: see definition of enum constant 'A'
+:1:10: ... see definition of enum constant 'A'
 END
 
 
@@ -166,7 +166,7 @@ BEGIN Enum constant may not refer to self (2)
 enum E { A = A };
 EXPECT_MESSAGE
 :2:14: error enum constant 'A' not yet available
-:2:10: see definition of enum constant 'A'
+:2:10: ... see definition of enum constant 'A'
 END
 
 

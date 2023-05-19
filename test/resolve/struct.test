@@ -1,8 +1,8 @@
 BEGIN Struct member names must be distinct
 struct S { int x; int x; };
 EXPECT_MESSAGE
-:1:23: error duplicate member 'x'...
-:1:16: ...see other
+:1:23: error duplicate member 'x'
+:1:16: ... see other
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["x","Si"]]],"S"]]
 
@@ -11,8 +11,8 @@ BEGIN Tagged structs with incompatible definitions
 struct S { int x; int y; };
 struct S { int y; int x; };
 EXPECT_MESSAGE
-:2:1: error redefinition of struct 'S' with incompatible type...
-:1:1: ...see other
+:2:1: error redefinition of struct 'S' with incompatible type
+:1:1: ... see other
 END
 
 
@@ -20,8 +20,8 @@ BEGIN Tagged struct with multiple compatible definitions
 struct S { int x; int y; };
 struct S { int x; int y; };
 EXPECT_MESSAGE
-:2:1: error redefinition of struct 'S' with incompatible type...
-:1:1: ...see other
+:2:1: error redefinition of struct 'S' with incompatible type
+:1:1: ... see other
 EXPECT_GLOBALS
 [["typedef",["STRUCT",[["x","Si"],["y","Si"]]],"S"]]
 
@@ -53,8 +53,8 @@ struct {
     struct { int x; };
 } z;
 EXPECT_MESSAGE
-:3:18: error duplicate member 'x'...
-:2:18: ...see other
+:3:18: error duplicate member 'x'
+:2:18: ... see other
 EXPECT_AST
 [["var","ES",["STRUCT",[["",["STRUCT",[["x","Si"]]]],["",["STRUCT",[["x","Si"]]]]]],"z"]]
 
@@ -65,8 +65,8 @@ struct S {
     struct { int x; };
 };
 EXPECT_MESSAGE
-:3:18: error duplicate member 'x'...
-:2:9: ...see other
+:3:18: error duplicate member 'x'
+:2:9: ... see other
 END
 
 
@@ -288,7 +288,7 @@ struct S {
 S.T x;
 EXPECT_MESSAGE
 :4:3: error member 'T' is not a nested type
-:1:1: ...see 'struct S'
+:1:1: ... see 'struct S'
 END
 
 
@@ -297,8 +297,8 @@ struct S {
 };
 S.T x;
 EXPECT_MESSAGE
-:3:3: error no member named 'T' in 'struct S'...
-:1:1: ...see 'struct S'
+:3:3: error no member named 'T' in 'struct S'
+:1:1: ... see 'struct S'
 END
 
 
@@ -307,8 +307,8 @@ enum E {
 };
 E.T x;
 EXPECT_MESSAGE
-:3:3: error no member named 'T' in 'enum E' because it is unscoped...
-:1:1: ...see 'enum E'
+:3:3: error no member named 'T' in 'enum E' because it is unscoped
+:1:1: ... see 'enum E'
 END
 
 
@@ -317,7 +317,7 @@ struct S;
 S.T x;
 EXPECT_MESSAGE
 :2:3: error incomplete type 'struct S' named in nested type specifier
-:1:1: ...see 'struct S'
+:1:1: ... see 'struct S'
 :2:5: error variable 'x' has incomplete type
 END
 

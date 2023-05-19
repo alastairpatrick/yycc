@@ -831,7 +831,7 @@ struct S {
 };
 EXPECT_MESSAGE
 :4:33: error 'x' is not a member of the immediately enclosing type so is inaccessible via 'this'
-:2:9: see definition of member 'x'
+:2:9: ... see definition of member 'x'
 END
 
 
