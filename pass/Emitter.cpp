@@ -127,7 +127,7 @@ struct Emitter: Visitor {
         if (!structured_type->destructor) return false;
 
         use_temp_builder();
-        value.make_addressible(temp_builder, builder);
+        value.make_addressable(temp_builder, builder);
 
         auto& scope = scopes.back();
         scope.destructors.push_back(PendingDestructor(value));
@@ -1064,13 +1064,6 @@ struct Emitter: Visitor {
             if (member_expr) {
                 function_declarator = member_expr->member;
                 object_value = emit_object_of_member_expr(member_expr);
-
-                if (object_value.kind != ValueKind::LVALUE) {
-                    auto lvalue = allocate_auto_storage(object_value.type, "");
-                    store(lvalue, get_value(object_value, member_expr->location), member_expr->location);
-                    object_value = lvalue;
-                }
-
                 ++actual_num_params;
             }
 
@@ -1109,10 +1102,10 @@ struct Emitter: Visitor {
                 }
 
                 if (pass_by_ref_type) {
-                    if (param_value.kind == ValueKind::RVALUE && (pass_by_ref_type->kind == PassByReferenceType::Kind::RVALUE || expected_type->qualifiers() & QUALIFIER_CONST)) {
+                    if (param_value.kind == ValueKind::RVALUE && (pass_by_ref_type->kind == PassByReferenceType::Kind::RVALUE || expected_type->qualifiers() & QUALIFIER_CONST || (member_expr && i == 0))) {
                         param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, param_location);
                         use_temp_builder();
-                        param_value.make_addressible(temp_builder, builder);
+                        param_value.make_addressable(temp_builder, builder);
                         llvm_params[i] = get_address(param_value);
                     } else if (param_value.kind != ValueKind::LVALUE) {
                         message(Severity::ERROR, param_location) << "rvalue type '" << PrintType(param_value.type) << "' incompatible with non-const pass-by-reference parameter type '"

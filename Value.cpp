@@ -84,7 +84,7 @@ void Value::dangerously_store(LLVMBuilderRef builder, LLVMValueRef new_rvalue) c
                     qualifiers & QUALIFIER_VOLATILE);
 }
 
-void Value::make_addressible(LLVMBuilderRef alloc_builder, LLVMBuilderRef store_builder) {
+void Value::make_addressable(LLVMBuilderRef alloc_builder, LLVMBuilderRef store_builder) {
     if (has_address) return;
 
     auto storage = LLVMBuildAlloca(alloc_builder, type->llvm_type(), "");

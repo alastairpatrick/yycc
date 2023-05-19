@@ -450,7 +450,7 @@ define i32 @f(ptr %0) {
 END
 
 
-BEGIN Member function call receiver converted to lvalue
+BEGIN Member function call receiver made addressable
 struct S {
   S f(S this&) {
     S s;

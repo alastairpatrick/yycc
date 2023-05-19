@@ -103,7 +103,7 @@ struct Value {
     // Use ValueWrangler::store instead
     void dangerously_store(LLVMBuilderRef builder, LLVMValueRef new_rvalue) const;
 
-    void make_addressible(LLVMBuilderRef alloc_builder, LLVMBuilderRef store_builder);
+    void make_addressable(LLVMBuilderRef alloc_builder, LLVMBuilderRef store_builder);
 
     Value unqualified() const {
         return bit_cast(type->unqualified());
