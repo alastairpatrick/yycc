@@ -91,10 +91,38 @@ END
 
 
 BEGIN Static initializer must be a constant expression
-int x;
+int x = 4; // has an initializer which could be folded to 4 but type is not const qualified so that's not allowed
 int y = x;
 EXPECT_MESSAGE
 :2:9: error static initializer is not a constant expression
+END
+
+
+BEGIN Static initializer can reference a const qualified global (1)
+const int x = 4;
+int y = x;
+EXPECT_IR
+@x = constant i32 4
+@y = global i32 4
+END
+
+
+BEGIN Static initializer can reference a const qualified global (2)
+#var x
+int y = x;
+const int x = 4;
+EXPECT_IR
+@y = global i32 4
+@x = constant i32 4
+END
+
+
+BEGIN Static initializer can reference a const qualified global where the initializer has a different type from the global itself
+const int x = 4.0;
+int y = x;
+EXPECT_IR
+@x = constant i32 4
+@y = global i32 4
 END
 
 

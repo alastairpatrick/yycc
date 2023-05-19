@@ -1253,6 +1253,10 @@ struct Emitter: Visitor {
         }
 
         if (auto variable = declarator->variable()) {
+            if (outcome == EmitOutcome::FOLD && variable->initializer && (declarator->type->qualifiers() & QUALIFIER_CONST)) {
+                return VisitExpressionOutput(convert_to_type(fold_expr(variable->initializer), result_type, ConvKind::IMPLICIT, variable->initializer->location));
+            }
+
             if (outcome == EmitOutcome::IR && this_value.is_valid() && !variable->value.is_valid()) {
                 if (auto this_type = unqualified_type_cast<StructuredType>(this_value.type->unqualified())) {
                     assert(variable->member);
