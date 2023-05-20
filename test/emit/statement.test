@@ -12,11 +12,17 @@ for_l:                                            ; preds = %for_b, %0
   br i1 true, label %for_b, label %for_e
 
 for_b:                                            ; preds = %for_l
+  call void @llvm.sideeffect()
   br label %for_l
 
 for_e:                                            ; preds = %for_l
   ret void
 }
+
+; Function Attrs: inaccessiblememonly nocallback nofree nosync nounwind willreturn
+declare void @llvm.sideeffect() #0
+
+attributes #0 = { inaccessiblememonly nocallback nofree nosync nounwind willreturn }
 END
 
 
@@ -29,11 +35,17 @@ define void @f() {
   br label %for_l
 
 for_l:                                            ; preds = %for_l, %0
+  call void @llvm.sideeffect()
   br label %for_l
 
 for_e:                                            ; No predecessors!
   ret void
 }
+
+; Function Attrs: inaccessiblememonly nocallback nofree nosync nounwind willreturn
+declare void @llvm.sideeffect() #0
+
+attributes #0 = { inaccessiblememonly nocallback nofree nosync nounwind willreturn }
 END
 
 

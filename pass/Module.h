@@ -13,6 +13,15 @@ struct EmitOptions {
 const Type* get_expr_type(const Expr* expr);
 Value fold_expr(const Expr* expr);
 
+struct TypedFunctionRef {
+    LLVMTypeRef type{};
+    LLVMValueRef function{};
+
+    LLVMValueRef call(LLVMBuilderRef builder, LLVMValueRef* args, unsigned num_args) {
+        return LLVMBuildCall2(builder, type, function, args, num_args, "");
+    }
+};
+
 struct Module {
     Scope* file_scope;
     vector<Scope*> type_scopes;
@@ -24,18 +33,13 @@ struct Module {
     // value are the same instance.
     unordered_map<LLVMValueRef, LLVMValueRef> reified_constants;
 
-    struct DestructorPlaceholder {
-        LLVMTypeRef type;
-        LLVMValueRef function;
-    };
-
-    unordered_map<const StructuredType*, DestructorPlaceholder> destructor_placeholders;
     unordered_set<LLVMValueRef> destructor_placeholder_functions;
 
     Module();
     ~Module();
 
-    DestructorPlaceholder get_destructor_placeholder(const StructuredType* type);
+    TypedFunctionRef destructor_placeholder(const StructuredType* type);
+    void call_sideeffect_intrinsic(LLVMBuilderRef builder);
 
     void resolve_pass(const vector<Declaration*>& declarations, Scope& file_scope);
     void entity_pass();
@@ -43,6 +47,10 @@ struct Module {
     void middle_end_passes(const char* passes);
     void substitution_pass();
     void back_end_passes();
+
+private:
+    unordered_map<const StructuredType*, TypedFunctionRef> destructor_placeholders;
+    TypedFunctionRef cached_sideeffect_intrinsic;
 };
 
 #endif

@@ -76,7 +76,7 @@ struct Emitter: ValueWrangler, Visitor {
         auto destructor = structured_type->destructor;
         if (!destructor) return false;
 
-        auto placeholder = module->get_destructor_placeholder(structured_type);
+        auto placeholder = module->destructor_placeholder(structured_type);
         auto function = destructor->function();
 
         LLVMValueRef args[] = {
@@ -487,12 +487,21 @@ struct Emitter: ValueWrangler, Visitor {
         LLVMBuildBr(builder, loop_block);
         LLVMPositionBuilderAtEnd(builder, loop_block);
 
+        bool synthesize_side_effect = true;
         if (statement->condition) {
             auto condition_value = convert_to_rvalue(statement->condition, IntegerType::of_bool(), ConvKind::IMPLICIT);
             LLVMBuildCondBr(builder, condition_value, body_block, end_block);
+
+            synthesize_side_effect = LLVMIsAConstant(condition_value);
         }
 
         LLVMPositionBuilderAtEnd(builder, body_block);
+
+        // C11 6.8.5p6
+        if (synthesize_side_effect) {
+            module->call_sideeffect_intrinsic(builder);
+        }
+
         accept_statement(statement->body);
 
         if (statement->iterate) {

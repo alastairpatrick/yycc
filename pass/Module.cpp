@@ -12,13 +12,11 @@ Module::~Module() {
     LLVMDisposeModule(llvm_module);
 }
 
-Module::DestructorPlaceholder Module::get_destructor_placeholder(const StructuredType* type) {
+TypedFunctionRef Module::destructor_placeholder(const StructuredType* type) {
     auto context = TranslationUnitContext::it;
 
     auto it = destructor_placeholders.find(type);
     if (it != destructor_placeholders.end()) return it->second;
-
-    DestructorPlaceholder placeholder;
 
     // void placeholder(T* receiver, void actual_destructor(T*), T actual_state, T default_state)
     LLVMTypeRef placeholder_params[] = {
@@ -27,6 +25,7 @@ Module::DestructorPlaceholder Module::get_destructor_placeholder(const Structure
         type->llvm_type(),
         type->llvm_type(),
     };
+    TypedFunctionRef placeholder;
     placeholder.type = LLVMFunctionType(context->llvm_void_type, placeholder_params, 4, false);
     placeholder.function = LLVMAddFunction(llvm_module, "destructor_placeholder", placeholder.type);
 
@@ -34,6 +33,21 @@ Module::DestructorPlaceholder Module::get_destructor_placeholder(const Structure
     destructor_placeholder_functions.insert(placeholder.function);
 
     return placeholder;
+}
+
+static void lookup_intrinsic(TypedFunctionRef& ref, LLVMModuleRef llvm_module, const char* name, const LLVMTypeRef* param_types, unsigned num_params) {
+    auto context = TranslationUnitContext::it;
+
+    if (ref.function) return;
+
+    auto id = LLVMLookupIntrinsicID(name, strlen(name));
+    ref.function = LLVMGetIntrinsicDeclaration(llvm_module, id, nullptr, 0);
+    ref.type = LLVMIntrinsicGetType(context->llvm_context, id, nullptr, 0);
+}
+
+void Module::call_sideeffect_intrinsic(LLVMBuilderRef builder) {
+    lookup_intrinsic(cached_sideeffect_intrinsic, llvm_module, "llvm.sideeffect", nullptr, 0);
+    cached_sideeffect_intrinsic.call(builder, nullptr, 0);
 }
 
 void Module::middle_end_passes(const char* passes) {
