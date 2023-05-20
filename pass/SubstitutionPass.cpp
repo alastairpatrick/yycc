@@ -11,6 +11,7 @@ LLVMValueRef LLVMGetArgOperand2(LLVMValueRef Instr, unsigned i) {
   return llvm::wrap(llvm::unwrap<llvm::CallBase>(Instr)->getArgOperand(i));
 }
 
+// Not used anymore: todo: delete
 struct SubstitutionPass {
     Module& module;
 

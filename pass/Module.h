@@ -38,8 +38,8 @@ struct Module {
     Module();
     ~Module();
 
-    TypedFunctionRef destructor_placeholder(const StructuredType* type);
-    TypedFunctionRef lookup_intrinsic(const char* name, const LLVMTypeRef* param_types, unsigned num_params);
+    Value indeterminate_bool();
+    TypedFunctionRef lookup_intrinsic(const char* name, LLVMTypeRef* param_types, unsigned num_params);
 
     void resolve_pass(const vector<Declaration*>& declarations, Scope& file_scope);
     void entity_pass();
@@ -49,7 +49,7 @@ struct Module {
     void back_end_passes();
 
 private:
-    unordered_map<const StructuredType*, TypedFunctionRef> destructor_placeholders;
+    Value cached_indeterminate_bool{};
 };
 
 #endif

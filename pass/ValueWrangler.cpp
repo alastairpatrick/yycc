@@ -113,10 +113,10 @@ void ValueWrangler::call_sideeffect_intrinsic() {
     function.call(builder, nullptr, 0);
 }
 
-Value ValueWrangler::call_is_constant_intrinsic(const Value& value, const Location& location) {
+Value ValueWrangler::call_is_constant_intrinsic(const Value& value) {
     auto type = value.type->llvm_type();
     auto function = module->lookup_intrinsic("llvm.is.constant", &type, 1);
-    auto arg = get_value(value, location);
+    auto arg = value.dangerously_get_value(builder, outcome);
     return Value(IntegerType::of_bool(), function.call(builder, &arg, 1));
 }
 

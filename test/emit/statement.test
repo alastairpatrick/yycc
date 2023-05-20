@@ -357,6 +357,8 @@ void f(S s) {
 EXPECT_IR
 %S = type { i32 }
 
+@indeterminate = external global i1
+
 declare i32 @who_knows()
 
 define void @f(%S %0) {
@@ -370,17 +372,13 @@ define void @f(%S %0) {
   br i1 %3, label %if_c, label %if_e
 
 if_c:                                             ; preds = %1
-  %4 = load %S, ptr %t, align 4
-  call void @destructor_placeholder(ptr %t, ptr @destructor, %S %4, %S zeroinitializer)
-  %5 = load %S, ptr %s, align 4
-  call void @destructor_placeholder(ptr %s, ptr @destructor, %S %5, %S zeroinitializer)
+  call void @destructor_wrapper(ptr %t)
+  call void @destructor_wrapper(ptr %s)
   ret void
 
 if_e:                                             ; preds = %1
-  %6 = load %S, ptr %t, align 4
-  call void @destructor_placeholder(ptr %t, ptr @destructor, %S %6, %S zeroinitializer)
-  %7 = load %S, ptr %s, align 4
-  call void @destructor_placeholder(ptr %s, ptr @destructor, %S %7, %S zeroinitializer)
+  call void @destructor_wrapper(ptr %t)
+  call void @destructor_wrapper(ptr %s)
   ret void
 }
 
@@ -388,7 +386,25 @@ define void @destructor(ptr %0) {
   ret void
 }
 
-declare void @destructor_placeholder(ptr, ptr, %S, %S)
+define internal void @destructor_wrapper(ptr %0) {
+  %2 = load %S, ptr %0, align 4
+  %3 = load i1, ptr @indeterminate, align 1
+  %4 = select i1 %3, %S %2, %S zeroinitializer
+  %5 = call i1 @llvm.is.constant.s_Ss(%S %4)
+  br i1 %5, label %7, label %6
+
+6:                                                ; preds = %1
+  call void @destructor(ptr %0)
+  br label %7
+
+7:                                                ; preds = %6, %1
+  ret void
+}
+
+; Function Attrs: convergent nocallback nofree nosync nounwind readnone willreturn
+declare i1 @llvm.is.constant.s_Ss(%S) #0
+
+attributes #0 = { convergent nocallback nofree nosync nounwind readnone willreturn }
 END
 
 

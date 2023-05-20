@@ -12,36 +12,23 @@ Module::~Module() {
     LLVMDisposeModule(llvm_module);
 }
 
-TypedFunctionRef Module::destructor_placeholder(const StructuredType* type) {
+Value Module::indeterminate_bool() {
     auto context = TranslationUnitContext::it;
 
-    auto it = destructor_placeholders.find(type);
-    if (it != destructor_placeholders.end()) return it->second;
+    if (cached_indeterminate_bool.is_valid()) return cached_indeterminate_bool;
 
-    // void placeholder(T* receiver, void actual_destructor(T*), T actual_state, T default_state)
-    LLVMTypeRef placeholder_params[] = {
-        context->llvm_pointer_type,
-        context->llvm_pointer_type,
-        type->llvm_type(),
-        type->llvm_type(),
-    };
-    TypedFunctionRef placeholder;
-    placeholder.type = LLVMFunctionType(context->llvm_void_type, placeholder_params, 4, false);
-    placeholder.function = LLVMAddFunction(llvm_module, "destructor_placeholder", placeholder.type);
-
-    destructor_placeholders[type] = placeholder;
-    destructor_placeholder_functions.insert(placeholder.function);
-
-    return placeholder;
+    cached_indeterminate_bool = Value(ValueKind::LVALUE, IntegerType::of_bool(),
+                                      LLVMAddGlobal(llvm_module, context->llvm_bool_type, "indeterminate"));
+    return cached_indeterminate_bool;
 }
 
-TypedFunctionRef Module::lookup_intrinsic(const char* name, const LLVMTypeRef* param_types, unsigned num_params) {
+TypedFunctionRef Module::lookup_intrinsic(const char* name, LLVMTypeRef* param_types, unsigned num_params) {
     auto context = TranslationUnitContext::it;
 
     TypedFunctionRef ref;
     auto id = LLVMLookupIntrinsicID(name, strlen(name));
-    ref.function = LLVMGetIntrinsicDeclaration(llvm_module, id, nullptr, 0);
-    ref.type = LLVMIntrinsicGetType(context->llvm_context, id, nullptr, 0);
+    ref.function = LLVMGetIntrinsicDeclaration(llvm_module, id, param_types, num_params);
+    ref.type = LLVMIntrinsicGetType(context->llvm_context, id, param_types, num_params);
     return ref;
 }
 

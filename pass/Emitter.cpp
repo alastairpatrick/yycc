@@ -56,7 +56,7 @@ struct Emitter: ValueWrangler, Visitor {
     InternedString this_string;
     Value this_value;
     LLVMTypeRef destructor_wrapper_type{};
-    LLVMValueRef destructor_wrapper{};
+    unordered_map<const StructuredType*, TypedFunctionRef> destructor_wrappers;
 
     Emitter(Module* module, EmitOutcome outcome, const EmitOptions& options)
         : ValueWrangler(module, outcome), options(options) {
@@ -66,8 +66,60 @@ struct Emitter: ValueWrangler, Visitor {
     void push_scope() {
         scopes.emplace_back();
     }
+    
+    TypedFunctionRef destructor_wrapper(const StructuredType* type) {
+        auto context = TranslationUnitContext::it;
+
+        auto it = destructor_wrappers.find(type);
+        if (it != destructor_wrappers.end()) return it->second;
+
+        auto function = type->destructor->function();
+
+        auto old_block = LLVMGetInsertBlock(builder);
+
+        LLVMTypeRef param_types[] = {
+            context->llvm_pointer_type,
+        };
+        TypedFunctionRef ref;
+        ref.type = LLVMFunctionType(context->llvm_void_type, param_types, 1, false);
+        ref.function = LLVMAddFunction(module->llvm_module, "destructor_wrapper", ref.type);
+        LLVMSetLinkage(ref.function, LLVMInternalLinkage);
+
+        auto entry_block = LLVMAppendBasicBlockInContext(context->llvm_context, ref.function, "");
+        LLVMPositionBuilderAtEnd(builder, entry_block);
+
+        auto receiver = LLVMGetParam(ref.function, 0);
+        auto llvm_type = type->llvm_type();
+        auto current_state = LLVMBuildLoad2(builder, llvm_type, receiver, "");
+
+        auto indeterminate = module->indeterminate_bool();
+        auto selected = LLVMBuildSelect(builder, indeterminate.dangerously_get_value(builder, outcome),
+                                                 current_state,
+                                                 LLVMConstNull(llvm_type), "");
+
+        auto is_const = call_is_constant_intrinsic(Value(type, selected));
+
+        auto destructor_block = LLVMAppendBasicBlockInContext(context->llvm_context, ref.function, "");
+        auto skip_block = LLVMAppendBasicBlockInContext(context->llvm_context, ref.function, "");
+
+        LLVMBuildCondBr(builder, is_const.dangerously_get_value(builder, outcome), skip_block, destructor_block);
+
+        LLVMPositionBuilderAtEnd(builder, destructor_block);
+        LLVMBuildCall2(builder, type->destructor->type->llvm_type(), get_address(function->value), &receiver, 1, "");
+        LLVMBuildBr(builder, skip_block);
+
+        LLVMPositionBuilderAtEnd(builder, skip_block);
+        LLVMBuildRetVoid(builder);
+
+        LLVMPositionBuilderAtEnd(builder, old_block);
+
+        destructor_wrappers[type] = ref;
+        return ref;
+    }
 
     bool call_destructor_immediately(const Value& value) {
+        auto context = TranslationUnitContext::it;
+
         if (!value.has_address) return false;
 
         auto structured_type = unqualified_type_cast<StructuredType>(value.type->unqualified());
@@ -76,16 +128,9 @@ struct Emitter: ValueWrangler, Visitor {
         auto destructor = structured_type->destructor;
         if (!destructor) return false;
 
-        auto placeholder = module->destructor_placeholder(structured_type);
-        auto function = destructor->function();
-
-        LLVMValueRef args[] = {
-            value.dangerously_get_address(),
-            get_address(function->value),
-            value.dangerously_get_value(builder, outcome),
-            LLVMConstNull(value.type->llvm_type()),
-        };
-        LLVMBuildCall2(builder, placeholder.type, placeholder.function, args, 4, "");
+        auto wrapper = destructor_wrapper(structured_type);
+        auto arg = value.dangerously_get_address();
+        LLVMBuildCall2(builder, wrapper.type, wrapper.function, &arg, 1, "");
 
         return true;
     }

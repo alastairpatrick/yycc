@@ -194,7 +194,6 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
                     
                     if (test_type >= TestType::MIDDLE_END) {
                         module.middle_end_passes("default<O2>");
-                        module.substitution_pass();
                     }
 
                     char* module_string = LLVMPrintModuleToString(module.llvm_module);

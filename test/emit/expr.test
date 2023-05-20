@@ -13,6 +13,8 @@ void f() {
 EXPECT_IR
 %S = type { i32 }
 
+@indeterminate = external global i1
+
 declare %S @g()
 
 define void @f() {
@@ -23,14 +25,11 @@ define void @f() {
   store %S %4, ptr %3, align 4
   %5 = call %S @g()
   store %S %5, ptr %2, align 4
-  %6 = load %S, ptr %2, align 4
-  call void @destructor_placeholder(ptr %2, ptr @destructor, %S %6, %S zeroinitializer)
-  %7 = load %S, ptr %3, align 4
-  call void @destructor_placeholder(ptr %3, ptr @destructor, %S %7, %S zeroinitializer)
-  %8 = call %S @g()
-  store %S %8, ptr %1, align 4
-  %9 = load %S, ptr %1, align 4
-  call void @destructor_placeholder(ptr %1, ptr @destructor, %S %9, %S zeroinitializer)
+  call void @destructor_wrapper(ptr %2)
+  call void @destructor_wrapper(ptr %3)
+  %6 = call %S @g()
+  store %S %6, ptr %1, align 4
+  call void @destructor_wrapper(ptr %1)
   ret void
 }
 
@@ -38,7 +37,25 @@ define void @destructor(ptr %0) {
   ret void
 }
 
-declare void @destructor_placeholder(ptr, ptr, %S, %S)
+define internal void @destructor_wrapper(ptr %0) {
+  %2 = load %S, ptr %0, align 4
+  %3 = load i1, ptr @indeterminate, align 1
+  %4 = select i1 %3, %S %2, %S zeroinitializer
+  %5 = call i1 @llvm.is.constant.s_Ss(%S %4)
+  br i1 %5, label %7, label %6
+
+6:                                                ; preds = %1
+  call void @destructor(ptr %0)
+  br label %7
+
+7:                                                ; preds = %6, %1
+  ret void
+}
+
+; Function Attrs: convergent nocallback nofree nosync nounwind readnone willreturn
+declare i1 @llvm.is.constant.s_Ss(%S) #0
+
+attributes #0 = { convergent nocallback nofree nosync nounwind readnone willreturn }
 END
 
 

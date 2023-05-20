@@ -39,7 +39,7 @@ struct ValueWrangler: TypeVisitor {
     Value allocate_auto_storage(const Type* type, const char* name);
 
     void call_sideeffect_intrinsic();
-    Value call_is_constant_intrinsic(const Value& value, const Location& location);
+    Value call_is_constant_intrinsic(const Value& value);
 
 private:
     Value value;
