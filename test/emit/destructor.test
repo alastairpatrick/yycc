@@ -37,6 +37,29 @@ declare void @destructor(ptr) local_unnamed_addr
 END
 
 
+BEGIN Calls destructor on partially uninitialized object
+struct S {
+    int x, y;
+    void destructor(S&);
+};
+void f() {
+    S s = {0, {void}};
+}
+EXPECT_IR
+%S = type { i32, i32 }
+
+define void @f() local_unnamed_addr {
+destructor_wrapper.exit:
+  %s = alloca %S, align 8
+  store i32 0, ptr %s, align 8
+  call void @destructor(ptr nonnull %s)
+  ret void
+}
+
+declare void @destructor(ptr) local_unnamed_addr
+END
+
+
 BEGIN Calls destructor before explicit return
 struct S {
     int x;
