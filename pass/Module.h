@@ -39,7 +39,7 @@ struct Module {
     ~Module();
 
     TypedFunctionRef destructor_placeholder(const StructuredType* type);
-    void call_sideeffect_intrinsic(LLVMBuilderRef builder);
+    TypedFunctionRef lookup_intrinsic(const char* name, const LLVMTypeRef* param_types, unsigned num_params);
 
     void resolve_pass(const vector<Declaration*>& declarations, Scope& file_scope);
     void entity_pass();
@@ -50,7 +50,6 @@ struct Module {
 
 private:
     unordered_map<const StructuredType*, TypedFunctionRef> destructor_placeholders;
-    TypedFunctionRef cached_sideeffect_intrinsic;
 };
 
 #endif

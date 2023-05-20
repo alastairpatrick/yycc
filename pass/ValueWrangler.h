@@ -38,6 +38,9 @@ struct ValueWrangler: TypeVisitor {
     void make_addressable(Value& value);
     Value allocate_auto_storage(const Type* type, const char* name);
 
+    void call_sideeffect_intrinsic();
+    Value call_is_constant_intrinsic(const Value& value, const Location& location);
+
 private:
     Value value;
     Location location;
@@ -53,7 +56,7 @@ private:
 
     void convert_array_to_pointer();
     void convert_enum_to_int();
-    LLVMValueRef get_value(const Value &value);
+    LLVMValueRef get_value_internal(const Value &value);
 };
 
 

@@ -499,7 +499,7 @@ struct Emitter: ValueWrangler, Visitor {
 
         // C11 6.8.5p6
         if (synthesize_side_effect) {
-            module->call_sideeffect_intrinsic(builder);
+            call_sideeffect_intrinsic();
         }
 
         accept_statement(statement->body);

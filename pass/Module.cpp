@@ -35,19 +35,14 @@ TypedFunctionRef Module::destructor_placeholder(const StructuredType* type) {
     return placeholder;
 }
 
-static void lookup_intrinsic(TypedFunctionRef& ref, LLVMModuleRef llvm_module, const char* name, const LLVMTypeRef* param_types, unsigned num_params) {
+TypedFunctionRef Module::lookup_intrinsic(const char* name, const LLVMTypeRef* param_types, unsigned num_params) {
     auto context = TranslationUnitContext::it;
 
-    if (ref.function) return;
-
+    TypedFunctionRef ref;
     auto id = LLVMLookupIntrinsicID(name, strlen(name));
     ref.function = LLVMGetIntrinsicDeclaration(llvm_module, id, nullptr, 0);
     ref.type = LLVMIntrinsicGetType(context->llvm_context, id, nullptr, 0);
-}
-
-void Module::call_sideeffect_intrinsic(LLVMBuilderRef builder) {
-    lookup_intrinsic(cached_sideeffect_intrinsic, llvm_module, "llvm.sideeffect", nullptr, 0);
-    cached_sideeffect_intrinsic.call(builder, nullptr, 0);
+    return ref;
 }
 
 void Module::middle_end_passes(const char* passes) {

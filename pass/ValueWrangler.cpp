@@ -108,7 +108,19 @@ Value ValueWrangler::allocate_auto_storage(const Type* type, const char* name) {
     return Value(ValueKind::LVALUE, type, storage);
 }
 
-LLVMValueRef ValueWrangler::get_value(const Value &value) {
+void ValueWrangler::call_sideeffect_intrinsic() {
+    auto function = module->lookup_intrinsic("llvm.sideeffect", nullptr, 0);
+    function.call(builder, nullptr, 0);
+}
+
+Value ValueWrangler::call_is_constant_intrinsic(const Value& value, const Location& location) {
+    auto type = value.type->llvm_type();
+    auto function = module->lookup_intrinsic("llvm.is.constant", &type, 1);
+    auto arg = get_value(value, location);
+    return Value(IntegerType::of_bool(), function.call(builder, &arg, 1));
+}
+
+LLVMValueRef ValueWrangler::get_value_internal(const Value &value) {
     return get_value(value, location, false);
 }
 
@@ -171,7 +183,7 @@ const Type* ValueWrangler::visit(const PointerType* dest_type) {
         result = Value(dest_type, value.dangerously_get_address());
     } else if (auto source_type = unqualified_type_cast<IntegerType>(value.type)) {
         conv_kind = ConvKind::EXPLICIT;
-        result = Value(dest_type, LLVMBuildIntToPtr(builder, get_value(value), dest_type->llvm_type(), ""));
+        result = Value(dest_type, LLVMBuildIntToPtr(builder, get_value_internal(value), dest_type->llvm_type(), ""));
     } else if (auto source_type = unqualified_type_cast<PointerType>(value.type)) {
         conv_kind = check_pointer_conversion(source_type->base_type, dest_type->base_type);
         result = Value(value.bit_cast(dest_type));
@@ -185,16 +197,16 @@ const Type* ValueWrangler::visit(const IntegerType* dest_type) {
     convert_enum_to_int();
 
     if (auto source_type = unqualified_type_cast<IntegerType>(value.type)) {
-        result = Value(dest_type, LLVMBuildIntCast2(builder, get_value(value), dest_type->llvm_type(), source_type->is_signed(), ""));
+        result = Value(dest_type, LLVMBuildIntCast2(builder, get_value_internal(value), dest_type->llvm_type(), source_type->is_signed(), ""));
     } else if (auto source_type = unqualified_type_cast<FloatingPointType>(value.type)) {
         if (dest_type->is_signed()) {
-            result = Value(dest_type, LLVMBuildFPToSI(builder, get_value(value), dest_type->llvm_type(), ""));
+            result = Value(dest_type, LLVMBuildFPToSI(builder, get_value_internal(value), dest_type->llvm_type(), ""));
         } else {
-            result = Value(dest_type, LLVMBuildFPToUI(builder, get_value(value), dest_type->llvm_type(), ""));
+            result = Value(dest_type, LLVMBuildFPToUI(builder, get_value_internal(value), dest_type->llvm_type(), ""));
         }
     } else if (auto source_type = unqualified_type_cast<PointerType>(value.type)) {
         conv_kind = dest_type->size == IntegerSize::BOOL ? ConvKind::IMPLICIT : ConvKind::EXPLICIT;
-        result = Value(dest_type, LLVMBuildPtrToInt(builder, get_value(value), dest_type->llvm_type(), ""));
+        result = Value(dest_type, LLVMBuildPtrToInt(builder, get_value_internal(value), dest_type->llvm_type(), ""));
     }
 
     return nullptr;
@@ -204,12 +216,12 @@ const Type* ValueWrangler::visit(const FloatingPointType* dest_type) {
     convert_enum_to_int();
 
     if (unqualified_type_cast<FloatingPointType>(value.type)) {
-        result = Value(dest_type, LLVMBuildFPCast(builder, get_value(value), dest_type->llvm_type(), ""));
+        result = Value(dest_type, LLVMBuildFPCast(builder, get_value_internal(value), dest_type->llvm_type(), ""));
     } else if (auto source_type = unqualified_type_cast<IntegerType>(value.type)) {
         if (source_type->is_signed()) {
-            result = Value(dest_type, LLVMBuildSIToFP(builder, get_value(value), dest_type->llvm_type(), ""));
+            result = Value(dest_type, LLVMBuildSIToFP(builder, get_value_internal(value), dest_type->llvm_type(), ""));
         } else {
-            result = Value(dest_type, LLVMBuildUIToFP(builder, get_value(value), dest_type->llvm_type(), ""));
+            result = Value(dest_type, LLVMBuildUIToFP(builder, get_value_internal(value), dest_type->llvm_type(), ""));
         }
     }
     return nullptr;
