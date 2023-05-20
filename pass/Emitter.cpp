@@ -83,6 +83,10 @@ struct Emitter: ValueWrangler, Visitor {
         TypedFunctionRef ref;
         ref.type = LLVMFunctionType(context->llvm_void_type, param_types, 1, false);
         ref.function = LLVMAddFunction(module->llvm_module, "destructor_wrapper", ref.type);
+        destructor_wrappers[type] = ref;
+
+        if (!options.emit_helpers) return ref;
+
         LLVMSetLinkage(ref.function, LLVMInternalLinkage);
 
         auto entry_block = LLVMAppendBasicBlockInContext(context->llvm_context, ref.function, "");
@@ -113,7 +117,6 @@ struct Emitter: ValueWrangler, Visitor {
 
         LLVMPositionBuilderAtEnd(builder, old_block);
 
-        destructor_wrappers[type] = ref;
         return ref;
     }
 

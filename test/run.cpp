@@ -188,7 +188,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
 
                     EmitOptions options;
                     options.initialize_variables = false;
-                    options.emit_helpers = false;
+                    options.emit_helpers = test_type >= TestType::MIDDLE_END;
 
                     module.emit_pass(options);
                     
