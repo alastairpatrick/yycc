@@ -27,3 +27,28 @@ define void @f() {
 }
 END
 
+
+BEGIN Unreachable branching control flow is harmless
+int what;
+void f() {
+    return;
+    if (what) {
+    } else {
+    }
+}
+EXPECT_IR
+@what = global i32 0
+
+define void @f() {
+  ret void
+
+if_c:                                             ; No predecessors!
+  br label %if_e
+
+if_a:                                             ; No predecessors!
+  br label %if_e
+
+if_e:                                             ; preds = %if_a, %if_c
+  ret void
+}
+END
