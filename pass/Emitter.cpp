@@ -90,13 +90,21 @@ struct Emitter: ValueWrangler, Visitor {
         return true;
     }
 
-    void call_pending_destructors() {
-        auto& destructors = scopes.back().destructors;
+    void call_pending_destructors(const EmitterScope& scope) {
+        auto& destructors = scope.destructors;
         for (auto it = destructors.rbegin(); it != destructors.rend(); ++it) {
             call_destructor_immediately(it->addressible_value);
         }
+    }
 
-        destructors.clear();
+    void call_pending_destructors() {
+        call_pending_destructors(scopes.back());
+    }
+
+    void call_pending_destructors_at_all_scopes() {
+        for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
+            call_pending_destructors(*it);
+        }
     }
 
     void pop_scope() {
@@ -556,7 +564,7 @@ struct Emitter: ValueWrangler, Visitor {
                 }
             }
 
-            call_pending_destructors();
+            call_pending_destructors_at_all_scopes();
             LLVMBuildRetVoid(builder);
         } else {
             LLVMValueRef rvalue;
@@ -574,7 +582,7 @@ struct Emitter: ValueWrangler, Visitor {
                 rvalue = LLVMConstNull(function_type->return_type->llvm_type());
             }
 
-            call_pending_destructors();
+            call_pending_destructors_at_all_scopes();
             LLVMBuildRet(builder, rvalue);
         }
 

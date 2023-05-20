@@ -386,15 +386,18 @@ S f(S s) {
 EXPECT_IR
 %S = type { i32 }
 
-; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
-define %S @f(%S returned %0) local_unnamed_addr #0 {
+define %S @f(%S returned %0) local_unnamed_addr {
+  %s = alloca %S, align 8
+  store i32 0, ptr %s, align 8
   ret %S %0
 }
 
 ; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
-define void @destructor(ptr nocapture readnone %0) local_unnamed_addr #0 {
+define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
+
+declare void @destructor_placeholder(ptr, ptr, %S, %S) local_unnamed_addr
 
 attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
