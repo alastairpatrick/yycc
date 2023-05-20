@@ -20,6 +20,8 @@ define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
 
+declare void @destructor_placeholder(ptr, ptr, %S, %S) local_unnamed_addr
+
 attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
 
@@ -46,6 +48,8 @@ define void @f() local_unnamed_addr {
 define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
+
+declare void @destructor_placeholder(ptr, ptr, %S, %S) local_unnamed_addr
 
 attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
@@ -74,6 +78,8 @@ define void @f() local_unnamed_addr {
 define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
+
+declare void @destructor_placeholder(ptr, ptr, %S, %S) local_unnamed_addr
 
 attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
@@ -116,6 +122,8 @@ define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
 
+declare void @destructor_placeholder(ptr, ptr, %S, %S) local_unnamed_addr
+
 attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
 
@@ -143,6 +151,8 @@ define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
 
+declare void @destructor_placeholder(ptr, ptr, %S, %S) local_unnamed_addr
+
 attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
 
@@ -168,6 +178,8 @@ define void @f(ptr %0) local_unnamed_addr {
 define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
+
+declare void @destructor_placeholder(ptr, ptr, %S, %S) local_unnamed_addr
 
 attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
@@ -221,6 +233,8 @@ define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
 
+declare void @destructor_placeholder(ptr, ptr, %S, %S) local_unnamed_addr
+
 attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
 
@@ -253,6 +267,8 @@ define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
 
+declare void @destructor_placeholder(ptr, ptr, %S, %S) local_unnamed_addr
+
 attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
 
@@ -282,6 +298,8 @@ define void @f() local_unnamed_addr {
 define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
+
+declare void @destructor_placeholder(ptr, ptr, %S, %S) local_unnamed_addr
 
 attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
@@ -314,6 +332,8 @@ define void @f() local_unnamed_addr {
 define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
+
+declare void @destructor_placeholder(ptr, ptr, %S, %S) local_unnamed_addr
 
 attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
@@ -349,7 +369,32 @@ define void @destructor(ptr nocapture readnone %0) #0 {
   ret void
 }
 
+declare void @destructor_placeholder(ptr, ptr, %S, %S) local_unnamed_addr
+
 attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
 END
 
 
+BEGIN Move expression in return statement
+struct S {
+    int x;
+    void destructor(S&) {}
+};
+S f(S s) {
+    return &&s;
+}
+EXPECT_IR
+%S = type { i32 }
+
+; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
+define %S @f(%S returned %0) local_unnamed_addr #0 {
+  ret %S %0
+}
+
+; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
+define void @destructor(ptr nocapture readnone %0) local_unnamed_addr #0 {
+  ret void
+}
+
+attributes #0 = { mustprogress nofree norecurse nosync nounwind readnone willreturn }
+END

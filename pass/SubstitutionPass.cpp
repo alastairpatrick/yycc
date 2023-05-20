@@ -57,13 +57,6 @@ struct SubstitutionPass {
         }
 
         LLVMDisposeBuilder(builder);
-
-        for (auto function: module.destructor_placeholder_functions) {
-            LLVMDeleteFunction(function);
-        }
-
-        module.destructor_placeholders.clear();
-        module.destructor_placeholder_functions.clear();
     }
 };
 

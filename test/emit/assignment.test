@@ -355,7 +355,7 @@ define void @f(%S %0) {
 END
 
 
-BEGIN Cannot assign struct lvalue with destructor
+BEGIN Cannot assign struct lvalue with destructor to itself
 struct S {
     int x;
     void destructor(S&) {}

@@ -561,7 +561,13 @@ struct Emitter: ValueWrangler, Visitor {
         } else {
             LLVMValueRef rvalue;
             if (statement->expr) {
-                rvalue = convert_to_rvalue(statement->expr, function_type->return_type->unqualified(), ConvKind::IMPLICIT);
+                Value value = emit_expr(statement->expr, false).unqualified();
+                if (value.type->unqualified() == function_type->return_type->unqualified()) {
+                    rvalue = get_value(value, statement->expr->location);
+                } else {
+                    pend_destructor(value);
+                    rvalue = convert_to_rvalue(value, function_type->return_type->unqualified(), ConvKind::IMPLICIT, statement->expr->location);
+                }
             } else {
                 message(Severity::ERROR, statement->location) << "non-void function '" << *function_declarator->identifier << "' should return a value\n";
                 function_declarator->message_see_declaration("return type");
