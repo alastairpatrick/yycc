@@ -143,12 +143,6 @@ struct Emitter: ValueWrangler, Visitor {
         }
     }
 
-    void call_pending_destructors_at_all_scopes() {
-        for (auto scope = innermost_scope; scope; scope = scope->parent_scope) {
-            call_pending_destructors(*scope);
-        }
-    }
-
     bool pend_destructor(Value& value) {
         auto structured_type = unqualified_type_cast<StructuredType>(value.type->unqualified());
         if (!structured_type) return false;
@@ -604,6 +598,12 @@ struct Emitter: ValueWrangler, Visitor {
         LLVMPositionBuilderAtEnd(builder, end_block);
 
         return VisitStatementOutput();
+    }
+
+    void call_pending_destructors_at_all_scopes() {
+        for (auto scope = innermost_scope; scope; scope = scope->parent_scope) {
+            call_pending_destructors(*scope);
+        }
     }
 
     virtual VisitStatementOutput visit(ReturnStatement* statement) override {
