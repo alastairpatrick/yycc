@@ -952,11 +952,7 @@ struct Emitter: ValueWrangler, Visitor {
                 auto result_type = IntegerType::of_size(IntegerSignedness::SIGNED);
                 if (outcome == EmitOutcome::TYPE) return Value(result_type);
             
-                auto left_int = LLVMBuildPtrToInt(builder, get_value(left_value, left_location), result_type->llvm_type(), "");
-                auto right_int = LLVMBuildPtrToInt(builder, get_value(right_value, right_location), result_type->llvm_type(), "");
-                auto byte_diff = LLVMBuildSub(builder, left_int, right_int, "");
-                auto size_of_base_type = LLVMStoreSizeOfType(llvm_target_data, left_pointer_type->base_type->llvm_type());
-                auto result = LLVMBuildSDiv(builder, byte_diff, LLVMConstInt(result_type->llvm_type(), size_of_base_type, true), "");
+                auto result = LLVMBuildPtrDiff2(builder, left_pointer_type->base_type->llvm_type(), get_value(left_value, left_location), get_value(right_value, right_location), "");
                 return Value(result_type, result);
             }
         }

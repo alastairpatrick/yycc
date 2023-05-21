@@ -486,12 +486,12 @@ define i64 @f(ptr %0, ptr %1) {
   store ptr %0, ptr %p, align 8
   %q = alloca ptr, align 8
   store ptr %1, ptr %q, align 8
-  %3 = load ptr, ptr %p, align 8
-  %4 = ptrtoint ptr %3 to i64
-  %5 = load ptr, ptr %q, align 8
-  %6 = ptrtoint ptr %5 to i64
-  %7 = sub i64 %4, %6
-  %8 = sdiv i64 %7, 4
+  %3 = load ptr, ptr %q, align 8
+  %4 = load ptr, ptr %p, align 8
+  %5 = ptrtoint ptr %4 to i64
+  %6 = ptrtoint ptr %3 to i64
+  %7 = sub i64 %5, %6
+  %8 = sdiv exact i64 %7, ptrtoint (ptr getelementptr (i32, ptr null, i32 1) to i64)
   ret i64 %8
 }
 END
