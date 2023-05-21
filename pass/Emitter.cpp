@@ -44,6 +44,17 @@ struct SwitchConstruct: Construct {
     ~SwitchConstruct();
 };
 
+struct GoToDestructorCall {
+    size_t scope_id{};
+    LLVMValueRef instruction{};
+};
+
+struct GoToLabel {
+    LLVMBasicBlockRef block{};
+    size_t label_scope_id{};
+    vector<GoToDestructorCall> destructor_calls;
+};
+
 struct Emitter: ValueWrangler, Visitor {
     const EmitOptions& options;
 
@@ -53,7 +64,7 @@ struct Emitter: ValueWrangler, Visitor {
     const FunctionType* function_type{};
     LLVMValueRef function{};
     LLVMBasicBlockRef unreachable_block{};
-    unordered_map<InternedString, LLVMBasicBlockRef> goto_labels;
+    unordered_map<InternedString, GoToLabel> goto_labels;
     size_t next_scope_id{};
     EmitterScope* innermost_scope{};
     SwitchConstruct* innermost_switch{};
@@ -120,28 +131,29 @@ struct Emitter: ValueWrangler, Visitor {
         return ref;
     }
 
-    bool call_destructor_immediately(const Value& value) {
+    LLVMValueRef call_destructor_immediately(const Value& value) {
         auto context = TranslationUnitContext::it;
 
-        if (!value.has_address) return false;
+        if (!value.has_address) return nullptr;
 
         auto structured_type = unqualified_type_cast<StructuredType>(value.type->unqualified());
-        if (!structured_type) return false;
+        if (!structured_type) return nullptr;
 
         auto destructor = structured_type->destructor;
-        if (!destructor) return false;
+        if (!destructor) return nullptr;
 
         auto wrapper = destructor_wrapper(structured_type);
         auto arg = value.dangerously_get_address();
-        LLVMBuildCall2(builder, wrapper.type, wrapper.function, &arg, 1, "");
-
-        return true;
+        return LLVMBuildCall2(builder, wrapper.type, wrapper.function, &arg, 1, "");
     }
 
-    void call_pending_destructors(const EmitterScope& scope) {
+    void call_pending_destructors(const EmitterScope& scope, GoToLabel* go_to_label = nullptr) {
         auto& destructors = scope.destructors;
         for (auto it = destructors.rbegin(); it != destructors.rend(); ++it) {
-            call_destructor_immediately(it->addressible_value);
+            auto call = call_destructor_immediately(it->addressible_value);
+            if (go_to_label && call) {
+                go_to_label->destructor_calls.push_back({ scope.id, call });
+            }
         }
     }
 
@@ -174,12 +186,12 @@ struct Emitter: ValueWrangler, Visitor {
         return LLVMAppendBasicBlockInContext(llvm_context, function, name);
     }
 
-    LLVMBasicBlockRef lookup_label(const Identifier& identifier) {
-        auto& block = goto_labels[identifier.text];
-        if (!block) {
-            block = append_block(identifier.c_str());
+    GoToLabel& lookup_go_to_label(const Identifier& identifier) {
+        auto& label = goto_labels[identifier.text];
+        if (!label.block) {
+            label.block = append_block(identifier.c_str());
         }
-        return block;
+        return label;
     }
 
     // Destruction Of Temporaries
@@ -228,13 +240,33 @@ struct Emitter: ValueWrangler, Visitor {
         return emit_expr(expr);
     }
 
+    bool within_scope(size_t scope_id) {
+        for (auto scope = innermost_scope; scope; scope = scope->parent_scope) {
+            if (scope->id == scope_id) return true;
+        }
+        return false;
+    }
+
     virtual VisitStatementOutput accept_statement(Statement* statement) override {
         if (!statement) return VisitStatementOutput();
 
         for (auto& label: statement->labels) {
             LLVMBasicBlockRef labelled_block{};
             if (label.kind == LabelKind::GOTO) {
-                labelled_block = lookup_label(label.identifier);
+                auto& go_to_label = lookup_go_to_label(label.identifier);
+                go_to_label.label_scope_id = innermost_scope->id;
+
+                // If a goto to this label has already been encountered, destructor calls may have been
+                // generated, exiting all scopes. Now that the scope relationship can be correctly
+                // determined, delete those destructor calls that are incorrect.
+                for (auto& call: go_to_label.destructor_calls) {
+                    if (within_scope(call.scope_id)) {
+                        LLVMInstructionEraseFromParent(call.instruction);
+                    }
+                }
+                go_to_label.destructor_calls.clear();
+
+                labelled_block = go_to_label.block;
             } else if (label.kind == LabelKind::CASE) {
                 labelled_block = innermost_switch->case_labels[label.case_expr];
             } else if (label.kind == LabelKind::DEFAULT) {
@@ -551,8 +583,22 @@ struct Emitter: ValueWrangler, Visitor {
     VisitStatementOutput visit(GoToStatement* statement) {
         LLVMBasicBlockRef target_block{};
         if (statement->kind == TOK_GOTO) {
-            // todo: consider what to do here in terms of calling destructors
-            target_block = lookup_label(statement->identifier);
+            auto& go_to_label = lookup_go_to_label(statement->identifier);
+            target_block = go_to_label.block;
+
+            for (auto scope = innermost_scope; scope; scope = scope->parent_scope) {
+                if (go_to_label.label_scope_id) {
+                    // If the target label has been encountered, generate destructor calls for scopes from which
+                    // control flow exits.
+                    if (scope->descendants.find(go_to_label.label_scope_id) != scope->descendants.end()) break;
+                    call_pending_destructors(*scope);
+                } else {
+                    // Otherwise, generate destructor calls for all scopes and leave information in the GoToLabel
+                    // so incorrect calls can be deleted later when the target label is encountered.
+                    call_pending_destructors(*scope, &go_to_label);                    
+                }
+            }
+
         } else {
             for (auto scope = innermost_scope; scope; scope = scope->parent_scope) {
                 call_pending_destructors(*scope);

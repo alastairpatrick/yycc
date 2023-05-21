@@ -254,6 +254,87 @@ target:                                           ; preds = %0
 END
 
 
+BEGIN Goto calls destructors before branching (1)
+struct S {
+    int x;
+    void destructor(S&);
+};
+void f() {
+    S t = {1};
+    {
+        S s = {1};
+        goto target;
+    }
+    {
+target:
+        return;
+    }
+}
+EXPECT_IR
+%S = type { i32 }
+
+define void @f() {
+  %s = alloca %S, align 8
+  %t = alloca %S, align 8
+  %x = getelementptr inbounds %S, ptr %t, i32 0, i32 0
+  store i32 1, ptr %x, align 4
+  %x1 = getelementptr inbounds %S, ptr %s, i32 0, i32 0
+  store i32 1, ptr %x1, align 4
+  call void @destructor_wrapper(ptr %s)
+  br label %target
+
+target:                                           ; preds = %0
+  call void @destructor_wrapper(ptr %t)
+  ret void
+}
+
+declare void @destructor(ptr)
+
+declare void @destructor_wrapper(ptr)
+END
+
+
+BEGIN Goto calls destructors before branching (2)
+struct S {
+    int x;
+    void destructor(S&);
+};
+void f() {
+    S t = {1};
+    {
+target:
+        t.x = 2;
+    }
+    {
+        S s = {1};
+        goto target;
+    }
+}
+EXPECT_IR
+%S = type { i32 }
+
+define void @f() {
+  %s = alloca %S, align 8
+  %t = alloca %S, align 8
+  %x = getelementptr inbounds %S, ptr %t, i32 0, i32 0
+  store i32 1, ptr %x, align 4
+  br label %target
+
+target:                                           ; preds = %target, %0
+  %x1 = getelementptr inbounds %S, ptr %t, i32 0, i32 0
+  store i32 2, ptr %x1, align 4
+  %x2 = getelementptr inbounds %S, ptr %s, i32 0, i32 0
+  store i32 1, ptr %x2, align 4
+  call void @destructor_wrapper(ptr %s)
+  br label %target
+}
+
+declare void @destructor(ptr)
+
+declare void @destructor_wrapper(ptr)
+END
+
+
 BEGIN Error on break outside appropriate construct
 void f() {
     break;
