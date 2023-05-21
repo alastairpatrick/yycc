@@ -16,8 +16,10 @@ struct PendingDestructor {
 };
 
 struct EmitterScope {
-    EmitterScope* parent_scope{};
+    size_t id;
     Emitter* emitter{};
+    EmitterScope* parent_scope{};
+    unordered_set<size_t> descendants;
 
     vector<PendingDestructor> destructors;
 
@@ -52,6 +54,7 @@ struct Emitter: ValueWrangler, Visitor {
     LLVMValueRef function{};
     LLVMBasicBlockRef unreachable_block{};
     unordered_map<InternedString, LLVMBasicBlockRef> goto_labels;
+    size_t next_scope_id{};
     EmitterScope* innermost_scope{};
     SwitchConstruct* innermost_switch{};
     InternedString this_string;
@@ -1494,8 +1497,14 @@ struct Emitter: ValueWrangler, Visitor {
 };
 
 EmitterScope::EmitterScope(Emitter* emitter): emitter(emitter) {
+    id = ++emitter->next_scope_id;
+
     parent_scope = emitter->innermost_scope;
     emitter->innermost_scope = this;
+
+    for (auto ancestor = parent_scope; ancestor; ancestor = ancestor->parent_scope) {
+        ancestor->descendants.insert(id);
+    }
 }
 
 EmitterScope::~EmitterScope() {
