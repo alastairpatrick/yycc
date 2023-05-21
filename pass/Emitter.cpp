@@ -11,10 +11,22 @@
 
 struct Emitter;
 
-struct Construct {
-    Construct* parent{};
+struct PendingDestructor {
+    Value addressible_value;
+};
+
+struct EmitterScope {
+    EmitterScope* parent_scope{};
     Emitter* emitter{};
 
+    vector<PendingDestructor> destructors;
+
+    EmitterScope(Emitter* emitter);
+    ~EmitterScope();
+};
+
+struct Construct: EmitterScope {
+    Construct* parent_construct{};
     LLVMBasicBlockRef continue_block{};
     LLVMBasicBlockRef break_block{};
 
@@ -32,14 +44,6 @@ struct SwitchConstruct: Construct {
     ~SwitchConstruct();
 };
 
-struct PendingDestructor {
-    Value addressible_value;
-};
-
-struct EmitterScope {
-    vector<PendingDestructor> destructors;
-};
-
 struct Emitter: ValueWrangler, Visitor {
     const EmitOptions& options;
 
@@ -47,10 +51,10 @@ struct Emitter: ValueWrangler, Visitor {
 
     Declarator* function_declarator{};
     const FunctionType* function_type{};
-    list<EmitterScope> scopes;
     LLVMValueRef function{};
     LLVMBasicBlockRef unreachable_block{};
     unordered_map<InternedString, LLVMBasicBlockRef> goto_labels;
+    EmitterScope* innermost_scope{};
     Construct* innermost_construct{};
     SwitchConstruct* innermost_switch{};
     InternedString this_string;
@@ -61,10 +65,6 @@ struct Emitter: ValueWrangler, Visitor {
     Emitter(Module* module, EmitOutcome outcome, const EmitOptions& options)
         : ValueWrangler(module, outcome), options(options) {
         this_string = intern_string("this");
-    }
-
-    void push_scope() {
-        scopes.emplace_back();
     }
     
     TypedFunctionRef destructor_wrapper(const StructuredType* type) {
@@ -145,19 +145,10 @@ struct Emitter: ValueWrangler, Visitor {
         }
     }
 
-    void call_pending_destructors() {
-        call_pending_destructors(scopes.back());
-    }
-
     void call_pending_destructors_at_all_scopes() {
-        for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
-            call_pending_destructors(*it);
+        for (auto scope = innermost_scope; scope; scope = scope->parent_scope) {
+            call_pending_destructors(*scope);
         }
-    }
-
-    void pop_scope() {
-        call_pending_destructors();
-        scopes.pop_back();
     }
 
     bool pend_destructor(Value& value) {
@@ -168,8 +159,7 @@ struct Emitter: ValueWrangler, Visitor {
 
         make_addressable(value);
 
-        auto& scope = scopes.back();
-        scope.destructors.push_back(PendingDestructor(value));
+        innermost_scope->destructors.push_back(PendingDestructor(value));
         return true;
     }
 
@@ -240,9 +230,8 @@ struct Emitter: ValueWrangler, Visitor {
     }
 
     Value emit_full_expr(Expr* expr) {
-        push_scope();
+        EmitterScope scope(this);
         auto value = emit_expr(expr);
-        pop_scope();
         return value;
     }
 
@@ -296,37 +285,37 @@ struct Emitter: ValueWrangler, Visitor {
         unreachable_block = append_block("");
         LLVMPositionBuilderAtEnd(builder, entry_block);
 
-        push_scope();
+        {
+            EmitterScope scope(this);
 
-        this_value = Value();
-        for (size_t i = 0; i < entity->parameters.size(); ++i) {
-            auto param = entity->parameters[i];
-            auto param_entity = param->entity();
+            this_value = Value();
+            for (size_t i = 0; i < entity->parameters.size(); ++i) {
+                auto param = entity->parameters[i];
+                auto param_entity = param->entity();
 
-            auto llvm_param = LLVMGetParam(function, i);
+                auto llvm_param = LLVMGetParam(function, i);
 
-            if (auto reference_type = dynamic_cast<const PassByReferenceType*>(param->type)) {
-                param_entity->value = Value(ValueKind::LVALUE, reference_type->base_type, llvm_param);
+                if (auto reference_type = dynamic_cast<const PassByReferenceType*>(param->type)) {
+                    param_entity->value = Value(ValueKind::LVALUE, reference_type->base_type, llvm_param);
 
-                if (reference_type->kind == PassByReferenceType::Kind::RVALUE) {
+                    if (reference_type->kind == PassByReferenceType::Kind::RVALUE) {
+                        pend_destructor(param_entity->value);
+                    }
+                } else {
+                    auto storage = LLVMBuildAlloca(builder, param->type->llvm_type(), c_str(param->identifier));
+                    param_entity->value = Value(ValueKind::LVALUE, param->type, storage);
+                    LLVMBuildStore(builder, llvm_param, storage);
+
                     pend_destructor(param_entity->value);
                 }
-            } else {
-                auto storage = LLVMBuildAlloca(builder, param->type->llvm_type(), c_str(param->identifier));
-                param_entity->value = Value(ValueKind::LVALUE, param->type, storage);
-                LLVMBuildStore(builder, llvm_param, storage);
 
-                pend_destructor(param_entity->value);
+                if (param->identifier == this_string) {
+                    this_value = param_entity->value;
+                }
             }
 
-            if (param->identifier == this_string) {
-                this_value = param_entity->value;
-            }
+            accept_statement(entity->body);
         }
-
-        accept_statement(entity->body);
-
-        pop_scope();
 
         if (function_type->return_type->unqualified() == &VoidType::it) {
             LLVMBuildRetVoid(builder);
@@ -441,9 +430,8 @@ struct Emitter: ValueWrangler, Visitor {
             bool has_destructor = pend_destructor(entity->value);
 
             if (entity->initializer) {
-                push_scope();
+                EmitterScope scope(this);
                 emit_auto_initializer(entity->value, entity->initializer);
-                pop_scope();
             } else if (options.initialize_variables || has_destructor) {
                 store(entity->value, Value::of_null(type).get_const(), declarator->location);
             }
@@ -491,7 +479,7 @@ struct Emitter: ValueWrangler, Visitor {
     }
 
     VisitStatementOutput visit(CompoundStatement* statement) {
-        push_scope();
+        EmitterScope scope(this);
 
         for (auto node: statement->nodes) {
             if (auto declaration = dynamic_cast<Declaration*>(node)) {
@@ -504,8 +492,6 @@ struct Emitter: ValueWrangler, Visitor {
                 accept_statement(statement);
             }
         }
-
-        pop_scope();
 
         return VisitStatementOutput();
     }
@@ -1501,13 +1487,23 @@ struct Emitter: ValueWrangler, Visitor {
     }
 };
 
-Construct::Construct(Emitter* emitter): emitter(emitter) {
-    parent = emitter->innermost_construct;
+EmitterScope::EmitterScope(Emitter* emitter): emitter(emitter) {
+    parent_scope = emitter->innermost_scope;
+    emitter->innermost_scope = this;
+}
+
+EmitterScope::~EmitterScope() {
+    emitter->call_pending_destructors(*this);
+    emitter->innermost_scope = parent_scope;
+}
+
+Construct::Construct(Emitter* emitter): EmitterScope(emitter) {
+    parent_construct = emitter->innermost_construct;
     emitter->innermost_construct = this;
 }
 
 Construct::~Construct() {
-    emitter->innermost_construct = parent;
+    emitter->innermost_construct = parent_construct;
 }
 
 SwitchConstruct::SwitchConstruct(Emitter* emitter): Construct(emitter) {
