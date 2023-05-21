@@ -193,15 +193,15 @@ struct Emitter: ValueWrangler, Visitor {
     // unqualified type. In this case, use store_and_pend_destructor, which will store the result directly in
     // the lvalue if possible or otherwise convert and pend a destructor call for the temporary.
 
-    Value emit_expr(Expr* expr, bool pend_temporary_destructor = true) {
+    ExprValue emit_expr(Expr* expr, bool pend_temporary_destructor = true) {
         try {
-            auto output =  expr->accept(*this);
+            auto output = expr->accept(*this);
 
             if (pend_temporary_destructor && outcome == EmitOutcome::IR && output.value.kind == ValueKind::RVALUE) {
                 pend_destructor(output.value);
             }
 
-            return output.value;
+            return ExprValue(output.value, expr);
         } catch (FoldError& e) {
             if (!e.error_reported) {
                 message(Severity::ERROR, expr->location) << "not a constant expression\n";
@@ -210,21 +210,20 @@ struct Emitter: ValueWrangler, Visitor {
         }
     }
 
-    void store_and_pend_destructor(const Value& dest, Value source, const Location& dest_location, const Location& source_location) {
+    void store_and_pend_destructor(const Value& dest, ExprValue source, const Location& assignment_location) {
         if (dest.type->unqualified() == source.type->unqualified()) {
             // Destructor was already pended for the dest lvalue
-            store(dest, get_value(source, source_location, false), dest_location);
+            store(dest, get_value(source, false), assignment_location);
         } else {
-            source = convert_to_type(source, dest.type, ConvKind::IMPLICIT, source_location);
+            source = convert_to_type(source, dest.type, ConvKind::IMPLICIT);
             pend_destructor(source);
-            store(dest, get_value(source, source_location, false), dest_location);
+            store(dest, get_value(source, false), assignment_location);
         }
     }
 
-    Value emit_full_expr(Expr* expr) {
+    ExprValue emit_full_expr(Expr* expr) {
         EmitterScope scope(this);
-        auto value = emit_expr(expr);
-        return value;
+        return emit_expr(expr);
     }
 
     virtual VisitStatementOutput accept_statement(Statement* statement) override {
@@ -251,21 +250,21 @@ struct Emitter: ValueWrangler, Visitor {
         return VisitStatementOutput();
     }
 
-    Value convert_to_type(const Value& value, const Type* dest_type, ConvKind kind, const Location& location) {
-        return ValueWrangler::convert_to_type(value, dest_type, kind, location);
+    ExprValue convert_to_type(const ExprValue& value, const Type* dest_type, ConvKind kind) {
+        return ValueWrangler::convert_to_type(value, dest_type, kind);
     }
 
-    LLVMValueRef convert_to_rvalue(const Value& value, const Type* dest_type, ConvKind kind, const Location& location) {
-        return get_value(convert_to_type(value, dest_type, kind, location), location);
+    LLVMValueRef convert_to_rvalue(const ExprValue& value, const Type* dest_type, ConvKind kind) {
+        return get_value(convert_to_type(value, dest_type, kind));
     }
 
-    Value convert_to_type(Expr* expr, const Type* dest_type, ConvKind kind) {
+    ExprValue convert_to_type(Expr* expr, const Type* dest_type, ConvKind kind) {
         auto value = emit_expr(expr).unqualified();
-        return convert_to_type(value, dest_type, kind, expr->location);
+        return convert_to_type(value, dest_type, kind);
     }
 
     LLVMValueRef convert_to_rvalue(Expr* expr, const Type* dest_type, ConvKind kind) {
-        return get_value(convert_to_type(expr, dest_type, kind), expr->location);
+        return get_value(convert_to_type(expr, dest_type, kind));
     }
 
     void emit_function_definition(Declarator* declarator, Function* entity) {
@@ -319,10 +318,10 @@ struct Emitter: ValueWrangler, Visitor {
         function = nullptr;
     }
 
-    Value emit_scalar_initializer(const Type* dest_type, InitializerExpr* initializer) {
+    ExprValue emit_scalar_initializer(const Type* dest_type, InitializerExpr* initializer) {
         if (initializer->elements.empty()) {
             // C23 6.7.10p12
-            return Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
+            return ExprValue(dest_type, LLVMConstNull(dest_type->llvm_type()), initializer);
         } else {
             if (initializer->elements.size() != 1) {
                 message(Severity::ERROR, initializer->elements[1]->location) << "excess elements in scalar initializer\n";
@@ -340,13 +339,14 @@ struct Emitter: ValueWrangler, Visitor {
             return;
         }
 
-        Value scalar_value;
+        ExprValue scalar_value;
         if (auto initializer = dynamic_cast<InitializerExpr*>(expr)) {
             if (auto array_type = unqualified_type_cast<ResolvedArrayType>(dest.type)) {
                 for (size_t i = 0; i < array_type->size; ++i) {
                     LLVMValueRef indices[] = { context->zero_size, Value::of_size(i).get_const() };
                     LLVMValueRef dest_element = LLVMBuildGEP2(builder, array_type->llvm_type(), get_address(dest), indices, 2, "");
-                    emit_auto_initializer(Value(ValueKind::LVALUE, array_type->element_type, dest_element), initializer->elements[i]);
+                    auto element_expr = initializer->elements[i];
+                    emit_auto_initializer(Value(ValueKind::LVALUE, array_type->element_type, dest_element), element_expr);
                 }
                 return;
             }
@@ -356,10 +356,13 @@ struct Emitter: ValueWrangler, Visitor {
                 for (auto declaration: struct_type->declarations) {
                     for (auto member: declaration->declarators) {
                         if (auto member_variable = member->variable()) {
-                            LLVMValueRef dest_element = LLVMBuildInBoundsGEP2(builder, struct_type->llvm_type(), get_address(dest),
-                                                                              member_variable->member->gep_indices.data(), member_variable->member->gep_indices.size(),
-                                                                              c_str(member->identifier));
-                            emit_auto_initializer(Value(ValueKind::LVALUE, member->type, dest_element), initializer->elements[initializer_idx++]);
+                            LLVMValueRef dest_element = LLVMBuildInBoundsGEP2(
+                                builder, struct_type->llvm_type(), get_address(dest),
+                                member_variable->member->gep_indices.data(), member_variable->member->gep_indices.size(),
+                                c_str(member->identifier));
+
+                            auto element_expr = initializer->elements[initializer_idx++];
+                            emit_auto_initializer(Value(ValueKind::LVALUE, member->type, dest_element), element_expr);
                         }
                     }
                 }
@@ -370,11 +373,11 @@ struct Emitter: ValueWrangler, Visitor {
             scalar_value = emit_scalar_initializer(dest.type, initializer);
         } else {
             auto source = emit_expr(expr, false);
-            store_and_pend_destructor(dest, source, expr->location, expr->location);
+            store_and_pend_destructor(dest, source, expr->location);
             return;
         }
 
-        LLVMBuildStore(builder, get_value(scalar_value, expr->location), get_address(dest));
+        LLVMBuildStore(builder, get_value(scalar_value), get_address(dest));
     }
 
     LLVMValueRef emit_static_initializer(const Type* dest_type, Expr* expr) {
@@ -406,7 +409,7 @@ struct Emitter: ValueWrangler, Visitor {
                 return LLVMConstNamedStruct(struct_type->llvm_type(), values.data(), values.size());
             }
 
-            return get_value(emit_scalar_initializer(dest_type, initializer), initializer->location);
+            return get_value(emit_scalar_initializer(dest_type, initializer));
         }
 
         return convert_to_rvalue(expr, dest_type, ConvKind::IMPLICIT);
@@ -423,7 +426,7 @@ struct Emitter: ValueWrangler, Visitor {
 
             if (entity->initializer) {
                 EmitterScope scope(this);
-                emit_auto_initializer(entity->value, entity->initializer);
+                emit_auto_initializer(ExprValue(entity->value, entity->initializer), entity->initializer);
             } else if (options.initialize_variables || has_destructor) {
                 store(entity->value, Value::of_null(type).get_const(), declarator->location);
             }
@@ -621,12 +624,12 @@ struct Emitter: ValueWrangler, Visitor {
         } else {
             LLVMValueRef rvalue;
             if (statement->expr) {
-                Value value = emit_expr(statement->expr, false).unqualified();
+                auto value = emit_expr(statement->expr, false).unqualified();
                 if (value.type->unqualified() == function_type->return_type->unqualified()) {
-                    rvalue = get_value(value, statement->expr->location);
+                    rvalue = get_value(value);
                 } else {
                     pend_destructor(value);
-                    rvalue = convert_to_rvalue(value, function_type->return_type->unqualified(), ConvKind::IMPLICIT, statement->expr->location);
+                    rvalue = convert_to_rvalue(value, function_type->return_type->unqualified(), ConvKind::IMPLICIT);
                 }
             } else {
                 message(Severity::ERROR, statement->location) << "non-void function '" << *function_declarator->identifier << "' should return a value\n";
@@ -656,7 +659,7 @@ struct Emitter: ValueWrangler, Visitor {
         }
 
         auto expr_value = emit_full_expr(statement->expr).unqualified();
-        auto switch_value = LLVMBuildSwitch(builder, get_value(expr_value, statement->expr->location), default_block, statement->cases.size());
+        auto switch_value = LLVMBuildSwitch(builder, get_value(expr_value), default_block, statement->cases.size());
 
         for (auto case_expr: statement->cases) {
             auto case_label = append_block("");
@@ -702,17 +705,17 @@ struct Emitter: ValueWrangler, Visitor {
 
         auto right_value = emit_expr(expr->right, false);
         call_destructor_immediately(left_value);
-        store_and_pend_destructor(left_value, right_value, expr->location, expr->right->location);
+        store_and_pend_destructor(left_value, right_value, expr->location);
 
         return VisitExpressionOutput(left_value);
     }
 
-    Value emit_logical_binary_operation(BinaryExpr* expr, const Value& left_value, const Location& left_location) {
+    Value emit_logical_binary_operation(BinaryExpr* expr, const ExprValue& left_value) {
         auto result_type = IntegerType::of_bool();
         if (outcome == EmitOutcome::TYPE) return Value(result_type);
 
         if (outcome == EmitOutcome::FOLD) {
-            auto llvm_left = convert_to_rvalue(left_value, IntegerType::of_bool(), ConvKind::IMPLICIT, left_location);
+            auto llvm_left = convert_to_rvalue(left_value, IntegerType::of_bool(), ConvKind::IMPLICIT);
             auto llvm_right = convert_to_rvalue(expr->right, IntegerType::of_bool(), ConvKind::IMPLICIT);
 
             if (expr->op == TOK_AND_OP) {
@@ -729,7 +732,7 @@ struct Emitter: ValueWrangler, Visitor {
         auto merge_block = append_block("");
 
         LLVMValueRef alt_values[2];
-        auto condition_rvalue = convert_to_rvalue(left_value, IntegerType::of_bool(), ConvKind::IMPLICIT, left_location);
+        auto condition_rvalue = convert_to_rvalue(left_value, IntegerType::of_bool(), ConvKind::IMPLICIT);
         alt_values[0] = condition_rvalue;
 
         LLVMBasicBlockRef then_block = expr->op == TOK_AND_OP ? alt_blocks[1] : merge_block;
@@ -839,7 +842,7 @@ struct Emitter: ValueWrangler, Visitor {
         return LLVMRealPredicate(0);
     }
 
-    Value emit_scalar_binary_operation(BinaryExpr* expr, Value left_value, Value right_value, const Location& left_location, const Location& right_location) {
+    Value emit_scalar_binary_operation(BinaryExpr* expr, const ExprValue& left_value, const ExprValue& right_value) {
         OperatorFlags op_flags = operator_flags(expr->op);
         auto convert_type = (op_flags & OP_AS_LEFT_RESULT) ? left_value.type : usual_arithmetic_conversions(left_value.type, right_value.type);
         if (!convert_type) return Value();
@@ -851,8 +854,8 @@ struct Emitter: ValueWrangler, Visitor {
 
         if (outcome == EmitOutcome::TYPE) return Value(result_type);
 
-        auto left_rvalue = convert_to_rvalue(left_value, convert_type, ConvKind::IMPLICIT, left_location);
-        auto right_rvalue = convert_to_rvalue(right_value, convert_type, ConvKind::IMPLICIT, right_location);
+        auto left_rvalue = convert_to_rvalue(left_value, convert_type, ConvKind::IMPLICIT);
+        auto right_rvalue = convert_to_rvalue(right_value, convert_type, ConvKind::IMPLICIT);
 
         if (auto as_int = unqualified_type_cast<IntegerType>(convert_type)) {
             switch (expr->op) {
@@ -939,7 +942,7 @@ struct Emitter: ValueWrangler, Visitor {
         return Value();
     }
 
-    Value emit_pointer_binary_operation(BinaryExpr* expr, Value left_value, Value right_value, Location left_location, Location right_location) {
+    Value emit_pointer_binary_operation(BinaryExpr* expr, ExprValue left_value, ExprValue right_value) {
         auto op = expr->op;
         auto op_flags = operator_flags(op);
 
@@ -952,14 +955,13 @@ struct Emitter: ValueWrangler, Visitor {
                 auto result_type = IntegerType::of_size(IntegerSignedness::SIGNED);
                 if (outcome == EmitOutcome::TYPE) return Value(result_type);
             
-                auto result = LLVMBuildPtrDiff2(builder, left_pointer_type->base_type->llvm_type(), get_value(left_value, left_location), get_value(right_value, right_location), "");
+                auto result = LLVMBuildPtrDiff2(builder, left_pointer_type->base_type->llvm_type(), get_value(left_value), get_value(right_value), "");
                 return Value(result_type, result);
             }
         }
 
         if ((op_flags & OP_COMMUTATIVE) && !left_pointer_type) {
             swap(left_value, right_value);
-            swap(left_location, right_location);
             swap(left_pointer_type, right_pointer_type);
         }
 
@@ -972,7 +974,7 @@ struct Emitter: ValueWrangler, Visitor {
 
             if (op == TOK_EQ_OP || op == TOK_NE_OP) {
                 if (right_value.is_null_literal) {
-                    right_value = Value(left_pointer_type, LLVMConstNull(left_pointer_type->llvm_type()));
+                    right_value = ExprValue(left_pointer_type, LLVMConstNull(left_pointer_type->llvm_type()), right_value.node);
                     valid = true;
                 }
             }
@@ -985,38 +987,39 @@ struct Emitter: ValueWrangler, Visitor {
 
             return Value(result_type, LLVMBuildICmp(builder,
                                                     llvm_int_predicate(false, op),
-                                                    get_value(left_value, left_location), get_value(right_value, right_location),
+                                                    get_value(left_value), get_value(right_value),
                                                     ""));
         }
 
         if (op == '+'|| op == TOK_ADD_ASSIGN || op == '-' || op == TOK_SUB_ASSIGN) {
-            right_value = convert_to_type(right_value, promote_integer(right_value.type), ConvKind::IMPLICIT, right_location);
+            right_value = convert_to_type(right_value, promote_integer(right_value.type), ConvKind::IMPLICIT);
             if (!unqualified_type_cast<IntegerType>(right_value.type)) return Value();
 
             if (outcome == EmitOutcome::TYPE) return Value(left_pointer_type);
 
-            LLVMValueRef index = get_value(right_value, right_location);
+            LLVMValueRef index = get_value(right_value);
 
             if (op == '-' || op == TOK_SUB_ASSIGN) {
                 index = LLVMBuildNeg(builder, index, "");
             }
 
-            return Value(left_pointer_type, LLVMBuildGEP2(builder, left_pointer_type->base_type->llvm_type(), get_value(left_value, left_location), &index, 1, ""));
+            return Value(left_pointer_type, LLVMBuildGEP2(builder, left_pointer_type->base_type->llvm_type(), get_value(left_value), &index, 1, ""));
         }
 
         return Value();
     }
 
-    Value convert_array_to_pointer(const Value& value) {
+    ExprValue convert_array_to_pointer(const ExprValue& value) {
         auto zero = TranslationUnitContext::it->zero_size;
 
         if (auto array_type = unqualified_type_cast<ArrayType>(value.type)) {
             auto result_type = array_type->element_type->pointer_to();
-            if (outcome == EmitOutcome::TYPE) return Value(result_type);
+            if (outcome == EmitOutcome::TYPE) return ExprValue(result_type, value.node);
 
             LLVMValueRef indices[2] = {zero, zero};
-            return Value(result_type,
-                         LLVMBuildGEP2(builder, array_type->llvm_type(), get_address(value), indices, 2, ""));
+            return ExprValue(result_type,
+                             LLVMBuildGEP2(builder, array_type->llvm_type(), get_address(value), indices, 2, ""),
+                             value.node);
         }
 
         return value;
@@ -1025,10 +1028,10 @@ struct Emitter: ValueWrangler, Visitor {
     virtual VisitExpressionOutput visit(BinaryExpr* expr) override {
         auto op = expr->op;
         Value intermediate;
-        Value left_value = emit_expr(expr->left).unqualified();
+        auto left_value = emit_expr(expr->left).unqualified();
 
         if (op == TOK_AND_OP || op == TOK_OR_OP) {
-            intermediate = emit_logical_binary_operation(expr, left_value, expr->left->location);
+            intermediate = emit_logical_binary_operation(expr, left_value);
         } else {
             left_value = convert_array_to_pointer(left_value);
             auto left_pointer_type = unqualified_type_cast<PointerType>(left_value.type);
@@ -1038,9 +1041,9 @@ struct Emitter: ValueWrangler, Visitor {
             auto right_pointer_type = unqualified_type_cast<PointerType>(right_value.type);
 
             if (left_pointer_type || right_pointer_type) {
-                intermediate = emit_pointer_binary_operation(expr, left_value, right_value, expr->left->location, expr->right->location);
+                intermediate = emit_pointer_binary_operation(expr, left_value, right_value);
             } else {
-                intermediate = emit_scalar_binary_operation(expr, left_value, right_value, expr->left->location, expr->right->location);
+                intermediate = emit_scalar_binary_operation(expr, left_value, right_value);
             }
         }
 
@@ -1056,7 +1059,7 @@ struct Emitter: ValueWrangler, Visitor {
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(intermediate);
 
         if (operator_flags(expr->op) & OP_ASSIGN) {
-            store(left_value, get_value(intermediate, expr->location), expr->location);
+            store(left_value, get_value(ExprValue(intermediate, expr)), expr->location);
             return VisitExpressionOutput(left_value);
         }
 
@@ -1072,7 +1075,7 @@ struct Emitter: ValueWrangler, Visitor {
         auto function_value = emit_expr(expr->function).unqualified();
 
         if (auto pointer_type = unqualified_type_cast<PointerType>(function_value.type)) {
-            function_value = Value(ValueKind::LVALUE, pointer_type->base_type, get_value(function_value, expr->function->location));
+            function_value = ExprValue(ValueKind::LVALUE, pointer_type->base_type, get_value(function_value), expr->function);
         }
 
         if (auto function_type = unqualified_type_cast<FunctionType>(function_value.type)) {
@@ -1110,7 +1113,7 @@ struct Emitter: ValueWrangler, Visitor {
 
             size_t param_expr_idx{};
             for (size_t i = 0; i < expected_num_params; ++i) {
-                Value param_value;
+                ExprValue param_value;
                 auto expected_type = function_type->parameter_types[i];
 
                 const PassByReferenceType* pass_by_ref_type{};
@@ -1118,19 +1121,18 @@ struct Emitter: ValueWrangler, Visitor {
                     expected_type = pass_by_ref_type->base_type;
                 }
 
-                Location param_location;
                 if (member_expr && i == 0) {
-                    param_value = object_value;
-                    param_location = member_expr->object->location;
+                    param_value = ExprValue(object_value, member_expr->object);
                 } else {
                     auto param_expr = expr->parameters[param_expr_idx++];
                     param_value = emit_expr(param_expr);
-                    param_location = param_expr->location;
                 }
+
+                auto param_location = param_value.node->location;
 
                 if (pass_by_ref_type) {
                     if (param_value.kind == ValueKind::RVALUE && (pass_by_ref_type->kind == PassByReferenceType::Kind::RVALUE || expected_type->qualifiers() & QUALIFIER_CONST || (member_expr && i == 0))) {
-                        param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, param_location);
+                        param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT);
                         make_addressable(param_value);
                         llvm_params[i] = get_address(param_value);
                     } else if (param_value.kind != ValueKind::LVALUE) {
@@ -1153,8 +1155,8 @@ struct Emitter: ValueWrangler, Visitor {
                         llvm_params[i] = get_address(param_value);
                     }
                 } else {
-                    param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT, param_location);
-                    llvm_params[i] = get_value(param_value, param_location);
+                    param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT);
+                    llvm_params[i] = get_value(param_value);
                 }
             }
 
@@ -1244,7 +1246,7 @@ struct Emitter: ValueWrangler, Visitor {
         auto result_type = pointer_type->base_type;
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-        return VisitExpressionOutput(Value(ValueKind::LVALUE, result_type, get_value(value, expr->location)));
+        return VisitExpressionOutput(Value(ValueKind::LVALUE, result_type, get_value(value)));
     }
 
     virtual VisitExpressionOutput visit(EntityExpr* expr) override {
@@ -1274,7 +1276,7 @@ struct Emitter: ValueWrangler, Visitor {
             if (outcome == EmitOutcome::FOLD && variable->initializer && (declarator->type->qualifiers() & QUALIFIER_CONST)) {
                 try {
                     ScopedMessagePauser pauser;
-                    return VisitExpressionOutput(convert_to_type(emit_expr(variable->initializer), result_type, ConvKind::IMPLICIT, variable->initializer->location));
+                    return VisitExpressionOutput(convert_to_type(emit_expr(variable->initializer), result_type, ConvKind::IMPLICIT));
                 } catch (FoldError&) {
                 }
             }
@@ -1316,7 +1318,7 @@ struct Emitter: ValueWrangler, Visitor {
 
     virtual VisitExpressionOutput visit(IncDecExpr* expr) override {
         auto lvalue = emit_expr(expr->expr).unqualified();
-        auto before_rvalue = get_value(lvalue, expr->location);
+        auto before_rvalue = get_value(lvalue);
 
         const Type* result_type = lvalue.type;
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
@@ -1338,10 +1340,10 @@ struct Emitter: ValueWrangler, Visitor {
         return VisitExpressionOutput(expr->postfix ? Value(result_type, before_rvalue) : lvalue);
     }
 
-    Value emit_object_of_member_expr(MemberExpr* expr) {
+    ExprValue emit_object_of_member_expr(MemberExpr* expr) {
         auto object = emit_expr(expr->object);
         if (auto pointer_type = unqualified_type_cast<PointerType>(object.type)) {
-            object = Value(ValueKind::LVALUE, pointer_type->base_type, get_value(object, expr->object->location));
+            object = ExprValue(ValueKind::LVALUE, pointer_type->base_type, get_value(object), expr->object);
         }
         return object;
     }
@@ -1388,7 +1390,7 @@ struct Emitter: ValueWrangler, Visitor {
         auto value = emit_expr(expr->expr).unqualified();
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(value.type);
 
-        auto result = Value(value.type, get_value(value, expr->expr->location, true));
+        auto result = Value(value.type, get_value(value, true));
         return VisitExpressionOutput(result);
     }
 
@@ -1427,19 +1429,19 @@ struct Emitter: ValueWrangler, Visitor {
             auto result_type = pointer_type->base_type;
             if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-            LLVMValueRef index = get_value(index_value, expr->right->location);
+            LLVMValueRef index = get_value(index_value);
 
             return VisitExpressionOutput(Value(
                 ValueKind::LVALUE,
                 result_type,
-                LLVMBuildGEP2(builder, result_type->llvm_type(), get_value(left_value, expr->left->location), &index, 1, "")));
+                LLVMBuildGEP2(builder, result_type->llvm_type(), get_value(left_value), &index, 1, "")));
         }
 
         if (auto array_type = unqualified_type_cast<ArrayType>(left_value.type)) {
             auto result_type = array_type->element_type;
             if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-            LLVMValueRef indices[2] = { zero, get_value(index_value, expr->right->location) };
+            LLVMValueRef indices[2] = { zero, get_value(index_value) };
 
             return VisitExpressionOutput(Value(
                 ValueKind::LVALUE,

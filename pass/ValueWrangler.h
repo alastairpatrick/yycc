@@ -12,6 +12,24 @@ enum class ConvKind {
     EXPLICIT,
 };
 
+struct ExprValue: Value {
+    const LocationNode* node{};
+
+    ExprValue() = default;
+    ExprValue(const ExprValue&) = default;
+    ExprValue(const Value& value, const LocationNode* node): Value(value), node(node) {}
+    ExprValue(const Type* type, const LocationNode* node): Value(type), node(node) {}
+    ExprValue(const Type* type, LLVMValueRef llvm, const LocationNode* node): Value(type, llvm), node(node) {}
+    ExprValue(ValueKind kind, const Type* type, LLVMValueRef llvm, const LocationNode* node): Value(kind, type, llvm), node(node) {}
+
+    ExprValue unqualified() const {
+        return ExprValue(Value::unqualified(), node);
+    }
+
+    ExprValue bit_cast(const Type* type) const {
+        return ExprValue(Value::bit_cast(type), node);
+    }
+};
 
 template <typename T, typename U>
 inline const T* unqualified_type_cast(const U* type) {
@@ -30,10 +48,10 @@ struct ValueWrangler: TypeVisitor {
     ~ValueWrangler();
 
     ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type);
-    Value convert_to_type(const Value& value, const Type* dest_type, ConvKind kind, const Location& location);
+    ExprValue convert_to_type(const ExprValue& value, const Type* dest_type, ConvKind kind);
     LLVMValueRef get_address(const Value &value);
-    LLVMValueRef get_value(const Value &value, const Location& location, bool for_move_expr = false);
-    void store(const Value& dest, LLVMValueRef source_rvalue, const Location& location);
+    LLVMValueRef get_value(const ExprValue &value, bool for_move_expr = false);
+    void store(const Value& dest, LLVMValueRef source_rvalue, const Location& assignment_location);
     void position_temp_builder();
     void make_addressable(Value& value);
     Value allocate_auto_storage(const Type* type, const char* name);
@@ -42,8 +60,7 @@ struct ValueWrangler: TypeVisitor {
     Value call_is_constant_intrinsic(const Value& value);
 
 private:
-    Value value;
-    Location location;
+    ExprValue value;
     Value result;
     ConvKind conv_kind;
 
@@ -56,7 +73,7 @@ private:
 
     void convert_array_to_pointer();
     void convert_enum_to_int();
-    LLVMValueRef get_value_internal(const Value &value);
+    LLVMValueRef get_value_internal();
 };
 
 

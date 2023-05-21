@@ -55,7 +55,7 @@ LLVMValueRef ValueWrangler::get_address(const Value &value) {
     return value.dangerously_get_address();
 }
 
-LLVMValueRef ValueWrangler::get_value(const Value &value, const Location& location, bool for_move_expr) {
+LLVMValueRef ValueWrangler::get_value(const ExprValue &value, bool for_move_expr) {
     if (value.type == &VoidType::it) {
         return nullptr;
     }
@@ -68,7 +68,7 @@ LLVMValueRef ValueWrangler::get_value(const Value &value, const Location& locati
             LLVMBuildStore(builder, LLVMConstNull(structured_type->llvm_type()), lvalue);
 
             if (!for_move_expr) {
-                message(Severity::ERROR, location) << "lvalue with destructor is not copyable; consider '&&' prefix move operator\n";
+                message(Severity::ERROR, value.node->location) << "lvalue with destructor is not copyable; consider '&&' prefix move operator\n";
             }
         }
     }
@@ -76,15 +76,15 @@ LLVMValueRef ValueWrangler::get_value(const Value &value, const Location& locati
     return rvalue;
 }
 
-void ValueWrangler::store(const Value& dest, LLVMValueRef source_rvalue, const Location& location) {
+void ValueWrangler::store(const Value& dest, LLVMValueRef source_rvalue, const Location& assignment_location) {
     if (outcome == EmitOutcome::IR) {
         if (dest.kind == ValueKind::LVALUE) {
             dest.dangerously_store(builder, source_rvalue);
         } else {
-            message(Severity::ERROR, location) << "expression is not assignable\n";
+            message(Severity::ERROR, assignment_location) << "expression is not assignable\n";
         }
     } else {
-        message(Severity::ERROR, location) << "assignment in constant expression\n";
+        message(Severity::ERROR, assignment_location) << "assignment in constant expression\n";
     }
 }
     
@@ -120,15 +120,15 @@ Value ValueWrangler::call_is_constant_intrinsic(const Value& value) {
     return Value(IntegerType::of_bool(), function.call(builder, &arg, 1));
 }
 
-LLVMValueRef ValueWrangler::get_value_internal(const Value &value) {
-    return get_value(value, location, false);
+LLVMValueRef ValueWrangler::get_value_internal() {
+    return get_value(value, false);
 }
 
 void ValueWrangler::convert_array_to_pointer() {
     if (auto source_type = unqualified_type_cast<ResolvedArrayType>(value.type)) {
         if (value.kind == ValueKind::LVALUE) {
             auto pointer_type = source_type->element_type->pointer_to();
-            value = Value(pointer_type, value.dangerously_get_address());
+            value = ExprValue(pointer_type, value.dangerously_get_address(), value.node);
         }
     }
 }
@@ -183,7 +183,7 @@ const Type* ValueWrangler::visit(const PointerType* dest_type) {
         result = Value(dest_type, value.dangerously_get_address());
     } else if (auto source_type = unqualified_type_cast<IntegerType>(value.type)) {
         conv_kind = ConvKind::EXPLICIT;
-        result = Value(dest_type, LLVMBuildIntToPtr(builder, get_value_internal(value), dest_type->llvm_type(), ""));
+        result = Value(dest_type, LLVMBuildIntToPtr(builder, get_value_internal(), dest_type->llvm_type(), ""));
     } else if (auto source_type = unqualified_type_cast<PointerType>(value.type)) {
         conv_kind = check_pointer_conversion(source_type->base_type, dest_type->base_type);
         result = Value(value.bit_cast(dest_type));
@@ -197,16 +197,16 @@ const Type* ValueWrangler::visit(const IntegerType* dest_type) {
     convert_enum_to_int();
 
     if (auto source_type = unqualified_type_cast<IntegerType>(value.type)) {
-        result = Value(dest_type, LLVMBuildIntCast2(builder, get_value_internal(value), dest_type->llvm_type(), source_type->is_signed(), ""));
+        result = Value(dest_type, LLVMBuildIntCast2(builder, get_value_internal(), dest_type->llvm_type(), source_type->is_signed(), ""));
     } else if (auto source_type = unqualified_type_cast<FloatingPointType>(value.type)) {
         if (dest_type->is_signed()) {
-            result = Value(dest_type, LLVMBuildFPToSI(builder, get_value_internal(value), dest_type->llvm_type(), ""));
+            result = Value(dest_type, LLVMBuildFPToSI(builder, get_value_internal(), dest_type->llvm_type(), ""));
         } else {
-            result = Value(dest_type, LLVMBuildFPToUI(builder, get_value_internal(value), dest_type->llvm_type(), ""));
+            result = Value(dest_type, LLVMBuildFPToUI(builder, get_value_internal(), dest_type->llvm_type(), ""));
         }
     } else if (auto source_type = unqualified_type_cast<PointerType>(value.type)) {
         conv_kind = dest_type->size == IntegerSize::BOOL ? ConvKind::IMPLICIT : ConvKind::EXPLICIT;
-        result = Value(dest_type, LLVMBuildPtrToInt(builder, get_value_internal(value), dest_type->llvm_type(), ""));
+        result = Value(dest_type, LLVMBuildPtrToInt(builder, get_value_internal(), dest_type->llvm_type(), ""));
     }
 
     return nullptr;
@@ -216,12 +216,12 @@ const Type* ValueWrangler::visit(const FloatingPointType* dest_type) {
     convert_enum_to_int();
 
     if (unqualified_type_cast<FloatingPointType>(value.type)) {
-        result = Value(dest_type, LLVMBuildFPCast(builder, get_value_internal(value), dest_type->llvm_type(), ""));
+        result = Value(dest_type, LLVMBuildFPCast(builder, get_value_internal(), dest_type->llvm_type(), ""));
     } else if (auto source_type = unqualified_type_cast<IntegerType>(value.type)) {
         if (source_type->is_signed()) {
-            result = Value(dest_type, LLVMBuildSIToFP(builder, get_value_internal(value), dest_type->llvm_type(), ""));
+            result = Value(dest_type, LLVMBuildSIToFP(builder, get_value_internal(), dest_type->llvm_type(), ""));
         } else {
-            result = Value(dest_type, LLVMBuildUIToFP(builder, get_value_internal(value), dest_type->llvm_type(), ""));
+            result = Value(dest_type, LLVMBuildUIToFP(builder, get_value_internal(), dest_type->llvm_type(), ""));
         }
     }
     return nullptr;
@@ -242,30 +242,29 @@ const Type* ValueWrangler::visit(const VoidType* dest_type) {
 }
 
 
-Value ValueWrangler::convert_to_type(const Value& value, const Type* dest_type, ConvKind kind, const Location& location) {
+ExprValue ValueWrangler::convert_to_type(const ExprValue& value, const Type* dest_type, ConvKind kind) {
     assert(value.type->qualifiers() == 0);
     
     this->value = value;
-    this->location = location;
     conv_kind = ConvKind::IMPLICIT;
 
     dest_type = dest_type->unqualified();
 
     if (value.is_null_literal && kind == ConvKind::IMPLICIT && unqualified_type_cast<PointerType>(dest_type)) {
-        return Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
+        return ExprValue(dest_type, LLVMConstNull(dest_type->llvm_type()), value.node);
     }
 
     if (value.type == dest_type) {
-        Value result = value;
+        ExprValue result = value;
         if (kind == ConvKind::EXPLICIT) result.is_null_literal = false;
-        return Value(result);
+        return result;
     }
 
     dest_type->accept(*this);
     
     if (!result.is_valid()) {
-        message(Severity::ERROR, location) << "cannot convert from type '" << PrintType(value.type)
-                                            << "' to type '" << PrintType(dest_type) << "'\n";
+        message(Severity::ERROR, value.node->location) << "cannot convert from type '" << PrintType(value.type)
+                                                       << "' to type '" << PrintType(dest_type) << "'\n";
         pause_messages();
         if (dest_type != &VoidType::it) {
             result = Value(dest_type, LLVMConstNull(dest_type->llvm_type()));
@@ -274,11 +273,11 @@ Value ValueWrangler::convert_to_type(const Value& value, const Type* dest_type, 
         }
     } else if ((conv_kind != ConvKind::IMPLICIT) && kind == ConvKind::IMPLICIT) {
         auto severity = conv_kind == ConvKind::C_IMPLICIT ? Severity::CONTEXTUAL_ERROR : Severity::ERROR;
-        message(severity, location) << "conversion from type '" << PrintType(value.type)
-                                    << "' to type '" << PrintType(dest_type) << "' requires explicit cast\n";
+        message(severity, value.node->location) << "conversion from type '" << PrintType(value.type)
+                                                << "' to type '" << PrintType(dest_type) << "' requires explicit cast\n";
     }
 
     assert(result.type == dest_type);
 
-    return result;
+    return ExprValue(result, value.node);
 }
