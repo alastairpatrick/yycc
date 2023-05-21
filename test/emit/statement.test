@@ -174,6 +174,53 @@ for_e:                                            ; preds = %for_l
 END
 
 
+BEGIN Break in for loop causes destructors to be called
+struct S {
+    int x;
+    void destructor(S&);
+};
+void f() {
+    for (int i = 0; i < 10; ++i) {
+        S s = {1};
+        break;
+    }
+}
+EXPECT_IR
+%S = type { i32 }
+
+define void @f() {
+  %s = alloca %S, align 8
+  %i = alloca i32, align 4
+  store i32 0, ptr %i, align 4
+  br label %for_l
+
+for_l:                                            ; preds = %for_i, %0
+  %1 = load i32, ptr %i, align 4
+  %2 = icmp slt i32 %1, 10
+  br i1 %2, label %for_b, label %for_e
+
+for_b:                                            ; preds = %for_l
+  %x = getelementptr inbounds %S, ptr %s, i32 0, i32 0
+  store i32 1, ptr %x, align 4
+  call void @destructor_wrapper(ptr %s)
+  br label %for_e
+
+for_i:                                            ; No predecessors!
+  %3 = load i32, ptr %i, align 4
+  %4 = add i32 %3, 1
+  store i32 %4, ptr %i, align 4
+  br label %for_l
+
+for_e:                                            ; preds = %for_b, %for_l
+  ret void
+}
+
+declare void @destructor(ptr)
+
+declare void @destructor_wrapper(ptr)
+END
+
+
 REM ******** GoToStatement ********
 
 BEGIN Goto prior label
@@ -191,7 +238,6 @@ target:                                           ; preds = %target, %0
 END
 
 
-
 BEGIN Goto following label
 void f() {
     goto target;
@@ -205,6 +251,24 @@ define void @f() {
 target:                                           ; preds = %0
   ret void
 }
+END
+
+
+BEGIN Error on break outside appropriate construct
+void f() {
+    break;
+}
+EXPECT_MESSAGE
+:2:5: error 'break' statement not in loop or switch statement
+END
+
+
+BEGIN Error on continue outside appropriate construct
+void f() {
+    continue;
+}
+EXPECT_MESSAGE
+:2:5: error 'continue' statement not in loop or switch statement
 END
 
 

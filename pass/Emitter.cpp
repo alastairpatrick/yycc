@@ -22,7 +22,7 @@ struct EmitterScope {
     vector<PendingDestructor> destructors;
 
     EmitterScope(Emitter* emitter);
-    ~EmitterScope();
+    virtual ~EmitterScope();
 };
 
 struct Construct: EmitterScope {
@@ -31,7 +31,6 @@ struct Construct: EmitterScope {
     LLVMBasicBlockRef break_block{};
 
     Construct(Emitter* emitter);
-    ~Construct();
 };
 
 struct SwitchConstruct: Construct {
@@ -55,7 +54,6 @@ struct Emitter: ValueWrangler, Visitor {
     LLVMBasicBlockRef unreachable_block{};
     unordered_map<InternedString, LLVMBasicBlockRef> goto_labels;
     EmitterScope* innermost_scope{};
-    Construct* innermost_construct{};
     SwitchConstruct* innermost_switch{};
     InternedString this_string;
     Value this_value;
@@ -552,22 +550,33 @@ struct Emitter: ValueWrangler, Visitor {
     }
 
     VisitStatementOutput visit(GoToStatement* statement) {
-        
         LLVMBasicBlockRef target_block{};
-        switch (statement->kind) {
-          case TOK_GOTO:
+        if (statement->kind == TOK_GOTO) {
+            // todo: consider what to do here in terms of calling destructors
             target_block = lookup_label(statement->identifier);
-            break;
-          case TOK_BREAK:
-            target_block = innermost_construct->break_block;
-            break;
-          case TOK_CONTINUE:
-            target_block = innermost_construct->continue_block;
-            break;
-        
+        } else {
+            for (auto scope = innermost_scope; scope; scope = scope->parent_scope) {
+                call_pending_destructors(*scope);
+
+                if (auto construct = dynamic_cast<Construct*>(scope)) {
+                    switch (statement->kind) {
+                      case TOK_BREAK:
+                        target_block = construct->break_block;
+                        break;
+                      case TOK_CONTINUE:
+                        target_block = construct->continue_block;
+                        break;
+                    }
+                }
+            }
         }
-        LLVMBuildBr(builder, target_block);
-        LLVMPositionBuilderAtEnd(builder, unreachable_block);
+
+        if (target_block) {
+            LLVMBuildBr(builder, target_block);
+            LLVMPositionBuilderAtEnd(builder, unreachable_block);
+        } else {
+            message(Severity::ERROR, statement->location) << "'" << statement->message_kind() << "' statement not in loop or switch statement\n";
+        }
 
         return VisitStatementOutput();
     }
@@ -1498,12 +1507,6 @@ EmitterScope::~EmitterScope() {
 }
 
 Construct::Construct(Emitter* emitter): EmitterScope(emitter) {
-    parent_construct = emitter->innermost_construct;
-    emitter->innermost_construct = this;
-}
-
-Construct::~Construct() {
-    emitter->innermost_construct = parent_construct;
 }
 
 SwitchConstruct::SwitchConstruct(Emitter* emitter): Construct(emitter) {

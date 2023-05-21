@@ -95,6 +95,17 @@ void GoToStatement::print(ostream& stream) const {
     stream << ", \"" << identifier << "\"]";
 }
 
+const char* GoToStatement::message_kind() const {
+    switch (kind) {
+      case TOK_GOTO:
+        return "goto";
+      case TOK_BREAK:
+        return "break";
+      case TOK_CONTINUE:
+        return "continue";
+    }
+    return {};
+}
 
 IfElseStatement::IfElseStatement(Expr* condition, Statement* then_statement, Statement* else_statement, const Location& location)
     : Statement(location), condition(condition), then_statement(then_statement), else_statement(else_statement) {
