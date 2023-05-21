@@ -26,7 +26,6 @@ struct EmitterScope {
 };
 
 struct Construct: EmitterScope {
-    Construct* parent_construct{};
     LLVMBasicBlockRef continue_block{};
     LLVMBasicBlockRef break_block{};
 
