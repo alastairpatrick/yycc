@@ -170,18 +170,6 @@ struct Emitter: ValueWrangler, Visitor {
         return true;
     }
 
-    virtual VisitDeclaratorOutput accept_declarator(Declarator* declarator) override {
-        declarator = declarator->primary;
-        if (declarator->status >= DeclaratorStatus::EMITTED) return VisitDeclaratorOutput();
-        assert(declarator->status == DeclaratorStatus::RESOLVED);
-
-        declarator->accept(*this, VisitDeclaratorInput());
-
-        declarator->status = DeclaratorStatus::EMITTED;
-
-        return VisitDeclaratorOutput();
-    }
-
     LLVMBasicBlockRef append_block(const char* name) {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
         return LLVMAppendBasicBlockInContext(llvm_context, function, name);
@@ -489,15 +477,15 @@ struct Emitter: ValueWrangler, Visitor {
     }
 
     virtual VisitDeclaratorOutput visit(Declarator* declarator, Variable* variable, const VisitDeclaratorInput& input) override {
-        assert(declarator == declarator->primary);
-          
-        emit_variable(declarator, variable);
+        if (declarator == declarator->primary) {
+            emit_variable(declarator, variable);
+        }
 
         return VisitDeclaratorOutput();
     }
 
     virtual VisitDeclaratorOutput visit(Declarator* declarator, Function* function, const VisitDeclaratorInput& input) override {
-        assert(declarator == declarator->primary);
+        if (declarator != declarator->primary) return VisitDeclaratorOutput();
 
         auto llvm_function = get_address(function->value);
         for (size_t i = 0; i < function->parameters.size(); ++i) {

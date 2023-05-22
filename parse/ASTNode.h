@@ -47,7 +47,6 @@ enum class DeclaratorStatus {
     UNRESOLVED,
     RESOLVING,
     RESOLVED,
-    EMITTED,
 };
 
 struct Declarator: LocationNode {
