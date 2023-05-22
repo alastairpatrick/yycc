@@ -80,4 +80,14 @@ struct ThrowStatement: Statement {
     virtual void print(ostream& stream) const override;
 };
 
+struct TryStatement: Statement {
+    Statement* try_statement;
+    Statement* catch_statement;
+    Declarator* declarator;
+
+    TryStatement(Statement* try_statement, Declarator* declarator, Statement* catch_statement, const Location& location);
+    virtual VisitStatementOutput accept(Visitor& visitor) override;
+    virtual void print(ostream& stream) const override;
+};
+
 #endif

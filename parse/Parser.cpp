@@ -1101,6 +1101,16 @@ Statement* Parser::parse_statement() {
 
           return new JumpStatement(kind, identifier, location);
 
+      } case TOK_TRY: {
+          consume();
+          auto try_statement = parse_compound_statement();
+          consume_required(TOK_CATCH);
+          consume_required('(');
+          auto declarator = parse_parameter_declarator();
+          consume_required(')');
+          auto catch_statement = parse_compound_statement();
+          return new TryStatement(try_statement, declarator, catch_statement, location);
+
       } default: {
           Label label;
           auto expr = parse_expr(SEQUENCE_PRECEDENCE, &label.identifier);

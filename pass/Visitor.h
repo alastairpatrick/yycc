@@ -53,6 +53,7 @@ struct Visitor {
     virtual VisitStatementOutput visit(ReturnStatement* statement);
     virtual VisitStatementOutput visit(SwitchStatement* statement);
     virtual VisitStatementOutput visit(ThrowStatement* statement);
+    virtual VisitStatementOutput visit(TryStatement* statement);
 
     virtual VisitExpressionOutput accept_expr(Expr* expr);
     virtual VisitExpressionOutput visit(AddressExpr* expr);

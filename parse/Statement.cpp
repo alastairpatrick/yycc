@@ -177,3 +177,17 @@ void ThrowStatement::print(ostream& stream) const {
     }
     stream << ']';
 }
+
+
+TryStatement::TryStatement(Statement* try_statement, Declarator* declarator, Statement* catch_statement, const Location& location):
+    Statement(location), try_statement(try_statement), declarator(declarator), catch_statement(catch_statement) {
+}
+
+VisitStatementOutput TryStatement::accept(Visitor& visitor) {
+    return visitor.visit(this);
+}
+
+void TryStatement::print(ostream& stream) const {
+    stream << "[\"try\", " << try_statement << ", " << declarator << ", " << catch_statement << ']';
+}
+

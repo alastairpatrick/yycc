@@ -65,9 +65,10 @@ void          { return TOK_VOID; }
 volatile      { return TOK_VOLATILE; }
 while         { return TOK_WHILE; }
 
+std::catch          { return TOK_CATCH; }
 std::throw          { return TOK_THROW; }
 std::transitory     { return TOK_TRANSITORY; }
-
+std::try            { return TOK_TRY; }
 
 // PPTokenLexer already matched the input as an identifier preprocessing token, so this rule just needs to return as soon
 // as it is evident that the input is not a keyword.

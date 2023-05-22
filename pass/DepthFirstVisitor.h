@@ -20,6 +20,7 @@ struct DepthFirstVisitor: Visitor {
     virtual VisitStatementOutput visit(ReturnStatement* statement) override;
     virtual VisitStatementOutput visit(SwitchStatement* statement) override;
     virtual VisitStatementOutput visit(ThrowStatement* statement) override;
+    virtual VisitStatementOutput visit(TryStatement* statement) override;
 
     virtual VisitExpressionOutput visit(AddressExpr* expr) override;
     virtual VisitExpressionOutput visit(AssignExpr* expr) override;

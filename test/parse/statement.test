@@ -75,12 +75,6 @@ EXPECT_AST
 ["return", 7]
 
 
-BEGIN Parses throw statement
-std::throw 7;
-EXPECT_AST
-["throw", 7]
-
-
 BEGIN Parses identifier labelled statement
 a: b:
     return 7;
@@ -148,3 +142,18 @@ EXPECT_AST
 ["switch",1,["block",[]]]
 
 
+
+BEGIN Parses throw statement
+std::throw 7;
+EXPECT_AST
+["throw", 7]
+
+
+BEGIN Parse try statement
+std::try {
+    return 1;
+} std::catch (int e) {
+    return 2;
+}
+EXPECT_AST
+["try",["block",[["return",1]]],["var","ES","Si","e"],["block",[["return",2]]]]

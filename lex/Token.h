@@ -34,6 +34,7 @@ enum TokenKind {
     
     TOK_BREAK,
     TOK_CASE,
+    TOK_CATCH,
     TOK_CONTINUE,
     TOK_DEFAULT,
     TOK_DO,
@@ -43,6 +44,7 @@ enum TokenKind {
     TOK_IF,
     TOK_RETURN,
     TOK_THROW,
+    TOK_TRY,
     TOK_SIZEOF,
     TOK_SWITCH,
     TOK_WHILE,

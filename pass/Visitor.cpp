@@ -63,6 +63,10 @@ VisitStatementOutput Visitor::visit(ThrowStatement* statement) {
     return VisitStatementOutput(statement);
 }
 
+VisitStatementOutput Visitor::visit(TryStatement* statement) {
+    return VisitStatementOutput(statement);
+}
+
 /* Expressions */
 
 [[nodiscard]]
