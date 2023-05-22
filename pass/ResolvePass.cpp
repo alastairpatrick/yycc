@@ -178,7 +178,18 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
     virtual VisitDeclaratorOutput visit(Declarator* primary, Function* primary_function, const VisitDeclaratorInput& input) override {
         auto secondary = input.secondary;
         if (!secondary) {
-            return Base::visit(primary, primary_function, input);
+            auto function_type = dynamic_cast<const FunctionType*>(primary->type);
+            for (size_t i = 0; i < primary_function->parameters.size(); ++i) {
+                accept_declarator(primary_function->parameters[i]);
+            }
+
+            primary->status = DeclaratorStatus::RESOLVED;
+
+            if (primary_function->body) {
+                accept_statement(primary_function->body);
+            }
+
+            return VisitDeclaratorOutput();
         }
 
         auto secondary_entity = secondary->function();

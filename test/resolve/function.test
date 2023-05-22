@@ -221,6 +221,13 @@ EXPECT_MESSAGE
 END
 
 
+BEGIN Resolves recursive function
+void f() {
+    f();
+}
+END
+
+
 BEGIN #func directive preceeding function declaration
 #func f
 void f() {}
