@@ -23,6 +23,7 @@ struct DerivedTypes {
     unique_ptr<const PointerType> pointer;
     unique_ptr<const PassByReferenceType> pass_by_lvalue_reference;
     unique_ptr<const PassByReferenceType> pass_by_rvalue_reference;
+    unique_ptr<const ThrowType> throw_type;
 
     unordered_map<unsigned, unique_ptr<const QualifiedType>> qualified;
 
@@ -45,6 +46,7 @@ struct TypeContext {
     const PointerType* get_pointer_type(const Type* base_type);
     const PassByReferenceType* get_pass_by_reference_type(const Type* base_type, PassByReferenceType::Kind kind);
     const QualifiedType* get_qualified_type(const Type* base_type, unsigned qualifiers);
+    const ThrowType* get_throw_type(const Type* base_type);
 
     const ResolvedArrayType* get_array_type(ArrayKind kind, const Type* element_type, unsigned long long size);
 

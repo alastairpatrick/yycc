@@ -950,3 +950,28 @@ void NestedType::message_print(ostream& stream, int section) const {
 void NestedType::print(ostream& stream) const {
     stream << "[\"NEST\", " << enclosing_type << ", \"" << identifier << "\"]";
 }
+
+
+const ThrowType* ThrowType::of(const Type* base_type) {
+    return TranslationUnitContext::it->type.get_throw_type(base_type);
+    
+}
+
+const Type* ThrowType::accept(TypeVisitor& visitor) const {
+    return visitor.visit(this);
+}
+
+void ThrowType::message_print(ostream& stream, int section) const {
+    if (section == 2) {
+        stream << " throw";
+    }
+
+    base_type->message_print(stream, section);
+}
+
+void ThrowType::print(std::ostream& stream) const {
+  stream << "[\"THROW\", " << base_type << ']';
+}
+
+ThrowType::ThrowType(const Type* base_type): base_type(base_type) {
+}

@@ -15,6 +15,7 @@ struct TypeVisitor {
     virtual const Type* visit(const QualifiedType* type) { return type; }
     virtual const Type* visit(const ResolvedArrayType* type) { return type; }
     virtual const Type* visit(const StructType* type) { return type; }
+    virtual const Type* visit(const ThrowType* type) { return type; }
     virtual const Type* visit(const TypeDefType* type) { return type; }
     virtual const Type* visit(const TypeOfType* type) { return type; }
     virtual const Type* visit(const VoidType* type) { return type; }

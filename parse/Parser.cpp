@@ -821,7 +821,9 @@ DeclaratorTransform Parser::parse_declarator_transform(ParseDeclaratorFlags flag
                 message(Severity::ERROR, location) << "pass-by-reference '" << preprocessor.text() << "' at invalid position\n";
             } else {
                 right_transform = [right_transform, kind](const Type* type) {
-                    return PassByReferenceType::of(type, kind);
+                    type = PassByReferenceType::of(type, kind);
+                    if (right_transform) type = right_transform(type);
+                    return type;
                 };
             }
 
@@ -889,6 +891,25 @@ DeclaratorTransform Parser::parse_declarator_transform(ParseDeclaratorFlags flag
             };
 
             declarator.prototype_scope = identifiers.pop_scope();
+
+            if (consume(TOK_THROW)) {
+                auto location = preprocessor.location();
+                right_transform = [right_transform, location](const Type* type) {
+                    auto throw_type = ThrowType::of(type);
+                    const Type* transformed_type = throw_type;
+                    if (right_transform) transformed_type = right_transform(transformed_type);
+
+                    if (!dynamic_cast<const FunctionType*>(transformed_type)) {
+                        message(Severity::ERROR, location) << "'throw' at wrong position\n";
+
+                        transformed_type = type;
+                        if (right_transform) transformed_type = right_transform(transformed_type);
+                    }
+
+                    return transformed_type;
+                };
+            }
+
         } else {
             break;
         }

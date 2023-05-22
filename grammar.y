@@ -362,10 +362,11 @@ direct_declarator
 	| direct_declarator '[' assignment_expression ']'
 	| direct_declarator '(' parameter_type_list ')'
 	| direct_declarator '(' ')'
+	| direct_declarator '(' parameter_type_list ')' THROW  // ADDITION
+	| direct_declarator '(' ')' THROW                      // ADDITION
 	| direct_declarator '(' identifier_list ')'
 	| direct_declarator '&'             // ADDITION pass-by-reference
 	| direct_declarator TOK_AND_OP      // ADDITION pass-by-reference
-    | direct_declarator THROW           // ADDITION
 	;
 
 pointer

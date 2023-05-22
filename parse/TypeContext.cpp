@@ -32,6 +32,12 @@ const PassByReferenceType* TypeContext::get_pass_by_reference_type(const Type* b
     }
 }
 
+const ThrowType* TypeContext::get_throw_type(const Type* base_type) {
+    auto& derived = derived_types[base_type];
+    if (!derived.throw_type) derived.throw_type.reset(new ThrowType(base_type));
+    return derived.throw_type.get();
+}
+
 const ResolvedArrayType* TypeContext::get_array_type(ArrayKind kind, const Type* element_type, unsigned long long size) {
     auto& derived = derived_types[element_type];
     switch (kind) {

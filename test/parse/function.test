@@ -172,6 +172,29 @@ EXPECT_AST
 [["fun","E",["F","V",["Br","Si"]],"foo"]]
 
 
+BEGIN Function that can throw
+void foo() std::throw {
+}
+EXPECT_AST
+[["fun","E",["F",["THROW","V"]],"foo",[],["block",[]]]]
+
+
+BEGIN Function parameter may not have throw type
+void foo(int x std::throw);
+EXPECT_MESSAGE
+:1:16: error expected ')' but got 'std::throw'
+EXPECT_AST
+[["fun","E",["F","V","Si"],"foo"]]
+
+
+BEGIN Throw type may not be applied to function type
+void foo std::throw (int x);
+EXPECT_MESSAGE
+:1:10: error expected ';' but got 'std::throw'
+EXPECT_AST
+[["var","ES","V","foo"]]
+
+
 BEGIN Function definition with local variables
 void foo() {
     int x = 1;

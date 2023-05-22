@@ -321,4 +321,17 @@ struct NestedType: Type {
     virtual void print(ostream& stream) const override;
 };
 
+struct ThrowType: Type {
+    const Type* base_type;
+
+    static const ThrowType* of(const Type* base_type);
+    virtual const Type* accept(TypeVisitor& visitor) const override;
+    virtual void message_print(ostream& stream, int section) const override;
+    virtual void print(std::ostream& stream) const override;
+
+private:
+    friend class TypeContext;
+    explicit ThrowType(const Type* base_type);
+};
+
 #endif
