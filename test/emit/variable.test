@@ -185,7 +185,7 @@ int f(int x&) {
     return x;
 }
 EXPECT_IR
-define i32 @f(ptr %0) {
+define i32 @f(ptr nocapture %0) {
   %2 = load i32, ptr %0, align 4
   ret i32 %2
 }
@@ -775,7 +775,7 @@ struct S {
 EXPECT_IR
 %S = type { i32 }
 
-define i32 @f(ptr %0) {
+define i32 @f(ptr nocapture %0) {
   %2 = getelementptr %S, ptr %0, i32 0, i32 0
   %3 = load i32, ptr %2, align 4
   ret i32 %3
@@ -792,13 +792,13 @@ struct S {
 EXPECT_IR
 %S = type { i32 }
 
-define i32 @f1(ptr %0) {
+define i32 @f1(ptr nocapture %0) {
   %2 = getelementptr %S, ptr %0, i32 0, i32 0
   %3 = load i32, ptr %2, align 4
   ret i32 %3
 }
 
-define i32 @f2(ptr %0) {
+define i32 @f2(ptr nocapture %0) {
   %2 = getelementptr %S, ptr %0, i32 0, i32 0
   %3 = load i32, ptr %2, align 4
   ret i32 %3
@@ -814,7 +814,7 @@ struct S {
 EXPECT_IR
 %S = type { i32 }
 
-define void @f(ptr %0) {
+define void @f(ptr nocapture %0) {
   %2 = getelementptr %S, ptr %0, i32 0, i32 0
   store i32 7, ptr %2, align 4
   ret void
@@ -861,7 +861,7 @@ struct S {
 EXPECT_IR
 %S = type { i32 }
 
-define i32 @f(i32 %0, ptr %1) {
+define i32 @f(i32 %0, ptr nocapture %1) {
   %z = alloca i32, align 4
   store i32 %0, ptr %z, align 4
   %3 = getelementptr %S, ptr %1, i32 0, i32 0
@@ -876,7 +876,7 @@ void f(int a[3][2]) {
     a[2][1] = 7;
 }
 EXPECT_IR
-define void @f(ptr %0) {
+define void @f(ptr nocapture %0) {
   %2 = getelementptr [3 x [2 x i32]], ptr %0, i64 0, i32 2
   %3 = getelementptr [2 x i32], ptr %2, i64 0, i32 1
   store i32 7, ptr %3, align 4

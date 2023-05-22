@@ -215,7 +215,7 @@ for_e:                                            ; preds = %for_b, %for_l
   ret void
 }
 
-declare void @destructor(ptr)
+declare void @destructor(ptr nocapture)
 
 declare void @destructor_wrapper(ptr)
 END
@@ -288,7 +288,7 @@ target:                                           ; preds = %0
   ret void
 }
 
-declare void @destructor(ptr)
+declare void @destructor(ptr nocapture)
 
 declare void @destructor_wrapper(ptr)
 END
@@ -329,7 +329,7 @@ target:                                           ; preds = %target, %0
   br label %target
 }
 
-declare void @destructor(ptr)
+declare void @destructor(ptr nocapture)
 
 declare void @destructor_wrapper(ptr)
 END
@@ -525,7 +525,7 @@ if_e:                                             ; preds = %1
   ret void
 }
 
-define void @destructor(ptr %0) {
+define void @destructor(ptr nocapture %0) {
   ret void
 }
 

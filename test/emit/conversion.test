@@ -286,6 +286,15 @@ EXPECT_MESSAGE
 END
 
 
+BEGIN Parameters passed by reference are always transitory
+int *f(int x&) {
+    return &x;
+}
+EXPECT_MESSAGE
+:2:12: contextual error conversion from type 'int std::transitory*' to type 'int*' requires explicit cast
+END
+
+
 BEGIN Array to pointer conversion
 int a[2];
 int* f() {

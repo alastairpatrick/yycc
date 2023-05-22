@@ -408,8 +408,8 @@ const Type* QualifiedType::of(const Type* base_type, unsigned qualifiers) {
     if (qualifiers == 0) return base_type;
 
     while (auto qualified_base_type = dynamic_cast<const QualifiedType*>(base_type)) {
-        base_type = qualified_base_type;
         qualifiers |= qualified_base_type->qualifier_flags;
+        base_type = qualified_base_type->base_type;
     }
 
     return TranslationUnitContext::it->type.get_qualified_type(base_type, qualifiers);
@@ -442,6 +442,7 @@ void QualifiedType::message_print(ostream& stream, int section) const {
         if (qualifier_flags & QUALIFIER_CONST) stream << " const";
         if (qualifier_flags & QUALIFIER_RESTRICT) stream << " restricted";
         if (qualifier_flags & QUALIFIER_VOLATILE) stream << " volatile";
+        if (qualifier_flags & QUALIFIER_TRANSITORY) stream << " std::transitory";
     }
 }
 
@@ -450,6 +451,7 @@ void QualifiedType::print(std::ostream& stream) const {
     if (qualifier_flags & QUALIFIER_CONST) stream << 'c';
     if (qualifier_flags & QUALIFIER_RESTRICT) stream << 'r';
     if (qualifier_flags & QUALIFIER_VOLATILE) stream << 'v';
+    if (qualifier_flags & QUALIFIER_TRANSITORY) stream << 't';
     stream << "\", " << base_type << ']';
 }
 

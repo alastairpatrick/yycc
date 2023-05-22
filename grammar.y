@@ -20,6 +20,9 @@
 
 %token	ALIGNAS ALIGNOF ATOMIC GENERIC NORETURN STATIC_ASSERT THREAD_LOCAL
 
+// ADDITION
+%token  TRANSITORY
+
 %start translation_unit
 %%
 
@@ -326,6 +329,7 @@ type_qualifier
 	: CONST
 	| RESTRICT
 	| VOLATILE
+    | TRANSITORY                  // ADDITION
 	| ATOMIC
 	;
 

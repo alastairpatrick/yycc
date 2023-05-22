@@ -41,6 +41,8 @@ struct Module {
     Value indeterminate_bool();
     TypedFunctionRef lookup_intrinsic(const char* name, LLVMTypeRef* param_types, unsigned num_params);
 
+    LLVMAttributeRef nocapture_attribute();
+
     void resolve_pass(const vector<Declaration*>& declarations, Scope& file_scope);
     void entity_pass();
     void emit_pass(const EmitOptions& options);
@@ -50,6 +52,7 @@ struct Module {
 
 private:
     Value cached_indeterminate_bool{};
+    LLVMAttributeRef cached_nocapture_attribute{};
 };
 
 #endif

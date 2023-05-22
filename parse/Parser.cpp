@@ -230,6 +230,10 @@ Declaration* Parser::parse_declaration(bool expression_valid) {
     return nullptr;
 }
 
+static bool is_type_qualifier_token(TokenKind token) {
+    return token == TOK_CONST || token == TOK_RESTRICT || token == TOK_VOLATILE || token == TOK_TRANSITORY;
+}
+
 Declaration* Parser::parse_declaration_specifiers(bool expression_valid, const Type*& type, SpecifierSet& specifiers) {
     ScopeKind scope = identifiers.scope_kind();
 
@@ -343,7 +347,8 @@ Declaration* Parser::parse_declaration_specifiers(bool expression_valid, const T
 
           } case TOK_CONST:
             case TOK_RESTRICT:
-            case TOK_VOLATILE: {
+            case TOK_VOLATILE:
+            case TOK_TRANSITORY: {
               found_specifier_token = token;
               qualifier_location = preprocessor.location();
               specifier_set &= ~token_to_specifier(token); // qualifiers may be repeated
@@ -772,7 +777,7 @@ DeclaratorTransform Parser::parse_declarator_transform(ParseDeclaratorFlags flag
         };
 
         SpecifierSet qualifier_set = 0;
-        while (token == TOK_CONST || token == TOK_RESTRICT || token == TOK_VOLATILE) {
+        while (is_type_qualifier_token(token)) {
             qualifier_set |= token_to_specifier(token);
             consume();
         }
@@ -826,7 +831,7 @@ DeclaratorTransform Parser::parse_declarator_transform(ParseDeclaratorFlags flag
             // C99 6.7.5.3p7
             SpecifierSet array_qualifier_set{};
             if (depth == 0 && scope == ScopeKind::PROTOTYPE) {
-                while (token == TOK_CONST || token == TOK_RESTRICT || token == TOK_VOLATILE || token == TOK_STATIC) {
+                while (is_type_qualifier_token(token) || token == TOK_STATIC) {
                     if (token != TOK_STATIC) {
                         array_qualifier_set |= token_to_specifier(token);
                     }

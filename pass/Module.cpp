@@ -32,6 +32,15 @@ TypedFunctionRef Module::lookup_intrinsic(const char* name, LLVMTypeRef* param_t
     return ref;
 }
 
+LLVMAttributeRef Module::nocapture_attribute() {
+    auto context = TranslationUnitContext::it;
+
+    if (cached_nocapture_attribute) return cached_nocapture_attribute;
+    char name[] = "nocapture";
+    auto kind = LLVMGetEnumAttributeKindForName(name, sizeof(name) - 1);
+    return cached_nocapture_attribute = LLVMCreateEnumAttribute(context->llvm_context, kind, 0);
+}
+
 void Module::middle_end_passes(const char* passes) {
     auto pass_builder_options = LLVMCreatePassBuilderOptions();
     SCOPE_EXIT {

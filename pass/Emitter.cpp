@@ -99,6 +99,7 @@ struct Emitter: ValueWrangler, Visitor {
         if (!options.emit_helpers) return ref;
 
         LLVMSetLinkage(ref.function, LLVMInternalLinkage);
+        LLVMAddAttributeAtIndex(ref.function, 1, module->nocapture_attribute());
 
         auto entry_block = LLVMAppendBasicBlockInContext(context->llvm_context, ref.function, "");
         LLVMPositionBuilderAtEnd(builder, entry_block);
@@ -321,7 +322,7 @@ struct Emitter: ValueWrangler, Visitor {
                 auto llvm_param = LLVMGetParam(function, i);
 
                 if (auto reference_type = dynamic_cast<const PassByReferenceType*>(param->type)) {
-                    param_entity->value = Value(ValueKind::LVALUE, reference_type->base_type, llvm_param);
+                    param_entity->value = Value(ValueKind::LVALUE, QualifiedType::of(reference_type->base_type, QUALIFIER_TRANSITORY), llvm_param);
 
                     if (reference_type->kind == PassByReferenceType::Kind::RVALUE) {
                         pend_destructor(param_entity->value);
@@ -497,6 +498,23 @@ struct Emitter: ValueWrangler, Visitor {
 
     virtual VisitDeclaratorOutput visit(Declarator* declarator, Function* function, const VisitDeclaratorInput& input) override {
         assert(declarator == declarator->primary);
+
+        auto llvm_function = get_address(function->value);
+        for (size_t i = 0; i < function->parameters.size(); ++i) {
+            auto param = function->parameters[i];
+
+            auto unqualified_param_type = param->type->unqualified();
+
+            if (auto reference_type = unqualified_type_cast<PassByReferenceType>(unqualified_param_type)) {
+                LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nocapture_attribute());
+            }
+
+            if (auto pointer_type = unqualified_type_cast<PointerType>(unqualified_param_type)) {
+                if (pointer_type->base_type->qualifiers() & QUALIFIER_TRANSITORY) {
+                    LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nocapture_attribute());
+                }
+            }
+        }
           
         if (function->body) {
             Emitter function_emitter(module, EmitOutcome::IR, options);

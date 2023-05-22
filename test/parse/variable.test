@@ -239,6 +239,12 @@ EXPECT_AST
 [["var", "ES", ["Qv", "Si"], "x"]]
 
 
+BEGIN Noescape qualified declarators
+std::transitory int x;
+EXPECT_AST
+[["var", "ES", ["Qt", "Si"], "x"]]
+
+
 BEGIN Multiple declarators
 int x, y;
 EXPECT_AST
