@@ -65,6 +65,7 @@ void          { return TOK_VOID; }
 volatile      { return TOK_VOLATILE; }
 while         { return TOK_WHILE; }
 
+std::throw          { return TOK_THROW; }
 std::transitory     { return TOK_TRANSITORY; }
 
 

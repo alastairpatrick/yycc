@@ -999,7 +999,9 @@ Statement* Parser::parse_statement() {
 
           return new IfElseStatement(condition, then_statement, else_statement, location);
 
-      } case TOK_RETURN: {
+      } case TOK_RETURN:
+        case TOK_THROW: {
+          auto op = token;
           consume();
 
           Expr* expr{};
@@ -1007,7 +1009,12 @@ Statement* Parser::parse_statement() {
               expr = parse_expr(SEQUENCE_PRECEDENCE);
           }
           consume_required(';');
-          return new ReturnStatement(expr, location);
+
+          if (op == TOK_RETURN) {
+              return new ReturnStatement(expr, location);
+          } else {
+              return new ThrowStatement(expr, location);
+          }
 
       } case TOK_SWITCH: {
           consume();

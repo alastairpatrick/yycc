@@ -72,4 +72,12 @@ struct SwitchStatement: Statement {
     virtual void print(ostream& stream) const override;
 };
 
+struct ThrowStatement: Statement {
+    Expr* expr{};
+
+    ThrowStatement(Expr* expr, const Location& location);
+    virtual VisitStatementOutput accept(Visitor& visitor) override;
+    virtual void print(ostream& stream) const override;
+};
+
 #endif

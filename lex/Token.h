@@ -42,6 +42,7 @@ enum TokenKind {
     TOK_GOTO,
     TOK_IF,
     TOK_RETURN,
+    TOK_THROW,
     TOK_SIZEOF,
     TOK_SWITCH,
     TOK_WHILE,

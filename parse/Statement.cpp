@@ -157,3 +157,23 @@ void SwitchStatement::print(ostream& stream) const {
     stream << "\"switch\", " << expr << ", " << body << ']';
 }
 
+
+
+ThrowStatement::ThrowStatement(Expr* expr, const Location& location)
+    : Statement(location), expr(expr) {
+}
+
+VisitStatementOutput ThrowStatement::accept(Visitor& visitor) {
+    return visitor.visit(this);
+}
+
+void ThrowStatement::print(ostream& stream) const {
+    stream << '[';
+    Statement::print(stream);
+
+    stream << "\"throw\"";
+    if (expr) {
+        stream << ", " << expr;
+    }
+    stream << ']';
+}

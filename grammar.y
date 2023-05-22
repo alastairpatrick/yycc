@@ -21,7 +21,7 @@
 %token	ALIGNAS ALIGNOF ATOMIC GENERIC NORETURN STATIC_ASSERT THREAD_LOCAL
 
 // ADDITION
-%token  TRANSITORY
+%token  CATCH THROW TRANSITORY TRY
 
 %start translation_unit
 %%
@@ -365,6 +365,7 @@ direct_declarator
 	| direct_declarator '(' identifier_list ')'
 	| direct_declarator '&'             // ADDITION pass-by-reference
 	| direct_declarator TOK_AND_OP      // ADDITION pass-by-reference
+    | direct_declarator THROW           // ADDITION
 	;
 
 pointer
@@ -475,6 +476,7 @@ statement
 	| selection_statement
 	| iteration_statement
 	| jump_statement
+    | try_statement         // ADDITION
 	;
 
 labeled_statement
@@ -524,7 +526,13 @@ jump_statement
 	| BREAK ';'
 	| RETURN ';'
 	| RETURN expression ';'
+    | THROW expression ';'          // ADDITION
 	;
+
+// ADDITION
+try_statement
+    : TRY compound_statement CATCH '(' parameter_declaration ')' compound_statement
+    ;
 
 translation_unit
 	: external_declaration

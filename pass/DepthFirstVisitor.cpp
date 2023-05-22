@@ -111,6 +111,11 @@ VisitStatementOutput DepthFirstVisitor::visit(SwitchStatement* statement) {
     return VisitStatementOutput(statement);
 }
 
+VisitStatementOutput DepthFirstVisitor::visit(ThrowStatement* statement) {
+    statement->expr = accept_expr(statement->expr).expr;
+    return VisitStatementOutput(statement);
+}
+
 /* Expressions */
 
 VisitExpressionOutput DepthFirstVisitor::visit(AddressExpr* expr) {

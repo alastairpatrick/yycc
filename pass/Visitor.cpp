@@ -59,6 +59,10 @@ VisitStatementOutput Visitor::visit(SwitchStatement* statement) {
     return VisitStatementOutput(statement);
 }
 
+VisitStatementOutput Visitor::visit(ThrowStatement* statement) {
+    return VisitStatementOutput(statement);
+}
+
 /* Expressions */
 
 [[nodiscard]]

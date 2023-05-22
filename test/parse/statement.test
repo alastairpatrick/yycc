@@ -75,6 +75,11 @@ EXPECT_AST
 ["return", 7]
 
 
+BEGIN Parses throw statement
+std::throw 7;
+EXPECT_AST
+["throw", 7]
+
 
 BEGIN Parses identifier labelled statement
 a: b:
