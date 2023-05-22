@@ -48,7 +48,7 @@ struct Visitor {
     virtual VisitStatementOutput visit(CompoundStatement* statement);
     virtual VisitStatementOutput visit(ExprStatement* statement);
     virtual VisitStatementOutput visit(ForStatement* statement);
-    virtual VisitStatementOutput visit(GoToStatement* statement);
+    virtual VisitStatementOutput visit(JumpStatement* statement);
     virtual VisitStatementOutput visit(IfElseStatement* statement);
     virtual VisitStatementOutput visit(ReturnStatement* statement);
     virtual VisitStatementOutput visit(SwitchStatement* statement);

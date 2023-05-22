@@ -1071,7 +1071,7 @@ Statement* Parser::parse_statement() {
 
           consume_required(';');
 
-          return new GoToStatement(kind, identifier, location);
+          return new JumpStatement(kind, identifier, location);
 
       } default: {
           Label label;

@@ -68,15 +68,15 @@ void ForStatement::print(ostream& stream) const {
 }
 
 
-GoToStatement::GoToStatement(TokenKind kind, const Identifier& identifier, const Location& location)
+JumpStatement::JumpStatement(TokenKind kind, const Identifier& identifier, const Location& location)
     : Statement(location), kind(kind), identifier(identifier) {
 }
 
-VisitStatementOutput GoToStatement::accept(Visitor& visitor) {
+VisitStatementOutput JumpStatement::accept(Visitor& visitor) {
     return visitor.visit(this);
 }
 
-void GoToStatement::print(ostream& stream) const {
+void JumpStatement::print(ostream& stream) const {
     stream << '[';
     Statement::print(stream);
 
@@ -95,7 +95,7 @@ void GoToStatement::print(ostream& stream) const {
     stream << ", \"" << identifier << "\"]";
 }
 
-const char* GoToStatement::message_kind() const {
+const char* JumpStatement::message_kind() const {
     switch (kind) {
       case TOK_GOTO:
         return "goto";

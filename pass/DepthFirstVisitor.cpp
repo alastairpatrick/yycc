@@ -84,7 +84,7 @@ VisitStatementOutput DepthFirstVisitor::visit(ForStatement* statement) {
     return VisitStatementOutput(statement);
 }
 
-VisitStatementOutput DepthFirstVisitor::visit(GoToStatement* statement) {
+VisitStatementOutput DepthFirstVisitor::visit(JumpStatement* statement) {
     return VisitStatementOutput(statement);
 }
 

@@ -586,7 +586,7 @@ struct Emitter: ValueWrangler, Visitor {
         return VisitStatementOutput();
     }
 
-    VisitStatementOutput visit(GoToStatement* statement) {
+    VisitStatementOutput visit(JumpStatement* statement) {
         LLVMBasicBlockRef target_block{};
         if (statement->kind == TOK_GOTO) {
             auto& go_to_label = lookup_go_to_label(statement->identifier);

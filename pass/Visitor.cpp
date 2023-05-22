@@ -43,7 +43,7 @@ VisitStatementOutput Visitor::visit(ForStatement* statement) {
     return VisitStatementOutput(statement);
 }
 
-VisitStatementOutput Visitor::visit(GoToStatement* statement) {
+VisitStatementOutput Visitor::visit(JumpStatement* statement) {
     return VisitStatementOutput(statement);
 }
 

@@ -15,7 +15,7 @@ struct DepthFirstVisitor: Visitor {
     virtual VisitStatementOutput visit(CompoundStatement* statement) override;
     virtual VisitStatementOutput visit(ExprStatement* statement) override;
     virtual VisitStatementOutput visit(ForStatement* statement) override;
-    virtual VisitStatementOutput visit(GoToStatement* statement) override;
+    virtual VisitStatementOutput visit(JumpStatement* statement) override;
     virtual VisitStatementOutput visit(IfElseStatement* statement) override;
     virtual VisitStatementOutput visit(ReturnStatement* statement) override;
     virtual VisitStatementOutput visit(SwitchStatement* statement) override;

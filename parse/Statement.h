@@ -33,11 +33,11 @@ struct ForStatement: Statement {
     virtual void print(ostream& stream) const override;
 };
 
-struct GoToStatement: Statement {
+struct JumpStatement: Statement {
     TokenKind kind;
     Identifier identifier;
 
-    GoToStatement(TokenKind kind, const Identifier& identifier, const Location& location);
+    JumpStatement(TokenKind kind, const Identifier& identifier, const Location& location);
     virtual VisitStatementOutput accept(Visitor& visitor) override;
     virtual void print(ostream& stream) const override;
     const char* message_kind() const;
