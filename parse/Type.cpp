@@ -975,3 +975,17 @@ void ThrowType::print(std::ostream& stream) const {
 
 ThrowType::ThrowType(const Type* base_type): base_type(base_type) {
 }
+
+LLVMTypeRef ThrowType::cache_llvm_type() const {
+    auto context = TranslationUnitContext::it;
+
+    if (base_type->unqualified() == &VoidType::it) {
+        return context->llvm_pointer_type;
+    } else {
+        LLVMTypeRef element_types[] = {
+            base_type->llvm_type(),
+            context->llvm_pointer_type,
+        };
+        return LLVMStructTypeInContext(context->llvm_context, element_types, std::size(element_types), false);
+    }
+}

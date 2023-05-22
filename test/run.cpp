@@ -102,6 +102,7 @@ static const Test tests[] = {
     { "emit/conversion",            TestType::EMIT },
     { "emit/emit",                  TestType::EMIT },
     { "emit/expr",                  TestType::EMIT },
+    { "emit/exception",             TestType::EMIT },
     { "emit/statement",             TestType::EMIT },
     { "emit/variable",              TestType::EMIT },
 

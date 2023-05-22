@@ -27,6 +27,7 @@ TranslationUnitContext::TranslationUnitContext(ostream& message_stream): message
     zero_int = LLVMConstInt(IntegerType::default_type()->llvm_type(), 0, false);
     llvm_false = LLVMConstInt(llvm_bool_type, 0, false);
     llvm_true = LLVMConstInt(llvm_bool_type, 1, false);
+    llvm_null = LLVMConstNull(llvm_pointer_type);
 
     null_message_stream.setstate(ios_base::badbit);
 }

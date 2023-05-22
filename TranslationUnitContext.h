@@ -39,6 +39,7 @@ struct TranslationUnitContext {
     LLVMValueRef zero_int{};
     LLVMValueRef llvm_false{};
     LLVMValueRef llvm_true{};
+    LLVMValueRef llvm_null{};
 };
 
 #endif

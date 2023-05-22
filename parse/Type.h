@@ -321,7 +321,7 @@ struct NestedType: Type {
     virtual void print(ostream& stream) const override;
 };
 
-struct ThrowType: Type {
+struct ThrowType: CachedType {
     const Type* base_type;
 
     static const ThrowType* of(const Type* base_type);
@@ -332,6 +332,7 @@ struct ThrowType: Type {
 private:
     friend class TypeContext;
     explicit ThrowType(const Type* base_type);
+    virtual LLVMTypeRef cache_llvm_type() const override;
 };
 
 #endif

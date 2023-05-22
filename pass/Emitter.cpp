@@ -664,7 +664,18 @@ struct Emitter: ValueWrangler, Visitor {
     }
 
     virtual VisitStatementOutput visit(ReturnStatement* statement) override {
-        if (function_type->return_type->unqualified() == &VoidType::it) {
+        auto context = TranslationUnitContext::it;
+
+        auto return_type = function_type->return_type->unqualified();
+
+        auto throw_type = unqualified_type_cast<ThrowType>(return_type);
+        if (throw_type) {
+            return_type = throw_type->base_type; // todo ->unqualified();
+        }
+
+        LLVMValueRef return_value{};
+
+        if (return_type->unqualified() == &VoidType::it) {
             if (statement->expr) {
                 auto type = get_expr_type(statement->expr);
                 if (type->unqualified() != &VoidType::it) {
@@ -674,25 +685,37 @@ struct Emitter: ValueWrangler, Visitor {
             }
 
             call_pending_destructors_at_all_scopes();
-            LLVMBuildRetVoid(builder);
         } else {
-            LLVMValueRef rvalue;
             if (statement->expr) {
                 auto value = emit_expr(statement->expr, false).unqualified();
-                if (value.type->unqualified() == function_type->return_type->unqualified()) {
-                    rvalue = get_value(value);
+                if (value.type->unqualified() == return_type->unqualified()) {
+                    return_value = get_value(value);
                 } else {
                     pend_destructor(value);
-                    rvalue = convert_to_rvalue(value, function_type->return_type->unqualified(), ConvKind::IMPLICIT);
+                    return_value = convert_to_rvalue(value, return_type->unqualified(), ConvKind::IMPLICIT);
                 }
             } else {
                 message(Severity::ERROR, statement->location) << "non-void function '" << *function_declarator->identifier << "' should return a value\n";
                 function_declarator->message_see_declaration("return type");
-                rvalue = LLVMConstNull(function_type->return_type->llvm_type());
+                return_value = LLVMConstNull(return_type->llvm_type());
             }
 
             call_pending_destructors_at_all_scopes();
-            LLVMBuildRet(builder, rvalue);
+        }
+
+        if (!throw_type && !return_value) {
+            LLVMBuildRetVoid(builder);
+        } else {
+            if (throw_type) {
+                if (return_value) {
+                    return_value = LLVMBuildInsertValue(builder, LLVMGetUndef(throw_type->llvm_type()), return_value, 0, "");
+                    return_value = LLVMBuildInsertValue(builder, return_value, context->llvm_null, 1, "");
+                } else {
+                    return_value = context->llvm_null;
+                }
+            }
+
+            LLVMBuildRet(builder, return_value);
         }
 
         LLVMPositionBuilderAtEnd(builder, unreachable_block);
@@ -733,6 +756,33 @@ struct Emitter: ValueWrangler, Visitor {
 
         LLVMBuildBr(builder, construct.break_block);
         LLVMPositionBuilderAtEnd(builder, construct.break_block);
+
+        return VisitStatementOutput();
+    }
+
+    virtual VisitStatementOutput visit(ThrowStatement* statement) override {
+        auto context = TranslationUnitContext::it;
+
+        auto return_type = function_type->return_type->unqualified();
+
+        auto throw_type = unqualified_type_cast<ThrowType>(return_type);
+        if (!throw_type) {
+            // todo: error
+        }
+        
+        return_type = throw_type->base_type; // todo ->unqualified();
+
+        auto value = emit_expr(statement->expr, false).unqualified();
+        auto llvm_value = convert_to_rvalue(value, VoidType::it.pointer_to(), ConvKind::IMPLICIT);
+
+        if (return_type != &VoidType::it) {
+            llvm_value = LLVMBuildInsertValue(builder, LLVMGetUndef(throw_type->llvm_type()), llvm_value, 1, "");
+            llvm_value = LLVMBuildInsertValue(builder, llvm_value, LLVMGetUndef(return_type->llvm_type()), 0, "");
+        }
+
+        LLVMBuildRet(builder, llvm_value);
+
+        LLVMPositionBuilderAtEnd(builder, unreachable_block);
 
         return VisitStatementOutput();
     }

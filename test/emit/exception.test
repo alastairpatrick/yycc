@@ -1,0 +1,68 @@
+BEGIN Non-void throwing function returns with return statement
+short f() std::throw {
+    return 3;
+}
+EXPECT_IR
+define { i16, ptr } @f() {
+  ret { i16, ptr } { i16 3, ptr null }
+}
+END
+
+
+BEGIN Non-void throwing function returns without return statement
+short f() std::throw {
+}
+EXPECT_IR
+define { i16, ptr } @f() {
+  ret { i16, ptr } zeroinitializer
+}
+END
+
+
+BEGIN Void throwing function returns without return statement
+void f() std::throw {
+}
+EXPECT_IR
+define ptr @f() {
+  ret ptr null
+}
+END
+
+
+BEGIN Void throwing function returns with return statement
+void f() std::throw {
+    return;
+}
+EXPECT_IR
+define ptr @f() {
+  ret ptr null
+}
+END
+
+
+BEGIN Non-void function throws
+int e;
+int f() std::throw {
+    std::throw &e;
+}
+EXPECT_IR
+@e = global i32 0
+
+define { i32, ptr } @f() {
+  ret { i32, ptr } { i32 undef, ptr @e }
+}
+END
+
+
+BEGIN Void function throws
+int e;
+void f() std::throw {
+    std::throw &e;
+}
+EXPECT_IR
+@e = global i32 0
+
+define ptr @f() {
+  ret ptr @e
+}
+END
