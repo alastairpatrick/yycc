@@ -1105,10 +1105,16 @@ Statement* Parser::parse_statement() {
           consume();
           auto try_statement = parse_compound_statement();
           consume_required(TOK_CATCH);
+
+          identifiers.push_scope(new Scope(ScopeKind::BLOCK));
+
           consume_required('(');
           auto declarator = parse_parameter_declarator();
           consume_required(')');
           auto catch_statement = parse_compound_statement();
+
+          identifiers.pop_scope();
+
           return new TryStatement(try_statement, declarator, catch_statement, location);
 
       } default: {

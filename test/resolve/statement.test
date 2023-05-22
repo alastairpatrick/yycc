@@ -19,3 +19,30 @@ EXPECT_AST
     ["return",["sizeof",["A","Si",2]]]]]
 ]]
 
+
+BEGIN Declare variable in try statement
+int f() {
+    std::try {
+        return 0;
+    }
+    std::catch (int e) {
+        return e;
+    }
+}
+EXPECT_GLOBALS
+[["fun","E",["F","Si"],"f",[],["block",[
+    ["try",["block",[["return",0]]],["var","","Si","e"],["block",[["return","Ne"]]]]]
+]]]
+
+
+BEGIN Try declaration not visible outside catch block
+int f() {
+    std::try {
+    }
+    std::catch (int e) {
+    }
+    return e;
+}
+EXPECT_MESSAGE
+:6:12: error identifier 'e' undeclared
+END
