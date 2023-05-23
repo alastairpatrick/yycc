@@ -108,6 +108,15 @@ Value ValueWrangler::allocate_auto_storage(const Type* type, const char* name) {
     return Value(ValueKind::LVALUE, type, storage);
 }
 
+void ValueWrangler::call_assume_intrinsic(LLVMValueRef true_value) {
+    auto function = module->lookup_intrinsic("llvm.assume", nullptr, 0);
+
+    LLVMValueRef args[] = {
+        true_value,
+    };
+    function.call(builder, args, std::size(args));
+}
+
 void ValueWrangler::call_expect_i1_intrinsic(LLVMValueRef actual_value, LLVMValueRef expected_value) {
     auto context = TranslationUnitContext::it;
 
