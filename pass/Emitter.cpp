@@ -183,14 +183,14 @@ struct Emitter: ValueWrangler, Visitor {
     }
 
     // Returns phi instruction.
-    LLVMValueRef emit_throw_handling(EmitterScope* scope) {
+    LLVMValueRef emit_throw_handling(EmitterScope* scope, const Location& location) {
         auto context = TranslationUnitContext::it;
 
         LLVMValueRef next_phi{};
         if (scope->throw_handling_phi) {
             next_phi = scope->throw_handling_phi;
         } else if (scope->parent_scope) {
-            next_phi = emit_throw_handling(scope->parent_scope);
+            next_phi = emit_throw_handling(scope->parent_scope, location);
         } else {
             auto old_block = LLVMGetInsertBlock(builder);
 
@@ -200,17 +200,25 @@ struct Emitter: ValueWrangler, Visitor {
             auto return_type = function_type->return_type->unqualified();
 
             auto throw_type = unqualified_type_cast<ThrowType>(return_type);
-            if (!throw_type) {
-                // todo: error
+            if (throw_type) {
+                return_type = throw_type->base_type->unqualified();
+            } else {
+                message(Severity::ERROR, location) << "exception thrown here is not handled\n";
+                message(Severity::INFO, function_declarator->location) << "see containing function '" << *function_declarator->identifier
+                                                                       << "'; consider adding 'std::throw'\n";
             }
         
             auto llvm_value = next_phi = LLVMBuildPhi(builder, context->llvm_pointer_type, "exc");
 
-            if ( throw_type->base_type->unqualified() != &VoidType::it) {
-                llvm_value = LLVMBuildInsertValue(builder, LLVMGetUndef(throw_type->llvm_type()), llvm_value, 1, "");
-            }
+            if (throw_type) {
+                if (return_type != &VoidType::it) {
+                    llvm_value = LLVMBuildInsertValue(builder, LLVMGetUndef(throw_type->llvm_type()), llvm_value, 1, "");
+                }
 
-            LLVMBuildRet(builder, llvm_value);
+                LLVMBuildRet(builder, llvm_value);
+            } else {
+                LLVMBuildUnreachable(builder);
+            }
 
             LLVMPositionBuilderAtEnd(builder, old_block);
         }
@@ -241,12 +249,13 @@ struct Emitter: ValueWrangler, Visitor {
         return next_phi;
     }
 
-    void emit_throw(LLVMValueRef exception) {
-        auto phi = emit_throw_handling(innermost_scope);
+    void emit_throw(const ExprValue& exception, const Location& throw_location) {
+        auto phi = emit_throw_handling(innermost_scope, throw_location);
 
         auto old_block = LLVMGetInsertBlock(builder);
         LLVMBuildBr(builder, LLVMGetInstructionParent(phi));
-        LLVMAddIncoming(phi, &exception, &old_block, 1);
+        auto llvm_exception = get_value(exception);
+        LLVMAddIncoming(phi, &llvm_exception, &old_block, 1);
         LLVMPositionBuilderAtEnd(builder, append_unreachable_block());
     }
 
@@ -852,7 +861,7 @@ struct Emitter: ValueWrangler, Visitor {
 
     virtual VisitStatementOutput visit(ThrowStatement* statement) override {
         auto value = emit_expr(statement->expr, false).unqualified();
-        emit_throw(convert_to_rvalue(value, VoidType::it.pointer_to(), ConvKind::IMPLICIT));
+        emit_throw(convert_to_type(value, VoidType::it.pointer_to(), ConvKind::IMPLICIT), statement->location);
         return VisitStatementOutput();
     }
 

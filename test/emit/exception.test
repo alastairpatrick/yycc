@@ -77,6 +77,17 @@ define ptr @f() {
 END
 
 
+BEGIN Error on attempt to throw from a function that cannot throw
+int e;
+void f() {
+    std::throw &e;
+}
+EXPECT_MESSAGE
+:3:5: error exception thrown here is not handled
+:2:6: see containing function 'f'; consider adding 'std::throw'
+END
+
+
 BEGIN Throw twice
 int e1, e2;
 void f() std::throw {
