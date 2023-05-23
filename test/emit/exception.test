@@ -238,3 +238,76 @@ declare void @destructor(ptr nocapture)
 
 declare void @destructor_wrapper(ptr)
 END
+
+
+BEGIN Catch exception
+int e;
+void f() {
+    std::try {
+        std::throw &e;
+    } std::catch (void* e) {
+    }
+}
+EXPECT_IR
+@e = global i32 0
+
+define void @f() {
+  %e = alloca ptr, align 8
+  br label %catch
+
+catch:                                            ; preds = %0
+  %exc = phi ptr [ @e, %0 ]
+  store ptr %exc, ptr %e, align 8
+  br label %1
+
+1:                                                ; preds = %catch, %2
+  ret void
+
+2:                                                ; No predecessors!
+  br label %1
+}
+END
+
+
+BEGIN Throwing does not call destructor in scopes containing try statement
+struct S {
+    int x;
+    void destructor(S&);
+};
+int e;
+void f() {
+    S s = {1};
+    std::try {
+        std::throw &e;
+    } std::catch (void* e) {
+    }
+}
+EXPECT_IR
+%S = type { i32 }
+
+@e = global i32 0
+
+define void @f() {
+  %e = alloca ptr, align 8
+  %s = alloca %S, align 8
+  %x = getelementptr inbounds %S, ptr %s, i32 0, i32 0
+  store i32 1, ptr %x, align 4
+  br label %catch
+
+catch:                                            ; preds = %0
+  %exc = phi ptr [ @e, %0 ]
+  store ptr %exc, ptr %e, align 8
+  br label %1
+
+1:                                                ; preds = %catch, %2
+  call void @destructor_wrapper(ptr %s)
+  ret void
+
+2:                                                ; No predecessors!
+  br label %1
+}
+
+declare void @destructor(ptr nocapture)
+
+declare void @destructor_wrapper(ptr)
+END

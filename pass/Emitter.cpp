@@ -47,6 +47,12 @@ struct SwitchConstruct: Construct {
     ~SwitchConstruct();
 };
 
+struct TryConstruct: Construct {
+    LLVMBasicBlockRef catch_block{};
+    LLVMValueRef phi_instruction{};
+    TryConstruct(Emitter* emitter): Construct(emitter) {}
+};
+
 struct GoToDestructorCall {
     size_t scope_id{};
     LLVMValueRef instruction{};
@@ -189,6 +195,8 @@ struct Emitter: ValueWrangler, Visitor {
         LLVMValueRef next_phi{};
         if (scope->throw_handling_phi) {
             next_phi = scope->throw_handling_phi;
+        } else if (auto try_construct = dynamic_cast<TryConstruct*>(scope)) {
+            next_phi = try_construct->phi_instruction;
         } else if (scope->parent_scope) {
             next_phi = emit_throw_handling(scope->parent_scope, location);
         } else {
@@ -862,6 +870,36 @@ struct Emitter: ValueWrangler, Visitor {
     virtual VisitStatementOutput visit(ThrowStatement* statement) override {
         auto value = emit_expr(statement->expr, false).unqualified();
         emit_throw(convert_to_type(value, VoidType::it.pointer_to(), ConvKind::IMPLICIT), statement->location);
+        return VisitStatementOutput();
+    }
+
+    virtual VisitStatementOutput visit(TryStatement* statement) override {
+        auto context = TranslationUnitContext::it;
+
+        TryConstruct construct(this);
+        construct.catch_block = append_block("catch");
+        auto merge_block = append_block("");
+
+        auto old_block = LLVMGetInsertBlock(builder);
+
+        LLVMPositionBuilderAtEnd(builder, construct.catch_block);
+        construct.phi_instruction = LLVMBuildPhi(builder, context->llvm_pointer_type, "exc");
+
+        accept_declarator(statement->declarator);
+
+        auto exception_variable = statement->declarator->variable();
+        store(exception_variable->value, construct.phi_instruction, statement->declarator->location);
+
+        LLVMPositionBuilderAtEnd(builder, old_block);
+        accept_statement(statement->try_statement);
+        LLVMBuildBr(builder, merge_block);
+
+        LLVMPositionBuilderAtEnd(builder, construct.catch_block);
+        accept_statement(statement->catch_statement);
+        LLVMBuildBr(builder, merge_block);
+
+        LLVMPositionBuilderAtEnd(builder, merge_block);
+
         return VisitStatementOutput();
     }
 
