@@ -388,12 +388,12 @@ define void @f(i32 %0) {
   store i32 %0, ptr %c, align 4
   %2 = load i32, ptr %c, align 4
   %3 = trunc i32 %2 to i1
-  br i1 %3, label %if_c, label %if_e
+  br i1 %3, label %4, label %5
 
-if_c:                                             ; preds = %1
-  br label %if_e
+4:                                                ; preds = %1
+  br label %5
 
-if_e:                                             ; preds = %if_c, %1
+5:                                                ; preds = %4, %1
   ret void
 }
 END
@@ -410,15 +410,15 @@ define void @f(i32 %0) {
   store i32 %0, ptr %c, align 4
   %2 = load i32, ptr %c, align 4
   %3 = trunc i32 %2 to i1
-  br i1 %3, label %if_c, label %if_a
+  br i1 %3, label %4, label %5
 
-if_c:                                             ; preds = %1
-  br label %if_e
+4:                                                ; preds = %1
+  br label %6
 
-if_a:                                             ; preds = %1
-  br label %if_e
+5:                                                ; preds = %1
+  br label %6
 
-if_e:                                             ; preds = %if_a, %if_c
+6:                                                ; preds = %5, %4
   ret void
 }
 END
@@ -535,20 +535,20 @@ define void @f(%S %0) {
   store i32 1, ptr %x, align 4
   %2 = call i32 @who_knows()
   %3 = trunc i32 %2 to i1
-  br i1 %3, label %if_c, label %if_e
+  br i1 %3, label %4, label %5
 
-if_c:                                             ; preds = %1
+4:                                                ; preds = %1
   call void @destructor_wrapper(ptr %t)
   call void @destructor_wrapper(ptr %s)
   ret void
 
-if_e:                                             ; preds = %4, %1
+5:                                                ; preds = %6, %1
   call void @destructor_wrapper(ptr %t)
   call void @destructor_wrapper(ptr %s)
   ret void
 
-4:                                                ; No predecessors!
-  br label %if_e
+6:                                                ; No predecessors!
+  br label %5
 }
 
 define void @destructor(ptr nocapture %0) {

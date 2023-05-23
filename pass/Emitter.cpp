@@ -740,10 +740,10 @@ struct Emitter: ValueWrangler, Visitor {
     }
 
     VisitStatementOutput visit(IfElseStatement* statement) {
-        auto then_block = append_block("if_c");
+        auto then_block = append_block("");
         LLVMBasicBlockRef else_block;
-        if (statement->else_statement) else_block = append_block("if_a");
-        auto end_block = append_block("if_e");
+        if (statement->else_statement) else_block = append_block("");
+        auto end_block = append_block("");
         if (!statement->else_statement) else_block = end_block;
 
         auto condition_value = convert_to_rvalue(statement->condition, IntegerType::of_bool(), ConvKind::IMPLICIT);

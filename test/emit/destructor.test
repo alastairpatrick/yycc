@@ -105,14 +105,14 @@ define void @f() local_unnamed_addr {
   %1 = tail call i32 @g()
   %2 = and i32 %1, 1
   %.not = icmp eq i32 %2, 0
-  br i1 %.not, label %if_e, label %if_c
+  br i1 %.not, label %destructor_wrapper.exit, label %3
 
-if_c:                                             ; preds = %0
+3:                                                ; preds = %0
   store i32 1, ptr %s, align 8
   call void @destructor(ptr nonnull %s)
-  br label %if_e
+  br label %destructor_wrapper.exit
 
-if_e:                                             ; preds = %if_c, %0
+destructor_wrapper.exit:                          ; preds = %3, %0
   ret void
 }
 
