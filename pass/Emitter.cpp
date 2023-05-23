@@ -23,6 +23,9 @@ struct EmitterScope {
 
     vector<PendingDestructor> destructors;
 
+    int throw_cleanup_calls{};
+    LLVMValueRef throw_cleanup_phi{};
+
     EmitterScope(Emitter* emitter);
     virtual ~EmitterScope();
 };
@@ -63,7 +66,6 @@ struct Emitter: ValueWrangler, Visitor {
     Declarator* function_declarator{};
     const FunctionType* function_type{};
     LLVMValueRef function{};
-    LLVMBasicBlockRef unreachable_block{};
     unordered_map<InternedString, GoToLabel> goto_labels;
     size_t next_scope_id{};
     EmitterScope* innermost_scope{};
@@ -72,6 +74,7 @@ struct Emitter: ValueWrangler, Visitor {
     Value this_value;
     LLVMTypeRef destructor_wrapper_type{};
     unordered_map<const StructuredType*, TypedFunctionRef> destructor_wrappers;
+    LLVMBasicBlockRef last_unreachable_block{};
 
     Emitter(Module* module, EmitOutcome outcome, const EmitOptions& options)
         : ValueWrangler(module, outcome), options(options) {
@@ -170,9 +173,71 @@ struct Emitter: ValueWrangler, Visitor {
         return true;
     }
 
+    LLVMValueRef emit_throw_cleanup(EmitterScope* scope) {
+        auto context = TranslationUnitContext::it;
+
+        LLVMValueRef next_phi{};
+        if (scope->throw_cleanup_phi) {
+            next_phi = scope->throw_cleanup_phi;
+        } else if (scope->parent_scope) {
+            next_phi = emit_throw_cleanup(scope->parent_scope);
+        } else {
+            auto old_block = LLVMGetInsertBlock(builder);
+
+            auto return_block = append_block("");
+            LLVMPositionBuilderAtEnd(builder, return_block);
+
+            auto return_type = function_type->return_type->unqualified();
+
+            auto throw_type = unqualified_type_cast<ThrowType>(return_type);
+            if (!throw_type) {
+                // todo: error
+            }
+        
+            auto llvm_value = next_phi = LLVMBuildPhi(builder, context->llvm_pointer_type, "exc");
+
+            if ( throw_type->base_type->unqualified() != &VoidType::it) {
+                llvm_value = LLVMBuildInsertValue(builder, LLVMGetUndef(throw_type->llvm_type()), llvm_value, 1, "");
+            }
+
+            LLVMBuildRet(builder, llvm_value);
+
+            LLVMPositionBuilderAtEnd(builder, old_block);
+        }
+
+        if (scope->throw_cleanup_calls != scope->destructors.size()) {
+            auto old_block = LLVMGetInsertBlock(builder);
+
+            auto block = append_block("");
+            LLVMPositionBuilderAtEnd(builder, block);
+
+            auto phi = LLVMBuildPhi(builder, context->llvm_pointer_type, "exc");
+
+            for (int i = scope->destructors.size() - 1; i >= scope->throw_cleanup_calls; --i) {
+                call_destructor_immediately(scope->destructors[i].addressible_value);
+            }
+
+            LLVMBuildBr(builder, LLVMGetInstructionParent(next_phi));
+            LLVMAddIncoming(next_phi, &phi, &block, 1);
+
+            next_phi = phi;
+
+            LLVMPositionBuilderAtEnd(builder, old_block);
+        }
+
+        scope->throw_cleanup_calls = scope->destructors.size();
+        scope->throw_cleanup_phi = next_phi;
+
+        return next_phi;
+    }
+
     LLVMBasicBlockRef append_block(const char* name) {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
         return LLVMAppendBasicBlockInContext(llvm_context, function, name);
+    }
+
+    LLVMBasicBlockRef append_unreachable_block() {
+        return last_unreachable_block = append_block("");
     }
 
     GoToLabel& lookup_go_to_label(const Identifier& identifier) {
@@ -263,8 +328,17 @@ struct Emitter: ValueWrangler, Visitor {
             }
 
             auto current_block = LLVMGetInsertBlock(builder);
-            LLVMBuildBr(builder, labelled_block);
             LLVMMoveBasicBlockAfter(labelled_block, current_block);
+
+            if (current_block == last_unreachable_block) {
+                if (LLVMGetFirstInstruction(current_block)) {
+                    LLVMBuildUnreachable(builder);
+                } else {
+                    LLVMDeleteBasicBlock(current_block);
+                }
+            } else {
+                LLVMBuildBr(builder, labelled_block);
+            }
             LLVMPositionBuilderAtEnd(builder, labelled_block);
         }
 
@@ -296,7 +370,6 @@ struct Emitter: ValueWrangler, Visitor {
         function = get_address(entity->value);
 
         entry_block = append_block("");
-        unreachable_block = append_block("");
         LLVMPositionBuilderAtEnd(builder, entry_block);
 
         {
@@ -331,12 +404,19 @@ struct Emitter: ValueWrangler, Visitor {
             accept_statement(entity->body);
         }
 
-        if (function_type->return_type->unqualified() == &VoidType::it) {
-            LLVMBuildRetVoid(builder);
+        if (last_unreachable_block == LLVMGetInsertBlock(builder)) {
+            if (LLVMGetFirstInstruction(last_unreachable_block)) {
+                LLVMBuildUnreachable(builder);
+            } else {
+                LLVMDeleteBasicBlock(last_unreachable_block);
+            }
         } else {
-            LLVMBuildRet(builder, LLVMConstNull(function_type->return_type->llvm_type()));
+            if (function_type->return_type->unqualified() == &VoidType::it) {
+                LLVMBuildRetVoid(builder);
+            } else {
+                LLVMBuildRet(builder, LLVMConstNull(function_type->return_type->llvm_type()));
+            }
         }
-        LLVMDeleteBasicBlock(unreachable_block);
 
         function = nullptr;
     }
@@ -624,7 +704,7 @@ struct Emitter: ValueWrangler, Visitor {
 
         if (target_block) {
             LLVMBuildBr(builder, target_block);
-            LLVMPositionBuilderAtEnd(builder, unreachable_block);
+            LLVMPositionBuilderAtEnd(builder, append_unreachable_block());
         } else {
             message(Severity::ERROR, statement->location) << "'" << statement->message_kind() << "' statement not in loop or switch statement\n";
         }
@@ -718,7 +798,7 @@ struct Emitter: ValueWrangler, Visitor {
             LLVMBuildRet(builder, return_value);
         }
 
-        LLVMPositionBuilderAtEnd(builder, unreachable_block);
+        LLVMPositionBuilderAtEnd(builder, append_unreachable_block());
 
         return VisitStatementOutput();
     }
@@ -750,7 +830,7 @@ struct Emitter: ValueWrangler, Visitor {
             }
         }
 
-        LLVMPositionBuilderAtEnd(builder, unreachable_block);
+        LLVMPositionBuilderAtEnd(builder, append_unreachable_block());
 
         accept_statement(statement->body);
 
@@ -761,28 +841,17 @@ struct Emitter: ValueWrangler, Visitor {
     }
 
     virtual VisitStatementOutput visit(ThrowStatement* statement) override {
-        auto context = TranslationUnitContext::it;
-
-        auto return_type = function_type->return_type->unqualified();
-
-        auto throw_type = unqualified_type_cast<ThrowType>(return_type);
-        if (!throw_type) {
-            // todo: error
-        }
-        
-        return_type = throw_type->base_type; // todo ->unqualified();
-
         auto value = emit_expr(statement->expr, false).unqualified();
         auto llvm_value = convert_to_rvalue(value, VoidType::it.pointer_to(), ConvKind::IMPLICIT);
 
-        if (return_type != &VoidType::it) {
-            llvm_value = LLVMBuildInsertValue(builder, LLVMGetUndef(throw_type->llvm_type()), llvm_value, 1, "");
-            llvm_value = LLVMBuildInsertValue(builder, llvm_value, LLVMGetUndef(return_type->llvm_type()), 0, "");
-        }
+        auto old_block = LLVMGetInsertBlock(builder);
 
-        LLVMBuildRet(builder, llvm_value);
+        auto phi = emit_throw_cleanup(innermost_scope);
+        LLVMBuildBr(builder, LLVMGetInstructionParent(phi));
 
-        LLVMPositionBuilderAtEnd(builder, unreachable_block);
+        LLVMAddIncoming(phi, &llvm_value, &old_block, 1);
+
+        LLVMPositionBuilderAtEnd(builder, append_unreachable_block());
 
         return VisitStatementOutput();
     }

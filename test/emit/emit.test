@@ -42,10 +42,15 @@ EXPECT_IR
 define void @f() {
   ret void
 
-if_c:                                             ; No predecessors!
+1:                                                ; No predecessors!
+  %2 = load i32, ptr @what, align 4
+  %3 = trunc i32 %2 to i1
+  br i1 %3, label %if_c, label %if_a
+
+if_c:                                             ; preds = %1
   br label %if_e
 
-if_a:                                             ; No predecessors!
+if_a:                                             ; preds = %1
   br label %if_e
 
 if_e:                                             ; preds = %if_a, %if_c

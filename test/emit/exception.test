@@ -49,7 +49,12 @@ EXPECT_IR
 @e = global i32 0
 
 define { i32, ptr } @f() {
-  ret { i32, ptr } { i32 undef, ptr @e }
+  br label %1
+
+1:                                                ; preds = %0
+  %exc = phi ptr [ @e, %0 ]
+  %2 = insertvalue { i32, ptr } undef, ptr %exc, 1
+  ret { i32, ptr } %2
 }
 END
 
@@ -63,6 +68,162 @@ EXPECT_IR
 @e = global i32 0
 
 define ptr @f() {
-  ret ptr @e
+  br label %1
+
+1:                                                ; preds = %0
+  %exc = phi ptr [ @e, %0 ]
+  ret ptr %exc
 }
+END
+
+
+BEGIN Throw twice
+int e1, e2;
+void f() std::throw {
+    std::throw &e1;
+    std::throw &e2;
+}
+EXPECT_IR
+@e1 = global i32 0
+@e2 = global i32 0
+
+define ptr @f() {
+  br label %1
+
+1:                                                ; preds = %2, %0
+  %exc = phi ptr [ @e1, %0 ], [ @e2, %2 ]
+  ret ptr %exc
+
+2:                                                ; No predecessors!
+  br label %1
+}
+END
+
+
+BEGIN Throw from const void function
+int e;
+const void f() std::throw {
+    std::throw &e;
+}
+EXPECT_IR
+@e = global i32 0
+
+define ptr @f() {
+  br label %1
+
+1:                                                ; preds = %0
+  %exc = phi ptr [ @e, %0 ]
+  ret ptr %exc
+}
+END
+
+
+BEGIN Throwing calls destructors
+struct S {
+    int x;
+    void destructor(S&);
+};
+int e;
+void f() std::throw {
+    S s = {1};
+    std::throw &e;
+}
+EXPECT_IR
+%S = type { i32 }
+
+@e = global i32 0
+
+define ptr @f() {
+  %s = alloca %S, align 8
+  %x = getelementptr inbounds %S, ptr %s, i32 0, i32 0
+  store i32 1, ptr %x, align 4
+  br label %2
+
+1:                                                ; preds = %2
+  %exc = phi ptr [ %exc1, %2 ]
+  ret ptr %exc
+
+2:                                                ; preds = %0
+  %exc1 = phi ptr [ @e, %0 ]
+  call void @destructor_wrapper(ptr %s)
+  br label %1
+
+3:                                                ; No predecessors!
+  call void @destructor_wrapper(ptr %s)
+  unreachable
+}
+
+declare void @destructor(ptr nocapture)
+
+declare void @destructor_wrapper(ptr)
+END
+
+
+BEGIN Throwing calls destructors and paths share cleanup code
+struct S {
+    int x;
+    void destructor(S&);
+};
+int e1, e2;
+void f() std::throw {
+    S s = {1};
+    {
+        S t = {1};
+        std::throw &e1;
+    }
+    {
+        S u = {1};
+        std::throw &e2;
+    }
+}
+EXPECT_IR
+%S = type { i32 }
+
+@e1 = global i32 0
+@e2 = global i32 0
+
+define ptr @f() {
+  %u = alloca %S, align 8
+  %t = alloca %S, align 8
+  %s = alloca %S, align 8
+  %x = getelementptr inbounds %S, ptr %s, i32 0, i32 0
+  store i32 1, ptr %x, align 4
+  %x1 = getelementptr inbounds %S, ptr %t, i32 0, i32 0
+  store i32 1, ptr %x1, align 4
+  br label %3
+
+1:                                                ; preds = %2
+  %exc = phi ptr [ %exc2, %2 ]
+  ret ptr %exc
+
+2:                                                ; preds = %5, %3
+  %exc2 = phi ptr [ %exc3, %3 ], [ %exc5, %5 ]
+  call void @destructor_wrapper(ptr %s)
+  br label %1
+
+3:                                                ; preds = %0
+  %exc3 = phi ptr [ @e1, %0 ]
+  call void @destructor_wrapper(ptr %t)
+  br label %2
+
+4:                                                ; No predecessors!
+  call void @destructor_wrapper(ptr %t)
+  %x4 = getelementptr inbounds %S, ptr %u, i32 0, i32 0
+  store i32 1, ptr %x4, align 4
+  br label %5
+
+5:                                                ; preds = %4
+  %exc5 = phi ptr [ @e2, %4 ]
+  call void @destructor_wrapper(ptr %u)
+  br label %2
+
+6:                                                ; No predecessors!
+  call void @destructor_wrapper(ptr %u)
+  call void @destructor_wrapper(ptr %s)
+  unreachable
+}
+
+declare void @destructor(ptr nocapture)
+
+declare void @destructor_wrapper(ptr)
 END
