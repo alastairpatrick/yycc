@@ -171,8 +171,15 @@ long double x;
 EXPECT_AST
 [["var", "ES", "Fl", "x"]]
 
-BEGIN bool variable declaration
+
+BEGIN bool variable declaration (1)
 _Bool x;
+EXPECT_AST
+[["var", "ES", "Ub", "x"]]
+
+
+BEGIN bool variable declaration (2)
+std::bool x;
 EXPECT_AST
 [["var", "ES", "Ub", "x"]]
 

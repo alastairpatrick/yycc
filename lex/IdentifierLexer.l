@@ -65,6 +65,7 @@ void          { return TOK_VOID; }
 volatile      { return TOK_VOLATILE; }
 while         { return TOK_WHILE; }
 
+std::bool           { return TOK_BOOL; }
 std::catch          { return TOK_CATCH; }
 std::false          { return TOK_FALSE; }
 std::throw          { return TOK_THROW; }
