@@ -656,10 +656,10 @@ struct Emitter: ValueWrangler, Visitor {
             emit_full_expr(statement->initialize);
         }
 
-        auto loop_block = append_block("for_l");
-        auto body_block = statement->condition ? append_block("for_b") : loop_block;
-        auto iterate_block = statement->iterate ? construct.continue_block = append_block("for_i") : nullptr;
-        auto end_block = construct.break_block = append_block("for_e");
+        auto loop_block = append_block("");
+        auto body_block = statement->condition ? append_block("") : loop_block;
+        auto iterate_block = statement->iterate ? construct.continue_block = append_block("") : nullptr;
+        auto end_block = construct.break_block = append_block("");
         LLVMBuildBr(builder, loop_block);
         LLVMPositionBuilderAtEnd(builder, loop_block);
 

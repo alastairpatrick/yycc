@@ -6,16 +6,16 @@ void f() {
 }
 EXPECT_IR
 define void @f() {
-  br label %for_l
+  br label %1
 
-for_l:                                            ; preds = %for_b, %0
-  br i1 true, label %for_b, label %for_e
+1:                                                ; preds = %2, %0
+  br i1 true, label %2, label %3
 
-for_b:                                            ; preds = %for_l
+2:                                                ; preds = %1
   call void @llvm.sideeffect()
-  br label %for_l
+  br label %1
 
-for_e:                                            ; preds = %for_l
+3:                                                ; preds = %1
   ret void
 }
 
@@ -32,13 +32,13 @@ void f() {
 }
 EXPECT_IR
 define void @f() {
-  br label %for_l
+  br label %1
 
-for_l:                                            ; preds = %for_l, %0
+1:                                                ; preds = %1, %0
   call void @llvm.sideeffect()
-  br label %for_l
+  br label %1
 
-for_e:                                            ; No predecessors!
+2:                                                ; No predecessors!
   ret void
 }
 
@@ -58,23 +58,23 @@ EXPECT_IR
 define void @f() {
   %i = alloca i32, align 4
   store i32 1, ptr %i, align 4
-  br label %for_l
+  br label %1
 
-for_l:                                            ; preds = %for_i, %0
-  %1 = load i32, ptr %i, align 4
-  %2 = icmp ult i32 %1, 10
-  br i1 %2, label %for_b, label %for_e
+1:                                                ; preds = %5, %0
+  %2 = load i32, ptr %i, align 4
+  %3 = icmp ult i32 %2, 10
+  br i1 %3, label %4, label %8
 
-for_b:                                            ; preds = %for_l
-  br label %for_i
+4:                                                ; preds = %1
+  br label %5
 
-for_i:                                            ; preds = %for_b
-  %3 = load i32, ptr %i, align 4
-  %4 = add i32 %3, 1
-  store i32 %4, ptr %i, align 4
-  br label %for_l
+5:                                                ; preds = %4
+  %6 = load i32, ptr %i, align 4
+  %7 = add i32 %6, 1
+  store i32 %7, ptr %i, align 4
+  br label %1
 
-for_e:                                            ; preds = %for_l
+8:                                                ; preds = %1
   ret void
 }
 END
@@ -88,23 +88,23 @@ EXPECT_IR
 define void @f() {
   %i = alloca i32, align 4
   store i32 1, ptr %i, align 4
-  br label %for_l
+  br label %1
 
-for_l:                                            ; preds = %for_i, %0
-  %1 = load i32, ptr %i, align 4
-  %2 = icmp ult i32 %1, 10
-  br i1 %2, label %for_b, label %for_e
+1:                                                ; preds = %5, %0
+  %2 = load i32, ptr %i, align 4
+  %3 = icmp ult i32 %2, 10
+  br i1 %3, label %4, label %8
 
-for_b:                                            ; preds = %for_l
-  br label %for_i
+4:                                                ; preds = %1
+  br label %5
 
-for_i:                                            ; preds = %for_b
-  %3 = load i32, ptr %i, align 4
-  %4 = add i32 %3, 1
-  store i32 %4, ptr %i, align 4
-  br label %for_l
+5:                                                ; preds = %4
+  %6 = load i32, ptr %i, align 4
+  %7 = add i32 %6, 1
+  store i32 %7, ptr %i, align 4
+  br label %1
 
-for_e:                                            ; preds = %for_l
+8:                                                ; preds = %1
   ret void
 }
 END
@@ -120,27 +120,27 @@ EXPECT_IR
 define void @f() {
   %i = alloca i32, align 4
   store i32 0, ptr %i, align 4
-  br label %for_l
+  br label %1
 
-for_l:                                            ; preds = %for_i, %0
-  %1 = load i32, ptr %i, align 4
-  %2 = icmp slt i32 %1, 10
-  br i1 %2, label %for_b, label %for_e
+1:                                                ; preds = %5, %0
+  %2 = load i32, ptr %i, align 4
+  %3 = icmp slt i32 %2, 10
+  br i1 %3, label %4, label %8
 
-for_b:                                            ; preds = %for_l
-  br label %for_e
+4:                                                ; preds = %1
+  br label %8
 
-for_i:                                            ; preds = %5
-  %3 = load i32, ptr %i, align 4
-  %4 = add i32 %3, 1
-  store i32 %4, ptr %i, align 4
-  br label %for_l
+5:                                                ; preds = %9
+  %6 = load i32, ptr %i, align 4
+  %7 = add i32 %6, 1
+  store i32 %7, ptr %i, align 4
+  br label %1
 
-for_e:                                            ; preds = %for_b, %for_l
+8:                                                ; preds = %4, %1
   ret void
 
-5:                                                ; No predecessors!
-  br label %for_i
+9:                                                ; No predecessors!
+  br label %5
 }
 END
 
@@ -155,27 +155,27 @@ EXPECT_IR
 define void @f() {
   %i = alloca i32, align 4
   store i32 0, ptr %i, align 4
-  br label %for_l
+  br label %1
 
-for_l:                                            ; preds = %for_i, %0
-  %1 = load i32, ptr %i, align 4
-  %2 = icmp slt i32 %1, 10
-  br i1 %2, label %for_b, label %for_e
+1:                                                ; preds = %5, %0
+  %2 = load i32, ptr %i, align 4
+  %3 = icmp slt i32 %2, 10
+  br i1 %3, label %4, label %8
 
-for_b:                                            ; preds = %for_l
-  br label %for_i
+4:                                                ; preds = %1
+  br label %5
 
-for_i:                                            ; preds = %5, %for_b
-  %3 = load i32, ptr %i, align 4
-  %4 = add i32 %3, 1
-  store i32 %4, ptr %i, align 4
-  br label %for_l
+5:                                                ; preds = %9, %4
+  %6 = load i32, ptr %i, align 4
+  %7 = add i32 %6, 1
+  store i32 %7, ptr %i, align 4
+  br label %1
 
-for_e:                                            ; preds = %for_l
+8:                                                ; preds = %1
   ret void
 
-5:                                                ; No predecessors!
-  br label %for_i
+9:                                                ; No predecessors!
+  br label %5
 }
 END
 
@@ -198,31 +198,31 @@ define void @f() {
   %s = alloca %S, align 8
   %i = alloca i32, align 4
   store i32 0, ptr %i, align 4
-  br label %for_l
+  br label %1
 
-for_l:                                            ; preds = %for_i, %0
-  %1 = load i32, ptr %i, align 4
-  %2 = icmp slt i32 %1, 10
-  br i1 %2, label %for_b, label %for_e
+1:                                                ; preds = %5, %0
+  %2 = load i32, ptr %i, align 4
+  %3 = icmp slt i32 %2, 10
+  br i1 %3, label %4, label %8
 
-for_b:                                            ; preds = %for_l
+4:                                                ; preds = %1
   %x = getelementptr inbounds %S, ptr %s, i32 0, i32 0
   store i32 1, ptr %x, align 4
   call void @destructor_wrapper(ptr %s)
-  br label %for_e
+  br label %8
 
-for_i:                                            ; preds = %5
-  %3 = load i32, ptr %i, align 4
-  %4 = add i32 %3, 1
-  store i32 %4, ptr %i, align 4
-  br label %for_l
+5:                                                ; preds = %9
+  %6 = load i32, ptr %i, align 4
+  %7 = add i32 %6, 1
+  store i32 %7, ptr %i, align 4
+  br label %1
 
-for_e:                                            ; preds = %for_b, %for_l
+8:                                                ; preds = %4, %1
   ret void
 
-5:                                                ; No predecessors!
+9:                                                ; No predecessors!
   call void @destructor_wrapper(ptr %s)
-  br label %for_i
+  br label %5
 }
 
 declare void @destructor(ptr nocapture)
