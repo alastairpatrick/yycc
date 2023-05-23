@@ -278,11 +278,15 @@ struct Emitter: ValueWrangler, Visitor {
     // unqualified type. In this case, use store_and_pend_destructor, which will store the result directly in
     // the lvalue if possible or otherwise convert and pend a destructor call for the temporary.
 
-    ExprValue emit_expr(Expr* expr, bool pend_temporary_destructor = true) {
+    struct EmitFlags {
+        bool pend_temporary_destructor: 1 = true;
+    };
+
+    ExprValue emit_expr(Expr* expr, EmitFlags flags = EmitFlags()) {
         try {
             auto output = expr->accept(*this);
 
-            if (pend_temporary_destructor && outcome == EmitOutcome::IR && output.value.kind == ValueKind::RVALUE) {
+            if (flags.pend_temporary_destructor && outcome == EmitOutcome::IR && output.value.kind == ValueKind::RVALUE) {
                 pend_destructor(output.value);
             }
 
@@ -492,7 +496,7 @@ struct Emitter: ValueWrangler, Visitor {
 
             scalar_value = emit_scalar_initializer(dest.type, initializer);
         } else {
-            auto source = emit_expr(expr, false);
+            auto source = emit_expr(expr, { .pend_temporary_destructor = false });
             store_and_pend_destructor(dest, source, expr->location);
             return;
         }
@@ -784,7 +788,7 @@ struct Emitter: ValueWrangler, Visitor {
             call_pending_destructors_at_all_scopes();
         } else {
             if (statement->expr) {
-                auto value = emit_expr(statement->expr, false).unqualified();
+                auto value = emit_expr(statement->expr, { .pend_temporary_destructor = false }).unqualified();
                 if (value.type->unqualified() == return_type->unqualified()) {
                     return_value = get_value(value);
                 } else {
@@ -858,7 +862,7 @@ struct Emitter: ValueWrangler, Visitor {
     }
 
     virtual VisitStatementOutput visit(ThrowStatement* statement) override {
-        auto value = emit_expr(statement->expr, false).unqualified();
+        auto value = emit_expr(statement->expr, { .pend_temporary_destructor = false }).unqualified();
 
         auto phi = emit_throw(innermost_scope, statement->location);
 
@@ -921,7 +925,7 @@ struct Emitter: ValueWrangler, Visitor {
         auto result_type = left_value.type->unqualified();
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-        auto right_value = emit_expr(expr->right, false);
+        auto right_value = emit_expr(expr->right, { .pend_temporary_destructor = false });
         call_destructor_immediately(left_value);
         store_and_pend_destructor(left_value, right_value, expr->location);
 
@@ -1642,7 +1646,7 @@ struct Emitter: ValueWrangler, Visitor {
 
     virtual VisitExpressionOutput visit(SequenceExpr* expr) override {
         auto left_value = emit_expr(expr->left).unqualified();
-        auto right_value = emit_expr(expr->right, false).unqualified();
+        auto right_value = emit_expr(expr->right, { .pend_temporary_destructor = false }).unqualified();
         return VisitExpressionOutput(right_value);
     }
 
