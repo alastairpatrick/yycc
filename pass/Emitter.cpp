@@ -87,13 +87,13 @@ struct Emitter: ValueWrangler, Visitor {
         this_string = intern_string("this");
     }
     
-    LLVMBasicBlockRef append_block(const char* name) {
+    LLVMBasicBlockRef append_block(const char* name = "") {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
         return LLVMAppendBasicBlockInContext(llvm_context, function, name);
     }
 
     LLVMBasicBlockRef append_unreachable_block() {
-        return last_unreachable_block = append_block("");
+        return last_unreachable_block = append_block();
     }
 
     TypedFunctionRef destructor_wrapper(const StructuredType* type) {
@@ -202,7 +202,7 @@ struct Emitter: ValueWrangler, Visitor {
         } else {
             auto old_block = LLVMGetInsertBlock(builder);
 
-            auto return_block = append_block("");
+            auto return_block = append_block();
             LLVMPositionBuilderAtEnd(builder, return_block);
 
             auto return_type = function_type->return_type->unqualified();
@@ -234,7 +234,7 @@ struct Emitter: ValueWrangler, Visitor {
         if (scope->throw_handling_destructor_calls != scope->destructors.size()) {
             auto old_block = LLVMGetInsertBlock(builder);
 
-            auto block = append_block("");
+            auto block = append_block();
             LLVMPositionBuilderAtEnd(builder, block);
 
             auto phi = LLVMBuildPhi(builder, context->llvm_pointer_type, "exc");
@@ -396,7 +396,7 @@ struct Emitter: ValueWrangler, Visitor {
         function_type = unqualified_type_cast<FunctionType>(declarator->primary->type);
         function = get_address(entity->value);
 
-        entry_block = append_block("");
+        entry_block = append_block();
         LLVMPositionBuilderAtEnd(builder, entry_block);
 
         {
@@ -656,10 +656,10 @@ struct Emitter: ValueWrangler, Visitor {
             emit_full_expr(statement->initialize);
         }
 
-        auto loop_block = append_block("");
-        auto body_block = statement->condition ? append_block("") : loop_block;
-        auto iterate_block = statement->iterate ? construct.continue_block = append_block("") : nullptr;
-        auto end_block = construct.break_block = append_block("");
+        auto loop_block = append_block();
+        auto body_block = statement->condition ? append_block() : loop_block;
+        auto iterate_block = statement->iterate ? construct.continue_block = append_block() : nullptr;
+        auto end_block = construct.break_block = append_block();
         LLVMBuildBr(builder, loop_block);
         LLVMPositionBuilderAtEnd(builder, loop_block);
 
@@ -740,10 +740,10 @@ struct Emitter: ValueWrangler, Visitor {
     }
 
     VisitStatementOutput visit(IfElseStatement* statement) {
-        auto then_block = append_block("");
+        auto then_block = append_block();
         LLVMBasicBlockRef else_block;
-        if (statement->else_statement) else_block = append_block("");
-        auto end_block = append_block("");
+        if (statement->else_statement) else_block = append_block();
+        auto end_block = append_block();
         if (!statement->else_statement) else_block = end_block;
 
         auto condition_value = convert_to_rvalue(statement->condition, IntegerType::of_bool(), ConvKind::IMPLICIT);
@@ -833,11 +833,11 @@ struct Emitter: ValueWrangler, Visitor {
     virtual VisitStatementOutput visit(SwitchStatement* statement) override {
         SwitchConstruct construct(this);
 
-        construct.break_block = append_block("");
+        construct.break_block = append_block();
 
         LLVMBasicBlockRef default_block{};
         if (statement->num_defaults) {
-            construct.default_label = default_block = append_block("");
+            construct.default_label = default_block = append_block();
         } else {
             default_block = construct.break_block;
         }
@@ -846,7 +846,7 @@ struct Emitter: ValueWrangler, Visitor {
         auto switch_value = LLVMBuildSwitch(builder, get_value(expr_value), default_block, statement->cases.size());
 
         for (auto case_expr: statement->cases) {
-            auto case_label = append_block("");
+            auto case_label = append_block();
             innermost_switch->case_labels[case_expr] = case_label;
 
             auto case_value = fold_expr(case_expr);
@@ -878,7 +878,7 @@ struct Emitter: ValueWrangler, Visitor {
 
         TryConstruct construct(this);
         construct.catch_block = append_block("catch");
-        auto merge_block = append_block("");
+        auto merge_block = append_block();
 
         auto old_block = LLVMGetInsertBlock(builder);
 
@@ -947,9 +947,9 @@ struct Emitter: ValueWrangler, Visitor {
 
         LLVMBasicBlockRef alt_blocks[2] = {
             LLVMGetInsertBlock(builder),
-            append_block(""),
+            append_block(),
         };
-        auto merge_block = append_block("");
+        auto merge_block = append_block();
 
         LLVMValueRef alt_values[2];
         auto condition_rvalue = convert_to_rvalue(left_value, IntegerType::of_bool(), ConvKind::IMPLICIT);
@@ -1393,7 +1393,7 @@ struct Emitter: ValueWrangler, Visitor {
             if (throw_type) {
                 auto exception = result_type == &VoidType::it ? llvm_result : LLVMBuildExtractValue(builder, llvm_result, 0, "exc");
                 auto compare = LLVMBuildICmp(builder, LLVMIntNE, exception, context->llvm_null, "");
-                auto no_exception_block = append_block("");
+                auto no_exception_block = append_block();
 
                 auto phi = emit_throw_handling(innermost_scope, expr->location);
 
@@ -1452,10 +1452,10 @@ struct Emitter: ValueWrangler, Visitor {
         }
 
         LLVMBasicBlockRef alt_blocks[2] = {
-            append_block(""),
-            append_block(""),
+            append_block(),
+            append_block(),
         };
-        auto merge_block = append_block("");
+        auto merge_block = append_block();
 
         LLVMBuildCondBr(builder, condition_rvalue, alt_blocks[0], alt_blocks[1]);
 
