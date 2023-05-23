@@ -311,3 +311,54 @@ declare void @destructor(ptr nocapture)
 
 declare void @destructor_wrapper(ptr)
 END
+
+
+BEGIN On return from void function call, check whether it threw
+void g() std::throw;
+void f() std::throw {
+    g();
+}
+EXPECT_IR
+declare ptr @g()
+
+define ptr @f() {
+  %1 = call ptr @g()
+  %2 = icmp ne ptr %1, null
+  br i1 %2, label %4, label %3
+
+3:                                                ; preds = %0
+  ret ptr null
+
+4:                                                ; preds = %0
+  %exc = phi ptr [ %1, %0 ]
+  ret ptr %exc
+}
+END
+
+
+BEGIN On return from non-void function call, check whether it threw
+int g() std::throw;
+int f() std::throw {
+    return g();
+}
+EXPECT_IR
+declare { ptr, i32 } @g()
+
+define { ptr, i32 } @f() {
+  %1 = call { ptr, i32 } @g()
+  %exc = extractvalue { ptr, i32 } %1, 0
+  %2 = icmp ne ptr %exc, null
+  br i1 %2, label %7, label %3
+
+3:                                                ; preds = %0
+  %4 = extractvalue { ptr, i32 } %1, 1
+  %5 = insertvalue { ptr, i32 } undef, i32 %4, 1
+  %6 = insertvalue { ptr, i32 } %5, ptr null, 0
+  ret { ptr, i32 } %6
+
+7:                                                ; preds = %0
+  %exc1 = phi ptr [ %exc, %0 ]
+  %8 = insertvalue { ptr, i32 } undef, ptr %exc1, 0
+  ret { ptr, i32 } %8
+}
+END

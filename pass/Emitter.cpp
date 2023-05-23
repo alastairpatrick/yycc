@@ -1287,6 +1287,8 @@ struct Emitter: ValueWrangler, Visitor {
     }
 
     virtual VisitExpressionOutput visit(CallExpr* expr) override {
+        auto context = TranslationUnitContext::it;
+
         if (outcome == EmitOutcome::FOLD) {
             message(Severity::ERROR, expr->location) << "cannot call function in constant expression\n";
             throw FoldError(true);
@@ -1299,7 +1301,13 @@ struct Emitter: ValueWrangler, Visitor {
         }
 
         if (auto function_type = unqualified_type_cast<FunctionType>(function_value.type)) {
-            auto result_type = function_type->return_type;
+            auto result_type = function_type->return_type->unqualified();
+
+            auto throw_type = unqualified_type_cast<ThrowType>(result_type);
+            if (throw_type) {
+                result_type = throw_type->base_type->unqualified();
+            }
+
             if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
             Declarator* function_declarator{};
@@ -1380,7 +1388,24 @@ struct Emitter: ValueWrangler, Visitor {
                 }
             }
 
-            return VisitExpressionOutput(result_type, LLVMBuildCall2(builder, function_type->llvm_type(), get_address(function_value), llvm_params.data(), llvm_params.size(), ""));
+            auto llvm_result = LLVMBuildCall2(builder, function_type->llvm_type(), get_address(function_value), llvm_params.data(), llvm_params.size(), "");
+
+            if (throw_type) {
+                auto exception = result_type == &VoidType::it ? llvm_result : LLVMBuildExtractValue(builder, llvm_result, 0, "exc");
+                auto compare = LLVMBuildICmp(builder, LLVMIntNE, exception, context->llvm_null, "");
+                auto no_exception_block = append_block("");
+
+                auto phi = emit_throw_handling(innermost_scope, expr->location);
+
+                LLVMBuildCondBr(builder, compare, LLVMGetInstructionParent(phi), no_exception_block);
+                auto current_block = LLVMGetInsertBlock(builder);
+                LLVMAddIncoming(phi, &exception, &current_block, 1);
+
+                LLVMPositionBuilderAtEnd(builder, no_exception_block);
+                llvm_result = result_type == &VoidType::it ? nullptr : LLVMBuildExtractValue(builder, llvm_result, 1, "");
+            }
+
+            return VisitExpressionOutput(result_type, llvm_result);
         }
 
         message(Severity::ERROR, expr->location) << "type '" << PrintType(function_value.type) << "' is not a function or function pointer\n";
