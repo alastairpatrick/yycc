@@ -162,3 +162,13 @@ EXPECT_AST
 ["Sm",4294967296]
 
 
+BEGIN std::false literal
+std::false
+EXPECT_AST
+["Ub",0]
+
+
+BEGIN std::true literal
+std::true
+EXPECT_AST
+["Ub",1]

@@ -1277,6 +1277,16 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
           consume();
           break;
 
+      } case TOK_FALSE: {
+          result = IntegerConstant::of(IntegerType::of_bool(), 0, preprocessor.location());
+          consume();
+          break;
+
+      } case TOK_TRUE: {
+          result = IntegerConstant::of(IntegerType::of_bool(), 1, preprocessor.location());
+          consume();
+          break;
+
       } case TOK_DEC_FLOAT_LITERAL:
         case TOK_HEX_FLOAT_LITERAL: {
           result = FloatingPointConstant::of(preprocessor.text(), token, preprocessor.location());
