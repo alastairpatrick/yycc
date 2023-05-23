@@ -1452,10 +1452,10 @@ struct Emitter: ValueWrangler, Visitor {
         }
 
         LLVMBasicBlockRef alt_blocks[2] = {
-            append_block("then"),
-            append_block("else"),
+            append_block(""),
+            append_block(""),
         };
-        auto merge_block = append_block("merge");
+        auto merge_block = append_block("");
 
         LLVMBuildCondBr(builder, condition_rvalue, alt_blocks[0], alt_blocks[1]);
 

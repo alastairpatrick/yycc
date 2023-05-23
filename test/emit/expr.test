@@ -105,23 +105,23 @@ define i32 @f(i1 %0, i1 %1, i16 %2) {
   %b = alloca i16, align 2
   store i16 %2, ptr %b, align 2
   %4 = load i1, ptr %c, align 1
-  br i1 %4, label %then, label %else
+  br i1 %4, label %5, label %9
 
-then:                                             ; preds = %3
-  %5 = load i1, ptr %a, align 1
-  %6 = zext i1 %5 to i32
-  %7 = add i32 %6, 1
-  br label %merge
+5:                                                ; preds = %3
+  %6 = load i1, ptr %a, align 1
+  %7 = zext i1 %6 to i32
+  %8 = add i32 %7, 1
+  br label %13
 
-else:                                             ; preds = %3
-  %8 = load i16, ptr %b, align 2
-  %9 = sext i16 %8 to i32
-  %10 = sub i32 %9, 1
-  br label %merge
+9:                                                ; preds = %3
+  %10 = load i16, ptr %b, align 2
+  %11 = sext i16 %10 to i32
+  %12 = sub i32 %11, 1
+  br label %13
 
-merge:                                            ; preds = %else, %then
-  %11 = phi i32 [ %7, %then ], [ %10, %else ]
-  ret i32 %11
+13:                                               ; preds = %9, %5
+  %14 = phi i32 [ %8, %5 ], [ %12, %9 ]
+  ret i32 %14
 }
 END
 
@@ -142,19 +142,19 @@ define %S @f(i1 %0, %S %1, %S %2) {
   %b = alloca %S, align 8
   store %S %2, ptr %b, align 4
   %4 = load i1, ptr %c, align 1
-  br i1 %4, label %then, label %else
+  br i1 %4, label %5, label %7
 
-then:                                             ; preds = %3
-  %5 = load %S, ptr %a, align 4
-  br label %merge
+5:                                                ; preds = %3
+  %6 = load %S, ptr %a, align 4
+  br label %9
 
-else:                                             ; preds = %3
-  %6 = load %S, ptr %b, align 4
-  br label %merge
+7:                                                ; preds = %3
+  %8 = load %S, ptr %b, align 4
+  br label %9
 
-merge:                                            ; preds = %else, %then
-  %7 = phi %S [ %5, %then ], [ %6, %else ]
-  ret %S %7
+9:                                                ; preds = %7, %5
+  %10 = phi %S [ %6, %5 ], [ %8, %7 ]
+  ret %S %10
 }
 END
 
@@ -182,17 +182,17 @@ define i32 @f(i1 %0) {
   %c = alloca i1, align 1
   store i1 %0, ptr %c, align 1
   %2 = load i1, ptr %c, align 1
-  br i1 %2, label %then, label %else
+  br i1 %2, label %3, label %4
 
-then:                                             ; preds = %1
+3:                                                ; preds = %1
   call void @g()
-  br label %merge
+  br label %5
 
-else:                                             ; preds = %1
+4:                                                ; preds = %1
   call void @g()
-  br label %merge
+  br label %5
 
-merge:                                            ; preds = %else, %then
+5:                                                ; preds = %4, %3
   ret i32 0
 }
 END
