@@ -47,6 +47,11 @@ int main(int argc, const char* argv[]) {
     module.entity_pass();
     module.emit_pass({});
     module.middle_end_passes("default<O3>");
+
+    char* error{};
+    LLVMPrintModuleToFile(module.llvm_module, "generated.ll", &error);
+    LLVMDisposeMessage(error);
+    
     module.back_end_passes();
 
     return context.highest_severity == Severity::INFO ? EXIT_SUCCESS : EXIT_FAILURE;
