@@ -983,8 +983,8 @@ LLVMTypeRef ThrowType::cache_llvm_type() const {
         return context->llvm_pointer_type;
     } else {
         LLVMTypeRef element_types[] = {
-            base_type->llvm_type(),
             context->llvm_pointer_type,
+            base_type->llvm_type(),
         };
         return LLVMStructTypeInContext(context->llvm_context, element_types, std::size(element_types), false);
     }

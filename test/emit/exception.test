@@ -3,8 +3,8 @@ short f() std::throw {
     return 3;
 }
 EXPECT_IR
-define { i16, ptr } @f() {
-  ret { i16, ptr } { i16 3, ptr null }
+define { ptr, i16 } @f() {
+  ret { ptr, i16 } { ptr null, i16 3 }
 }
 END
 
@@ -13,8 +13,8 @@ BEGIN Non-void throwing function returns without return statement
 short f() std::throw {
 }
 EXPECT_IR
-define { i16, ptr } @f() {
-  ret { i16, ptr } zeroinitializer
+define { ptr, i16 } @f() {
+  ret { ptr, i16 } zeroinitializer
 }
 END
 
@@ -48,13 +48,13 @@ int f() std::throw {
 EXPECT_IR
 @e = global i32 0
 
-define { i32, ptr } @f() {
+define { ptr, i32 } @f() {
   br label %1
 
 1:                                                ; preds = %0
   %exc = phi ptr [ @e, %0 ]
-  %2 = insertvalue { i32, ptr } undef, ptr %exc, 1
-  ret { i32, ptr } %2
+  %2 = insertvalue { ptr, i32 } undef, ptr %exc, 0
+  ret { ptr, i32 } %2
 }
 END
 

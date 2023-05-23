@@ -220,7 +220,7 @@ struct Emitter: ValueWrangler, Visitor {
 
             if (throw_type) {
                 if (return_type != &VoidType::it) {
-                    llvm_value = LLVMBuildInsertValue(builder, LLVMGetUndef(throw_type->llvm_type()), llvm_value, 1, "");
+                    llvm_value = LLVMBuildInsertValue(builder, LLVMGetUndef(throw_type->llvm_type()), llvm_value, 0, "");
                 }
 
                 LLVMBuildRet(builder, llvm_value);
@@ -815,8 +815,8 @@ struct Emitter: ValueWrangler, Visitor {
         } else {
             if (throw_type) {
                 if (return_value) {
-                    return_value = LLVMBuildInsertValue(builder, LLVMGetUndef(throw_type->llvm_type()), return_value, 0, "");
-                    return_value = LLVMBuildInsertValue(builder, return_value, context->llvm_null, 1, "");
+                    return_value = LLVMBuildInsertValue(builder, LLVMGetUndef(throw_type->llvm_type()), return_value, 1, "");
+                    return_value = LLVMBuildInsertValue(builder, return_value, context->llvm_null, 0, "");
                 } else {
                     return_value = context->llvm_null;
                 }
