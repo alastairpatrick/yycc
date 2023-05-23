@@ -189,7 +189,7 @@ struct Emitter: ValueWrangler, Visitor {
     }
 
     // Returns phi instruction.
-    LLVMValueRef emit_throw_handling(EmitterScope* scope, const Location& location) {
+    LLVMValueRef emit_throw(EmitterScope* scope, const Location& location) {
         auto context = TranslationUnitContext::it;
 
         LLVMValueRef next_phi{};
@@ -198,7 +198,7 @@ struct Emitter: ValueWrangler, Visitor {
         } else if (auto try_construct = dynamic_cast<TryConstruct*>(scope)) {
             next_phi = try_construct->phi_instruction;
         } else if (scope->parent_scope) {
-            next_phi = emit_throw_handling(scope->parent_scope, location);
+            next_phi = emit_throw(scope->parent_scope, location);
         } else {
             auto old_block = LLVMGetInsertBlock(builder);
 
@@ -255,16 +255,6 @@ struct Emitter: ValueWrangler, Visitor {
         scope->throw_handling_phi = next_phi;
 
         return next_phi;
-    }
-
-    void emit_throw(const ExprValue& exception, const Location& throw_location) {
-        auto phi = emit_throw_handling(innermost_scope, throw_location);
-
-        auto old_block = LLVMGetInsertBlock(builder);
-        LLVMBuildBr(builder, LLVMGetInstructionParent(phi));
-        auto llvm_exception = get_value(exception);
-        LLVMAddIncoming(phi, &llvm_exception, &old_block, 1);
-        LLVMPositionBuilderAtEnd(builder, append_unreachable_block());
     }
 
     GoToLabel& lookup_go_to_label(const Identifier& identifier) {
@@ -869,7 +859,15 @@ struct Emitter: ValueWrangler, Visitor {
 
     virtual VisitStatementOutput visit(ThrowStatement* statement) override {
         auto value = emit_expr(statement->expr, false).unqualified();
-        emit_throw(convert_to_type(value, VoidType::it.pointer_to(), ConvKind::IMPLICIT), statement->location);
+
+        auto phi = emit_throw(innermost_scope, statement->location);
+
+        auto old_block = LLVMGetInsertBlock(builder);
+        LLVMBuildBr(builder, LLVMGetInstructionParent(phi));
+        auto llvm_exception = convert_to_rvalue(value, VoidType::it.pointer_to(), ConvKind::IMPLICIT);
+        LLVMAddIncoming(phi, &llvm_exception, &old_block, 1);
+        LLVMPositionBuilderAtEnd(builder, append_unreachable_block());
+
         return VisitStatementOutput();
     }
 
@@ -1395,7 +1393,7 @@ struct Emitter: ValueWrangler, Visitor {
                 auto compare = LLVMBuildICmp(builder, LLVMIntNE, exception, context->llvm_null, "");
                 auto no_exception_block = append_block();
 
-                auto phi = emit_throw_handling(innermost_scope, expr->location);
+                auto phi = emit_throw(innermost_scope, expr->location);
 
                 LLVMBuildCondBr(builder, compare, LLVMGetInstructionParent(phi), no_exception_block);
                 auto current_block = LLVMGetInsertBlock(builder);
