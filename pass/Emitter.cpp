@@ -23,8 +23,8 @@ struct EmitterScope {
 
     vector<PendingDestructor> destructors;
 
-    int throw_cleanup_calls{};
-    LLVMValueRef throw_cleanup_phi{};
+    int throw_handling_destructor_calls{};
+    LLVMValueRef throw_handling_phi{};
 
     EmitterScope(Emitter* emitter);
     virtual ~EmitterScope();
@@ -81,6 +81,15 @@ struct Emitter: ValueWrangler, Visitor {
         this_string = intern_string("this");
     }
     
+    LLVMBasicBlockRef append_block(const char* name) {
+        auto llvm_context = TranslationUnitContext::it->llvm_context;
+        return LLVMAppendBasicBlockInContext(llvm_context, function, name);
+    }
+
+    LLVMBasicBlockRef append_unreachable_block() {
+        return last_unreachable_block = append_block("");
+    }
+
     TypedFunctionRef destructor_wrapper(const StructuredType* type) {
         auto context = TranslationUnitContext::it;
 
@@ -173,14 +182,15 @@ struct Emitter: ValueWrangler, Visitor {
         return true;
     }
 
-    LLVMValueRef emit_throw_cleanup(EmitterScope* scope) {
+    // Returns phi instruction.
+    LLVMValueRef emit_throw_handling(EmitterScope* scope) {
         auto context = TranslationUnitContext::it;
 
         LLVMValueRef next_phi{};
-        if (scope->throw_cleanup_phi) {
-            next_phi = scope->throw_cleanup_phi;
+        if (scope->throw_handling_phi) {
+            next_phi = scope->throw_handling_phi;
         } else if (scope->parent_scope) {
-            next_phi = emit_throw_cleanup(scope->parent_scope);
+            next_phi = emit_throw_handling(scope->parent_scope);
         } else {
             auto old_block = LLVMGetInsertBlock(builder);
 
@@ -205,7 +215,7 @@ struct Emitter: ValueWrangler, Visitor {
             LLVMPositionBuilderAtEnd(builder, old_block);
         }
 
-        if (scope->throw_cleanup_calls != scope->destructors.size()) {
+        if (scope->throw_handling_destructor_calls != scope->destructors.size()) {
             auto old_block = LLVMGetInsertBlock(builder);
 
             auto block = append_block("");
@@ -213,7 +223,7 @@ struct Emitter: ValueWrangler, Visitor {
 
             auto phi = LLVMBuildPhi(builder, context->llvm_pointer_type, "exc");
 
-            for (int i = scope->destructors.size() - 1; i >= scope->throw_cleanup_calls; --i) {
+            for (int i = scope->destructors.size() - 1; i >= scope->throw_handling_destructor_calls; --i) {
                 call_destructor_immediately(scope->destructors[i].addressible_value);
             }
 
@@ -225,19 +235,19 @@ struct Emitter: ValueWrangler, Visitor {
             LLVMPositionBuilderAtEnd(builder, old_block);
         }
 
-        scope->throw_cleanup_calls = scope->destructors.size();
-        scope->throw_cleanup_phi = next_phi;
+        scope->throw_handling_destructor_calls = scope->destructors.size();
+        scope->throw_handling_phi = next_phi;
 
         return next_phi;
     }
 
-    LLVMBasicBlockRef append_block(const char* name) {
-        auto llvm_context = TranslationUnitContext::it->llvm_context;
-        return LLVMAppendBasicBlockInContext(llvm_context, function, name);
-    }
+    void emit_throw(LLVMValueRef exception) {
+        auto phi = emit_throw_handling(innermost_scope);
 
-    LLVMBasicBlockRef append_unreachable_block() {
-        return last_unreachable_block = append_block("");
+        auto old_block = LLVMGetInsertBlock(builder);
+        LLVMBuildBr(builder, LLVMGetInstructionParent(phi));
+        LLVMAddIncoming(phi, &exception, &old_block, 1);
+        LLVMPositionBuilderAtEnd(builder, append_unreachable_block());
     }
 
     GoToLabel& lookup_go_to_label(const Identifier& identifier) {
@@ -252,8 +262,8 @@ struct Emitter: ValueWrangler, Visitor {
     // 
     // By default, emit_expr pends a destructor call whenever it encounters an expression that evaluated to
     // an rvalue with a destructor. There are two cases when this is not the right thing to do.
-    
-    // The first is case is where a value "passes through" an expression, such as the conditional expression,
+    //
+    // The first case is where a value "passes through" an expression, such as the conditional expression,
     // and emit_expr must not pend a second destructor call for the same object. In this case, pass false to
     // pend_temporary_destructor.
     //
@@ -842,17 +852,7 @@ struct Emitter: ValueWrangler, Visitor {
 
     virtual VisitStatementOutput visit(ThrowStatement* statement) override {
         auto value = emit_expr(statement->expr, false).unqualified();
-        auto llvm_value = convert_to_rvalue(value, VoidType::it.pointer_to(), ConvKind::IMPLICIT);
-
-        auto old_block = LLVMGetInsertBlock(builder);
-
-        auto phi = emit_throw_cleanup(innermost_scope);
-        LLVMBuildBr(builder, LLVMGetInstructionParent(phi));
-
-        LLVMAddIncoming(phi, &llvm_value, &old_block, 1);
-
-        LLVMPositionBuilderAtEnd(builder, append_unreachable_block());
-
+        emit_throw(convert_to_rvalue(value, VoidType::it.pointer_to(), ConvKind::IMPLICIT));
         return VisitStatementOutput();
     }
 
