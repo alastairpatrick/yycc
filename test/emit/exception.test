@@ -323,16 +323,22 @@ declare ptr @g()
 
 define ptr @f() {
   %1 = call ptr @g()
-  %2 = icmp ne ptr %1, null
-  br i1 %2, label %4, label %3
-
-3:                                                ; preds = %0
-  ret ptr null
+  %2 = icmp eq ptr %1, null
+  %3 = call i1 @llvm.expect.i1(i1 %2, i1 true)
+  br i1 %2, label %4, label %5
 
 4:                                                ; preds = %0
+  ret ptr null
+
+5:                                                ; preds = %0
   %exc = phi ptr [ %1, %0 ]
   ret ptr %exc
 }
+
+; Function Attrs: nocallback nofree nosync nounwind readnone willreturn
+declare i1 @llvm.expect.i1(i1, i1) #0
+
+attributes #0 = { nocallback nofree nosync nounwind readnone willreturn }
 END
 
 
@@ -347,18 +353,24 @@ declare { ptr, i32 } @g()
 define { ptr, i32 } @f() {
   %1 = call { ptr, i32 } @g()
   %exc = extractvalue { ptr, i32 } %1, 0
-  %2 = icmp ne ptr %exc, null
-  br i1 %2, label %7, label %3
+  %2 = icmp eq ptr %exc, null
+  %3 = call i1 @llvm.expect.i1(i1 %2, i1 true)
+  br i1 %2, label %4, label %8
 
-3:                                                ; preds = %0
-  %4 = extractvalue { ptr, i32 } %1, 1
-  %5 = insertvalue { ptr, i32 } undef, i32 %4, 1
-  %6 = insertvalue { ptr, i32 } %5, ptr null, 0
-  ret { ptr, i32 } %6
+4:                                                ; preds = %0
+  %5 = extractvalue { ptr, i32 } %1, 1
+  %6 = insertvalue { ptr, i32 } undef, i32 %5, 1
+  %7 = insertvalue { ptr, i32 } %6, ptr null, 0
+  ret { ptr, i32 } %7
 
-7:                                                ; preds = %0
+8:                                                ; preds = %0
   %exc1 = phi ptr [ %exc, %0 ]
-  %8 = insertvalue { ptr, i32 } undef, ptr %exc1, 0
-  ret { ptr, i32 } %8
+  %9 = insertvalue { ptr, i32 } undef, ptr %exc1, 0
+  ret { ptr, i32 } %9
 }
+
+; Function Attrs: nocallback nofree nosync nounwind readnone willreturn
+declare i1 @llvm.expect.i1(i1, i1) #0
+
+attributes #0 = { nocallback nofree nosync nounwind readnone willreturn }
 END

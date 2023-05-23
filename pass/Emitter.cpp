@@ -1390,12 +1390,15 @@ struct Emitter: ValueWrangler, Visitor {
 
             if (throw_type) {
                 auto exception = result_type == &VoidType::it ? llvm_result : LLVMBuildExtractValue(builder, llvm_result, 0, "exc");
-                auto compare = LLVMBuildICmp(builder, LLVMIntNE, exception, context->llvm_null, "");
+                auto compare = LLVMBuildICmp(builder, LLVMIntEQ, exception, context->llvm_null, "");
+                call_expect_i1_intrinsic(compare, context->llvm_true);
+
                 auto no_exception_block = append_block();
 
                 auto phi = emit_throw(innermost_scope, expr->location);
 
-                LLVMBuildCondBr(builder, compare, LLVMGetInstructionParent(phi), no_exception_block);
+                LLVMBuildCondBr(builder, compare, no_exception_block, LLVMGetInstructionParent(phi));
+
                 auto current_block = LLVMGetInsertBlock(builder);
                 LLVMAddIncoming(phi, &exception, &current_block, 1);
 
