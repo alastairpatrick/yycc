@@ -43,13 +43,13 @@ struct ValueResolver {
     virtual LLVMValueRef get_value(const ExprValue &value, bool for_move_expr) = 0;
 };
 
-struct ValueWrangler: TypeVisitor {
+struct TypeConverter: TypeVisitor {
     Module* module{};
     LLVMBuilderRef builder{};
     EmitOutcome outcome{};
     ValueResolver& resolver;
 
-    ValueWrangler(Module* module, LLVMBuilderRef builder, EmitOutcome outcome, ValueResolver& resolver);
+    TypeConverter(Module* module, LLVMBuilderRef builder, EmitOutcome outcome, ValueResolver& resolver);
 
     ExprValue convert_to_type(const ExprValue& value, const Type* dest_type, ConvKind kind);
 

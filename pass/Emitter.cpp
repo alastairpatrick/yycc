@@ -6,7 +6,7 @@
 #include "parse/Declaration.h"
 #include "TranslationUnitContext.h"
 #include "TypeVisitor.h"
-#include "ValueWrangler.h"
+#include "TypeConverter.h"
 #include "Visitor.h"
 
 struct Emitter;
@@ -446,8 +446,8 @@ struct Emitter: Visitor, ValueResolver {
     }
 
     ExprValue convert_to_type(const ExprValue& value, const Type* dest_type, ConvKind kind) {
-        ValueWrangler wrangler(module, builder, outcome, *this);
-        return wrangler.convert_to_type(value, dest_type, kind);
+        TypeConverter converter(module, builder, outcome, *this);
+        return converter.convert_to_type(value, dest_type, kind);
     }
 
     LLVMValueRef convert_to_rvalue(const ExprValue& value, const Type* dest_type, ConvKind kind) {

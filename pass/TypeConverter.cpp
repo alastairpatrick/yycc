@@ -1,4 +1,4 @@
-#include "ValueWrangler.h"
+#include "TypeConverter.h"
 #include "Module.h"
 #include "Message.h"
 #include "TranslationUnitContext.h"
@@ -33,15 +33,15 @@ ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest
     return result;
 }
 
-ValueWrangler::ValueWrangler(Module* module, LLVMBuilderRef builder, EmitOutcome outcome, ValueResolver& resolver)
+TypeConverter::TypeConverter(Module* module, LLVMBuilderRef builder, EmitOutcome outcome, ValueResolver& resolver)
     : module(module), builder(builder), outcome(outcome), resolver(resolver) {
 }
 
-LLVMValueRef ValueWrangler::get_value_internal() {
+LLVMValueRef TypeConverter::get_value_internal() {
     return resolver.get_value(value, false);
 }
 
-void ValueWrangler::convert_array_to_pointer() {
+void TypeConverter::convert_array_to_pointer() {
     if (auto source_type = unqualified_type_cast<ResolvedArrayType>(value.type)) {
         if (value.kind == ValueKind::LVALUE) {
             auto pointer_type = source_type->element_type->pointer_to();
@@ -50,13 +50,13 @@ void ValueWrangler::convert_array_to_pointer() {
     }
 }
 
-void ValueWrangler::convert_enum_to_int() {
+void TypeConverter::convert_enum_to_int() {
     if (auto source_type = unqualified_type_cast<EnumType>(value.type)) {
         value = value.bit_cast(source_type->base_type);
     }
 }
 
-const Type* ValueWrangler::visit(const ResolvedArrayType* dest_type) {
+const Type* TypeConverter::visit(const ResolvedArrayType* dest_type) {
     if (auto source_type = unqualified_type_cast<ResolvedArrayType>(value.type)) {
         if (value.is_const() && source_type->element_type == dest_type->element_type && source_type->size <= dest_type->size) {
             LLVMValueRef source_array = value.get_const();
@@ -78,7 +78,7 @@ const Type* ValueWrangler::visit(const ResolvedArrayType* dest_type) {
     return nullptr;
 }
 
-const Type* ValueWrangler::visit(const PointerType* dest_type) {
+const Type* TypeConverter::visit(const PointerType* dest_type) {
     if (auto source_type = unqualified_type_cast<ResolvedArrayType>(value.type)) {
         if (module && value.is_const()) {
             auto& global = module->reified_constants[value.get_const()];
@@ -109,7 +109,7 @@ const Type* ValueWrangler::visit(const PointerType* dest_type) {
     return nullptr;
 }
 
-const Type* ValueWrangler::visit(const IntegerType* dest_type) {
+const Type* TypeConverter::visit(const IntegerType* dest_type) {
     convert_array_to_pointer();
     convert_enum_to_int();
 
@@ -129,7 +129,7 @@ const Type* ValueWrangler::visit(const IntegerType* dest_type) {
     return nullptr;
 }
 
-const Type* ValueWrangler::visit(const FloatingPointType* dest_type) {
+const Type* TypeConverter::visit(const FloatingPointType* dest_type) {
     convert_enum_to_int();
 
     if (unqualified_type_cast<FloatingPointType>(value.type)) {
@@ -144,7 +144,7 @@ const Type* ValueWrangler::visit(const FloatingPointType* dest_type) {
     return nullptr;
 }
 
-const Type* ValueWrangler::visit(const EnumType* dest_type) {
+const Type* TypeConverter::visit(const EnumType* dest_type) {
     dest_type->base_type->accept(*this);
     if (result.is_valid()) {
         result = result.bit_cast(dest_type);
@@ -153,13 +153,13 @@ const Type* ValueWrangler::visit(const EnumType* dest_type) {
     return nullptr;
 }
 
-const Type* ValueWrangler::visit(const VoidType* dest_type) {
+const Type* TypeConverter::visit(const VoidType* dest_type) {
     result = Value(dest_type);
     return nullptr;
 }
 
 
-ExprValue ValueWrangler::convert_to_type(const ExprValue& value, const Type* dest_type, ConvKind kind) {
+ExprValue TypeConverter::convert_to_type(const ExprValue& value, const Type* dest_type, ConvKind kind) {
     assert(value.type->qualifiers() == 0);
     
     this->value = value;
