@@ -647,7 +647,7 @@ define void @g() {
 END
 
 
-BEGIN Global pointer variable initialized with string literal
+BEGIN Global char pointer variable initialized with string literal
 const char* c = "\000\000f";
 EXPECT_IR
 @c = global ptr @const
@@ -655,10 +655,70 @@ EXPECT_IR
 END
 
 
-BEGIN Global array variable initialized with string literal
+BEGIN Global signed char pointer variable initialized with string literal
+signed char* c = "\000\000f";
+EXPECT_IR
+@c = global ptr @const
+@const = private constant [4 x i8] c"\00\00f\00"
+END
+
+
+BEGIN Global unsigned char pointer variable initialized with string literal
+const unsigned char* c = "\000\000f";
+EXPECT_IR
+@c = global ptr @const
+@const = private constant [4 x i8] c"\00\00f\00"
+END
+
+
+BEGIN Global void pointer variable initialized with string literal
+const void* c = "\000\000f";
+EXPECT_IR
+@c = global ptr @const
+@const = private constant [4 x i8] c"\00\00f\00"
+END
+
+
+BEGIN Error attempting to initialize short pointer with string literal
+short* c = "\000\000f";
+EXPECT_MESSAGE
+:1:12: contextual error conversion from type 'char const[4]' to type 'short*' requires explicit cast
+END
+
+
+BEGIN Global char array variable initialized with string literal
 const char c[4] = "\000\000f";
 EXPECT_IR
 @c = global [4 x i8] c"\00\00f\00"
+END
+
+
+BEGIN Global signed char array variable initialized with string literal
+const signed char c[4] = "\000\000f";
+EXPECT_IR
+@c = global [4 x i8] c"\00\00f\00"
+END
+
+
+BEGIN Global unsigned char array variable initialized with string literal
+const unsigned char c[4] = "\000\000f";
+EXPECT_IR
+@c = global [4 x i8] c"\00\00f\00"
+END
+
+
+BEGIN Local unsigned char pointer variable initialized with string literal
+void f() {
+    signed char* c = "\000\000f";
+}
+EXPECT_IR
+@const = private constant [4 x i8] c"\00\00f\00"
+
+define void @f() {
+  %c = alloca ptr, align 8
+  store ptr @const, ptr %c, align 8
+  ret void
+}
 END
 
 
@@ -678,7 +738,7 @@ END
 
 
 BEGIN Global array variable initialized with wide string literal
-const unsigned short c[4] = L"\000\000f";
+unsigned short c[4] = L"\000\000f";
 EXPECT_IR
 @c = global [4 x i16] [i16 0, i16 0, i16 102, i16 0]
 END

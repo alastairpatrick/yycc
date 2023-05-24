@@ -33,6 +33,19 @@ ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest
     return result;
 }
 
+// todo: hopefully the only way to make a compile time "array constant" is with a string literal?
+bool check_array_constant_conversion(const Type* source_element_type, const Type* dest_element_type) {
+    dest_element_type = dest_element_type->unqualified();
+    source_element_type = source_element_type->unqualified();
+
+    if (source_element_type == dest_element_type) return true;
+
+    // C99 6.7.8p14
+    auto dest_int_el_type = unqualified_type_cast<IntegerType>(dest_element_type);
+    auto source_int_el_type = unqualified_type_cast<IntegerType>(source_element_type);
+    return dest_int_el_type && source_int_el_type && dest_int_el_type->size == IntegerSize::CHAR && source_int_el_type->size == IntegerSize::CHAR;
+}
+
 TypeConverter::TypeConverter(Module* module, LLVMBuilderRef builder, EmitOutcome outcome, ValueResolver& resolver)
     : module(module), builder(builder), outcome(outcome), resolver(resolver) {
 }
@@ -58,7 +71,7 @@ void TypeConverter::convert_enum_to_int() {
 
 const Type* TypeConverter::visit(const ResolvedArrayType* dest_type) {
     if (auto source_type = unqualified_type_cast<ResolvedArrayType>(value.type)) {
-        if (value.is_const() && source_type->element_type == dest_type->element_type && source_type->size <= dest_type->size) {
+        if (value.is_const() && check_array_constant_conversion(source_type->element_type, dest_type->element_type) && source_type->size <= dest_type->size) {
             LLVMValueRef source_array = value.get_const();
             vector<LLVMValueRef> resized_array_values(dest_type->size);
             size_t i;
@@ -81,6 +94,12 @@ const Type* TypeConverter::visit(const ResolvedArrayType* dest_type) {
 const Type* TypeConverter::visit(const PointerType* dest_type) {
     if (auto source_type = unqualified_type_cast<ResolvedArrayType>(value.type)) {
         if (module && value.is_const()) {
+            conv_kind = check_pointer_conversion(source_type->element_type, dest_type->base_type);
+
+            if (check_array_constant_conversion(source_type->element_type, dest_type->base_type)) {
+                conv_kind = ConvKind::IMPLICIT;
+            }
+
             auto& global = module->reified_constants[value.get_const()];
             if (!global) {
                 global = LLVMAddGlobal(module->llvm_module, value.type->llvm_type(), "const");
@@ -88,6 +107,7 @@ const Type* TypeConverter::visit(const PointerType* dest_type) {
                 LLVMSetLinkage(global, LLVMPrivateLinkage);
                 LLVMSetInitializer(global, value.get_const());
             }
+
             result = Value(dest_type, global);
             return nullptr;
         }

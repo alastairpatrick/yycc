@@ -210,6 +210,10 @@ void IntegerType::message_print(ostream& stream, int section) const {
         return;
     }
 
+    if (signedness == IntegerSignedness::SIGNED && size == IntegerSize::CHAR) {
+        stream << "signed ";
+    }
+
     if (signedness == IntegerSignedness::UNSIGNED && size != IntegerSize::BOOL) {
         stream << "unsigned ";
     }
