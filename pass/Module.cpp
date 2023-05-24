@@ -32,6 +32,40 @@ TypedFunctionRef Module::lookup_intrinsic(const char* name, LLVMTypeRef* param_t
     return ref;
 }
 
+void Module::call_assume_intrinsic(LLVMBuilderRef builder, LLVMValueRef true_value) {
+    auto function = lookup_intrinsic("llvm.assume", nullptr, 0);
+
+    LLVMValueRef args[] = {
+        true_value,
+    };
+    function.call(builder, args, std::size(args));
+}
+
+void Module::call_expect_i1_intrinsic(LLVMBuilderRef builder, LLVMValueRef actual_value, LLVMValueRef expected_value) {
+    auto context = TranslationUnitContext::it;
+
+    LLVMTypeRef param_types[] = {
+        context->llvm_bool_type,
+    };
+    auto function = lookup_intrinsic("llvm.expect", param_types, std::size(param_types));
+
+    LLVMValueRef args[] = {
+        actual_value,
+        expected_value,
+    };
+    function.call(builder, args, std::size(args));
+}
+
+Value Module::call_is_constant_intrinsic(LLVMBuilderRef builder, LLVMValueRef value, LLVMTypeRef type) {
+    auto function = lookup_intrinsic("llvm.is.constant", &type, 1);
+    return Value(IntegerType::of_bool(), function.call(builder, &value, 1));
+}
+
+void Module::call_sideeffect_intrinsic(LLVMBuilderRef builder) {
+    auto function = lookup_intrinsic("llvm.sideeffect", nullptr, 0);
+    function.call(builder, nullptr, 0);
+}
+
 LLVMAttributeRef Module::nocapture_attribute() {
     auto context = TranslationUnitContext::it;
 

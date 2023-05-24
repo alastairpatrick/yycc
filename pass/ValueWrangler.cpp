@@ -108,42 +108,6 @@ Value ValueWrangler::allocate_auto_storage(const Type* type, const char* name) {
     return Value(ValueKind::LVALUE, type, storage);
 }
 
-void ValueWrangler::call_assume_intrinsic(LLVMValueRef true_value) {
-    auto function = module->lookup_intrinsic("llvm.assume", nullptr, 0);
-
-    LLVMValueRef args[] = {
-        true_value,
-    };
-    function.call(builder, args, std::size(args));
-}
-
-void ValueWrangler::call_expect_i1_intrinsic(LLVMValueRef actual_value, LLVMValueRef expected_value) {
-    auto context = TranslationUnitContext::it;
-
-    LLVMTypeRef param_types[] = {
-        context->llvm_bool_type,
-    };
-    auto function = module->lookup_intrinsic("llvm.expect", param_types, std::size(param_types));
-
-    LLVMValueRef args[] = {
-        actual_value,
-        expected_value,
-    };
-    function.call(builder, args, std::size(args));
-}
-
-Value ValueWrangler::call_is_constant_intrinsic(const Value& value) {
-    auto type = value.type->llvm_type();
-    auto function = module->lookup_intrinsic("llvm.is.constant", &type, 1);
-    auto arg = value.dangerously_get_value(builder, outcome);
-    return Value(IntegerType::of_bool(), function.call(builder, &arg, 1));
-}
-
-void ValueWrangler::call_sideeffect_intrinsic() {
-    auto function = module->lookup_intrinsic("llvm.sideeffect", nullptr, 0);
-    function.call(builder, nullptr, 0);
-}
-
 LLVMValueRef ValueWrangler::get_value_internal() {
     return get_value(value, false);
 }

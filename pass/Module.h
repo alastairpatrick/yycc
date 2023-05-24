@@ -40,6 +40,11 @@ struct Module {
 
     Value indeterminate_bool();
     TypedFunctionRef lookup_intrinsic(const char* name, LLVMTypeRef* param_types, unsigned num_params);
+    
+    void call_assume_intrinsic(LLVMBuilderRef builder, LLVMValueRef true_value);
+    void call_expect_i1_intrinsic(LLVMBuilderRef builder, LLVMValueRef actual_value, LLVMValueRef expected_value);
+    Value call_is_constant_intrinsic(LLVMBuilderRef builder, LLVMValueRef value, LLVMTypeRef type);
+    void call_sideeffect_intrinsic(LLVMBuilderRef builder);
 
     LLVMAttributeRef nocapture_attribute();
 

@@ -131,7 +131,7 @@ struct Emitter: ValueWrangler, Visitor {
                                                  current_state,
                                                  LLVMConstNull(llvm_type), "");
 
-        auto is_const = call_is_constant_intrinsic(Value(type, selected));
+        auto is_const = module->call_is_constant_intrinsic(builder, selected, type->llvm_type());
 
         auto destructor_block = LLVMAppendBasicBlockInContext(context->llvm_context, ref.function, "");
         auto skip_block = LLVMAppendBasicBlockInContext(context->llvm_context, ref.function, "");
@@ -669,7 +669,7 @@ struct Emitter: ValueWrangler, Visitor {
 
         // C11 6.8.5p6
         if (synthesize_side_effect) {
-            call_sideeffect_intrinsic();
+            module->call_sideeffect_intrinsic(builder);
         }
 
         accept_statement(statement->body);
@@ -1395,7 +1395,7 @@ struct Emitter: ValueWrangler, Visitor {
             if (throw_type) {
                 auto exception = result_type == &VoidType::it ? llvm_result : LLVMBuildExtractValue(builder, llvm_result, 0, "exc");
                 auto compare = LLVMBuildICmp(builder, LLVMIntEQ, exception, context->llvm_null, "");
-                call_expect_i1_intrinsic(compare, context->llvm_true);
+                module->call_expect_i1_intrinsic(builder, compare, context->llvm_true);
 
                 auto no_exception_block = append_block();
 

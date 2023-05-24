@@ -56,11 +56,6 @@ struct ValueWrangler: TypeVisitor {
     void make_addressable(Value& value);
     Value allocate_auto_storage(const Type* type, const char* name);
 
-    void call_assume_intrinsic(LLVMValueRef true_value);
-    void call_expect_i1_intrinsic(LLVMValueRef actual_value, LLVMValueRef expected_value);
-    Value call_is_constant_intrinsic(const Value& value);
-    void call_sideeffect_intrinsic();
-
 private:
     ExprValue value;
     Value result;
