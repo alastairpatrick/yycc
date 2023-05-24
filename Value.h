@@ -27,13 +27,16 @@ enum class ValueKind: uint8_t {
 struct BitField;
 
 struct Value {
+private:
+    LLVMValueRef llvm{};
+public:
+    const Type* type{};
     ValueKind kind = ValueKind::INVALID;
     struct {
         bool is_null_literal  : 1 = false;
         bool has_address      : 1 = false;
     };
     QualifierSet qualifiers{};
-    const Type* type{};
     BitField* bit_field{};
 
     Value() = default;
@@ -114,9 +117,6 @@ struct Value {
         result.type = type;
         return result;
     }
-
-private:
-    LLVMValueRef llvm{};
 };
 
 #endif
