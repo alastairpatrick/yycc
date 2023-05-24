@@ -128,22 +128,33 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
 
             if (primary_variable->initializer) {
                 if (auto array_type = dynamic_cast<const ResolvedArrayType*>(primary->type)) {
+                    auto initializer = primary_variable->initializer;
+
+                    if (auto init_expr = dynamic_cast<InitializerExpr*>(initializer)) {
+                        // C99 6.7.8p14,15
+                        auto int_element_type = dynamic_cast<const IntegerType*>(array_type->element_type->unqualified());
+                        if (int_element_type &&
+                            init_expr->elements.size() == 1 &&
+                            dynamic_cast<StringConstant*>(init_expr->elements[0]))
+                        {
+                            initializer = init_expr->elements[0];
+                        } else {
+                            // C99 6.7.8p22
+                            if (auto resolved = compose_array_type_with_initializer_size(array_type, init_expr->elements.size())) {
+                                primary->type = resolved;
+                            } else if (array_type->kind == ArrayKind::COMPLETE && init_expr->elements.size() > array_type->size) {
+                                message(Severity::ERROR, init_expr->elements[array_type->size]->location) << "excess elements in array initializer\n";
+                            }
+                        }
+                    }
+
                     // C99 6.7.8p22
-                    if (auto string_constant = dynamic_cast<StringConstant*>(primary_variable->initializer)) {
+                    if (auto string_constant = dynamic_cast<StringConstant*>(initializer)) {
                         auto string_size = string_constant->value.length + 1;
                         if (auto resolved = compose_array_type_with_initializer_size(array_type, string_size)) {
                             primary->type = resolved;
                         } else if (array_type->kind == ArrayKind::COMPLETE && string_size > array_type->size) {
                             message(Severity::ERROR, string_constant->location) << "size of string literal (" << string_size << ") exceeds declared array size (" << array_type->size << ")\n";
-                        }
-                    }
-
-                    // C99 6.7.8p22
-                    if (auto init_expr = dynamic_cast<InitializerExpr*>(primary_variable->initializer)) {
-                        if (auto resolved = compose_array_type_with_initializer_size(array_type, init_expr->elements.size())) {
-                            primary->type = resolved;
-                        } else if (array_type->kind == ArrayKind::COMPLETE && init_expr->elements.size() > array_type->size) {
-                            message(Severity::ERROR, init_expr->elements[array_type->size]->location) << "excess elements in array initializer\n";
                         }
                     }
                 }

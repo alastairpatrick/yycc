@@ -693,6 +693,21 @@ EXPECT_IR
 END
 
 
+BEGIN Global void pointer variable initialized with string literal surrounded by braces
+const void* c = { "\000\000f" };
+EXPECT_IR
+@c = global ptr @const
+@const = private constant [4 x i8] c"\00\00f\00"
+END
+
+
+BEGIN Global void pointer variable initialized with too many string literals
+const void* c = { "a", "b" };
+EXPECT_MESSAGE
+:1:24: error excess elements in scalar initializer
+END
+
+
 BEGIN Error attempting to initialize short pointer with string literal
 short* c = "\000\000f";
 EXPECT_MESSAGE
@@ -718,6 +733,27 @@ BEGIN Global unsigned char array variable initialized with string literal
 const unsigned char c[4] = "\000\000f";
 EXPECT_IR
 @c = global [4 x i8] c"\00\00f\00"
+END
+
+
+BEGIN Global char array variable initialized with string literal surrounded by braces (1)
+const char c[4] = { "\000\000f" };
+EXPECT_IR
+@c = global [4 x i8] c"\00\00f\00"
+END
+
+
+BEGIN Global char array variable initialized with too many string literals
+const char c[2] = { "a", "b" };
+EXPECT_MESSAGE
+:1:21: error cannot convert from type 'char const[2]' to type 'char'
+END
+
+
+BEGIN Global char incomplete array variable initialized with string literal surrounded with braces
+const char c[] = { "foo" };
+EXPECT_IR
+@c = global [4 x i8] c"foo\00"
 END
 
 

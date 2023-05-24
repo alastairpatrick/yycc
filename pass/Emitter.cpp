@@ -589,6 +589,15 @@ struct Emitter: Visitor, ValueResolver {
 
         if (auto initializer = dynamic_cast<InitializerExpr*>(expr)) {
             if (auto array_type = unqualified_type_cast<ResolvedArrayType>(dest_type)) {
+                // C99 6.7.8p14,15
+                auto int_element_type = unqualified_type_cast<IntegerType>(array_type->element_type->unqualified());
+                if (int_element_type &&
+                    initializer->elements.size() == 1 &&
+                    dynamic_cast<StringConstant*>(initializer->elements[0]))
+                {
+                    return convert_to_rvalue(initializer->elements[0], dest_type, ConvKind::IMPLICIT);
+                }
+
                 vector<LLVMValueRef> values(array_type->size);
                 for (size_t i = 0; i < array_type->size; ++i) {
                     values[i] = emit_static_initializer(array_type->element_type, initializer->elements[i]);

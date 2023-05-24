@@ -40,10 +40,10 @@ bool check_array_constant_conversion(const Type* source_element_type, const Type
 
     if (source_element_type == dest_element_type) return true;
 
-    // C99 6.7.8p14
+    // C99 6.7.8p14,15
     auto dest_int_el_type = unqualified_type_cast<IntegerType>(dest_element_type);
     auto source_int_el_type = unqualified_type_cast<IntegerType>(source_element_type);
-    return dest_int_el_type && source_int_el_type && dest_int_el_type->size == IntegerSize::CHAR && source_int_el_type->size == IntegerSize::CHAR;
+    return dest_int_el_type && source_int_el_type && dest_int_el_type->size == source_int_el_type->size;
 }
 
 TypeConverter::TypeConverter(Module* module, LLVMBuilderRef builder, EmitOutcome outcome, ValueResolver& resolver)
