@@ -18,7 +18,7 @@ struct IntegerConstant: Constant {
     static IntegerConstant* of(string_view text, TokenKind token, const Location& location);
     static IntegerConstant* of(const IntegerType* type, unsigned long long value, const Location& location);
 
-    IntegerConstant(const Value& value, const Location& location);
+    IntegerConstant(Value value, const Location& location);
     virtual VisitExpressionOutput accept(Visitor& visitor) override;
     virtual void print(ostream& stream) const override;
 };
@@ -28,7 +28,7 @@ struct FloatingPointConstant: Constant {
 
     static FloatingPointConstant* of(string_view text, TokenKind token, const Location& location);
 
-    FloatingPointConstant(const Value& value, const Location& location);
+    FloatingPointConstant(Value value, const Location& location);
     virtual VisitExpressionOutput accept(Visitor& visitor) override;
 
     virtual void print(ostream& stream) const override;

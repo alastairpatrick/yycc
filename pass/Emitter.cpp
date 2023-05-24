@@ -107,11 +107,11 @@ struct Emitter: Visitor, ValueResolver {
         if (builder) LLVMDisposeBuilder(builder);
     }
 
-    LLVMValueRef get_address(const Value &value) {
+    LLVMValueRef get_address(Value value) {
         return value.dangerously_get_address();
     }
 
-    virtual LLVMValueRef get_value(const ExprValue &value, bool for_move_expr = false) override {
+    virtual LLVMValueRef get_value(ExprValue value, bool for_move_expr = false) override {
         if (value.type == &VoidType::it) {
             return nullptr;
         }
@@ -132,7 +132,7 @@ struct Emitter: Visitor, ValueResolver {
         return rvalue;
     }
 
-    void store(const Value& dest, LLVMValueRef source_rvalue, const Location& assignment_location) {
+    void store(Value dest, LLVMValueRef source_rvalue, const Location& assignment_location) {
         if (outcome == EmitOutcome::IR) {
             if (dest.kind == ValueKind::LVALUE) {
                 dest.dangerously_store(builder, source_rvalue);
@@ -227,7 +227,7 @@ struct Emitter: Visitor, ValueResolver {
         return ref;
     }
 
-    LLVMValueRef call_destructor_immediately(const Value& value) {
+    LLVMValueRef call_destructor_immediately(Value value) {
         auto context = TranslationUnitContext::it;
 
         if (!value.has_address) return nullptr;
@@ -376,7 +376,7 @@ struct Emitter: Visitor, ValueResolver {
         }
     }
 
-    void store_and_pend_destructor(const Value& dest, ExprValue source, const Location& assignment_location) {
+    void store_and_pend_destructor(Value dest, ExprValue source, const Location& assignment_location) {
         if (dest.type->unqualified() == source.type->unqualified()) {
             // Destructor was already pended for the dest lvalue
             store(dest, get_value(source, false), assignment_location);
@@ -445,12 +445,12 @@ struct Emitter: Visitor, ValueResolver {
         return VisitStatementOutput();
     }
 
-    ExprValue convert_to_type(const ExprValue& value, const Type* dest_type, ConvKind kind) {
+    ExprValue convert_to_type(ExprValue value, const Type* dest_type, ConvKind kind) {
         TypeConverter converter(module, builder, outcome, *this);
         return converter.convert_to_type(value, dest_type, kind);
     }
 
-    LLVMValueRef convert_to_rvalue(const ExprValue& value, const Type* dest_type, ConvKind kind) {
+    LLVMValueRef convert_to_rvalue(ExprValue value, const Type* dest_type, ConvKind kind) {
         return get_value(convert_to_type(value, dest_type, kind));
     }
 
@@ -534,7 +534,7 @@ struct Emitter: Visitor, ValueResolver {
         }
     }
 
-    void emit_auto_initializer(const Value& dest, Expr* expr) {
+    void emit_auto_initializer(Value dest, Expr* expr) {
         auto context = TranslationUnitContext::it;
 
         if (auto uninitializer = dynamic_cast<UninitializedExpr*>(expr)) {
@@ -1010,7 +1010,7 @@ struct Emitter: Visitor, ValueResolver {
         return VisitExpressionOutput(left_value);
     }
 
-    Value emit_logical_binary_operation(BinaryExpr* expr, const ExprValue& left_value) {
+    Value emit_logical_binary_operation(BinaryExpr* expr, ExprValue left_value) {
         auto result_type = IntegerType::of_bool();
         if (outcome == EmitOutcome::TYPE) return Value(result_type);
 
@@ -1142,7 +1142,7 @@ struct Emitter: Visitor, ValueResolver {
         return LLVMRealPredicate(0);
     }
 
-    Value emit_scalar_binary_operation(BinaryExpr* expr, const ExprValue& left_value, const ExprValue& right_value) {
+    Value emit_scalar_binary_operation(BinaryExpr* expr, ExprValue left_value, ExprValue right_value) {
         OperatorFlags op_flags = operator_flags(expr->op);
         auto convert_type = (op_flags & OP_AS_LEFT_RESULT) ? left_value.type : usual_arithmetic_conversions(left_value.type, right_value.type);
         if (!convert_type) return Value();
@@ -1309,7 +1309,7 @@ struct Emitter: Visitor, ValueResolver {
         return Value();
     }
 
-    ExprValue convert_array_to_pointer(const ExprValue& value) {
+    ExprValue convert_array_to_pointer(ExprValue value) {
         auto zero = TranslationUnitContext::it->zero_size;
 
         if (auto array_type = unqualified_type_cast<ArrayType>(value.type)) {

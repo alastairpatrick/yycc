@@ -159,7 +159,7 @@ const Type* TypeConverter::visit(const VoidType* dest_type) {
 }
 
 
-ExprValue TypeConverter::convert_to_type(const ExprValue& value, const Type* dest_type, ConvKind kind) {
+ExprValue TypeConverter::convert_to_type(ExprValue value, const Type* dest_type, ConvKind kind) {
     assert(value.type->qualifiers() == 0);
     
     this->value = value;

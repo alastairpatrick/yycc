@@ -17,7 +17,7 @@ struct ExprValue: Value {
 
     ExprValue() = default;
     ExprValue(const ExprValue&) = default;
-    ExprValue(const Value& value, const LocationNode* node): Value(value), node(node) {}
+    ExprValue(Value value, const LocationNode* node): Value(value), node(node) {}
     ExprValue(const Type* type, const LocationNode* node): Value(type), node(node) {}
     ExprValue(const Type* type, LLVMValueRef llvm, const LocationNode* node): Value(type, llvm), node(node) {}
     ExprValue(ValueKind kind, const Type* type, LLVMValueRef llvm, const LocationNode* node): Value(kind, type, llvm), node(node) {}
@@ -40,7 +40,7 @@ inline const T* unqualified_type_cast(const U* type) {
 ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type);
 
 struct ValueResolver {
-    virtual LLVMValueRef get_value(const ExprValue &value, bool for_move_expr) = 0;
+    virtual LLVMValueRef get_value(ExprValue value, bool for_move_expr) = 0;
 };
 
 struct TypeConverter: TypeVisitor {
@@ -51,7 +51,7 @@ struct TypeConverter: TypeVisitor {
 
     TypeConverter(Module* module, LLVMBuilderRef builder, EmitOutcome outcome, ValueResolver& resolver);
 
-    ExprValue convert_to_type(const ExprValue& value, const Type* dest_type, ConvKind kind);
+    ExprValue convert_to_type(ExprValue value, const Type* dest_type, ConvKind kind);
 
 private:
     ExprValue value;

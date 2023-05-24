@@ -123,7 +123,7 @@ IntegerConstant* IntegerConstant::of(const IntegerType* type, unsigned long long
     return new IntegerConstant(Value::of_int(type, value), location);
 }
 
-IntegerConstant::IntegerConstant(const Value& value, const Location& location)
+IntegerConstant::IntegerConstant(Value value, const Location& location)
     : Constant(location), value(value) {
     this->value.is_null_literal = LLVMIsNull(value.get_const());
 }
@@ -157,7 +157,7 @@ FloatingPointConstant* FloatingPointConstant::of(string_view text, TokenKind tok
 }
 
 
-FloatingPointConstant::FloatingPointConstant(const Value& value, const Location& location)
+FloatingPointConstant::FloatingPointConstant(Value value, const Location& location)
     : Constant(location), value(value) {
 }
 
