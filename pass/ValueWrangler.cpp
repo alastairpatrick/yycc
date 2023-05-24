@@ -3,25 +3,7 @@
 #include "Message.h"
 #include "TranslationUnitContext.h"
 
-ValueWrangler::ValueWrangler(Module* module, EmitOutcome outcome)
-    : module(module), outcome(outcome) {
-    auto llvm_context = TranslationUnitContext::it->llvm_context;
-
-    if (outcome != EmitOutcome::TYPE) {
-        builder = LLVMCreateBuilderInContext(llvm_context);
-    }
-
-    if (outcome == EmitOutcome::IR) {
-        temp_builder = LLVMCreateBuilderInContext(llvm_context);
-    }
-}
-
-ValueWrangler::~ValueWrangler() {
-    if (temp_builder) LLVMDisposeBuilder(temp_builder);
-    if (builder) LLVMDisposeBuilder(builder);
-}
-
-ConvKind ValueWrangler::check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type) {
+ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type) {
     auto unqualified_source_base_type = source_base_type->unqualified();
     auto unqualified_dest_base_type = dest_base_type->unqualified();
 
@@ -49,6 +31,24 @@ ConvKind ValueWrangler::check_pointer_conversion(const Type* source_base_type, c
     }
 
     return result;
+}
+
+ValueWrangler::ValueWrangler(Module* module, EmitOutcome outcome)
+    : module(module), outcome(outcome) {
+    auto llvm_context = TranslationUnitContext::it->llvm_context;
+
+    if (outcome != EmitOutcome::TYPE) {
+        builder = LLVMCreateBuilderInContext(llvm_context);
+    }
+
+    if (outcome == EmitOutcome::IR) {
+        temp_builder = LLVMCreateBuilderInContext(llvm_context);
+    }
+}
+
+ValueWrangler::~ValueWrangler() {
+    if (temp_builder) LLVMDisposeBuilder(temp_builder);
+    if (builder) LLVMDisposeBuilder(builder);
 }
 
 LLVMValueRef ValueWrangler::get_address(const Value &value) {

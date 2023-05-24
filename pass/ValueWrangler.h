@@ -37,6 +37,8 @@ inline const T* unqualified_type_cast(const U* type) {
     return dynamic_cast<const T*>(type);
 }
 
+ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type);
+
 struct ValueWrangler: TypeVisitor {
     Module* module{};
     LLVMBuilderRef builder{};
@@ -47,7 +49,6 @@ struct ValueWrangler: TypeVisitor {
     ValueWrangler(Module* module, EmitOutcome outcome);
     ~ValueWrangler();
 
-    ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type);
     ExprValue convert_to_type(const ExprValue& value, const Type* dest_type, ConvKind kind);
     LLVMValueRef get_address(const Value &value);
     LLVMValueRef get_value(const ExprValue &value, bool for_move_expr = false);
