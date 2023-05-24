@@ -1668,6 +1668,16 @@ struct Emitter: Visitor, ValueResolver {
         return VisitExpressionOutput(expr->postfix ? Value(result_type, before_rvalue) : lvalue);
     }
 
+    virtual VisitExpressionOutput visit(InitializerExpr* expr) override {
+        message(Severity::ERROR, expr->location) << "too many braces around initializer\n";
+
+        if (expr->elements.size()) {
+            return VisitExpressionOutput(emit_expr(expr->elements[0]).unqualified());
+        } else {
+            return VisitExpressionOutput(Value::of_zero_int());
+        }
+    }
+
     ExprValue emit_object_of_member_expr(MemberExpr* expr) {
         auto object = emit_expr(expr->object);
         if (auto pointer_type = unqualified_type_cast<PointerType>(object.type)) {

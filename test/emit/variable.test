@@ -70,6 +70,20 @@ EXPECT_MESSAGE
 END
 
 
+BEGIN Scalar global variable initialized with initializer expression with too many braces
+int x = {{1}};
+EXPECT_MESSAGE
+:1:11: error too many braces around initializer
+END
+
+
+BEGIN Scalar global variable initialized with initializer expression with too many braces and no elements
+int x = {{}};
+EXPECT_MESSAGE
+:1:11: error too many braces around initializer
+END
+
+
 BEGIN Variable initialized with constant expression involving pointer arithmetic (1)
 #var x
 int* y = x + 1;
