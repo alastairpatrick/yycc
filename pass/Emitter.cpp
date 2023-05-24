@@ -64,8 +64,13 @@ struct GoToLabel {
     vector<GoToDestructorCall> destructor_calls;
 };
 
-struct Emitter: ValueWrangler, Visitor {
+struct Emitter: Visitor, ValueResolver {
     const EmitOptions& options;
+    Module* module{};
+    LLVMBuilderRef builder{};
+    LLVMBuilderRef temp_builder{};
+    EmitOutcome outcome{};
+    LLVMBasicBlockRef entry_block{};
 
     Emitter* parent{};
 
@@ -83,10 +88,82 @@ struct Emitter: ValueWrangler, Visitor {
     LLVMBasicBlockRef last_unreachable_block{};
 
     Emitter(Module* module, EmitOutcome outcome, const EmitOptions& options)
-        : ValueWrangler(module, outcome), options(options) {
+        : module(module), outcome(outcome), options(options) {
+        auto llvm_context = TranslationUnitContext::it->llvm_context;
+
         this_string = intern_string("this");
+
+        if (outcome != EmitOutcome::TYPE) {
+            builder = LLVMCreateBuilderInContext(llvm_context);
+        }
+
+        if (outcome == EmitOutcome::IR) {
+            temp_builder = LLVMCreateBuilderInContext(llvm_context);
+        }
+    }
+
+    ~Emitter() {
+        if (temp_builder) LLVMDisposeBuilder(temp_builder);
+        if (builder) LLVMDisposeBuilder(builder);
+    }
+
+    LLVMValueRef get_address(const Value &value) {
+        return value.dangerously_get_address();
+    }
+
+    virtual LLVMValueRef get_value(const ExprValue &value, bool for_move_expr = false) override {
+        if (value.type == &VoidType::it) {
+            return nullptr;
+        }
+
+        auto rvalue = value.dangerously_get_value(builder, outcome);
+
+        if (auto structured_type = unqualified_type_cast<StructuredType>(value.type->unqualified())) {
+            if (value.kind == ValueKind::LVALUE && structured_type->destructor) {
+                LLVMValueRef lvalue = value.dangerously_get_address();
+                LLVMBuildStore(builder, LLVMConstNull(structured_type->llvm_type()), lvalue);
+
+                if (!for_move_expr) {
+                    message(Severity::ERROR, value.node->location) << "lvalue with destructor is not copyable; consider '&&' prefix move operator\n";
+                }
+            }
+        }
+
+        return rvalue;
+    }
+
+    void store(const Value& dest, LLVMValueRef source_rvalue, const Location& assignment_location) {
+        if (outcome == EmitOutcome::IR) {
+            if (dest.kind == ValueKind::LVALUE) {
+                dest.dangerously_store(builder, source_rvalue);
+            } else {
+                message(Severity::ERROR, assignment_location) << "expression is not assignable\n";
+            }
+        } else {
+            message(Severity::ERROR, assignment_location) << "assignment in constant expression\n";
+        }
     }
     
+    void position_temp_builder() {
+        auto first_insn = LLVMGetFirstInstruction(entry_block);
+        if (first_insn) {
+            LLVMPositionBuilderBefore(temp_builder, first_insn);
+        } else {
+            LLVMPositionBuilderAtEnd(temp_builder, entry_block);
+        }
+    }
+
+    void make_addressable(Value& value) {
+        position_temp_builder();
+        value.make_addressable(temp_builder, builder);
+    }
+
+    Value allocate_auto_storage(const Type* type, const char* name) {
+        position_temp_builder();
+        auto storage = LLVMBuildAlloca(temp_builder, type->llvm_type(), name);
+        return Value(ValueKind::LVALUE, type, storage);
+    }
+
     LLVMBasicBlockRef append_block(const char* name = "") {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
         return LLVMAppendBasicBlockInContext(llvm_context, function, name);
@@ -369,7 +446,8 @@ struct Emitter: ValueWrangler, Visitor {
     }
 
     ExprValue convert_to_type(const ExprValue& value, const Type* dest_type, ConvKind kind) {
-        return ValueWrangler::convert_to_type(value, dest_type, kind);
+        ValueWrangler wrangler(module, builder, outcome, *this);
+        return wrangler.convert_to_type(value, dest_type, kind);
     }
 
     LLVMValueRef convert_to_rvalue(const ExprValue& value, const Type* dest_type, ConvKind kind) {

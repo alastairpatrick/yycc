@@ -39,23 +39,19 @@ inline const T* unqualified_type_cast(const U* type) {
 
 ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type);
 
+struct ValueResolver {
+    virtual LLVMValueRef get_value(const ExprValue &value, bool for_move_expr) = 0;
+};
+
 struct ValueWrangler: TypeVisitor {
     Module* module{};
     LLVMBuilderRef builder{};
-    LLVMBuilderRef temp_builder{};
     EmitOutcome outcome{};
-    LLVMBasicBlockRef entry_block{};
+    ValueResolver& resolver;
 
-    ValueWrangler(Module* module, EmitOutcome outcome);
-    ~ValueWrangler();
+    ValueWrangler(Module* module, LLVMBuilderRef builder, EmitOutcome outcome, ValueResolver& resolver);
 
     ExprValue convert_to_type(const ExprValue& value, const Type* dest_type, ConvKind kind);
-    LLVMValueRef get_address(const Value &value);
-    LLVMValueRef get_value(const ExprValue &value, bool for_move_expr = false);
-    void store(const Value& dest, LLVMValueRef source_rvalue, const Location& assignment_location);
-    void position_temp_builder();
-    void make_addressable(Value& value);
-    Value allocate_auto_storage(const Type* type, const char* name);
 
 private:
     ExprValue value;

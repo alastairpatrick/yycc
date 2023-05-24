@@ -33,83 +33,12 @@ ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest
     return result;
 }
 
-ValueWrangler::ValueWrangler(Module* module, EmitOutcome outcome)
-    : module(module), outcome(outcome) {
-    auto llvm_context = TranslationUnitContext::it->llvm_context;
-
-    if (outcome != EmitOutcome::TYPE) {
-        builder = LLVMCreateBuilderInContext(llvm_context);
-    }
-
-    if (outcome == EmitOutcome::IR) {
-        temp_builder = LLVMCreateBuilderInContext(llvm_context);
-    }
-}
-
-ValueWrangler::~ValueWrangler() {
-    if (temp_builder) LLVMDisposeBuilder(temp_builder);
-    if (builder) LLVMDisposeBuilder(builder);
-}
-
-LLVMValueRef ValueWrangler::get_address(const Value &value) {
-    return value.dangerously_get_address();
-}
-
-LLVMValueRef ValueWrangler::get_value(const ExprValue &value, bool for_move_expr) {
-    if (value.type == &VoidType::it) {
-        return nullptr;
-    }
-
-    auto rvalue = value.dangerously_get_value(builder, outcome);
-
-    if (auto structured_type = unqualified_type_cast<StructuredType>(value.type->unqualified())) {
-        if (value.kind == ValueKind::LVALUE && structured_type->destructor) {
-            LLVMValueRef lvalue = value.dangerously_get_address();
-            LLVMBuildStore(builder, LLVMConstNull(structured_type->llvm_type()), lvalue);
-
-            if (!for_move_expr) {
-                message(Severity::ERROR, value.node->location) << "lvalue with destructor is not copyable; consider '&&' prefix move operator\n";
-            }
-        }
-    }
-
-    return rvalue;
-}
-
-void ValueWrangler::store(const Value& dest, LLVMValueRef source_rvalue, const Location& assignment_location) {
-    if (outcome == EmitOutcome::IR) {
-        if (dest.kind == ValueKind::LVALUE) {
-            dest.dangerously_store(builder, source_rvalue);
-        } else {
-            message(Severity::ERROR, assignment_location) << "expression is not assignable\n";
-        }
-    } else {
-        message(Severity::ERROR, assignment_location) << "assignment in constant expression\n";
-    }
-}
-    
-void ValueWrangler::position_temp_builder() {
-    auto first_insn = LLVMGetFirstInstruction(entry_block);
-    if (first_insn) {
-        LLVMPositionBuilderBefore(temp_builder, first_insn);
-    } else {
-        LLVMPositionBuilderAtEnd(temp_builder, entry_block);
-    }
-}
-
-void ValueWrangler::make_addressable(Value& value) {
-    position_temp_builder();
-    value.make_addressable(temp_builder, builder);
-}
-
-Value ValueWrangler::allocate_auto_storage(const Type* type, const char* name) {
-    position_temp_builder();
-    auto storage = LLVMBuildAlloca(temp_builder, type->llvm_type(), name);
-    return Value(ValueKind::LVALUE, type, storage);
+ValueWrangler::ValueWrangler(Module* module, LLVMBuilderRef builder, EmitOutcome outcome, ValueResolver& resolver)
+    : module(module), builder(builder), outcome(outcome), resolver(resolver) {
 }
 
 LLVMValueRef ValueWrangler::get_value_internal() {
-    return get_value(value, false);
+    return resolver.get_value(value, false);
 }
 
 void ValueWrangler::convert_array_to_pointer() {
