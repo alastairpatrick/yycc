@@ -206,8 +206,7 @@ define void @f() {
   br i1 %3, label %4, label %8
 
 4:                                                ; preds = %1
-  %x = getelementptr inbounds %S, ptr %s, i32 0, i32 0
-  store i32 1, ptr %x, align 4
+  store %S { i32 1 }, ptr %s, align 4
   call void @destructor_wrapper(ptr %s)
   br label %8
 
@@ -286,10 +285,8 @@ EXPECT_IR
 define void @f() {
   %s = alloca %S, align 8
   %t = alloca %S, align 8
-  %x = getelementptr inbounds %S, ptr %t, i32 0, i32 0
-  store i32 1, ptr %x, align 4
-  %x1 = getelementptr inbounds %S, ptr %s, i32 0, i32 0
-  store i32 1, ptr %x1, align 4
+  store %S { i32 1 }, ptr %t, align 4
+  store %S { i32 1 }, ptr %s, align 4
   call void @destructor_wrapper(ptr %s)
   br label %target
 
@@ -334,15 +331,13 @@ EXPECT_IR
 define void @f() {
   %s = alloca %S, align 8
   %t = alloca %S, align 8
-  %x = getelementptr inbounds %S, ptr %t, i32 0, i32 0
-  store i32 1, ptr %x, align 4
+  store %S { i32 1 }, ptr %t, align 4
   br label %target
 
 target:                                           ; preds = %target, %0
-  %x1 = getelementptr inbounds %S, ptr %t, i32 0, i32 0
-  store i32 2, ptr %x1, align 4
-  %x2 = getelementptr inbounds %S, ptr %s, i32 0, i32 0
-  store i32 1, ptr %x2, align 4
+  %x = getelementptr inbounds %S, ptr %t, i32 0, i32 0
+  store i32 2, ptr %x, align 4
+  store %S { i32 1 }, ptr %s, align 4
   call void @destructor_wrapper(ptr %s)
   br label %target
 
@@ -531,8 +526,7 @@ define void @f(%S %0) {
   %t = alloca %S, align 8
   %s = alloca %S, align 8
   store %S %0, ptr %s, align 4
-  %x = getelementptr inbounds %S, ptr %t, i32 0, i32 0
-  store i32 1, ptr %x, align 4
+  store %S { i32 1 }, ptr %t, align 4
   %2 = call i32 @who_knows()
   %3 = trunc i32 %2 to i1
   br i1 %3, label %4, label %5

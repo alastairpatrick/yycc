@@ -191,7 +191,7 @@ EXPECT_IR
 %S = type { i32 }
 
 define void @f() local_unnamed_addr {
-destructor_wrapper.exit3:
+destructor_wrapper.exit4:
   %0 = alloca %S, align 8
   store i32 1, ptr %0, align 8
   call void @destructor(ptr nonnull %0)
@@ -243,7 +243,7 @@ EXPECT_IR
 %S = type { i32 }
 
 define void @f() local_unnamed_addr {
-destructor_wrapper.exit3:
+destructor_wrapper.exit4:
   %t = alloca %S, align 8
   store i32 1, ptr %t, align 8
   call void @destructor(ptr nonnull %t)

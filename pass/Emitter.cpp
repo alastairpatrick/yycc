@@ -533,56 +533,16 @@ struct Emitter: Visitor, ValueResolver {
             return convert_to_type(initializer->elements[0], dest_type, ConvKind::IMPLICIT);
         }
     }
-
-    void emit_auto_initializer(Value dest, Expr* expr) {
-        auto context = TranslationUnitContext::it;
-
-        if (auto uninitializer = dynamic_cast<UninitializedExpr*>(expr)) {
-            return;
+    
+    LLVMValueRef emit_insert_aggregate_values(LLVMTypeRef aggregate_type, const vector<LLVMValueRef>& element_values) {
+        auto aggregate_value = LLVMGetUndef(aggregate_type);
+        for (size_t i = 0; i < element_values.size(); ++i) {
+            aggregate_value = LLVMBuildInsertValue(builder, aggregate_value, element_values[i], i, "");
         }
-
-        ExprValue scalar_value;
-        if (auto initializer = dynamic_cast<InitializerExpr*>(expr)) {
-            if (auto array_type = unqualified_type_cast<ResolvedArrayType>(dest.type)) {
-                for (size_t i = 0; i < array_type->size; ++i) {
-                    LLVMValueRef indices[] = { context->zero_size, Value::of_size(i).get_const() };
-                    LLVMValueRef dest_element = LLVMBuildGEP2(builder, array_type->llvm_type(), get_address(dest), indices, 2, "");
-                    auto element_expr = initializer->elements[i];
-                    emit_auto_initializer(Value(ValueKind::LVALUE, array_type->element_type, dest_element), element_expr);
-                }
-                return;
-            }
-
-            if (auto struct_type = unqualified_type_cast<StructType>(dest.type)) {
-                size_t initializer_idx{};
-                for (auto declaration: struct_type->declarations) {
-                    for (auto member: declaration->declarators) {
-                        if (auto member_variable = member->variable()) {
-                            LLVMValueRef dest_element = LLVMBuildInBoundsGEP2(
-                                builder, struct_type->llvm_type(), get_address(dest),
-                                member_variable->member->gep_indices.data(), member_variable->member->gep_indices.size(),
-                                c_str(member->identifier));
-
-                            auto element_expr = initializer->elements[initializer_idx++];
-                            emit_auto_initializer(Value(ValueKind::LVALUE, member->type, dest_element), element_expr);
-                        }
-                    }
-                }
-
-                return;
-            }
-
-            scalar_value = emit_scalar_initializer(dest.type, initializer);
-        } else {
-            auto source = emit_expr(expr, { .pend_temporary_destructor = false });
-            store_and_pend_destructor(dest, source, expr->location);
-            return;
-        }
-
-        LLVMBuildStore(builder, get_value(scalar_value), get_address(dest));
+        return aggregate_value;
     }
 
-    LLVMValueRef emit_static_initializer(const Type* dest_type, Expr* expr) {
+    LLVMValueRef emit_initializer(const Type* dest_type, Expr* expr, EmitFlags emit_flags = EmitFlags()) {
         if (auto uninitializer = dynamic_cast<UninitializedExpr*>(expr)) {
             return LLVMGetUndef(dest_type->llvm_type());
         }
@@ -600,10 +560,14 @@ struct Emitter: Visitor, ValueResolver {
 
                 vector<LLVMValueRef> values(array_type->size);
                 for (size_t i = 0; i < array_type->size; ++i) {
-                    values[i] = emit_static_initializer(array_type->element_type, initializer->elements[i]);
+                    values[i] = emit_initializer(array_type->element_type, initializer->elements[i]);
                 }
 
-                return LLVMConstArray(array_type->element_type->llvm_type(), values.data(), values.size());
+                if (outcome == EmitOutcome::FOLD) {
+                    return LLVMConstArray(array_type->element_type->llvm_type(), values.data(), values.size());
+                } else {
+                    return emit_insert_aggregate_values(array_type->llvm_type(), values);
+                }
             }
 
             if (auto struct_type = unqualified_type_cast<StructType>(dest_type)) {
@@ -612,18 +576,23 @@ struct Emitter: Visitor, ValueResolver {
                 for (auto declaration: struct_type->declarations) {
                     for (auto member: declaration->declarators) {
                         if (auto member_variable = member->variable()) {
-                            values.push_back(emit_static_initializer(member->type, initializer->elements[initializer_idx++]));
+                            values.push_back(emit_initializer(member->type, initializer->elements[initializer_idx++]));
                         }
                     }
                 }
 
-                return LLVMConstNamedStruct(struct_type->llvm_type(), values.data(), values.size());
+                if (outcome == EmitOutcome::FOLD) {
+                    return LLVMConstNamedStruct(struct_type->llvm_type(), values.data(), values.size());
+                } else {
+                    return emit_insert_aggregate_values(struct_type->llvm_type(), values);
+                }
             }
 
             return get_value(emit_scalar_initializer(dest_type, initializer));
         }
 
-        return convert_to_rvalue(expr, dest_type, ConvKind::IMPLICIT);
+        auto value = emit_expr(expr, emit_flags);
+        return convert_to_rvalue(value, dest_type, ConvKind::IMPLICIT);
     }
 
     void emit_variable(Declarator* declarator, Variable* entity) {
@@ -637,7 +606,10 @@ struct Emitter: Visitor, ValueResolver {
 
             if (entity->initializer) {
                 EmitterScope scope(this);
-                emit_auto_initializer(ExprValue(entity->value, entity->initializer), entity->initializer);
+                auto initial =  emit_initializer(type, entity->initializer, { .pend_temporary_destructor = false });
+                if (!LLVMIsUndef(initial)) {
+                    store(entity->value, initial, declarator->location);
+                }
             } else if (options.initialize_variables || has_destructor) {
                 store(entity->value, Value::of_null(type).get_const(), declarator->location);
             }
@@ -651,7 +623,7 @@ struct Emitter: Visitor, ValueResolver {
 
                 Value value;
                 try {
-                    initial = initializer_emitter.emit_static_initializer(type, entity->initializer);
+                    initial = initializer_emitter.emit_initializer(type, entity->initializer);
                 } catch (FoldError& e) {
                     if (!e.error_reported) {
                         message(Severity::ERROR, entity->initializer->location) << "static initializer is not a constant expression\n";
