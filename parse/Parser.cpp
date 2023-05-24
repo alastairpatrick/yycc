@@ -394,7 +394,7 @@ Declaration* Parser::parse_declaration_specifiers(bool expression_valid, const T
           break;
 
       } case SPECIFIER_CHAR: {
-          type = IntegerType::of_char(false);
+          type = IntegerType::of(IntegerSignedness::DEFAULT, IntegerSize::CHAR);
           break;
 
       } case SPECIFIER_SIGNED | SPECIFIER_CHAR: {

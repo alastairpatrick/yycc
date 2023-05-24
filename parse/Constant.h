@@ -35,9 +35,12 @@ struct FloatingPointConstant: Constant {
 };
 
 struct StringConstant: Constant {
-    // If character type is "char", the character encoding is unknown. It might or might not be multi-byte.
-    // The encoding doesn't matter because this is an image of the string constant to add to the module.
-    // If the character type is other than "char" then the character encoding is UTF-8.
+    // If character type is 'char', 'signed char' or 'unsigned char', it's impossible to know what the
+    // actual encoding is. 'char*' could mean UTF-8, ASCII, or all kinds of different character encodings.
+    // It doesn't actually matter what the encoding is because the value is an image of the data to
+    // add to the module.
+    // 
+    // If the character type is other than the above then the character encoding is UTF-8.
     const IntegerType* const character_type{};
     const StringLiteral value;
 

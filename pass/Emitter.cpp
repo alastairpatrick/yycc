@@ -1797,7 +1797,7 @@ struct Emitter: Visitor, ValueResolver {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
 
         LLVMValueRef llvm_constant{};
-        if (constant->character_type == IntegerType::of_char(false)) {
+        if (constant->character_type->size == IntegerSize::CHAR) {
             llvm_constant = LLVMConstStringInContext(llvm_context, constant->value.chars.data(), constant->value.chars.size(), false);
         } else {
             LLVMTypeRef llvm_char_type = constant->character_type->llvm_type();
