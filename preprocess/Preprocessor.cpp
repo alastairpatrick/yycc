@@ -70,7 +70,7 @@ TokenKind Preprocessor::next_pp_token() {
     for (;;) {
         token = lexer.next_token();
 
-        if (pass_through_directive) {
+        if (auto_commit_tokens) {
             commit_token();
         }
 
@@ -112,7 +112,7 @@ void Preprocessor::begin_pass_through_directive(const Location& pound_location) 
     text_stream.locate(pound_location);
     text_stream.write("#");
     commit_token();
-    pass_through_directive = true;
+    auto_commit_tokens = true;
 }
 
 bool Preprocessor::handle_directive(const Location& pound_location) {
@@ -148,7 +148,7 @@ bool Preprocessor::handle_directive(const Location& pound_location) {
     }
 
     require_eol();
-    pass_through_directive = false;
+    auto_commit_tokens = false;
     return true;
 }
 

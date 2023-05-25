@@ -68,7 +68,7 @@ private:
     size_t pending_line{};
     size_t pending_column{};
 
-    bool pass_through_directive{};
+    bool auto_commit_tokens{};
     TextStream text_stream;
     strstream string_stream;
 };
