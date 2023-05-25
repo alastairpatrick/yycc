@@ -4,7 +4,7 @@
 
 Value Value::of_zero_int() {
     auto context = TranslationUnitContext::it;
-    return Value(IntegerType::default_type(), context->zero_int);
+    return Value(IntegerType::default_type(), context->llvm_zero_int);
 }
 
 Value Value::of_recover(const Type* type) {

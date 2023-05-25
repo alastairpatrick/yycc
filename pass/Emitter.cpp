@@ -1352,7 +1352,7 @@ struct Emitter: Visitor, ValueResolver {
     }
 
     ExprValue convert_array_to_pointer(ExprValue value) {
-        auto zero = TranslationUnitContext::it->zero_size;
+        auto zero = TranslationUnitContext::it->llvm_zero_size;
 
         if (auto array_type = unqualified_type_cast<ArrayType>(value.type)) {
             auto result_type = array_type->element_type->pointer_to();
@@ -1788,13 +1788,13 @@ struct Emitter: Visitor, ValueResolver {
     }
 
     virtual VisitExpressionOutput visit(SizeOfExpr* expr) override {
-        auto zero = TranslationUnitContext::it->zero_size;
+        auto context = TranslationUnitContext::it;
         auto llvm_target_data = TranslationUnitContext::it->llvm_target_data;
 
         auto result_type = IntegerType::of_size(IntegerSignedness::UNSIGNED);
 
         if (expr->type->partition() == TypePartition::INCOMPLETE) {
-            return VisitExpressionOutput(result_type, zero);
+            return VisitExpressionOutput(result_type, context->llvm_zero_size);
         }
 
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
@@ -1803,7 +1803,7 @@ struct Emitter: Visitor, ValueResolver {
     }
 
     virtual VisitExpressionOutput visit(SubscriptExpr* expr) override {
-        auto zero = TranslationUnitContext::it->zero_size;
+        auto context = TranslationUnitContext::it;
 
         auto left_value = emit_expr(expr->left).unqualified();
         auto index_value = emit_expr(expr->right).unqualified();
@@ -1828,7 +1828,7 @@ struct Emitter: Visitor, ValueResolver {
             auto result_type = array_type->element_type;
             if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-            LLVMValueRef indices[2] = { zero, get_value(index_value) };
+            LLVMValueRef indices[2] = { context->llvm_zero_size, get_value(index_value) };
 
             return VisitExpressionOutput(Value(
                 ValueKind::LVALUE,

@@ -35,8 +35,8 @@ struct TranslationUnitContext {
     LLVMTypeRef llvm_pointer_type;
     LLVMTypeRef llvm_void_type;
 
-    LLVMValueRef zero_size{};
-    LLVMValueRef zero_int{};
+    LLVMValueRef llvm_zero_size{};
+    LLVMValueRef llvm_zero_int{};
     LLVMValueRef llvm_false{};
     LLVMValueRef llvm_true{};
     LLVMValueRef llvm_null{};

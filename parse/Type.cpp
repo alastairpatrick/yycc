@@ -681,7 +681,7 @@ LLVMTypeRef StructuredType::build_llvm_struct_type(const vector<LLVMValueRef>& g
                         bits_to_left -= bit_size;
 
                         member_variable->member->gep_indices.push_back(Value::of_int(gep_index_type, aggregate_index - 1).get_const());
-                        if (is_union) member_variable->member->gep_indices.push_back(context->zero_int);
+                        if (is_union) member_variable->member->gep_indices.push_back(context->llvm_zero_int);
 
                         continue;
                     }
@@ -705,7 +705,7 @@ LLVMTypeRef StructuredType::build_llvm_struct_type(const vector<LLVMValueRef>& g
             }
 
             member_variable->member->gep_indices.push_back(Value::of_int(gep_index_type, aggregate_index).get_const());
-            if (is_union) member_variable->member->gep_indices.push_back(context->zero_int);
+            if (is_union) member_variable->member->gep_indices.push_back(context->llvm_zero_int);
             ++aggregate_index;
             
             // Anonymous struct or union?
@@ -759,7 +759,7 @@ LLVMTypeRef StructuredType::cache_llvm_type() const {
     if (tag && !tag->identifier->empty()) name = tag->identifier->data();
     if (!name) name = "anon";
 
-    return build_llvm_struct_type({TranslationUnitContext::it->zero_int}, name);
+    return build_llvm_struct_type({TranslationUnitContext::it->llvm_zero_int}, name);
 }
 
 
