@@ -87,6 +87,9 @@ struct Emitter: Visitor, ValueResolver {
     unordered_map<const StructuredType*, TypedFunctionRef> destructor_wrappers;
     LLVMBasicBlockRef last_unreachable_block{};
 
+    LLVMValueRef last_throw_branch{};
+    LLVMValueRef last_throw_exception{};
+
     Emitter(Module* module, EmitOutcome outcome, const EmitOptions& options)
         : module(module), outcome(outcome), options(options) {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
@@ -462,15 +465,59 @@ struct Emitter: Visitor, ValueResolver {
     LLVMValueRef convert_to_rvalue(Expr* expr, const Type* dest_type, ConvKind kind) {
         return get_value(convert_to_type(expr, dest_type, kind));
     }
+    
+    int count_block_instructions(LLVMBasicBlockRef block) {
+        int num = 0;
+        for (auto instruction = LLVMGetFirstInstruction(block); instruction; instruction = LLVMGetNextInstruction(instruction)) {
+            ++num;
+        }
+        return num;
+    }
+
+    LLVMValueRef optimize_immediate_return_of_throwing_call_expr(const Type* return_type) {
+        auto context = TranslationUnitContext::it;
+
+        if (!last_throw_branch) return context->llvm_null;
+
+        //   br i1 %2, label %4, label %8           <-- last_throw_branch
+        // 4:                                       <-- no_exception_block
+        //   %5 = extractvalue { ptr, i32 } %1, 1   <-- only if non-void return type
+        //                                          <-- next instruction
+        auto current_block = LLVMGetInsertBlock(builder);
+        assert(LLVMGetInstructionOpcode(last_throw_branch) == LLVMBr);
+        auto no_exception_block = LLVMGetSuccessor(last_throw_branch, 0);
+        if (no_exception_block != current_block) return context->llvm_null;
+
+        auto actual_instructions = count_block_instructions(current_block);
+        auto expected_instructions = return_type == &VoidType::it ? 0 : 1;
+        if (actual_instructions != expected_instructions) return context->llvm_null;
+
+
+        //   br i1 true, label %4, label %4
+        // 4:
+        //   %5 = extractvalue { ptr, i32 } %1, 1
+        //   ...                                    <-- call pending destructors
+
+        LLVMSetCondition(last_throw_branch, context->llvm_true);
+        return last_throw_exception;
+    }
 
     void emit_function_definition(Declarator* declarator, Function* entity) {
         function_declarator = declarator;
+
         function_type = unqualified_type_cast<FunctionType>(declarator->primary->type);
+        auto return_type = function_type->return_type->unqualified();
+        auto throw_type = unqualified_type_cast<ThrowType>(return_type);
+        if (throw_type) {
+            return_type = throw_type->base_type->unqualified();
+        }
+
         function = get_address(entity->value);
 
         entry_block = append_block();
         LLVMPositionBuilderAtEnd(builder, entry_block);
 
+        LLVMValueRef exception{};
         {
             EmitterScope scope(this);
 
@@ -501,6 +548,7 @@ struct Emitter: Visitor, ValueResolver {
             }
 
             accept_statement(entity->body);
+            exception = optimize_immediate_return_of_throwing_call_expr(return_type);
         }
 
         if (last_unreachable_block == LLVMGetInsertBlock(builder)) {
@@ -510,10 +558,20 @@ struct Emitter: Visitor, ValueResolver {
                 LLVMDeleteBasicBlock(last_unreachable_block);
             }
         } else {
-            if (function_type->return_type->unqualified() == &VoidType::it) {
+
+            if (!throw_type && return_type == &VoidType::it) {
                 LLVMBuildRetVoid(builder);
             } else {
-                LLVMBuildRet(builder, LLVMConstNull(function_type->return_type->llvm_type()));
+                LLVMValueRef return_value = LLVMConstNull(function_type->return_type->llvm_type());
+                if (throw_type) {
+                    if (return_type == &VoidType::it) {
+                        return_value = exception;
+                    } else {
+                        return_value = LLVMBuildInsertValue(builder, return_value, exception, 0, "");
+                    }
+                }
+
+                LLVMBuildRet(builder, return_value);
             }
         }
 
@@ -833,9 +891,10 @@ struct Emitter: Visitor, ValueResolver {
             return_type = throw_type->base_type; // todo ->unqualified();
         }
 
+        LLVMValueRef exception{};
         LLVMValueRef return_value{};
 
-        if (return_type->unqualified() == &VoidType::it) {
+        if (return_type == &VoidType::it) {
             if (statement->expr) {
                 auto type = get_expr_type(statement->expr);
                 if (type->unqualified() != &VoidType::it) {
@@ -844,6 +903,7 @@ struct Emitter: Visitor, ValueResolver {
                 }
             }
 
+            exception = optimize_immediate_return_of_throwing_call_expr(return_type);
             call_pending_destructors_at_all_scopes();
         } else {
             if (statement->expr) {
@@ -860,6 +920,7 @@ struct Emitter: Visitor, ValueResolver {
                 return_value = LLVMConstNull(return_type->llvm_type());
             }
 
+            exception = optimize_immediate_return_of_throwing_call_expr(return_type);
             call_pending_destructors_at_all_scopes();
         }
 
@@ -869,9 +930,9 @@ struct Emitter: Visitor, ValueResolver {
             if (throw_type) {
                 if (return_value) {
                     return_value = LLVMBuildInsertValue(builder, LLVMGetUndef(throw_type->llvm_type()), return_value, 1, "");
-                    return_value = LLVMBuildInsertValue(builder, return_value, context->llvm_null, 0, "");
+                    return_value = LLVMBuildInsertValue(builder, return_value, exception, 0, "");
                 } else {
-                    return_value = context->llvm_null;
+                    return_value = exception;
                 }
             }
 
@@ -1460,7 +1521,14 @@ struct Emitter: Visitor, ValueResolver {
 
                 auto phi = emit_throw(innermost_scope, expr->location);
 
-                LLVMBuildCondBr(builder, compare, no_exception_block, LLVMGetInstructionParent(phi));
+                last_throw_branch = LLVMBuildCondBr(builder, compare, no_exception_block, LLVMGetInstructionParent(phi));
+                last_throw_exception = exception;
+
+                for (auto scope = innermost_scope; scope; scope = scope->parent_scope) {
+                    if (dynamic_cast<TryConstruct*>(scope)) {
+                        last_throw_branch = nullptr;
+                    }
+                }
 
                 auto current_block = LLVMGetInsertBlock(builder);
                 LLVMAddIncoming(phi, &exception, &current_block, 1);
