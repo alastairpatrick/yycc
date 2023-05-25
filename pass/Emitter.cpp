@@ -502,6 +502,33 @@ struct Emitter: Visitor, ValueResolver {
         return last_throw_exception;
     }
 
+    void emit_return(LLVMValueRef return_value, LLVMValueRef exception) {
+        auto return_type = function_type->return_type->unqualified();
+        auto throw_type = unqualified_type_cast<ThrowType>(return_type);
+        if (throw_type) {
+            return_type = throw_type->base_type->unqualified();
+        }
+
+        if (!return_value && return_type != &VoidType::it) {
+            return_value = LLVMConstNull(return_type->llvm_type());
+        }
+
+        if (!throw_type && return_type == &VoidType::it) {
+            LLVMBuildRetVoid(builder);
+        } else {
+            if (throw_type) {
+                if (return_type != &VoidType::it) {
+                    return_value = LLVMBuildInsertValue(builder, LLVMGetUndef(throw_type->llvm_type()), return_value, 1, "");
+                    return_value = LLVMBuildInsertValue(builder, return_value, exception, 0, "");
+                } else {
+                    return_value = exception;
+                }
+            }
+
+            LLVMBuildRet(builder, return_value);
+        }
+    }
+
     void emit_function_definition(Declarator* declarator, Function* entity) {
         function_declarator = declarator;
 
@@ -558,21 +585,7 @@ struct Emitter: Visitor, ValueResolver {
                 LLVMDeleteBasicBlock(last_unreachable_block);
             }
         } else {
-
-            if (!throw_type && return_type == &VoidType::it) {
-                LLVMBuildRetVoid(builder);
-            } else {
-                LLVMValueRef return_value = LLVMConstNull(function_type->return_type->llvm_type());
-                if (throw_type) {
-                    if (return_type == &VoidType::it) {
-                        return_value = exception;
-                    } else {
-                        return_value = LLVMBuildInsertValue(builder, return_value, exception, 0, "");
-                    }
-                }
-
-                LLVMBuildRet(builder, return_value);
-            }
+            emit_return(nullptr, exception);
         }
 
         function = nullptr;
@@ -924,20 +937,7 @@ struct Emitter: Visitor, ValueResolver {
             call_pending_destructors_at_all_scopes();
         }
 
-        if (!throw_type && !return_value) {
-            LLVMBuildRetVoid(builder);
-        } else {
-            if (throw_type) {
-                if (return_value) {
-                    return_value = LLVMBuildInsertValue(builder, LLVMGetUndef(throw_type->llvm_type()), return_value, 1, "");
-                    return_value = LLVMBuildInsertValue(builder, return_value, exception, 0, "");
-                } else {
-                    return_value = exception;
-                }
-            }
-
-            LLVMBuildRet(builder, return_value);
-        }
+        emit_return(return_value, exception);
 
         LLVMPositionBuilderAtEnd(builder, append_unreachable_block());
 
