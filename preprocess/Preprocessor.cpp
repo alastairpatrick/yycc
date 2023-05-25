@@ -50,8 +50,9 @@ TokenKind Preprocessor::next_token() {
           } case '\n': {
               continue;
           } case '#': {
+              Location pound_location = lexer.location();
               next_pp_token();
-              if (!handle_directive()) return token;
+              if (!handle_directive(pound_location)) return token;
               continue;
           } case TOK_PP_UNRECOGNIZED: {
               message(Severity::ERROR, location()) << "unexpected character '" << lexer.text() << "'\n";
@@ -68,6 +69,11 @@ TokenKind Preprocessor::next_token() {
 TokenKind Preprocessor::next_pp_token() {
     for (;;) {
         token = lexer.next_token();
+
+        if (pass_through_directive) {
+            commit_token();
+        }
+
         if (token != TOK_EOF || include_stack.empty()) break;
 
         lexer.pop_matcher();
@@ -102,7 +108,14 @@ TokenKind Preprocessor::next_pp_token() {
     return token;
 }
 
-bool Preprocessor::handle_directive() {
+void Preprocessor::begin_pass_through_directive(const Location& pound_location) {
+    text_stream.locate(pound_location);
+    text_stream.write("#");
+    commit_token();
+    pass_through_directive = true;
+}
+
+bool Preprocessor::handle_directive(const Location& pound_location) {
     switch (token) {
       case TOK_PP_INCLUDE:
         handle_include_directive();
@@ -111,30 +124,31 @@ bool Preprocessor::handle_directive() {
         handle_line_directive();
         break;
       case TOK_PP_NAMESPACE:
+        begin_pass_through_directive(pound_location);
         handle_namespace_directive();
         break;
       case TOK_PP_USING:
+        begin_pass_through_directive(pound_location);
         handle_using_directive();
+        break;
+      case TOK_PP_ERROR:
+        begin_pass_through_directive(pound_location);
+        handle_error_directive();
+        break;
+      case TOK_PP_PRAGMA:
+        begin_pass_through_directive(pound_location);
+        handle_pragma_directive(); 
+        break;
+      case TOK_PP_ENUM: 
+      case TOK_PP_FUNC:
+      case TOK_PP_TYPE:
+      case TOK_PP_VAR:
+        if (!preparse) return false;
         break;
     }
 
-    if (!preparse) {
-      switch (token) {
-        case TOK_PP_ERROR:
-          handle_error_directive();
-          break;
-        case TOK_PP_PRAGMA:
-          handle_pragma_directive(); 
-          break;
-        case TOK_PP_ENUM: 
-        case TOK_PP_FUNC:
-        case TOK_PP_TYPE:
-        case TOK_PP_VAR:
-          return false;
-      }
-    }
-
     require_eol();
+    pass_through_directive = false;
     return true;
 }
 

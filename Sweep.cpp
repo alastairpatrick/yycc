@@ -53,13 +53,14 @@ void output_declaration_directives(TextStream& stream, Scope* scope) {
 }
 
 void sweep(ostream& stream, const File& file) {
-    Preprocessor preprocessor1(file.text, true);
+    Preprocessor preprocessor(file.text, true);
 
     IdentifierMap identifiers;
-    Parser parser(preprocessor1, identifiers);
+    Parser parser(preprocessor, identifiers);
     auto declarations = parser.parse();
 
-    Preprocessor preprocessor2(preprocessor1.output(), false);
+    PPTokenLexer lexer;
+    lexer.buffer(preprocessor.output());
     
     TextStream text_stream(stream);
 
@@ -68,15 +69,15 @@ void sweep(ostream& stream, const File& file) {
     auto& oi_scopes = parser.order_independent_scopes;
     auto oi_scope_it = oi_scopes.begin();
 
-    for (auto token = preprocessor2.next_token(); token; token = preprocessor2.next_token()) {
-        while (oi_scope_it != oi_scopes.end() && oi_scope_it->position == preprocessor2.position) {
+    for (auto token = lexer.next_token(); token; token = lexer.next_token()) {
+        while (oi_scope_it != oi_scopes.end() && oi_scope_it->position == lexer.position()) {
             output_declaration_directives(text_stream, oi_scope_it->scope);
             ++oi_scope_it;
         }
 
         if (token != '\n') {
-            text_stream.locate(preprocessor2.location());
-            text_stream.write(preprocessor2.text());
+            text_stream.locate(lexer.location());
+            text_stream.write(lexer.text());
         }
     }
 

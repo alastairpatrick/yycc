@@ -84,3 +84,42 @@ union{
 #line 1 7
 int x;};
 END
+
+
+BEGIN Using directives are passed through
+#using std::sort
+EXPECT_TEXT
+#using std::sort
+END
+
+
+BEGIN Namespace directives are passed through
+#namespace X::Y
+EXPECT_TEXT
+#namespace X::Y
+END
+
+
+BEGIN Pragma directives are passed through
+#pragma foo
+EXPECT_TEXT
+#pragma foo
+END
+
+
+BEGIN Error directives are passed through
+#error foo
+EXPECT_TEXT
+#error foo
+EXPECT_MESSAGE
+:1:2: error foo
+END
+
+
+BEGIN Passed through directive '#' token is at right location
+
+#using std::sort
+EXPECT_TEXT
+
+#using std::sort
+END

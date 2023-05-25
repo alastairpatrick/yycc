@@ -48,12 +48,12 @@ struct Preprocessor {
 
 private:
     void commit_token();
-    bool handle_directive();
+    void begin_pass_through_directive(const Location& pound_location);
+    bool handle_directive(const Location& pound_location);
     void handle_line_directive();
     void handle_error_directive();
     void handle_include_directive();
     void handle_pragma_directive();
-    void handle_type_directive();
 
     void reset_namespace();
     void add_keyword(string_view id);
@@ -68,6 +68,7 @@ private:
     size_t pending_line{};
     size_t pending_column{};
 
+    bool pass_through_directive{};
     TextStream text_stream;
     strstream string_stream;
 };
