@@ -991,3 +991,36 @@ define void @f(ptr nocapture %0) {
   ret void
 }
 END
+
+
+BEGIN Local reference variable
+int f(int x) {
+    int r& = x;
+    return r;
+}
+EXPECT_IR
+define i32 @f(i32 %0) {
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %2 = load i32, ptr %x, align 4
+  ret i32 %2
+}
+END
+
+
+BEGIN Local reference variable without initializer
+void f() {
+    int r&;
+}
+EXPECT_MESSAGE
+:2:9: error variable 'r' of reference type 'int&' must have initializer
+END
+
+
+BEGIN Local reference variable with initializer that does not yield lvalue
+void f() {
+    int r& = 2;
+}
+EXPECT_MESSAGE
+:2:9: error variable 'r' of reference type 'int&' was not initialized with an lvalue
+END

@@ -375,8 +375,8 @@ const Type* PassByReferenceType::accept(TypeVisitor& visitor) const {
 }
 
 LLVMTypeRef PassByReferenceType::cache_llvm_type() const {
-    auto llvm_context = TranslationUnitContext::it->llvm_context;
-    return LLVMPointerTypeInContext(llvm_context, 0);
+    auto context = TranslationUnitContext::it;
+    return context->llvm_pointer_type;
 }
 
 void PassByReferenceType::message_print(ostream& stream, int section) const {

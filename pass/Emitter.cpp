@@ -668,26 +668,52 @@ struct Emitter: Visitor, ValueResolver {
             return emit_scalar_initializer(dest_type, initializer);
         }
 
-        return convert_to_type(emit_expr(expr, emit_flags), dest_type, ConvKind::IMPLICIT);
+        return convert_to_type(emit_expr(expr, emit_flags).unqualified(), dest_type, ConvKind::IMPLICIT);
     }
 
     void emit_variable(Declarator* declarator, Variable* entity) {
         auto type = declarator->primary->type;
+        auto reference_type = unqualified_type_cast<PassByReferenceType>(type->unqualified());
+        if (reference_type) {
+            type = reference_type->base_type;
+        }
 
         if (entity->storage_duration == StorageDuration::AUTO) {
-            entity->value = allocate_auto_storage(type, c_str(declarator->identifier));
+            auto structured_type = unqualified_type_cast<StructuredType>(type->unqualified());
 
-            bool has_destructor = pend_destructor(entity->value);
-
+            Value initial_value;
             if (entity->initializer) {
                 EmitterScope scope(this);
-                auto initial_value =  emit_initializer(type, entity->initializer, { .pend_temporary_destructor = false });
-                auto llvm_initail = get_value(initial_value);
-                if (!LLVMIsUndef(llvm_initail)) {
-                    entity->value.dangerously_store(builder, llvm_initail);
+                initial_value =  emit_initializer(type, entity->initializer, { .pend_temporary_destructor = false });
+            } else if (options.initialize_variables || (structured_type && structured_type->destructor)) {
+                initial_value = Value(type, default_value(type));
+            }
+
+            if (reference_type && !entity->initializer) {
+                message(Severity::ERROR, declarator->location) << declarator->message_kind() << " '" << *declarator->identifier
+                                                               << "' of reference type '" << PrintType(reference_type) << "' must have initializer\n";
+                reference_type = nullptr;
+            }
+
+            if (reference_type && initial_value.kind != ValueKind::LVALUE) {
+                message(Severity::ERROR, declarator->location) << declarator->message_kind() << " '" << *declarator->identifier
+                                                               << "' of reference type '" << PrintType(reference_type) << "' was not initialized with an lvalue\n";
+                reference_type = nullptr;
+            }
+
+            if (reference_type) {
+                entity->value = initial_value;
+            } else {
+                entity->value = allocate_auto_storage(type, c_str(declarator->identifier));
+                
+                if (initial_value.is_valid()) {
+                    auto llvm_initial = initial_value.dangerously_get_value(builder, outcome);
+                    if (!LLVMIsUndef(llvm_initial)) {
+                        entity->value.dangerously_store(builder, llvm_initial);
+                    }
                 }
-            } else if (options.initialize_variables || has_destructor) {
-                entity->value.dangerously_store(builder, default_value(type));
+
+                pend_destructor(entity->value);
             }
 
         } else if (entity->storage_duration == StorageDuration::STATIC) {

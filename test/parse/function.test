@@ -147,15 +147,7 @@ EXPECT_AST
 BEGIN Function return type may not be pass-by-reference
 void foo(int x)&;
 EXPECT_MESSAGE
-:1:16: error pass-by-reference '&' only valid on function parameters
-EXPECT_AST
-[["fun","E",["F","V","Si"],"foo"]]
-
-
-BEGIN Function may not be pass-by-reference
-void foo&(int x);
-EXPECT_MESSAGE
-:1:9: error pass-by-reference '&' only valid on function parameters
+:1:16: error pass-by-reference '&' at invalid position
 EXPECT_AST
 [["fun","E",["F","V","Si"],"foo"]]
 

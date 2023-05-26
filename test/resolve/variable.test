@@ -104,3 +104,13 @@ EXPECT_MESSAGE
 :1:12: ... see other
 END
 
+
+BEGIN Global reference variable
+const int x = 1;
+const int y& = x;
+int f() {
+    return y;
+}
+EXPECT_MESSAGE
+:2:11: error variable 'y' cannot have reference type 'int const&'
+END
