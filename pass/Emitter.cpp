@@ -561,10 +561,10 @@ struct Emitter: Visitor, ValueResolver {
 
                 auto llvm_param = LLVMGetParam(function, i);
 
-                if (auto reference_type = dynamic_cast<const PassByReferenceType*>(param->type)) {
+                if (auto reference_type = dynamic_cast<const ReferenceType*>(param->type)) {
                     param_entity->value = Value(ValueKind::LVALUE, QualifiedType::of(reference_type->base_type, QUALIFIER_TRANSITORY), llvm_param);
 
-                    if (reference_type->kind == PassByReferenceType::Kind::RVALUE) {
+                    if (reference_type->kind == ReferenceType::Kind::RVALUE) {
                         pend_destructor(param_entity->value);
                     }
                 } else {
@@ -673,7 +673,7 @@ struct Emitter: Visitor, ValueResolver {
 
     void emit_variable(Declarator* declarator, Variable* entity) {
         auto type = declarator->primary->type;
-        auto reference_type = unqualified_type_cast<PassByReferenceType>(type->unqualified());
+        auto reference_type = unqualified_type_cast<ReferenceType>(type->unqualified());
         if (reference_type) {
             type = reference_type->base_type;
         }
@@ -755,7 +755,7 @@ struct Emitter: Visitor, ValueResolver {
 
             auto unqualified_param_type = param->type->unqualified();
 
-            if (auto reference_type = unqualified_type_cast<PassByReferenceType>(unqualified_param_type)) {
+            if (auto reference_type = unqualified_type_cast<ReferenceType>(unqualified_param_type)) {
                 LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nocapture_attribute());
             }
 
@@ -1497,8 +1497,8 @@ struct Emitter: Visitor, ValueResolver {
                 ExprValue param_value;
                 auto expected_type = function_type->parameter_types[i];
 
-                const PassByReferenceType* pass_by_ref_type{};
-                if (pass_by_ref_type = unqualified_type_cast<PassByReferenceType>(expected_type)) {
+                const ReferenceType* pass_by_ref_type{};
+                if (pass_by_ref_type = unqualified_type_cast<ReferenceType>(expected_type)) {
                     expected_type = pass_by_ref_type->base_type;
                 }
 
@@ -1512,7 +1512,7 @@ struct Emitter: Visitor, ValueResolver {
                 auto param_location = param_value.node->location;
 
                 if (pass_by_ref_type) {
-                    if (param_value.kind == ValueKind::RVALUE && (pass_by_ref_type->kind == PassByReferenceType::Kind::RVALUE || expected_type->qualifiers() & QUALIFIER_CONST || (member_expr && i == 0))) {
+                    if (param_value.kind == ValueKind::RVALUE && (pass_by_ref_type->kind == ReferenceType::Kind::RVALUE || expected_type->qualifiers() & QUALIFIER_CONST || (member_expr && i == 0))) {
                         param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT);
                         make_addressable(param_value);
                         llvm_params[i] = get_address(param_value);
@@ -1521,7 +1521,7 @@ struct Emitter: Visitor, ValueResolver {
                                                                  << PrintType(function_type->parameter_types[i]) << "'\n";
                         llvm_params[i] = LLVMConstNull(pass_by_ref_type->llvm_type());
                     } else {
-                        if (pass_by_ref_type->kind == PassByReferenceType::Kind::RVALUE && param_value.kind == ValueKind::LVALUE) {
+                        if (pass_by_ref_type->kind == ReferenceType::Kind::RVALUE && param_value.kind == ValueKind::LVALUE) {
                             message(Severity::ERROR, param_location) << "cannot pass lvalue to rvalue reference parameter type '"
                                                                      << PrintType(function_type->parameter_types[i]) << "'; consider '&&' move expression\n";
                         } else if (param_value.type->unqualified() != expected_type->unqualified()) {

@@ -793,11 +793,11 @@ DeclaratorTransform Parser::parse_declarator_transform(ParseDeclaratorFlags flag
     bool is_reference_type{};
 
     if (token == '&' || token == TOK_AND_OP) {
-        PassByReferenceType::Kind kind = token == '&' ? PassByReferenceType::Kind::LVALUE : PassByReferenceType::Kind::RVALUE;
+        ReferenceType::Kind kind = token == '&' ? ReferenceType::Kind::LVALUE : ReferenceType::Kind::RVALUE;
 
         left_transform = [left_transform, kind](const Type* type) {
             if (left_transform) type = left_transform(type);
-            return PassByReferenceType::of(type, kind);
+            return ReferenceType::of(type, kind);
         };
 
         is_reference_type = true;

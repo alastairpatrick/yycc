@@ -20,14 +20,14 @@ const PointerType* TypeContext::get_pointer_type(const Type* base_type) {
     return derived.pointer.get();
 }
 
-const PassByReferenceType* TypeContext::get_pass_by_reference_type(const Type* base_type, PassByReferenceType::Kind kind) {
+const ReferenceType* TypeContext::get_pass_by_reference_type(const Type* base_type, ReferenceType::Kind kind) {
     auto& derived = derived_types[base_type];
     switch (kind) {
-      case PassByReferenceType::Kind::LVALUE:
-        if (!derived.pass_by_lvalue_reference) derived.pass_by_lvalue_reference.reset(new PassByReferenceType(base_type, kind));
+      case ReferenceType::Kind::LVALUE:
+        if (!derived.pass_by_lvalue_reference) derived.pass_by_lvalue_reference.reset(new ReferenceType(base_type, kind));
         return derived.pass_by_lvalue_reference.get();
-      case PassByReferenceType::Kind::RVALUE:
-        if (!derived.pass_by_rvalue_reference) derived.pass_by_rvalue_reference.reset(new PassByReferenceType(base_type, kind));
+      case ReferenceType::Kind::RVALUE:
+        if (!derived.pass_by_rvalue_reference) derived.pass_by_rvalue_reference.reset(new ReferenceType(base_type, kind));
         return derived.pass_by_rvalue_reference.get();
     }
 }

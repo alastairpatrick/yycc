@@ -365,21 +365,21 @@ PointerType::PointerType(const Type* base_type)
 }
 
 
-const PassByReferenceType* PassByReferenceType::of(const Type* base_type, Kind kind) {
+const ReferenceType* ReferenceType::of(const Type* base_type, Kind kind) {
     auto& type_context = TranslationUnitContext::it->type;
     return type_context.get_pass_by_reference_type(base_type, kind);
 }
 
-const Type* PassByReferenceType::accept(TypeVisitor& visitor) const {
+const Type* ReferenceType::accept(TypeVisitor& visitor) const {
     return visitor.visit(this);
 }
 
-LLVMTypeRef PassByReferenceType::cache_llvm_type() const {
+LLVMTypeRef ReferenceType::cache_llvm_type() const {
     auto context = TranslationUnitContext::it;
     return context->llvm_pointer_type;
 }
 
-void PassByReferenceType::message_print(ostream& stream, int section) const {
+void ReferenceType::message_print(ostream& stream, int section) const {
     bool need_paren = dynamic_cast<const ArrayType*>(base_type) || dynamic_cast<const FunctionType*>(base_type);
 
     if (section == 2) {
@@ -393,7 +393,7 @@ void PassByReferenceType::message_print(ostream& stream, int section) const {
             stream << '(';
         }
         
-        if (kind == PassByReferenceType::Kind::LVALUE) {
+        if (kind == ReferenceType::Kind::LVALUE) {
             stream << '&';
         } else {
             stream << "&&";
@@ -401,7 +401,7 @@ void PassByReferenceType::message_print(ostream& stream, int section) const {
     }
 }
 
-void PassByReferenceType::print(std::ostream& stream) const {
+void ReferenceType::print(std::ostream& stream) const {
     stream << "[\"B";
     
     if (kind == Kind::LVALUE) {
@@ -413,7 +413,7 @@ void PassByReferenceType::print(std::ostream& stream) const {
     stream << "\", " << base_type << ']';
 }
 
-PassByReferenceType::PassByReferenceType(const Type* base_type, Kind kind)
+ReferenceType::ReferenceType(const Type* base_type, Kind kind)
     : base_type(base_type), kind(kind) {
 }
 

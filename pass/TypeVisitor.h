@@ -11,7 +11,7 @@ struct TypeVisitor {
     virtual const Type* visit(const IntegerType* type) { return type; }
     virtual const Type* visit(const NestedType* type) { return type; }
     virtual const Type* visit(const PointerType* type) { return type; }
-    virtual const Type* visit(const PassByReferenceType* type) { return type; }
+    virtual const Type* visit(const ReferenceType* type) { return type; }
     virtual const Type* visit(const QualifiedType* type) { return type; }
     virtual const Type* visit(const ResolvedArrayType* type) { return type; }
     virtual const Type* visit(const StructType* type) { return type; }

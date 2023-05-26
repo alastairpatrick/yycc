@@ -69,7 +69,7 @@ void Module::entity_pass() {
         if (scope->type) {
             if (auto destructor = scope->lookup_member(destructor_id)) {
                 if (auto function = destructor->function()) {
-                    if (function->parameters.size() == 1 && function->parameters[0]->type->unqualified() == PassByReferenceType::of(scope->type, PassByReferenceType::Kind::LVALUE)) {
+                    if (function->parameters.size() == 1 && function->parameters[0]->type->unqualified() == ReferenceType::of(scope->type, ReferenceType::Kind::LVALUE)) {
                         scope->type->destructor = destructor;
                     }
                 }

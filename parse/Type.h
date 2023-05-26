@@ -148,7 +148,7 @@ private:
     virtual LLVMTypeRef cache_llvm_type() const override;
 };
 
-struct PassByReferenceType: CachedType {
+struct ReferenceType: CachedType {
     enum class Kind {
         LVALUE,
         RVALUE,
@@ -157,14 +157,14 @@ struct PassByReferenceType: CachedType {
     const Type* const base_type;
     const Kind kind;
 
-    static const PassByReferenceType* of(const Type* base_type, Kind kind);
+    static const ReferenceType* of(const Type* base_type, Kind kind);
     virtual const Type* accept(TypeVisitor& visitor) const override;
     virtual void message_print(ostream& stream, int section) const override;
     virtual void print(std::ostream& stream) const override;
 
 private:
     friend class TypeContext;
-    explicit PassByReferenceType(const Type* base_type, Kind kind);
+    explicit ReferenceType(const Type* base_type, Kind kind);
     virtual LLVMTypeRef cache_llvm_type() const override;
 };
 
