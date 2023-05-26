@@ -137,10 +137,12 @@ struct Emitter: Visitor, ValueResolver {
 
     void store(Value dest, LLVMValueRef source_rvalue, const Location& assignment_location) {
         if (outcome == EmitOutcome::IR) {
-            if (dest.kind == ValueKind::LVALUE) {
-                dest.dangerously_store(builder, source_rvalue);
-            } else {
+            if (dest.type->qualifiers() & QUALIFIER_CONST) {
+                message(Severity::ERROR, assignment_location) << "cannot assign to lvalue with const qualified type '" << PrintType(dest.type) << "'\n";
+            } else if (dest.kind != ValueKind::LVALUE) {
                 message(Severity::ERROR, assignment_location) << "expression is not assignable\n";
+            } else {
+                dest.dangerously_store(builder, source_rvalue);
             }
         } else {
             message(Severity::ERROR, assignment_location) << "assignment in constant expression\n";
@@ -679,10 +681,10 @@ struct Emitter: Visitor, ValueResolver {
                 EmitterScope scope(this);
                 auto initial =  emit_initializer(type, entity->initializer, { .pend_temporary_destructor = false });
                 if (!LLVMIsUndef(initial)) {
-                    store(entity->value, initial, declarator->location);
+                    entity->value.dangerously_store(builder, initial);
                 }
             } else if (options.initialize_variables || has_destructor) {
-                store(entity->value, Value::of_null(type).get_const(), declarator->location);
+                entity->value.dangerously_store(builder, Value::of_null(type).get_const());
             }
 
         } else if (entity->storage_duration == StorageDuration::STATIC) {

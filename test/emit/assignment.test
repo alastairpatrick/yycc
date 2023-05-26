@@ -74,6 +74,54 @@ define void @g() {
 END
 
 
+BEGIN Cannot assign to const variable
+void f() {
+    const int x = 1;
+    x = 2;
+}
+EXPECT_MESSAGE
+:3:7: error cannot assign to lvalue with const qualified type 'int const'
+END
+
+
+BEGIN Cannot assign to const parameter
+void f(const int x) {
+    x = 2;
+}
+EXPECT_MESSAGE
+:2:7: error cannot assign to lvalue with const qualified type 'int const'
+END
+
+
+BEGIN Cannot assign to const lvalue-reference parameter
+void f(const int x&) {
+    x = 2;
+}
+EXPECT_MESSAGE
+:2:7: error cannot assign to lvalue with const qualified type 'int const std::transitory'
+END
+
+
+BEGIN Cannot assign to const rvalue-reference parameter
+void f(const int x&&) {
+    x = 2;
+}
+EXPECT_MESSAGE
+:2:7: error cannot assign to lvalue with const qualified type 'int const std::transitory'
+END
+
+
+BEGIN Cannot assign to const lvalue
+void f() {
+    const int x = 1;
+    const int *p = &x;
+    *p = 2;
+}
+EXPECT_MESSAGE
+:4:8: error cannot assign to lvalue with const qualified type 'int const'
+END
+
+
 REM ******** Integer ********
 
 BEGIN Assign integer parameter value
