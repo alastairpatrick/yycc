@@ -148,7 +148,7 @@ struct S {
     int x;
     void destructor(S&);
 };
-void f(S s&&) {
+void f(S &&s) {
 }
 EXPECT_IR
 define void @f(ptr nocapture %0) local_unnamed_addr {
@@ -166,7 +166,7 @@ struct S {
     int x;
     void destructor(S&);
 };
-void f(S s&) {
+void f(S &s) {
 }
 EXPECT_IR
 ; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn

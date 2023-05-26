@@ -195,7 +195,7 @@ END
 
 
 BEGIN Load pass-by-reference parameter value
-int f(int x&) {
+int f(int &x) {
     return x;
 }
 EXPECT_IR
@@ -878,7 +878,7 @@ END
 BEGIN Load value of member variable from member function via "this" passed by reference
 struct S {
     int x;
-    int f(S this&) { return x; }
+    int f(S &this) { return x; }
 };
 EXPECT_IR
 %S = type { i32 }
@@ -894,8 +894,8 @@ END
 BEGIN Load value of member variable from two member functions via "this" passed by reference
 struct S {
     int x;
-    int f1(S this&) { return x; }
-    int f2(S this&) { return x; }
+    int f1(S &this) { return x; }
+    int f2(S &this) { return x; }
 };
 EXPECT_IR
 %S = type { i32 }
@@ -917,7 +917,7 @@ END
 BEGIN Store value of member variable from member function via "this" passed by reference
 struct S {
     int x;
-    void f(S this&) { x = 7; }
+    void f(S &this) { x = 7; }
 };
 EXPECT_IR
 %S = type { i32 }
@@ -934,7 +934,7 @@ BEGIN Member variables of outer type are not accessible to member function of ne
 struct S {
     int x;
     struct T {
-        int f(T this&) { return x; }
+        int f(T &this) { return x; }
     };
 };
 EXPECT_MESSAGE
@@ -964,7 +964,7 @@ END
 BEGIN Load value of member variable from member function via second parameter "this"
 struct S {
     int x;
-    int f(int z, S this&) { return x; }
+    int f(int z, S &this) { return x; }
 };
 EXPECT_IR
 %S = type { i32 }
@@ -995,7 +995,7 @@ END
 
 BEGIN Local reference variable
 int f(int x) {
-    int r& = x;
+    int &r = x;
     return r;
 }
 EXPECT_IR
@@ -1010,7 +1010,7 @@ END
 
 BEGIN Local reference variable without initializer
 void f() {
-    int r&;
+    int &r;
 }
 EXPECT_MESSAGE
 :2:9: error variable 'r' of reference type 'int&' must have initializer
@@ -1019,7 +1019,7 @@ END
 
 BEGIN Local reference variable with initializer that does not yield lvalue
 void f() {
-    int r& = 2;
+    int &r = 2;
 }
 EXPECT_MESSAGE
 :2:9: error variable 'r' of reference type 'int&' was not initialized with an lvalue

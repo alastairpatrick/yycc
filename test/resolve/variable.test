@@ -107,7 +107,7 @@ END
 
 BEGIN Global reference variable
 const int x = 1;
-const int y& = x;
+const int &y = x;
 int f() {
     return y;
 }

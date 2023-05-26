@@ -116,50 +116,48 @@ EXPECT_AST
 [["fun", "E", ["F", "V", "Si"], "foo"]]
 
 
-BEGIN Function with pass-by-reference parameter (1)
-void foo(int x&);
+BEGIN Function with reference parameter (1)
+void foo(int &x);
 EXPECT_AST
 [["fun","E",["F","V",["Bl","Si"]],"foo"]]
 
 
-BEGIN Function with pass-by-reference parameter (2)
-void foo(int (x)&);
+BEGIN Function with reference parameter (2)
+void foo(int &(x));
 EXPECT_AST
 [["fun","E",["F","V",["Bl","Si"]],"foo"]]
 
 
-BEGIN Pointer to pass-by-reference is invalid
-void foo(int (*x)&);
+BEGIN Pointer to reference is invalid
+void foo(int &*x);
 EXPECT_MESSAGE
-:1:18: error pass-by-reference '&' at invalid position
+:1:15: error expected ')' but got '*'
 EXPECT_AST
-[["fun","E",["F","V",["P","Si"]],"foo"]]
+[["fun","E",["F","V",["Bl","Si"]],"foo"]]
 
 
-BEGIN Array of pass-by-reference parameter is invalid
-void foo(int x[4]&);
+BEGIN Array of reference parameter is invalid
+void foo(int &x[4]);
 EXPECT_MESSAGE
-:1:18: error pass-by-reference '&' at invalid position
+:1:16: error expected ')' but got '['
 EXPECT_AST
-[["fun","E",["F","V",["A","Si",4]],"foo"]]
+[["fun","E",["F","V",["Bl","Si"]],"foo"]]
 
 
-BEGIN Function return type may not be pass-by-reference
-void foo(int x)&;
-EXPECT_MESSAGE
-:1:16: error pass-by-reference '&' at invalid position
+BEGIN Function return type may be reference
+int& foo();
 EXPECT_AST
-[["fun","E",["F","V","Si"],"foo"]]
+[["fun","E",["F",["Bl","Si"]],"foo"]]
 
 
-BEGIN Function with pass-by-rvalue-reference parameter (1)
-void foo(int x&&);
+BEGIN Function with rvalue reference parameter (1)
+void foo(int &&x);
 EXPECT_AST
 [["fun","E",["F","V",["Br","Si"]],"foo"]]
 
 
-BEGIN Function with pass-by-rvalue-reference parameter (2)
-void foo(int (x)&&);
+BEGIN Function with rvalue reference parameter (2)
+void foo(int &&(x));
 EXPECT_AST
 [["fun","E",["F","V",["Br","Si"]],"foo"]]
 
@@ -358,7 +356,6 @@ PREPARSE
 EXPECT_AST
 [["fun","E",["F","V","Si"],"foo",["x"],["block",[]]]
 ,["var","ES","NF","foo"]]
-
 
 
 BEGIN #func directive

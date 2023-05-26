@@ -400,7 +400,7 @@ END
 
 BEGIN Call member function (1)
 struct S {
-  int f(S this&) {
+  int f(S &this) {
     return 7;
   }
 };
@@ -425,7 +425,7 @@ END
 
 BEGIN Call member function (2)
 struct S {
-  int f(S this&) {
+  int f(S &this) {
     return 7;
   }
 };
@@ -449,7 +449,7 @@ END
 
 BEGIN Member function call receiver made addressable
 struct S {
-  S f(S this&) {
+  S f(S &this) {
     S s;
     return s;
   }

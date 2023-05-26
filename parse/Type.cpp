@@ -380,15 +380,25 @@ LLVMTypeRef PassByReferenceType::cache_llvm_type() const {
 }
 
 void PassByReferenceType::message_print(ostream& stream, int section) const {
+    bool need_paren = dynamic_cast<const ArrayType*>(base_type) || dynamic_cast<const FunctionType*>(base_type);
+
     if (section == 2) {
-        if (kind == Kind::LVALUE) {
+        if (need_paren) stream << ')';
+    }
+
+    base_type->message_print(stream, section);
+
+    if (section == 1) {
+        if (need_paren) {
+            stream << '(';
+        }
+        
+        if (kind == PassByReferenceType::Kind::LVALUE) {
             stream << '&';
         } else {
             stream << "&&";
         }
     }
-
-    base_type->message_print(stream, section);
 }
 
 void PassByReferenceType::print(std::ostream& stream) const {

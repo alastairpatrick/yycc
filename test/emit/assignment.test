@@ -94,7 +94,7 @@ END
 
 
 BEGIN Cannot assign to const lvalue-reference parameter
-void f(const int x&) {
+void f(const int &x) {
     x = 2;
 }
 EXPECT_MESSAGE
@@ -103,7 +103,7 @@ END
 
 
 BEGIN Cannot assign to const rvalue-reference parameter
-void f(const int x&&) {
+void f(const int &&x) {
     x = 2;
 }
 EXPECT_MESSAGE

@@ -790,6 +790,20 @@ DeclaratorTransform Parser::parse_declarator_transform(ParseDeclaratorFlags flag
         }
     }
 
+    bool is_reference_type{};
+
+    if (token == '&' || token == TOK_AND_OP) {
+        PassByReferenceType::Kind kind = token == '&' ? PassByReferenceType::Kind::LVALUE : PassByReferenceType::Kind::RVALUE;
+
+        left_transform = [left_transform, kind](const Type* type) {
+            if (left_transform) type = left_transform(type);
+            return PassByReferenceType::of(type, kind);
+        };
+
+        is_reference_type = true;
+        consume();
+    }
+        
     DeclaratorTransform declarator;
     if (consume('(')) {
         declarator = parse_declarator_transform(flags);
@@ -806,28 +820,11 @@ DeclaratorTransform Parser::parse_declarator_transform(ParseDeclaratorFlags flag
         }
     }
 
-    bool pass_by_reference_too_late(declarator.type_transform);
-
     function<const Type*(const Type*)> right_transform;
     for (int depth = 0; token; ++depth) {
         auto location = preprocessor.location();
 
-        if (token == '&' || token == TOK_AND_OP) {
-            PassByReferenceType::Kind kind = token == '&' ? PassByReferenceType::Kind::LVALUE : PassByReferenceType::Kind::RVALUE;
-
-            if (pass_by_reference_too_late) {
-                message(Severity::ERROR, location) << "pass-by-reference '" << preprocessor.text() << "' at invalid position\n";
-            } else {
-                right_transform = [right_transform, kind](const Type* type) {
-                    type = PassByReferenceType::of(type, kind);
-                    if (right_transform) type = right_transform(type);
-                    return type;
-                };
-            }
-
-            consume();
-
-        } else if (consume('[')) {
+        if (!is_reference_type && consume('[')) {
             // C99 6.7.5.3p7
             SpecifierSet array_qualifier_set{};
             if (depth == 0 && scope == ScopeKind::PROTOTYPE) {
@@ -911,8 +908,6 @@ DeclaratorTransform Parser::parse_declarator_transform(ParseDeclaratorFlags flag
         } else {
             break;
         }
-
-        pass_by_reference_too_late = true;
 
         location = preprocessor.location();
     }
