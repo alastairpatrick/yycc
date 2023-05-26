@@ -367,7 +367,7 @@ PointerType::PointerType(const Type* base_type)
 
 const ReferenceType* ReferenceType::of(const Type* base_type, Kind kind) {
     auto& type_context = TranslationUnitContext::it->type;
-    return type_context.get_pass_by_reference_type(base_type, kind);
+    return type_context.get_reference_type(base_type, kind);
 }
 
 const Type* ReferenceType::accept(TypeVisitor& visitor) const {
