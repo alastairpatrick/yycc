@@ -1497,9 +1497,9 @@ struct Emitter: Visitor, ValueResolver {
                 ExprValue param_value;
                 auto expected_type = function_type->parameter_types[i];
 
-                const ReferenceType* pass_by_ref_type{};
-                if (pass_by_ref_type = unqualified_type_cast<ReferenceType>(expected_type)) {
-                    expected_type = pass_by_ref_type->base_type;
+                const ReferenceType* reference_type{};
+                if (reference_type = unqualified_type_cast<ReferenceType>(expected_type)) {
+                    expected_type = reference_type->base_type;
                 }
 
                 if (member_expr && i == 0) {
@@ -1511,17 +1511,17 @@ struct Emitter: Visitor, ValueResolver {
 
                 auto param_location = param_value.node->location;
 
-                if (pass_by_ref_type) {
-                    if (param_value.kind == ValueKind::RVALUE && (pass_by_ref_type->kind == ReferenceType::Kind::RVALUE || expected_type->qualifiers() & QUALIFIER_CONST || (member_expr && i == 0))) {
+                if (reference_type) {
+                    if (param_value.kind == ValueKind::RVALUE && (reference_type->kind == ReferenceType::Kind::RVALUE || expected_type->qualifiers() & QUALIFIER_CONST || (member_expr && i == 0))) {
                         param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT);
                         make_addressable(param_value);
                         llvm_params[i] = get_address(param_value);
                     } else if (param_value.kind != ValueKind::LVALUE) {
                         message(Severity::ERROR, param_location) << "rvalue type '" << PrintType(param_value.type) << "' incompatible with non-const parameter reference type '"
                                                                  << PrintType(function_type->parameter_types[i]) << "'\n";
-                        llvm_params[i] = LLVMConstNull(pass_by_ref_type->llvm_type());
+                        llvm_params[i] = LLVMConstNull(reference_type->llvm_type());
                     } else {
-                        if (pass_by_ref_type->kind == ReferenceType::Kind::RVALUE && param_value.kind == ValueKind::LVALUE) {
+                        if (reference_type->kind == ReferenceType::Kind::RVALUE && param_value.kind == ValueKind::LVALUE) {
                             message(Severity::ERROR, param_location) << "cannot pass lvalue to rvalue reference parameter type '"
                                                                      << PrintType(function_type->parameter_types[i]) << "'; consider '&&' move expression\n";
                         } else if (param_value.type->unqualified() != expected_type->unqualified()) {
