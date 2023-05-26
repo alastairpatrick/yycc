@@ -901,7 +901,7 @@ struct Emitter: Visitor, ValueResolver {
 
         auto throw_type = unqualified_type_cast<ThrowType>(return_type);
         if (throw_type) {
-            return_type = throw_type->base_type; // todo ->unqualified();
+            return_type = throw_type->base_type->unqualified();
         }
 
         LLVMValueRef exception{};

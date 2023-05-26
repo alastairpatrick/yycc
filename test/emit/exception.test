@@ -19,6 +19,16 @@ define { ptr, i16 } @f() {
 END
 
 
+BEGIN Const on-void throwing function returns without return statement
+const short f() std::throw {
+}
+EXPECT_IR
+define { ptr, i16 } @f() {
+  ret { ptr, i16 } zeroinitializer
+}
+END
+
+
 BEGIN Void throwing function returns without return statement
 void f() std::throw {
 }
@@ -31,6 +41,17 @@ END
 
 BEGIN Void throwing function returns with return statement
 void f() std::throw {
+    return;
+}
+EXPECT_IR
+define ptr @f() {
+  ret ptr null
+}
+END
+
+
+BEGIN Const void throwing function returns with return statement
+const void f() std::throw {
     return;
 }
 EXPECT_IR
