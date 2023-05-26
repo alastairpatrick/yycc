@@ -114,6 +114,10 @@ struct Emitter: Visitor, ValueResolver {
         return value.dangerously_get_address();
     }
 
+    LLVMValueRef default_value(const Type* type) {
+        return LLVMConstNull(type->llvm_type());
+    }
+
     virtual LLVMValueRef get_value(ExprValue value, bool for_move_expr = false) override {
         if (value.type == &VoidType::it) {
             return nullptr;
@@ -121,13 +125,13 @@ struct Emitter: Visitor, ValueResolver {
 
         auto rvalue = value.dangerously_get_value(builder, outcome);
 
-        if (auto structured_type = unqualified_type_cast<StructuredType>(value.type->unqualified())) {
-            if (value.kind == ValueKind::LVALUE && structured_type->destructor) {
-                LLVMValueRef lvalue = value.dangerously_get_address();
-                LLVMBuildStore(builder, LLVMConstNull(structured_type->llvm_type()), lvalue);
-
-                if (!for_move_expr) {
-                    message(Severity::ERROR, value.node->location) << "lvalue with destructor is not copyable; consider '&&' prefix move operator\n";
+        if (value.kind == ValueKind::LVALUE) {
+            if (for_move_expr) {
+                store(value, default_value(value.type->unqualified()), value.node->location);
+            } else {
+                auto structured_type = unqualified_type_cast<StructuredType>(value.type->unqualified());
+                if (structured_type && structured_type->destructor) {
+                    message(Severity::ERROR, value.node->location) << "lvalue with destructor is not copyable; consider '&&' move operator\n";
                 }
             }
         }
@@ -138,7 +142,7 @@ struct Emitter: Visitor, ValueResolver {
     void store(Value dest, LLVMValueRef source_rvalue, const Location& assignment_location) {
         if (outcome == EmitOutcome::IR) {
             if (dest.type->qualifiers() & QUALIFIER_CONST) {
-                message(Severity::ERROR, assignment_location) << "cannot assign to lvalue with const qualified type '" << PrintType(dest.type) << "'\n";
+                message(Severity::ERROR, assignment_location) << "cannot modify lvalue with const qualified type '" << PrintType(dest.type) << "'\n";
             } else if (dest.kind != ValueKind::LVALUE) {
                 message(Severity::ERROR, assignment_location) << "expression is not assignable\n";
             } else {
@@ -566,7 +570,7 @@ struct Emitter: Visitor, ValueResolver {
                 } else {
                     auto storage = LLVMBuildAlloca(builder, param->type->llvm_type(), c_str(param->identifier));
                     param_entity->value = Value(ValueKind::LVALUE, param->type, storage);
-                    LLVMBuildStore(builder, llvm_param, storage);
+                    param_entity->value.dangerously_store(builder, llvm_param);
 
                     pend_destructor(param_entity->value);
                 }
@@ -684,7 +688,7 @@ struct Emitter: Visitor, ValueResolver {
                     entity->value.dangerously_store(builder, initial);
                 }
             } else if (options.initialize_variables || has_destructor) {
-                entity->value.dangerously_store(builder, Value::of_null(type).get_const());
+                entity->value.dangerously_store(builder, default_value(type));
             }
 
         } else if (entity->storage_duration == StorageDuration::STATIC) {
@@ -1776,10 +1780,10 @@ struct Emitter: Visitor, ValueResolver {
     }
 
     virtual VisitExpressionOutput visit(MoveExpr* expr) override {
-        auto value = emit_expr(expr->expr).unqualified();
+        auto value = emit_expr(expr->expr);
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(value.type);
 
-        auto result = Value(value.type, get_value(value, true));
+        auto result = Value(value.type->unqualified(), get_value(value, true));
         return VisitExpressionOutput(result);
     }
 

@@ -378,7 +378,7 @@ volatile int f(volatile short x) {
 EXPECT_IR
 define i32 @f(i16 %0) {
   %x = alloca i16, align 2
-  store i16 %0, ptr %x, align 2
+  store volatile i16 %0, ptr %x, align 2
   %2 = load volatile i16, ptr %x, align 2
   %3 = sext i16 %2 to i32
   ret i32 %3

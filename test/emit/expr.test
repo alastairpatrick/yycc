@@ -594,10 +594,24 @@ define void @g() {
   %1 = alloca i32, align 4
   %x = alloca i32, align 4
   %2 = load i32, ptr %x, align 4
+  store i32 0, ptr %x, align 4
   store i32 %2, ptr %1, align 4
   call void @f(ptr %1)
   ret void
 }
+END
+
+
+BEGIN Cannot move const lvalue
+struct S {
+    void destructor(S&);
+};
+void f() {
+    const S x;
+    &&x;
+}
+EXPECT_MESSAGE
+:6:7: error cannot modify lvalue with const qualified type 'struct S const'
 END
 
 
