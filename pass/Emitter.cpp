@@ -935,6 +935,11 @@ struct Emitter: Visitor, ValueResolver {
             return_type = throw_type->base_type->unqualified();
         }
 
+        auto return_reference_type = unqualified_type_cast<ReferenceType>(return_type);
+        if (return_reference_type) {
+            return_type = return_reference_type->base_type;
+        }
+
         LLVMValueRef exception{};
         LLVMValueRef return_value{};
 
@@ -952,7 +957,14 @@ struct Emitter: Visitor, ValueResolver {
         } else {
             if (statement->expr) {
                 auto value = emit_expr(statement->expr, { .pend_temporary_destructor = false }).unqualified();
-                if (value.type->unqualified() == return_type->unqualified()) {
+                if (return_reference_type) {
+                    if (value.kind == ValueKind::LVALUE) {
+                        return_value = get_address(value);
+                    } else {
+                        message(Severity::ERROR, statement->expr->location) << "return value of reference type cannot be rvalue\n";
+                        return_value = context->llvm_null;
+                    }
+                } else if (value.type->unqualified() == return_type->unqualified()) {
                     return_value = get_value(value);
                 } else {
                     pend_destructor(value);
@@ -1461,6 +1473,11 @@ struct Emitter: Visitor, ValueResolver {
                 result_type = throw_type->base_type->unqualified();
             }
 
+            auto result_reference_type = unqualified_type_cast<ReferenceType>(result_type);
+            if (result_reference_type) {
+                result_type = result_reference_type->base_type;
+            }
+
             if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
             Declarator* function_declarator{};
@@ -1568,7 +1585,11 @@ struct Emitter: Visitor, ValueResolver {
                 llvm_result = result_type == &VoidType::it ? nullptr : LLVMBuildExtractValue(builder, llvm_result, 1, "");
             }
 
-            return VisitExpressionOutput(result_type, llvm_result);
+            if (result_reference_type) {
+                return VisitExpressionOutput(Value(ValueKind::LVALUE, result_type, llvm_result));
+            } else {
+                return VisitExpressionOutput(result_type, llvm_result);
+            }
         }
 
         message(Severity::ERROR, expr->location) << "type '" << PrintType(function_value.type) << "' is not a function or function pointer\n";
