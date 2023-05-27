@@ -184,6 +184,12 @@ EXPECT_GLOBALS
 ,["var","ES",["A","C",3],"c"]]
 
 
+BEGIN Size of reference type is that of its base type
+char a[sizeof(char&)];
+EXPECT_GLOBALS
+[["var","ES",["A","C",1],"a"]]
+
+
 BEGIN Error on sizeof incomplete array type
 char a[sizeof(float[])];
 EXPECT_MESSAGE

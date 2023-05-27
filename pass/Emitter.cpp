@@ -1851,7 +1851,12 @@ struct Emitter: Visitor, ValueResolver {
 
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-        return VisitExpressionOutput(result_type, Value::of_size(LLVMStoreSizeOfType(llvm_target_data, expr->type->llvm_type())).get_const());
+        auto type = expr->type;
+        if (auto reference_type = unqualified_type_cast<ReferenceType>(expr->type)) {
+            type = reference_type->base_type;
+        }
+
+        return VisitExpressionOutput(result_type, Value::of_size(LLVMStoreSizeOfType(llvm_target_data, type->llvm_type())).get_const());
     }
 
     virtual VisitExpressionOutput visit(SubscriptExpr* expr) override {
