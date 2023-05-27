@@ -298,6 +298,26 @@ EXPECT_MESSAGE
 END
 
 
+BEGIN Cannot take address of reference typed parameter
+int* f(int& x) {
+    return &x;
+}
+EXPECT_MESSAGE
+:2:12: error cannot take address of reference type lacking 'captured' type qualifier
+END
+
+
+BEGIN Can take address of 'captured' qualified reference type parameter
+int* f(int& std::captured x) {
+    return &x;
+}
+EXPECT_IR
+define ptr @f(ptr %0) {
+  ret ptr %0
+}
+END
+
+
 REM ******** CallExpr ********
 
 
@@ -602,35 +622,21 @@ define void @g() {
 END
 
 
-BEGIN Return value has reference type
-int x;
-const int& f() {
-    return x;
+BEGIN Cannot pass not-captured reference argument as captured reference parameter
+void g(int& std::captured);
+void f(int& x) {
+    g(x);
 }
-int g() {
-    return f();
-}
-EXPECT_IR
-@x = global i32 0
-
-define ptr @f() {
-  ret ptr @x
-}
-
-define i32 @g() {
-  %1 = call ptr @f()
-  %2 = load i32, ptr %1, align 4
-  ret i32 %2
-}
+EXPECT_MESSAGE
+:3:7: error reference typed value is not capturable
 END
 
 
-BEGIN Rvalue return value has reference type
-const int& f() {
-    return 1;
+BEGIN Can pass captured reference argument as captured reference parameter
+void g(int& std::captured);
+void f(int& std::captured x) {
+    g(x);
 }
-EXPECT_MESSAGE
-:2:12: error return value of reference type cannot be rvalue
 END
 
 

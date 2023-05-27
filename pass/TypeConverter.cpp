@@ -56,7 +56,7 @@ LLVMValueRef TypeConverter::get_value_internal() {
 
 void TypeConverter::convert_array_to_pointer() {
     if (auto source_type = unqualified_type_cast<ResolvedArrayType>(value.type)) {
-        if (value.kind == ValueKind::LVALUE) {
+        if (value.kind == ValueKind::LVALUE && value.capturable) {
             auto pointer_type = source_type->element_type->pointer_to();
             value = ExprValue(pointer_type, value.dangerously_get_address(), value.node);
         }

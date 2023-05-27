@@ -553,6 +553,58 @@ declare void @destructor_wrapper(ptr)
 END
 
 
+BEGIN Return value has reference type
+int x;
+const int& f() {
+    return x;
+}
+int g() {
+    return f();
+}
+EXPECT_IR
+@x = global i32 0
+
+define ptr @f() {
+  ret ptr @x
+}
+
+define i32 @g() {
+  %1 = call ptr @f()
+  %2 = load i32, ptr %1, align 4
+  ret i32 %2
+}
+END
+
+
+BEGIN Rvalue return value has reference type
+const int& f() {
+    return 1;
+}
+EXPECT_MESSAGE
+:2:12: error return value of reference type cannot be rvalue
+END
+
+
+BEGIN Cannot return non-captured reference argument
+int& f(int& x) {
+    return x;
+}
+EXPECT_MESSAGE
+:2:12: error reference typed value is not capturable
+END
+
+
+BEGIN Can return captured reference argument
+int& f(int& std::captured x) {
+    return x;
+}
+EXPECT_IR
+define ptr @f(ptr %0) {
+  ret ptr %0
+}
+END
+
+
 REM ******** SwitchStatement ********
 
 BEGIN Switch with default

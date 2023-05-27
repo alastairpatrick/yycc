@@ -561,8 +561,9 @@ struct Emitter: Visitor, ValueResolver {
 
                 auto llvm_param = LLVMGetParam(function, i);
 
-                if (auto reference_type = dynamic_cast<const ReferenceType*>(param->type)) {
+                if (auto reference_type = dynamic_cast<const ReferenceType*>(param->type->unqualified())) {
                     param_entity->value = Value(ValueKind::LVALUE, reference_type->base_type, llvm_param);
+                    param_entity->value.capturable = param->type->qualifiers() & QUALIFIER_CAPTURED;
 
                     if (reference_type->kind == ReferenceType::Kind::RVALUE) {
                         pend_destructor(param_entity->value);
@@ -756,7 +757,9 @@ struct Emitter: Visitor, ValueResolver {
             auto unqualified_param_type = param->type->unqualified();
 
             if (auto reference_type = unqualified_type_cast<ReferenceType>(unqualified_param_type)) {
-                LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nocapture_attribute());
+                if (!(param->type->qualifiers() & QUALIFIER_CAPTURED)) {
+                    LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nocapture_attribute());
+                }
             }
         }
           
@@ -952,11 +955,13 @@ struct Emitter: Visitor, ValueResolver {
             if (statement->expr) {
                 auto value = emit_expr(statement->expr, { .pend_temporary_destructor = false }).unqualified();
                 if (return_reference_type) {
-                    if (value.kind == ValueKind::LVALUE) {
-                        return_value = get_address(value);
-                    } else {
+                    if (value.kind != ValueKind::LVALUE) {
                         message(Severity::ERROR, statement->expr->location) << "return value of reference type cannot be rvalue\n";
                         return_value = context->llvm_null;
+                    } else if (!value.capturable) {
+                        message(Severity::ERROR, statement->expr->location) << "reference typed value is not capturable\n";
+                    } else {
+                        return_value = get_address(value);
                     }
                 } else if (value.type->unqualified() == return_type->unqualified()) {
                     return_value = get_value(value);
@@ -1071,6 +1076,10 @@ struct Emitter: Visitor, ValueResolver {
         if (value.kind != ValueKind::LVALUE) {
             message(Severity::ERROR, expr->location) << "cannot take address of rvalue of type '" << PrintType(value.type) <<"'\n";
             return VisitExpressionOutput(Value::of_recover(result_type));
+        }
+
+        if (!value.capturable) {
+            message(Severity::ERROR, expr->location) << "cannot take address of reference type lacking 'captured' type qualifier\n";
         }
 
         return VisitExpressionOutput(result_type, get_address(value));
@@ -1506,13 +1515,6 @@ struct Emitter: Visitor, ValueResolver {
             size_t param_expr_idx{};
             for (size_t i = 0; i < expected_num_params; ++i) {
                 ExprValue param_value;
-                auto expected_type = function_type->parameter_types[i];
-
-                const ReferenceType* reference_type{};
-                if (reference_type = unqualified_type_cast<ReferenceType>(expected_type)) {
-                    expected_type = reference_type->base_type;
-                }
-
                 if (member_expr && i == 0) {
                     param_value = ExprValue(object_value, member_expr->object);
                 } else {
@@ -1521,6 +1523,18 @@ struct Emitter: Visitor, ValueResolver {
                 }
 
                 auto param_location = param_value.node->location;
+
+                auto expected_type = function_type->parameter_types[i];
+
+                bool expect_captured{};
+                const ReferenceType* reference_type{};
+                if (reference_type = unqualified_type_cast<ReferenceType>(expected_type->unqualified())) {
+                    if ((expected_type->qualifiers() & QUALIFIER_CAPTURED) && !param_value.capturable) {
+                        message(Severity::ERROR, param_location) << "reference typed value is not capturable\n";
+                    }
+
+                    expected_type = reference_type->base_type;
+                }
 
                 if (reference_type) {
                     if (param_value.kind == ValueKind::RVALUE && (reference_type->kind == ReferenceType::Kind::RVALUE || expected_type->qualifiers() & QUALIFIER_CONST || (member_expr && i == 0))) {

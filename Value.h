@@ -35,6 +35,7 @@ public:
     struct {
         bool is_null_literal  : 1 = false;
         bool has_address      : 1 = false;
+        bool capturable       : 1 = true;
     };
     QualifierSet qualifiers{};
     BitField* bit_field{};
