@@ -581,7 +581,7 @@ const int& f() {
     return 1;
 }
 EXPECT_MESSAGE
-:2:12: error return value of reference type cannot be rvalue
+:2:12: error cannot return reference of type 'int const&' to rvalue
 END
 
 
@@ -590,7 +590,7 @@ int& f(int& x) {
     return x;
 }
 EXPECT_MESSAGE
-:2:12: error reference typed value is not capturable
+:2:12: error reference type 'int&' is not capturable
 END
 
 

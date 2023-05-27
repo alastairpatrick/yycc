@@ -316,7 +316,7 @@ float* f(float a[2]) {
     return a;
 }
 EXPECT_MESSAGE
-:2:12: error cannot convert from type 'float[2]' to type 'float*'
+:2:12: error cannot convert from type 'float(&)[2]' to type 'float*'
 END
 
 

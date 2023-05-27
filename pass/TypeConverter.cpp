@@ -200,7 +200,7 @@ ExprValue TypeConverter::convert_to_type(ExprValue value, const Type* dest_type,
     dest_type->accept(*this);
     
     if (!result.is_valid()) {
-        message(Severity::ERROR, value.node->location) << "cannot convert from type '" << PrintType(value.type)
+        message(Severity::ERROR, value.node->location) << "cannot convert from type '" << value.error_type()
                                                        << "' to type '" << PrintType(dest_type) << "'\n";
         pause_messages();
         if (dest_type != &VoidType::it) {
@@ -210,7 +210,7 @@ ExprValue TypeConverter::convert_to_type(ExprValue value, const Type* dest_type,
         }
     } else if ((conv_kind != ConvKind::IMPLICIT) && kind == ConvKind::IMPLICIT) {
         auto severity = conv_kind == ConvKind::C_IMPLICIT ? Severity::CONTEXTUAL_ERROR : Severity::ERROR;
-        message(severity, value.node->location) << "conversion from type '" << PrintType(value.type)
+        message(severity, value.node->location) << "conversion from type '" << value.error_type()
                                                 << "' to type '" << PrintType(dest_type) << "' requires explicit cast\n";
     }
 

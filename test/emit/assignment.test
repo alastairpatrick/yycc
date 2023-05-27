@@ -98,7 +98,7 @@ void f(const int &x) {
     x = 2;
 }
 EXPECT_MESSAGE
-:2:7: error cannot modify lvalue with const qualified type 'int const'
+:2:7: error cannot modify lvalue with const qualified type 'int const&'
 END
 
 
@@ -107,7 +107,7 @@ void f(const int &&x) {
     x = 2;
 }
 EXPECT_MESSAGE
-:2:7: error cannot modify lvalue with const qualified type 'int const'
+:2:7: error cannot modify lvalue with const qualified type 'int const&&'
 END
 
 
