@@ -21,7 +21,7 @@
 %token	ALIGNAS ALIGNOF ATOMIC GENERIC NORETURN STATIC_ASSERT THREAD_LOCAL
 
 // ADDITION
-%token  CATCH THROW TRANSITORY TRY
+%token  CAPTURED CATCH THROW TRY
 
 %start translation_unit
 %%
@@ -326,10 +326,10 @@ atomic_type_specifier
 	;
 
 type_qualifier
-	: CONST
+	: CAPTURED
+    | CONST
 	| RESTRICT
 	| VOLATILE
-    | TRANSITORY                  // ADDITION
 	| ATOMIC
 	;
 
@@ -365,8 +365,8 @@ direct_declarator
 	| direct_declarator '(' parameter_type_list ')' THROW  // ADDITION
 	| direct_declarator '(' ')' THROW                      // ADDITION
 	| direct_declarator '(' identifier_list ')'
-	| direct_declarator '&'             // ADDITION pass-by-reference
-	| direct_declarator TOK_AND_OP      // ADDITION pass-by-reference
+	| direct_declarator '&'                 // ADDITION
+	| direct_declarator TOK_AND_OP          // ADDITION
 	;
 
 pointer

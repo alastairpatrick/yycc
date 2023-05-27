@@ -231,7 +231,7 @@ Declaration* Parser::parse_declaration(bool expression_valid) {
 }
 
 static bool is_type_qualifier_token(TokenKind token) {
-    return token == TOK_CONST || token == TOK_RESTRICT || token == TOK_VOLATILE;
+    return token == TOK_CAPTURED || token == TOK_CONST || token == TOK_RESTRICT || token == TOK_VOLATILE;
 }
 
 Declaration* Parser::parse_declaration_specifiers(bool expression_valid, const Type*& type, SpecifierSet& specifiers) {
@@ -345,7 +345,8 @@ Declaration* Parser::parse_declaration_specifiers(bool expression_valid, const T
               consume();
               break;
 
-          } case TOK_CONST:
+          } case TOK_CAPTURED:
+            case TOK_CONST:
             case TOK_RESTRICT:
             case TOK_VOLATILE: {
               found_specifier_token = token;
@@ -768,12 +769,28 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
 DeclaratorTransform Parser::parse_declarator_transform(ParseDeclaratorFlags flags) {
     ScopeKind scope = identifiers.scope_kind();
 
+    bool is_reference_type{};
+
     function<const Type*(const Type*)> left_transform;
-    while (consume('*')) {
-        left_transform = [left_transform](const Type* type) {
-            if (left_transform) type = left_transform(type);
-            return type->pointer_to();
-        };
+    while (token == '*' || token == '&' || token == TOK_AND_OP) {
+        if (token == '*') {
+            if (is_reference_type) break;
+
+            consume();
+            left_transform = [left_transform](const Type* type) {
+                if (left_transform) type = left_transform(type);
+                return type->pointer_to();
+            };
+        } else {
+            ReferenceType::Kind kind = token == '&' ? ReferenceType::Kind::LVALUE : ReferenceType::Kind::RVALUE;
+            is_reference_type = true;
+            consume();
+
+            left_transform = [left_transform, kind](const Type* type) {
+                if (left_transform) type = left_transform(type);
+                return ReferenceType::of(type, kind);
+            };
+        }
 
         SpecifierSet qualifier_set = 0;
         while (is_type_qualifier_token(token)) {
@@ -787,20 +804,6 @@ DeclaratorTransform Parser::parse_declarator_transform(ParseDeclaratorFlags flag
                 return QualifiedType::of(type, qualifier_set);
             };
         }
-    }
-
-    bool is_reference_type{};
-
-    if (token == '&' || token == TOK_AND_OP) {
-        ReferenceType::Kind kind = token == '&' ? ReferenceType::Kind::LVALUE : ReferenceType::Kind::RVALUE;
-
-        left_transform = [left_transform, kind](const Type* type) {
-            if (left_transform) type = left_transform(type);
-            return ReferenceType::of(type, kind);
-        };
-
-        is_reference_type = true;
-        consume();
     }
         
     DeclaratorTransform declarator;

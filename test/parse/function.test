@@ -162,6 +162,20 @@ EXPECT_AST
 [["fun","E",["F","V",["Br","Si"]],"foo"]]
 
 
+BEGIN Function with captured reference parameter (1)
+void foo(int & std::captured x);
+EXPECT_AST
+[["fun","E",["F","V",["Qe",["Bl","Si"]]],"foo"]]
+
+
+BEGIN Function with captured reference parameter (2)
+typedef int& T;
+void foo(T std::captured x);
+PARSE
+EXPECT_AST
+[["typedef",["Bl","Si"],"T"],["fun","E",["F","V",["Qe",["Bl","Si"]]],"foo"]]
+
+
 BEGIN Function that can throw
 void foo() std::throw {
 }
