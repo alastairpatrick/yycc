@@ -46,7 +46,10 @@ struct Module {
     Value call_is_constant_intrinsic(LLVMBuilderRef builder, LLVMValueRef value, LLVMTypeRef type);
     void call_sideeffect_intrinsic(LLVMBuilderRef builder);
 
+    LLVMAttributeRef create_enum_attribute(const char* name);
     LLVMAttributeRef nocapture_attribute();
+    LLVMAttributeRef nonnull_attribute();
+    LLVMAttributeRef noundef_attribute();
 
     void resolve_pass(const vector<Declaration*>& declarations, Scope& file_scope);
     void entity_pass();
@@ -58,6 +61,8 @@ struct Module {
 private:
     Value cached_indeterminate_bool{};
     LLVMAttributeRef cached_nocapture_attribute{};
+    LLVMAttributeRef cached_nonnull_attribute{};
+    LLVMAttributeRef cached_noundef_attribute{};
 };
 
 #endif

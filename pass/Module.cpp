@@ -66,13 +66,25 @@ void Module::call_sideeffect_intrinsic(LLVMBuilderRef builder) {
     function.call(builder, nullptr, 0);
 }
 
-LLVMAttributeRef Module::nocapture_attribute() {
+LLVMAttributeRef Module::create_enum_attribute(const char* name) {
     auto context = TranslationUnitContext::it;
+    auto kind = LLVMGetEnumAttributeKindForName(name, strlen(name));
+    return LLVMCreateEnumAttribute(context->llvm_context, kind, 0);
+}
 
+LLVMAttributeRef Module::nocapture_attribute() {
     if (cached_nocapture_attribute) return cached_nocapture_attribute;
-    char name[] = "nocapture";
-    auto kind = LLVMGetEnumAttributeKindForName(name, sizeof(name) - 1);
-    return cached_nocapture_attribute = LLVMCreateEnumAttribute(context->llvm_context, kind, 0);
+    return cached_nocapture_attribute = create_enum_attribute("nocapture");
+}
+
+LLVMAttributeRef Module::nonnull_attribute() {
+    if (cached_nonnull_attribute) return cached_nonnull_attribute;
+    return cached_nonnull_attribute = create_enum_attribute("nonnull");
+}
+
+LLVMAttributeRef Module::noundef_attribute() {
+    if (cached_nonnull_attribute) return cached_nonnull_attribute;
+    return cached_nonnull_attribute = create_enum_attribute("noundef");
 }
 
 void Module::middle_end_passes(const char* passes) {
