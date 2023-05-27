@@ -456,7 +456,6 @@ void QualifiedType::message_print(ostream& stream, int section) const {
         if (qualifier_flags & QUALIFIER_CONST) stream << " const";
         if (qualifier_flags & QUALIFIER_RESTRICT) stream << " restricted";
         if (qualifier_flags & QUALIFIER_VOLATILE) stream << " volatile";
-        if (qualifier_flags & QUALIFIER_TRANSITORY) stream << " std::transitory";
     }
 }
 
@@ -465,7 +464,6 @@ void QualifiedType::print(std::ostream& stream) const {
     if (qualifier_flags & QUALIFIER_CONST) stream << 'c';
     if (qualifier_flags & QUALIFIER_RESTRICT) stream << 'r';
     if (qualifier_flags & QUALIFIER_VOLATILE) stream << 'v';
-    if (qualifier_flags & QUALIFIER_TRANSITORY) stream << 't';
     stream << "\", " << base_type << ']';
 }
 

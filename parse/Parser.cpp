@@ -231,7 +231,7 @@ Declaration* Parser::parse_declaration(bool expression_valid) {
 }
 
 static bool is_type_qualifier_token(TokenKind token) {
-    return token == TOK_CONST || token == TOK_RESTRICT || token == TOK_VOLATILE || token == TOK_TRANSITORY;
+    return token == TOK_CONST || token == TOK_RESTRICT || token == TOK_VOLATILE;
 }
 
 Declaration* Parser::parse_declaration_specifiers(bool expression_valid, const Type*& type, SpecifierSet& specifiers) {
@@ -347,8 +347,7 @@ Declaration* Parser::parse_declaration_specifiers(bool expression_valid, const T
 
           } case TOK_CONST:
             case TOK_RESTRICT:
-            case TOK_VOLATILE:
-            case TOK_TRANSITORY: {
+            case TOK_VOLATILE: {
               found_specifier_token = token;
               qualifier_location = preprocessor.location();
               specifier_set &= ~token_to_specifier(token); // qualifiers may be repeated

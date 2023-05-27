@@ -93,21 +93,21 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN Cannot assign to const lvalue-reference parameter
+BEGIN Cannot assign to const lvalue reference parameter
 void f(const int &x) {
     x = 2;
 }
 EXPECT_MESSAGE
-:2:7: error cannot modify lvalue with const qualified type 'int const std::transitory'
+:2:7: error cannot modify lvalue with const qualified type 'int const'
 END
 
 
-BEGIN Cannot assign to const rvalue-reference parameter
+BEGIN Cannot assign to const rvalue reference parameter
 void f(const int &&x) {
     x = 2;
 }
 EXPECT_MESSAGE
-:2:7: error cannot modify lvalue with const qualified type 'int const std::transitory'
+:2:7: error cannot modify lvalue with const qualified type 'int const'
 END
 
 

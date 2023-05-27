@@ -66,10 +66,10 @@ volatile      { return TOK_VOLATILE; }
 while         { return TOK_WHILE; }
 
 std::bool           { return TOK_BOOL; }
+std::captured       { return TOK_CAPTURED; }
 std::catch          { return TOK_CATCH; }
 std::false          { return TOK_FALSE; }
 std::throw          { return TOK_THROW; }
-std::transitory     { return TOK_TRANSITORY; }
 std::true           { return TOK_TRUE; }
 std::try            { return TOK_TRY; }
 

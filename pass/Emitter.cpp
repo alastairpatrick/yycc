@@ -562,7 +562,7 @@ struct Emitter: Visitor, ValueResolver {
                 auto llvm_param = LLVMGetParam(function, i);
 
                 if (auto reference_type = dynamic_cast<const ReferenceType*>(param->type)) {
-                    param_entity->value = Value(ValueKind::LVALUE, QualifiedType::of(reference_type->base_type, QUALIFIER_TRANSITORY), llvm_param);
+                    param_entity->value = Value(ValueKind::LVALUE, reference_type->base_type, llvm_param);
 
                     if (reference_type->kind == ReferenceType::Kind::RVALUE) {
                         pend_destructor(param_entity->value);
@@ -757,12 +757,6 @@ struct Emitter: Visitor, ValueResolver {
 
             if (auto reference_type = unqualified_type_cast<ReferenceType>(unqualified_param_type)) {
                 LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nocapture_attribute());
-            }
-
-            if (auto pointer_type = unqualified_type_cast<PointerType>(unqualified_param_type)) {
-                if (pointer_type->base_type->qualifiers() & QUALIFIER_TRANSITORY) {
-                    LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nocapture_attribute());
-                }
             }
         }
           

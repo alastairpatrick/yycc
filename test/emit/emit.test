@@ -57,10 +57,3 @@ define void @f() {
   ret void
 }
 END
-
-
-BEGIN Parameters of pointer to transitory qualified type get nocapture attribute
-void f(std::transitory int* p);
-EXPECT_IR
-declare void @f(ptr nocapture)
-END
