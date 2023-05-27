@@ -565,7 +565,7 @@ struct Emitter: Visitor, ValueResolver {
                     param_entity->value = Value(ValueKind::LVALUE, reference_type->base_type, llvm_param);
                     param_entity->value.was_lvalue_ref = reference_type->kind == ReferenceType::Kind::LVALUE;
                     param_entity->value.was_rvalue_ref = reference_type->kind == ReferenceType::Kind::RVALUE;
-                    param_entity->value.capturable = param->type->qualifiers() & QUALIFIER_CAPTURED;
+                    param_entity->value.capturable = reference_type->captured;
 
                     if (reference_type->kind == ReferenceType::Kind::RVALUE) {
                         pend_destructor(param_entity->value);
@@ -761,7 +761,7 @@ struct Emitter: Visitor, ValueResolver {
             auto unqualified_param_type = param->type->unqualified();
 
             if (auto reference_type = unqualified_type_cast<ReferenceType>(unqualified_param_type)) {
-                if (!(param->type->qualifiers() & QUALIFIER_CAPTURED)) {
+                if (!reference_type->captured) {
                     LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nocapture_attribute());
                 }
             }
@@ -1533,7 +1533,7 @@ struct Emitter: Visitor, ValueResolver {
                 bool expect_captured{};
                 const ReferenceType* reference_type{};
                 if (reference_type = unqualified_type_cast<ReferenceType>(expected_type->unqualified())) {
-                    if ((expected_type->qualifiers() & QUALIFIER_CAPTURED) && !param_value.capturable) {
+                    if (reference_type->captured && !param_value.capturable) {
                         message(Severity::ERROR, param_location) << "cannot capture reference type '" << param_value.error_type() << "' lacking 'captured' type qualifier\n";
                     }
 

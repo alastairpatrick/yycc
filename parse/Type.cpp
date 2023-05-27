@@ -365,9 +365,9 @@ PointerType::PointerType(const Type* base_type)
 }
 
 
-const ReferenceType* ReferenceType::of(const Type* base_type, Kind kind) {
+const ReferenceType* ReferenceType::of(const Type* base_type, Kind kind, bool captured) {
     auto& type_context = TranslationUnitContext::it->type;
-    return type_context.get_reference_type(base_type, kind);
+    return type_context.get_reference_type(base_type, kind, captured);
 }
 
 const Type* ReferenceType::accept(TypeVisitor& visitor) const {
@@ -398,6 +398,10 @@ void ReferenceType::message_print(ostream& stream, int section) const {
         } else {
             stream << "&&";
         }
+
+        if (captured) {
+            stream << " captured";
+        }
     }
 }
 
@@ -410,11 +414,13 @@ void ReferenceType::print(std::ostream& stream) const {
         stream << 'r';
     }
 
+    if (captured) stream << 'c';
+
     stream << "\", " << base_type << ']';
 }
 
-ReferenceType::ReferenceType(const Type* base_type, Kind kind)
-    : base_type(base_type), kind(kind) {
+ReferenceType::ReferenceType(const Type* base_type, Kind kind, bool captured)
+    : base_type(base_type), kind(kind), captured(captured) {
 }
 
 
@@ -453,7 +459,6 @@ void QualifiedType::message_print(ostream& stream, int section) const {
     base_type->message_print(stream, section);
 
     if (section == 1) {
-        if (qualifier_flags & QUALIFIER_CAPTURED) stream << " captured";
         if (qualifier_flags & QUALIFIER_CONST) stream << " const";
         if (qualifier_flags & QUALIFIER_RESTRICT) stream << " restricted";
         if (qualifier_flags & QUALIFIER_VOLATILE) stream << " volatile";
@@ -462,7 +467,6 @@ void QualifiedType::message_print(ostream& stream, int section) const {
 
 void QualifiedType::print(std::ostream& stream) const {
     stream << "[\"Q";
-    if (qualifier_flags & QUALIFIER_CAPTURED) stream << 'e';
     if (qualifier_flags & QUALIFIER_CONST) stream << 'c';
     if (qualifier_flags & QUALIFIER_RESTRICT) stream << 'r';
     if (qualifier_flags & QUALIFIER_VOLATILE) stream << 'v';

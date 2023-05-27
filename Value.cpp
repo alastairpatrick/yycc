@@ -98,10 +98,8 @@ PrintType Value::error_type() const {
 
     error_type = QualifiedType::of(error_type, qualifiers);
 
-    if (was_lvalue_ref) error_type = ReferenceType::of(error_type, ReferenceType::Kind::LVALUE);
-    if (was_rvalue_ref) error_type = ReferenceType::of(error_type, ReferenceType::Kind::RVALUE);
-
-    if (capturable && (was_lvalue_ref || was_rvalue_ref)) error_type = QualifiedType::of(error_type, QUALIFIER_CAPTURED);
+    if (was_lvalue_ref) error_type = ReferenceType::of(error_type, ReferenceType::Kind::LVALUE, capturable);
+    if (was_rvalue_ref) error_type = ReferenceType::of(error_type, ReferenceType::Kind::RVALUE, capturable);
 
     return PrintType(error_type);
 }

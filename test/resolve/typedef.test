@@ -143,6 +143,13 @@ EXPECT_MESSAGE
 END
 
 
+BEGIN Typedef cannot have reference type
+typedef int& T;
+EXPECT_MESSAGE
+:1:12: error typedef 'T' cannot have reference type 'int&'
+END
+
+
 BEGIN #type directives composed
 #type T
 #type T

@@ -23,6 +23,7 @@ struct ParseDeclaratorFlags {
     bool allow_function_definition: 1;
     bool allow_identifier: 1;
     bool allow_initializer: 1;
+    bool allow_reference_type: 1 = true;
 };
 
 enum class SubExpressionKind {

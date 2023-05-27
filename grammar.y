@@ -326,8 +326,7 @@ atomic_type_specifier
 	;
 
 type_qualifier
-	: CAPTURED
-    | CONST
+	: CONST
 	| RESTRICT
 	| VOLATILE
 	| ATOMIC
@@ -344,7 +343,9 @@ alignment_specifier
 	;
 
 declarator
-	: pointer direct_declarator
+	: pointer reference direct_declarator       // ADDITION
+	| pointer direct_declarator
+	| reference direct_declarator               // ADDITION
 	| direct_declarator
 	;
 
@@ -365,8 +366,6 @@ direct_declarator
 	| direct_declarator '(' parameter_type_list ')' THROW  // ADDITION
 	| direct_declarator '(' ')' THROW                      // ADDITION
 	| direct_declarator '(' identifier_list ')'
-	| direct_declarator '&'                 // ADDITION
-	| direct_declarator TOK_AND_OP          // ADDITION
 	;
 
 pointer
@@ -380,6 +379,14 @@ type_qualifier_list
 	: type_qualifier
 	| type_qualifier_list type_qualifier
 	;
+
+// ADDITION
+reference
+	: '&'
+	| TOK_AND_OP
+	| '&' CAPTURED
+	| TOK_AND_OP CAPTURED
+    ;
 
 
 parameter_type_list
