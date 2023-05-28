@@ -10,10 +10,10 @@ OIC actually has two grammars. The first is a context-free grammar for a useful 
 Declarations at file scope are order independent. For example, this is valid:
 ```c
 struct A {
-	B* b;  // okay
+    B* b;  // okay
 };
 struct B {
-	A* a;
+    A* a;
 };
 ```
 The translation unit is expanded to span all source files in a module. Combined with order independence, this renders forward declaration largely redundant. For example, there is no reason to put function prototypes in a header file in order to share the declaration with other source files in the module.
@@ -80,34 +80,6 @@ S.T x;    // nested type specifier, okay
 // T x;   // ERROR
 ```
 
-### Adjustment of Function Parameter Types
-In C, array parameter types are "adjusted" to pointer types. Instead, OIC adjusts array typed parameters to lvalue reference to array type, even if they are not written as such. Consider:
-```c
-void f(int a[3][2]);
-```
-In C, this is adjusted as follows, losing static type checking information:
-```c
-void f(int *a[2]);
-```
-In contrast, OIC loses no static type information, while remaining ABI compatible with C:
-```c
-void f(int (&a)[3][2]);
-```
-
-### Member of Type Expressions
-“Dot” expressions may be applied to type names to access member functions.
-```c
-struct S {
-  int f();
-}
-int z = S.f();
-```
-In cases where there is an grammatical ambiguity between a nested type specifier of a member of type expression, the parser assumes the former. Parentheses are used around the nested type specifier to avoid the ambiguity.
-```c
-// S.f()   // ERROR S.f looks like a nested type specifier
-(S).f()	// okay
-```
-
 ### Reference Types
 Reference type semantics resemble C++ but are more limited. Only variables with automatic storage duration, including parameters, and function return types may have reference type. Typedefs may not have reference type.
 
@@ -145,8 +117,9 @@ void g() {
     s.call_me(7);
 }
 ```
+
 ### Destructors
-Similar to C++, a struct may have a destructor. This is caLLed at the end of an object's lifetime, but not always. Specifically, if an object is not in its default state, the destructor must be called. However, if the compiler can prove that an object _is_ in its default state, it should preferably _not_ generate code to call the destructor. The compiler's ability to do this can depend on optimization level.
+Similar to C++, a struct may have a destructor. This is called at the end of an object's lifetime, but not always. Specifically, if an object is not in its default state, the destructor must be called. However, if the compiler can prove that an object _is_ in its default state, it should preferably _not_ generate code to call the destructor. The compiler's ability to do this can depend on optimization level.
 ```c
 struct T {
     FILE* file;  // initialized to null
@@ -158,6 +131,20 @@ struct T {
 };
 ```
 Destructors are also automatically called on the left side of a move expression, assuming the compiler cannot prove the left side is not in its default state, as above.
+
+### Adjustment of Function Parameter Types
+In C, array parameter types are "adjusted" to pointer types. Instead, OIC adjusts array typed parameters to lvalue reference to array type, even if they are not written as such. Consider:
+```c
+void f(int a[3][2]);
+```
+In C, this is adjusted as follows, losing static type checking information:
+```c
+void f(int *a[2]);
+```
+In contrast, OIC loses no static type information, while remaining ABI compatible with C:
+```c
+void f(int (&a)[3][2]);
+```
 
 ## Variables
 ### Initialization
