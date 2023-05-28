@@ -67,7 +67,6 @@ struct Declarator: LocationNode {
     Function* function() const;
     TypeDelegate* type_delegate() const;
 
-    const Type* to_type() const;
     const char* message_kind() const;
     bool is_member() const;
     void message_see_declaration(const char* declaration_kind = nullptr) const;

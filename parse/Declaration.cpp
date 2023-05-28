@@ -87,11 +87,6 @@ TypeDelegate* Declarator::type_delegate() const {
     return dynamic_cast<TypeDelegate*>(delegate);
 }
 
-const Type* Declarator::to_type() const {
-    if (!delegate) return nullptr;
-    return delegate->to_type();
-}
-
 const char* Declarator::message_kind() const {
     return delegate->message_kind();
 }
@@ -126,11 +121,6 @@ void Declarator::print(ostream& stream) const {
         stream << "\"placeholder\"";
     }
 }
-
-const Type* DeclaratorDelegate::to_type() const {
-    return nullptr;
-}
-
 
 Entity::Entity(Linkage linkage): linkage(linkage) {
 
@@ -236,10 +226,6 @@ const char* TypeDelegate::message_kind() const {
         return "enum";
     }
     return "typedef";
-}
-
-const Type* TypeDelegate::to_type() const {
-    return &type_def_type;
 }
 
 bool TypeDelegate::message_is_definition() const {

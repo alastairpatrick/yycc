@@ -59,8 +59,7 @@ void Parser::handle_declaration_directive() {
                 TypeDelegate* type_delegate = new TypeDelegate;
                 type_delegate->type_def_type.declarator = declarator->primary;
                 declarator->delegate = type_delegate;
-
-                declarator->type = declarator->to_type();
+                declarator->type = &type_delegate->type_def_type;
             }
         } else {
             preprocessor.unexpected_directive_token();
@@ -293,7 +292,8 @@ Declaration* Parser::parse_declaration_specifiers(bool expression_valid, const T
                   } else {
                       auto declarator = identifiers.lookup_declarator(identifier);
                       if (declarator) {
-                          type = declarator->to_type();
+                          auto type_delegate = declarator->type_delegate();
+                          type = type_delegate ? &type_delegate->type_def_type : nullptr;
                       }
 
                       if (!type) {
