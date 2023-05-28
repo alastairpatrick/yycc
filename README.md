@@ -1,8 +1,8 @@
-# Summary of Differences to C
-The most significant changes to C are order independent declarations and initializing all variables by default.
+# Summary of Differences with C
+This is not a sales pitch, more a reminder. The most significant changes to C are order independent declarations and initializing all variables by default.
 
 ## Context-Free Grammar
-OIC has a context-free grammar. In contrast, C's grammar is not context-free; the parser or lexer needs to determine whether identifiers correspond to types or not. For OIC, this is not always possible because declarations are order independent, so the declaration of a type identifier might follow some usage of that identifier.
+OIC has a context-free grammar. In contrast, C's grammar is not context-free; the parser or lexer needs to determine whether identifiers correspond to types or not. For OIC, this is not possible because declarations are order independent, so the declaration of a type identifier might follow some usage of that identifier.
 
 OIC actually has two grammars. The first is a context-free grammar for a useful superset of the language, crucially, one that can determine those identifiers corresponding to type names. The second grammar is for OIC proper, is not context free, but is parseable with the benefit of an initial analysis performed using the context-free grammar.
 
@@ -10,19 +10,19 @@ OIC actually has two grammars. The first is a context-free grammar for a useful 
 Declarations at file scope are order independent. For example, this is valid:
 ```c
 struct A {
-	struct B* b;  // okay
+	B* b;  // okay
 };
 struct B {
-	struct A* a;
+	A* a;
 };
 ```
-The translation unit is expanded to span all source files in a module. Combined with order independence, this renders most multiple declarations redundant. For example, there is no reason to put function prototypes in a header file in order to share the declaration with other source files in the module.
+The translation unit is expanded to span all source files in a module. Combined with order independence, this renders forward declaration largely redundant. For example, there is no reason to put function prototypes in a header file in order to share the declaration with other source files in the module.
 
 In the example below, separate source files “file1.c” and “file2.c” are part of the same module, and so are part of the same translation unit. Due to order independence, the prototypes of functions “f” and “g” are known everywhere in the translation unit. Unlike C, with regard to declarations with file scope, there is no notion of “before” or “after.”
 ```c
 // file1.c
 void g(int x) {
-	f(x); // argument known to have type ‘float’
+    f(x); // argument known to have type ‘float’
 }
 
 // file2.c
@@ -67,20 +67,20 @@ Implicit conversions between pointer types are much stricter than C. Implicit po
 Similar to C++, there is no separate namespace for tags so the keywords “struct”, “union”, etc may be omitted. For example, this is valid.
 ```c
 struct Node {
-	Node* next;  // “struct” omitted
-	Node* prev;
+    Node* next;  // “struct” omitted
+    Node* prev;
 };
 ```
 Unlike C and similar to C++, a new scope is introduced within “struct” and “union” definitions. The “dot” operator is used in a nested type specifier.
 ```c
 struct S {
-	struct T {};
+    struct T {};
 };
 S.T x;    // nested type specifier, okay
 // T x;   // ERROR
 ```
 
-### Transformation of Function Parameter Types
+### Adjustment of Function Parameter Types
 In C, array parameter types are "adjusted" to pointer types. Instead, OIC adjusts array typed parameters to lvalue reference to array type, even if they are not written as such. Consider:
 ```c
 void f(int a[3][2]);
@@ -109,9 +109,9 @@ In cases where there is an grammatical ambiguity between a nested type specifier
 ```
 
 ### Reference Types
-This has similar semantics to C++ but much more limited. Only local variables, parameters and function return types may have reference type. Typedefs may not have reference type.
+Reference type semantics resemble C++ but are more limited. Only variables with automatic storage duration, including parameters, and function return types may have reference type. Typedefs may not have reference type.
 
-Both rvalue and lvalue reference types are available, having similar semantics to C++. The biggest difference is for parameters of rvalue reference type, where the callee takes ownership of a passed rvalue reference and is responsible for calling its destructor. The caller never calls the destructors for an rvalue passed by rvalue reference.
+Both rvalue and lvalue reference types are available, having semantics resembling C++. The biggest difference is for parameters of rvalue reference type, where the callee takes ownership of a passed rvalue reference and is responsible for calling its destructor; the caller never calls the destructors for an rvalue passed by rvalue reference.
 
 ```c
 void f(int& lvalue_reference_param);
@@ -147,7 +147,16 @@ void g() {
 ```
 ### Destructors
 Similar to C++, a struct may have a destructor. This is caLLed at the end of an object's lifetime, but not always. Specifically, if an object is not in its default state, the destructor must be called. However, if the compiler can prove that an object _is_ in its default state, it should preferably _not_ generate code to call the destructor. The compiler's ability to do this can depend on optimization level.
+```c
+struct T {
+    FILE* file;  // initialized to null
 
+    // ...
+    void destructor(T& this) {
+        if (file) fclose(file);
+    }
+};
+```
 Destructors are also automatically called on the left side of a move expression, assuming the compiler cannot prove the left side is not in its default state, as above.
 
 ## Variables
@@ -171,6 +180,22 @@ Similar to C++, variables declared at file scope with const qualified type can b
 ```c
 const int array_size = 3;
 int array[array_size];
+```
+
+## Expressions
+### Move Operator
+The move operator invokes the destructor on the left hand side (unless the compiler can prove redundant), trivially moves (in C++ terms) the right hand side to the left hand side, and resets the state of the right hand side to its default state.
+```c
+struct T {
+    int x;
+    void destructor(T&);
+};
+
+void swap_T(T& a, T &b) {
+    T t = &&a;
+    a = &&b;
+    b = &&t;  // now compiler can prove variable "t" has default state so swap_T should not call any destructors
+}
 ```
 
 ## Exceptions
