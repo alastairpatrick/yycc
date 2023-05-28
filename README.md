@@ -113,11 +113,48 @@ This has similar semantics to C++ but much more limited. Only local variables, p
 
 Both rvalue and lvalue reference types are available, having similar semantics to C++. The biggest difference is for parameters of rvalue reference type, where the callee takes ownership of a passed rvalue reference and is responsible for calling its destructor. The caller never calls the destructors for an rvalue passed by rvalue reference.
 
+```c
+void f(int& lvalue_reference_param);
+void g(int&& rvalue_reference_param);
+
+int& h(int x) {
+	int& lvalue_reference_var = x;
+}
+```
+By default, reference types parameters have nocapture semantics so, among other things, their address may not be taken. The "captured" variant of reference type does not have nocapture semantics.
+```c
+int& f(int& a, int& nocapture b) {
+    // int* p = &a;	// ERROR; "a" has nocapture semantics
+	// return a;	// ERROR; "a" has nocapture semantics
+    int* q = &b;
+    return b;
+}
+```
+
+### Member Functions
+
+Structs may have member functions. Unlike C++, the "this" parameter is explicit.
+
+```c
+struct S {
+    void call_me(S& this, int param);
+};
+
+void g() {
+    S s;
+    s.call_me(7);
+}
+```
+### Destructors
+Similar to C++, a struct may have a destructor. This is caLLed at the end of an object's lifetime, but not always. Specifically, if an object is not in its default state, the destructor must be called. However, if the compiler can prove that an object _is_ in its default state, it should preferably _not_ generate code to call the destructor. The compiler's ability to do this can depend on optimization level.
+
+Destructors are also automatically called on the left side of a move expression, assuming the compiler cannot prove the left side is not in its default state, as above.
+
 ## Variables
 ### Initialization
 All variables, including variables with automatic duration, are initialized by default. The default value is the same as for variables with static duration, i.e. some kind of zero value. It is still possible to skip initialization with a switch or goto statement.
 ```c
-SensitiveInfo* p;  // initialized p to null
+SensitiveInfo* p;  // initializes p to null
 ```
 Default initialization of variables may be prevented with an uninitializer expression. This might be used as an optimization, for example.
 ```c
