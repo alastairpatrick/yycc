@@ -70,6 +70,13 @@ EXPECT_MESSAGE
 END
 
 
+BEGIN Array initialized with fewer initializers than array size
+int x[2] = {1};
+EXPECT_IR
+@x = global [2 x i32] [i32 1, i32 0]
+END
+
+
 BEGIN Scalar global variable initialized with initializer expression with too many braces
 int x = {{1}};
 EXPECT_MESSAGE

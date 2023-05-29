@@ -667,8 +667,8 @@ struct Emitter: Visitor, ValueResolver {
                     return convert_to_type(initializer->elements[0], dest_type, ConvKind::IMPLICIT);
                 }
 
-                vector<LLVMValueRef> values(array_type->size);
-                for (size_t i = 0; i < array_type->size; ++i) {
+                vector<LLVMValueRef> values(array_type->size, LLVMConstNull(array_type->element_type->llvm_type()));
+                for (size_t i = 0; i < min(array_type->size, initializer->elements.size()); ++i) {
                     values[i] = get_value(emit_initializer(array_type->element_type, initializer->elements[i]));
                 }
 
