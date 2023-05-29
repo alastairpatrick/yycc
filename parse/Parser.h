@@ -72,8 +72,8 @@ private:
 
     void handle_declaration_directive();
 
-    LocationNode* parse_declaration_or_statement(bool expression_valid);
-    Declaration* parse_declaration(bool expression_valid);
+    LocationNode* parse_declaration_or_statement(bool expression_valid, ParseDeclaratorFlags flags);
+    Declaration* parse_declaration(bool expression_valid, ParseDeclaratorFlags flags);
     Declaration* parse_declaration_specifiers(bool expression_valid, const Type*& type, SpecifierSet& specifiers);
     const Type* parse_structured_type(Declaration* declaration);
     Declarator* declare_tag_type(AddScope add_scope, Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location);

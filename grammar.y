@@ -292,6 +292,7 @@ specifier_qualifier_list
 
 struct_declarator_list
 	: struct_declarator
+    | struct_declarator '=' initializer             // ADDITION
 	| struct_declarator_list ',' struct_declarator
 	;
 

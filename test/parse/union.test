@@ -20,3 +20,14 @@ EXPECT_AST
 EXPECT_GLOBALS
 [["typedef",["UNION",["?"]],"S"]
 ,["var","ES",["UNION",["?"]],"z"]]
+
+
+BEGIN Union may not have initializers
+union {
+    int x;
+    int y = 1;
+} z;
+EXPECT_MESSAGE
+:3:11: error expected ';' but got '='
+END
+

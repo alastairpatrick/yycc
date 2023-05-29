@@ -182,10 +182,10 @@ bool Parser::check_eof() {
     return false;
 }
 
-LocationNode* Parser::parse_declaration_or_statement(bool expression_valid) {
+LocationNode* Parser::parse_declaration_or_statement(bool expression_valid, ParseDeclaratorFlags flags) {
     resume_messages();
 
-    LocationNode* node = parse_declaration(expression_valid);
+    LocationNode* node = parse_declaration(expression_valid, flags);
     if (node) return node;
 
     node = parse_statement();
@@ -196,7 +196,7 @@ bool allow_abstract_declarator(ScopeKind scope) {
     return scope == ScopeKind::PROTOTYPE || scope == ScopeKind::STRUCTURED;
 }
 
-Declaration* Parser::parse_declaration(bool expression_valid) {
+Declaration* Parser::parse_declaration(bool expression_valid, ParseDeclaratorFlags flags) {
     auto location = preprocessor.location();
     auto begin = position();
     ScopeKind scope = identifiers.scope_kind();
@@ -207,9 +207,9 @@ Declaration* Parser::parse_declaration(bool expression_valid) {
         int declarator_count = 0;
         bool last_declarator{};
         while (token && token != ';') {
-            ParseDeclaratorFlags flags = { .allow_identifier = true, .allow_initializer = true };
-            if (declarator_count == 0) flags.allow_function_definition = true;
-            auto declarator = parse_declarator(declaration, base_type, specifiers, flags, &last_declarator);
+            ParseDeclaratorFlags new_flags = flags;
+            if (declarator_count == 0) new_flags.allow_function_definition = true;
+            auto declarator = parse_declarator(declaration, base_type, specifiers, new_flags, &last_declarator);
             if (!declarator->identifier->empty() || allow_abstract_declarator(scope)) {
                 declaration->declarators.push_back(declarator);
                 ++declarator_count;
@@ -524,7 +524,9 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
             oi_scope.position = position();
 
             while (token && token != '}') {
-                auto member_declaration = dynamic_cast<Declaration*>(parse_declaration_or_statement(false));
+                auto member_declaration = dynamic_cast<Declaration*>(parse_declaration_or_statement(false, {
+                    .allow_identifier = true,
+                    .allow_initializer = dynamic_cast<StructType*>(structured_type) != nullptr }));
                 if (!member_declaration) continue;
 
                 // C11 6.7.2.1p13 anonymous structs and unions
@@ -968,7 +970,8 @@ Statement* Parser::parse_statement() {
           Expr* iterate{};
           if (kind == TOK_FOR) {
               if (!consume(';')) {
-                  declaration = parse_declaration(true);
+                  ParseDeclaratorFlags flags = { .allow_identifier = true, .allow_initializer = true };
+                  declaration = parse_declaration(true, flags);
                   if (!declaration) {
                       initialize = parse_expr(SEQUENCE_PRECEDENCE);
                       consume_required(';');
@@ -1152,7 +1155,7 @@ CompoundStatement* Parser::parse_compound_statement() {
 
         ASTNodeVector nodes;
         while (token && token != '}') {
-            auto node = parse_declaration_or_statement(true);
+            auto node = parse_declaration_or_statement(true, { .allow_identifier = true, .allow_initializer = true });
             if (node) nodes.push_back(node);
         }
 
@@ -1474,7 +1477,7 @@ Expr* Parser::parse_initializer() {
 vector<Declaration*> Parser::parse() {
     vector<Declaration*> declarations;
     while (token) {
-        auto node = parse_declaration_or_statement(false);
+        auto node = parse_declaration_or_statement(false, { .allow_identifier = true, .allow_initializer = true });
         auto declaration = dynamic_cast<Declaration*>(node);
 
         if (declaration) {

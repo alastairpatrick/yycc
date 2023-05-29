@@ -129,3 +129,14 @@ PARSE
 EXPECT_MESSAGE
 :4:1: error type 'E' undefined
 END
+
+
+BEGIN Struct with initializers
+int g;
+struct {
+    int x = 1;
+    int* y = &g;
+} z;
+PARSE
+EXPECT_AST
+[["var","ES","Si","g"],["var","ES",["STRUCT",[["x","Si",1],["y",["P","Si"],["address","Ng"]]]],"z"]]

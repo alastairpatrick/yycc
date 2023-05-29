@@ -600,6 +600,9 @@ void StructuredType::print(std::ostream& stream) const {
                 if (member_variable->member->bit_field) {
                     stream << ", " << member_variable->member->bit_field;
                 }
+                if (member_variable->initializer) {
+                    stream << ", " << member_variable->initializer;
+                }
             }
             stream << ']';
         }

@@ -1,10 +1,12 @@
 # Summary of Differences with C
-This is not a sales pitch, more a reminder. The most significant changes to C are order independent declarations and initializing all variables by default.
+The most significant changes to C are order independent declarations and initializing all variables by default.
 
 ## Context-Free Grammar
 OIC has a context-free grammar. In contrast, C's grammar is not context-free; the parser or lexer needs to determine whether identifiers correspond to types or not. For OIC, this is not possible because declarations are order independent, so the declaration of a type identifier might follow some usage of that identifier.
 
-OIC actually has two grammars. The first is a context-free grammar for a useful superset of the language, crucially, one that can determine those identifiers corresponding to type names. The second grammar is for OIC proper, is not context free, but is parseable with the benefit of an initial analysis performed using the context-free grammar.
+OIC actually has two grammars. The first is a context-free grammar for a useful superset of the language, crucially one that can determine those identifiers corresponding to type names.
+
+The second grammar is for OIC proper, is not context free, but is parseable with the benefit of an initial analysis performed using the context-free grammar.
 
 ## Declarations
 Declarations at file scope are order independent. For example, this is valid:
@@ -163,7 +165,7 @@ int x[3] = {{void}, 1};  // x[0] is uninitialized, x[1] is initialized
 The primary motivation for this change is to reduce bugs while allowing variables to be explicitly uninitialized where default initialization would have a negative performance impact.
 
 ### Constants
-Similar to C++, variables declared at file scope with const qualified type can be used in constant expressions.
+Similar to C++, variables declared with const qualified type can be used in constant expressions.
 ```c
 const int array_size = 3;
 int array[array_size];
@@ -171,7 +173,7 @@ int array[array_size];
 
 ## Expressions
 ### Move Operator
-The move operator invokes the destructor on the left hand side (unless the compiler can prove redundant), trivially moves (in C++ terms) the right hand side to the left hand side, and resets the state of the right hand side to its default state.
+The move operator invokes the destructor on the left hand side (unless the compiler can prove redundant), trivially copies (in C++ terms) the right hand side to the left hand side, and resets the state of the right hand side to its default state.
 ```c
 struct T {
     int x;
