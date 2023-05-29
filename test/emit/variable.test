@@ -1024,3 +1024,72 @@ void f() {
 EXPECT_MESSAGE
 :2:9: error variable 'r' of reference type 'int&' was not initialized with an lvalue
 END
+
+
+BEGIN Global variable of type struct containing initializers (1)
+struct S {
+    int x;
+    int y = 1;
+};
+S s;
+EXPECT_IR
+%S = type { i32, i32 }
+
+@s = global %S { i32 0, i32 1 }
+END
+
+
+BEGIN Global variable of type struct containing initializers (2)
+struct T {
+    int x, y;
+};
+struct S {
+    T t = { 1, 2 };
+};
+S s;
+EXPECT_IR
+%S = type { %T }
+%T = type { i32, i32 }
+
+@s = global %S { %T { i32 1, i32 2 } }
+END
+
+
+BEGIN Global variable of type struct containing anonymous structs with initializers
+struct S {
+    struct {
+        int x;
+        int y = 1;
+    };
+};
+S s;
+EXPECT_IR
+%S = type { { i32, i32 } }
+
+@s = global %S { { i32, i32 } { i32 0, i32 1 } }
+END
+
+
+BEGIN Local variable of type struct containing initializers
+struct S {
+    int x;
+    int y = 1;
+    void destructor(S&);
+};
+void f() {
+    S s;
+}
+EXPECT_IR
+%S = type { i32, i32 }
+
+define void @f() {
+  %s = alloca %S, align 8
+  store %S { i32 0, i32 1 }, ptr %s, align 4
+  call void @destructor_wrapper(ptr %s)
+  ret void
+}
+
+declare void @destructor(ptr nocapture)
+
+declare void @destructor_wrapper(ptr)
+END

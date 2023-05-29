@@ -1,6 +1,27 @@
-BEGIN Does not call destructor on object known to be in default state
+BEGIN Does not call destructor on object known to be in default state (1)
 struct S {
     int x;
+    void destructor(S&);
+};
+void f() {
+    S s;
+}
+EXPECT_IR
+define void @f() local_unnamed_addr {
+destructor_wrapper.exit:
+  ret void
+}
+END
+
+
+BEGIN Does not call destructor on object known to be in default state (2)
+struct S {
+    int x = 1;
+    float f = 1;
+    char s[32];
+    struct {
+        void* p;
+    };
     void destructor(S&);
 };
 void f() {

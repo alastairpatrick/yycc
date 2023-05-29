@@ -85,6 +85,7 @@ struct Emitter: Visitor, ValueResolver {
     Value this_value;
     LLVMTypeRef destructor_wrapper_type{};
     unordered_map<const StructuredType*, TypedFunctionRef> destructor_wrappers;
+    unordered_map<const Type*, LLVMValueRef> default_values;
     LLVMBasicBlockRef last_unreachable_block{};
 
     LLVMValueRef last_throw_branch{};
@@ -115,7 +116,35 @@ struct Emitter: Visitor, ValueResolver {
     }
 
     LLVMValueRef default_value(const Type* type) {
-        return LLVMConstNull(type->llvm_type());
+        auto it = default_values.find(type);
+        if (it != default_values.end()) return it->second;
+
+        auto llvm_type = type->llvm_type();
+        
+        LLVMValueRef value{};
+        if (auto struct_type = unqualified_type_cast<StructType>(type->unqualified())) {
+            Emitter initializer_emitter(module, EmitOutcome::FOLD, options);
+
+            vector<LLVMValueRef> values;
+            for (auto declaration: struct_type->declarations) {
+                for (auto member: declaration->declarators) {
+                    if (auto member_variable = member->variable()) {
+                        if (member_variable->initializer) {
+                            values.push_back(initializer_emitter.get_value(initializer_emitter.emit_initializer(member->type, member_variable->initializer)));
+                        } else {
+                            values.push_back(default_value(member->type));
+                        }
+                    }
+                }
+            }
+
+            value = LLVMConstNamedStruct(llvm_type, values.data(), values.size());
+            
+        } else {
+            value = LLVMConstNull(llvm_type);
+        }
+
+        return default_values[type] = value;
     }
 
     virtual LLVMValueRef get_value(ExprValue value, bool for_move_expr = false) override {
@@ -205,17 +234,17 @@ struct Emitter: Visitor, ValueResolver {
         LLVMSetLinkage(ref.function, LLVMInternalLinkage);
         LLVMAddAttributeAtIndex(ref.function, 1, module->nocapture_attribute());
 
+        auto llvm_type = type->llvm_type();
+        auto receiver = LLVMGetParam(ref.function, 0);
+
         auto entry_block = LLVMAppendBasicBlockInContext(context->llvm_context, ref.function, "");
         LLVMPositionBuilderAtEnd(builder, entry_block);
 
-        auto receiver = LLVMGetParam(ref.function, 0);
-        auto llvm_type = type->llvm_type();
         auto current_state = LLVMBuildLoad2(builder, llvm_type, receiver, "");
-
         auto indeterminate = module->indeterminate_bool();
         auto selected = LLVMBuildSelect(builder, indeterminate.dangerously_get_value(builder, outcome),
-                                                 current_state,
-                                                 LLVMConstNull(llvm_type), "");
+                                                  current_state,
+                                                  default_value(type), "");
 
         auto is_const = module->call_is_constant_intrinsic(builder, selected, type->llvm_type());
 
