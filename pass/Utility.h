@@ -18,6 +18,7 @@ inline const T* unqualified_type_cast(const U* type) {
 
 ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type);
 bool is_string_initializer(const ResolvedArrayType* array_type, const InitializerExpr* initializer);
+bool values_are_aliases(LLVMValueRef a, LLVMValueRef b);
 
 inline bool is_void_type(const Type* type) {
     return type->unqualified() == &VoidType::it;

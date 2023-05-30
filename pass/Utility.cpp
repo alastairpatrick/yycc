@@ -40,3 +40,17 @@ bool is_string_initializer(const ResolvedArrayType* array_type, const Initialize
         dynamic_cast<StringConstant*>(initializer->elements[0]));
 }
 
+static bool follow_geps(LLVMValueRef haystack, LLVMValueRef needle) {
+    for (;;) {
+        if (needle == haystack) return true;
+
+        auto opcode = LLVMGetInstructionOpcode(haystack);
+        if (opcode != LLVMGetElementPtr) return false;
+
+        haystack = LLVMGetOperand(haystack, 0);
+    }
+}
+
+bool values_are_aliases(LLVMValueRef a, LLVMValueRef b) {
+    return follow_geps(a, b) || follow_geps(b, a);
+}

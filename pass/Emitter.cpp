@@ -1494,6 +1494,25 @@ struct Emitter: Visitor, ValueResolver {
         return VisitExpressionOutput(intermediate);
     }
 
+    void check_reference_parameter_aliasing(const vector<LLVMValueRef> arg_values, const vector<const Type*> param_types, const vector<Location> arg_locations) {
+        for (size_t i = 0; i < arg_values.size(); ++i) {
+            for (size_t j = 0; j < arg_values.size(); ++j) {
+                if (i == j) continue;
+
+                auto type_i = unqualified_type_cast<ReferenceType>(param_types[i]->unqualified());
+                auto type_j = unqualified_type_cast<ReferenceType>(param_types[j]->unqualified());
+                if (!type_i || !type_j) continue;
+
+                if (type_i->base_type->qualifiers() & QUALIFIER_CONST) continue;
+
+                if (values_are_aliases(arg_values[i], arg_values[j])) {
+                    message(Severity::ERROR, arg_locations[i]) << "arguments " << (i+1) << " and " << (j+1) << " cannot be aliases\n";
+                    return;
+                }
+            }
+        }
+    }
+
     virtual VisitExpressionOutput visit(CallExpr* expr) override {
         auto context = TranslationUnitContext::it;
 
@@ -1549,8 +1568,8 @@ struct Emitter: Visitor, ValueResolver {
                 return VisitExpressionOutput(Value::of_recover(result_type));
             }
 
-            vector<LLVMValueRef> llvm_params;
-            llvm_params.resize(expected_num_params);
+            vector<LLVMValueRef> llvm_params(expected_num_params);
+            vector<Location> arg_locations(expected_num_params);
 
             size_t param_expr_idx{};
             for (size_t i = 0; i < expected_num_params; ++i) {
@@ -1562,7 +1581,7 @@ struct Emitter: Visitor, ValueResolver {
                     param_value = emit_expr(param_expr);
                 }
 
-                auto param_location = param_value.node->location;
+                auto param_location = arg_locations[i] = param_value.node->location;
 
                 auto expected_type = function_type->parameter_types[i];
 
@@ -1584,6 +1603,7 @@ struct Emitter: Visitor, ValueResolver {
                     } else if (param_value.kind != ValueKind::LVALUE) {
                         message(Severity::ERROR, param_location) << "rvalue type '" << param_value.error_type() << "' incompatible with non-const parameter reference type '"
                                                                  << PrintType(function_type->parameter_types[i]) << "'\n";
+                        pause_messages();
                         llvm_params[i] = LLVMConstNull(reference_type->llvm_type());
                     } else {
                         if (reference_type->kind == ReferenceType::Kind::RVALUE && param_value.kind == ValueKind::LVALUE) {
@@ -1605,6 +1625,8 @@ struct Emitter: Visitor, ValueResolver {
                     llvm_params[i] = get_value(param_value);
                 }
             }
+
+            check_reference_parameter_aliasing(llvm_params, function_type->parameter_types, arg_locations);
 
             auto llvm_result = LLVMBuildCall2(builder, function_type->llvm_type(), get_address(function_value), llvm_params.data(), llvm_params.size(), "");
 
@@ -1717,9 +1739,12 @@ struct Emitter: Visitor, ValueResolver {
     }
 
     virtual VisitExpressionOutput visit(DereferenceExpr* expr) override {
-
         auto value = emit_expr(expr->expr).unqualified();
+
+        // todo: type could also be an array
+        // todo error rather than crash if it's an invalid type
         auto pointer_type = unqualified_type_cast<PointerType>(value.type);
+
         auto result_type = pointer_type->base_type;
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 

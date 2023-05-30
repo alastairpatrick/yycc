@@ -640,6 +640,82 @@ void f(int& std::captured x) {
 END
 
 
+BEGIN Const reference parameters can alias the same object
+void f(const int &a, const int& b) {
+}
+void g() {
+    int x;
+    f(x, x);
+}
+END
+
+
+BEGIN Non-const reference parameter may not alias the same object as another reference parameter (1)
+void f(int &a, const int& b) {
+}
+void g() {
+    int x;
+    f(x, x);
+}
+EXPECT_MESSAGE
+:5:7: error arguments 1 and 2 cannot be aliases
+END
+
+
+BEGIN Non-const reference parameter may not alias the same object as another reference parameter (2)
+struct S {
+    int x;
+    int y;
+};
+void f(S &a, const int& b) {
+}
+void g() {
+    S s;
+    f(s, s.x);
+}
+EXPECT_MESSAGE
+:9:7: error arguments 1 and 2 cannot be aliases
+END
+
+
+BEGIN Non-const reference parameter may not alias the same object as another reference parameter (2)
+void f(int &a, int& b) {
+}
+void g() {
+    int x;
+    f(x, *&x);
+}
+EXPECT_MESSAGE
+:5:7: error arguments 1 and 2 cannot be aliases
+END
+
+
+BEGIN Non-const reference parameter may not alias the same object as another reference parameter (2)
+void f(int &a, int& b) {
+}
+void g(int x) {
+    int &y = x;
+    f(x, y);
+}
+EXPECT_MESSAGE
+:5:7: error arguments 1 and 2 cannot be aliases
+END
+
+
+BEGIN Non-overlapping members of a struct are not the same object from the pov of aliasing of reference parameters
+struct S {
+    int x;
+    int y;
+};
+void f(int &a, const int& b) {
+}
+void g() {
+    S s;
+    f(s.y, s.x);
+}
+END
+
+
 BEGIN Cannot move const lvalue
 struct S {
     void destructor(S&);
