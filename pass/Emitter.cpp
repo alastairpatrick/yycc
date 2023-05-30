@@ -965,7 +965,7 @@ struct Emitter: Visitor, ValueResolver {
 
         auto return_reference_type = unqualified_type_cast<ReferenceType>(return_type);
         if (return_reference_type) {
-            return_type = return_reference_type->base_type;
+            return_type = return_reference_type->base_type->unqualified();
         }
 
         LLVMValueRef exception{};
@@ -991,6 +991,9 @@ struct Emitter: Visitor, ValueResolver {
                         return_value = context->llvm_null;
                     } else if (!value.capturable) {
                         message(Severity::ERROR, statement->expr->location) << "reference type '" << value.error_type() << "' is not capturable\n";
+                    } else if (value.qualifiers > return_reference_type->base_type->qualifiers()) {
+                        message(Severity::ERROR, statement->expr->location) << "binding reference type '" << PrintType(return_reference_type)
+                                                                            << "' to value of type '" << value.error_type() << "' discards type qualifier\n";
                     } else {
                         return_value = get_address(value);
                     }
