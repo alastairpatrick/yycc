@@ -23,8 +23,6 @@ struct DerivedTypes {
     unique_ptr<const PointerType> pointer;
     unique_ptr<const ReferenceType> lvalue_reference;
     unique_ptr<const ReferenceType> rvalue_reference;
-    unique_ptr<const ReferenceType> captured_lvalue_reference;
-    unique_ptr<const ReferenceType> captured_rvalue_reference;
     unique_ptr<const ThrowType> throw_type;
 
     unordered_map<unsigned, unique_ptr<const QualifiedType>> qualified;
@@ -46,7 +44,7 @@ struct TypeContext {
     void operator=(const TypeContext&) = delete;
 
     const PointerType* get_pointer_type(const Type* base_type);
-    const ReferenceType* get_reference_type(const Type* base_type, ReferenceType::Kind kind, bool captured);
+    const ReferenceType* get_reference_type(const Type* base_type, ReferenceType::Kind kind);
     const QualifiedType* get_qualified_type(const Type* base_type, unsigned qualifiers);
     const ThrowType* get_throw_type(const Type* base_type);
 

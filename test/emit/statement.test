@@ -585,26 +585,6 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN Cannot return non-captured reference argument
-int& f(int& x) {
-    return x;
-}
-EXPECT_MESSAGE
-:2:12: error reference type 'int&' is not capturable
-END
-
-
-BEGIN Can return captured reference argument
-int& f(int& std::captured x) {
-    return x;
-}
-EXPECT_IR
-define ptr @f(ptr %0) {
-  ret ptr %0
-}
-END
-
-
 BEGIN Cannot return reference to more qualified lvalue
 volatile int x;
 int& f() {

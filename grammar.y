@@ -21,7 +21,7 @@
 %token	ALIGNAS ALIGNOF ATOMIC GENERIC NORETURN STATIC_ASSERT THREAD_LOCAL
 
 // ADDITION
-%token  CAPTURED CATCH THROW TRY
+%token  CATCH THROW TRANSIENT TRY
 
 %start translation_unit
 %%
@@ -329,6 +329,7 @@ atomic_type_specifier
 type_qualifier
 	: CONST
 	| RESTRICT
+    | TRANSIENT
 	| VOLATILE
 	| ATOMIC
 	;
@@ -385,8 +386,6 @@ type_qualifier_list
 reference
 	: '&'
 	| TOK_AND_OP
-	| '&' CAPTURED
-	| TOK_AND_OP CAPTURED
     ;
 
 

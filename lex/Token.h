@@ -33,7 +33,6 @@ enum TokenKind {
     TOK_ELLIPSIS,
     
     TOK_BREAK,
-    TOK_CAPTURED,
     TOK_CASE,
     TOK_CATCH,
     TOK_CONTINUE,
@@ -92,6 +91,7 @@ enum TokenKind {
     // Qualifiers come first so associated set can fit in uint8_t
     TOK_CONST = TOK_BEGIN_SPECIFIER_LIKE,
     TOK_RESTRICT,
+    TOK_TRANSIENT,
     TOK_VOLATILE,
 
     TOK_AUTO,

@@ -17,6 +17,7 @@ inline constexpr bool multiple_specifiers(SpecifierSet specifiers) {
 enum Specifier: SpecifierSet {
     QUALIFIER_CONST = token_to_specifier(TOK_CONST),
     QUALIFIER_RESTRICT = token_to_specifier(TOK_RESTRICT),
+    QUALIFIER_TRANSIENT = token_to_specifier(TOK_TRANSIENT),
     QUALIFIER_VOLATILE = token_to_specifier(TOK_VOLATILE),
 
     SPECIFIER_AUTO = token_to_specifier(TOK_AUTO),
@@ -49,7 +50,7 @@ enum Specifier: SpecifierSet {
     SPECIFIER_INLINE = token_to_specifier(TOK_INLINE),
 };
 
-constexpr QualifierSet SPECIFIER_MASK_QUALIFIER = QUALIFIER_CONST | QUALIFIER_RESTRICT | QUALIFIER_VOLATILE;
+constexpr QualifierSet SPECIFIER_MASK_QUALIFIER = QUALIFIER_CONST | QUALIFIER_RESTRICT | QUALIFIER_VOLATILE | QUALIFIER_TRANSIENT;
 
 constexpr SpecifierSet SPECIFIER_MASK_STORAGE_CLASS = SPECIFIER_AUTO | SPECIFIER_EXTERN | SPECIFIER_REGISTER | SPECIFIER_STATIC | SPECIFIER_TYPEDEF;
 

@@ -298,23 +298,23 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN Cannot take address of reference typed parameter
+BEGIN Taking address of reference type yields pointer to transient (1)
 int* f(int& x) {
     return &x;
 }
 EXPECT_MESSAGE
-:2:12: error cannot take address of reference type 'int&' lacking 'captured' type qualifier
+:2:12: contextual error conversion from type 'int transient*' to type 'int*' requires explicit cast
 END
 
 
-BEGIN Can take address of 'captured' qualified reference type parameter
-int* f(int& std::captured x) {
-    return &x;
+BEGIN Taking address of reference type yields pointer to transient (2)
+int* f() {
+    int x;
+    int& y = x;
+    return &y;
 }
-EXPECT_IR
-define ptr @f(ptr %0) {
-  ret ptr %0
-}
+EXPECT_MESSAGE
+:4:12: contextual error conversion from type 'int transient*' to type 'int*' requires explicit cast
 END
 
 
@@ -622,24 +622,6 @@ define void @g() {
 END
 
 
-BEGIN Cannot pass not-captured reference argument as captured reference parameter
-void g(int& std::captured);
-void f(int& x) {
-    g(x);
-}
-EXPECT_MESSAGE
-:3:7: error cannot capture reference type 'int&' lacking 'captured' type qualifier
-END
-
-
-BEGIN Can pass captured reference argument as captured reference parameter
-void g(int& std::captured);
-void f(int& std::captured x) {
-    g(x);
-}
-END
-
-
 BEGIN Const reference parameters can alias the same object
 void f(const int &a, const int& b) {
 }
@@ -699,6 +681,17 @@ void g(int x) {
 }
 EXPECT_MESSAGE
 :5:7: error arguments 1 and 2 cannot be aliases
+END
+
+
+BEGIN Non-const reference parameter may not alias the same object as another reference parameter (3)
+void f(int &a, int& b) {
+}
+void g(int &a) {
+    f(a, a);
+}
+EXPECT_MESSAGE
+:4:7: error arguments 1 and 2 cannot be aliases
 END
 
 

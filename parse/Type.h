@@ -156,16 +156,15 @@ struct ReferenceType: CachedType {
 
     const Type* const base_type;
     const Kind kind;
-    bool captured;
 
-    static const ReferenceType* of(const Type* base_type, Kind kind, bool captured);
+    static const ReferenceType* of(const Type* base_type, Kind kind);
     virtual const Type* accept(TypeVisitor& visitor) const override;
     virtual void message_print(ostream& stream, int section) const override;
     virtual void print(std::ostream& stream) const override;
 
 private:
     friend class TypeContext;
-    explicit ReferenceType(const Type* base_type, Kind kind, bool captured);
+    explicit ReferenceType(const Type* base_type, Kind kind);
     virtual LLVMTypeRef cache_llvm_type() const override;
 };
 

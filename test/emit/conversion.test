@@ -304,19 +304,14 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN Captured reference to array to pointer
-float* f(float (& std::captured a)[2]) {
+BEGIN Reference to array to pointer
+float* f(float (&a)[2]) {
     return a;
 }
-END
-
-
-BEGIN Error on converting non-captured reference to array to pointer
-float* f(float a[2]) {
-    return a;
+EXPECT_IR
+define ptr @f(ptr %0) {
+  ret ptr %0
 }
-EXPECT_MESSAGE
-:2:12: error cannot convert from type 'float(&)[2]' to type 'float*'
 END
 
 

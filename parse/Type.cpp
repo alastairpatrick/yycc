@@ -365,9 +365,9 @@ PointerType::PointerType(const Type* base_type)
 }
 
 
-const ReferenceType* ReferenceType::of(const Type* base_type, Kind kind, bool captured) {
+const ReferenceType* ReferenceType::of(const Type* base_type, Kind kind) {
     auto& type_context = TranslationUnitContext::it->type;
-    return type_context.get_reference_type(base_type, kind, captured);
+    return type_context.get_reference_type(QualifiedType::of(base_type, QUALIFIER_TRANSIENT), kind);
 }
 
 const Type* ReferenceType::accept(TypeVisitor& visitor) const {
@@ -386,7 +386,7 @@ void ReferenceType::message_print(ostream& stream, int section) const {
         if (need_paren) stream << ')';
     }
 
-    base_type->message_print(stream, section);
+    QualifiedType::of(base_type->unqualified(), base_type->qualifiers() & ~QUALIFIER_TRANSIENT)->message_print(stream, section);
 
     if (section == 1) {
         if (need_paren) {
@@ -397,10 +397,6 @@ void ReferenceType::message_print(ostream& stream, int section) const {
             stream << '&';
         } else {
             stream << "&&";
-        }
-
-        if (captured) {
-            stream << " captured";
         }
     }
 }
@@ -414,13 +410,11 @@ void ReferenceType::print(std::ostream& stream) const {
         stream << 'r';
     }
 
-    if (captured) stream << 'c';
-
     stream << "\", " << base_type << ']';
 }
 
-ReferenceType::ReferenceType(const Type* base_type, Kind kind, bool captured)
-    : base_type(base_type), kind(kind), captured(captured) {
+ReferenceType::ReferenceType(const Type* base_type, Kind kind)
+    : base_type(base_type), kind(kind) {
 }
 
 
@@ -461,6 +455,7 @@ void QualifiedType::message_print(ostream& stream, int section) const {
     if (section == 1) {
         if (qualifier_flags & QUALIFIER_CONST) stream << " const";
         if (qualifier_flags & QUALIFIER_RESTRICT) stream << " restricted";
+        if (qualifier_flags & QUALIFIER_TRANSIENT) stream << " transient";
         if (qualifier_flags & QUALIFIER_VOLATILE) stream << " volatile";
     }
 }
@@ -469,6 +464,7 @@ void QualifiedType::print(std::ostream& stream) const {
     stream << "[\"Q";
     if (qualifier_flags & QUALIFIER_CONST) stream << 'c';
     if (qualifier_flags & QUALIFIER_RESTRICT) stream << 'r';
+    if (qualifier_flags & QUALIFIER_TRANSIENT) stream << 't';
     if (qualifier_flags & QUALIFIER_VOLATILE) stream << 'v';
     stream << "\", " << base_type << ']';
 }

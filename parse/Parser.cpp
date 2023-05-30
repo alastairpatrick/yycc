@@ -230,7 +230,7 @@ Declaration* Parser::parse_declaration(bool expression_valid, ParseDeclaratorFla
 }
 
 static bool is_type_qualifier_token(TokenKind token) {
-    return token == TOK_CONST || token == TOK_RESTRICT || token == TOK_VOLATILE;
+    return token == TOK_CONST || token == TOK_RESTRICT || token == TOK_TRANSIENT || token == TOK_VOLATILE;
 }
 
 Declaration* Parser::parse_declaration_specifiers(bool expression_valid, const Type*& type, SpecifierSet& specifiers) {
@@ -347,6 +347,7 @@ Declaration* Parser::parse_declaration_specifiers(bool expression_valid, const T
 
           } case TOK_CONST:
             case TOK_RESTRICT:
+            case TOK_TRANSIENT:
             case TOK_VOLATILE: {
               found_specifier_token = token;
               qualifier_location = preprocessor.location();
@@ -799,11 +800,9 @@ DeclaratorTransform Parser::parse_declarator_transform(ParseDeclaratorFlags flag
         flags.allow_reference_type = false;
         consume();
 
-        bool captured = consume(TOK_CAPTURED);
-
-        left_transform = [left_transform, kind, captured](const Type* type) {
+        left_transform = [left_transform, kind](const Type* type) {
             if (left_transform) type = left_transform(type);
-            return ReferenceType::of(type, kind, captured);
+            return ReferenceType::of(type, kind);
         };
     }
         

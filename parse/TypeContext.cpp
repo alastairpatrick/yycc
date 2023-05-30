@@ -20,12 +20,10 @@ const PointerType* TypeContext::get_pointer_type(const Type* base_type) {
     return derived.pointer.get();
 }
 
-const ReferenceType* TypeContext::get_reference_type(const Type* base_type, ReferenceType::Kind kind, bool captured) {
+const ReferenceType* TypeContext::get_reference_type(const Type* base_type, ReferenceType::Kind kind) {
     auto& derived = derived_types[base_type];
-    auto& type = (kind == ReferenceType::Kind::LVALUE ) ?
-                    (captured ? derived.captured_lvalue_reference : derived.lvalue_reference) :
-                    (captured ? derived.captured_rvalue_reference : derived.rvalue_reference);
-    if (!type) type.reset(new ReferenceType(base_type, kind, captured));
+    auto& type = kind == ReferenceType::Kind::LVALUE ? derived.lvalue_reference : derived.rvalue_reference;
+    if (!type) type.reset(new ReferenceType(base_type, kind));
     return type.get();
 }
 

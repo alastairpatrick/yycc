@@ -595,7 +595,6 @@ struct Emitter: Visitor, ValueResolver {
                     param_entity->value = Value(ValueKind::LVALUE, reference_type->base_type, llvm_param);
                     param_entity->value.was_lvalue_ref = reference_type->kind == ReferenceType::Kind::LVALUE;
                     param_entity->value.was_rvalue_ref = reference_type->kind == ReferenceType::Kind::RVALUE;
-                    param_entity->value.capturable = reference_type->captured;
 
                     if (reference_type->kind == ReferenceType::Kind::RVALUE) {
                         pend_destructor(param_entity->value);
@@ -731,6 +730,7 @@ struct Emitter: Visitor, ValueResolver {
                 reference_type = nullptr;
             }
 
+            // todo: fix, e.g. const int & < volatile int& yet discards qualifiers 
             if (reference_type && initial_value.qualifiers > type->qualifiers()) {
                 message(Severity::ERROR, declarator->location) << "binding reference of type '" << PrintType(reference_type) << "' to value of type '"
                                                                << initial_value.error_type() << "' discards type qualifier\n";
@@ -738,7 +738,7 @@ struct Emitter: Visitor, ValueResolver {
             }
 
             if (reference_type) {
-                entity->value = initial_value;
+                entity->value = initial_value.bit_cast(reference_type->base_type);
                 entity->value.was_lvalue_ref = reference_type->kind == ReferenceType::Kind::LVALUE;
                 entity->value.was_rvalue_ref = reference_type->kind == ReferenceType::Kind::RVALUE;
             } else {
@@ -796,7 +796,7 @@ struct Emitter: Visitor, ValueResolver {
             auto unqualified_param_type = param->type->unqualified();
 
             if (auto reference_type = unqualified_type_cast<ReferenceType>(unqualified_param_type)) {
-                if (!reference_type->captured && options.emit_parameter_attributes) {
+                if (options.emit_parameter_attributes) {
                     LLVMAddAttributeAtIndex(llvm_function, i + 1, module->noalias_attribute());
                     LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nocapture_attribute());
                     LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nonnull_attribute());
@@ -1009,9 +1009,8 @@ struct Emitter: Visitor, ValueResolver {
                     if (value.kind != ValueKind::LVALUE) {
                         message(Severity::ERROR, statement->expr->location) << "cannot return reference of type '" << PrintType(function_type->return_type) << "' to rvalue\n";
                         return_value = context->llvm_null;
-                    } else if (!value.capturable) {
-                        message(Severity::ERROR, statement->expr->location) << "reference type '" << value.error_type() << "' is not capturable\n";
                     } else if (value.qualifiers > return_reference_type->base_type->qualifiers()) {
+                        // todo: fix, e.g. const int & < volatile int& yet discards qualifiers 
                         message(Severity::ERROR, statement->expr->location) << "binding reference type '" << PrintType(return_reference_type)
                                                                             << "' to value of type '" << value.error_type() << "' discards type qualifier\n";
                     } else {
@@ -1130,10 +1129,6 @@ struct Emitter: Visitor, ValueResolver {
         if (value.kind != ValueKind::LVALUE) {
             message(Severity::ERROR, expr->location) << "cannot take address of rvalue of type '" << value.error_type() << "'\n";
             return VisitExpressionOutput(Value::of_recover(result_type));
-        }
-
-        if (!value.capturable) {
-            message(Severity::ERROR, expr->location) << "cannot take address of reference type '" << value.error_type() << "' lacking 'captured' type qualifier\n";
         }
 
         return VisitExpressionOutput(result_type, get_address(value));
@@ -1602,10 +1597,6 @@ struct Emitter: Visitor, ValueResolver {
                 bool expect_captured{};
                 const ReferenceType* reference_type{};
                 if (reference_type = unqualified_type_cast<ReferenceType>(expected_type->unqualified())) {
-                    if (reference_type->captured && !param_value.capturable) {
-                        message(Severity::ERROR, param_location) << "cannot capture reference type '" << param_value.error_type() << "' lacking 'captured' type qualifier\n";
-                    }
-
                     expected_type = reference_type->base_type;
                 }
 
@@ -1626,7 +1617,7 @@ struct Emitter: Visitor, ValueResolver {
                         } else if (param_value.type->unqualified() != expected_type->unqualified()) {
                             message(Severity::ERROR, param_location) << "lvalue type '" << param_value.error_type() << "' incompatible with parameter reference type '"
                                                                      << PrintType(function_type->parameter_types[i]) << "'\n";
-                        } else if (param_value.qualifiers > expected_type->qualifiers()) {
+                        } else if ((param_value.qualifiers | expected_type->qualifiers()) > expected_type->qualifiers()) {
                             message(Severity::ERROR, param_location) << "lvalue type '" << param_value.error_type() << "' has more type qualifiers than parameter reference type '"
                                                                      << PrintType(function_type->parameter_types[i]) << "'\n";
                         }

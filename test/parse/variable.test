@@ -228,10 +228,16 @@ EXPECT_AST
 [["var", "ES", ["Qr", "Si"], "x"]]
 
 
-BEGIN Restrict qualified declarators
+BEGIN Volatile qualified declarators
 volatile int x;
 EXPECT_AST
 [["var", "ES", ["Qv", "Si"], "x"]]
+
+
+BEGIN Transient qualified declarators
+std::transient int x;
+EXPECT_AST
+[["var", "ES", ["Qt", "Si"], "x"]]
 
 
 BEGIN Multiply qualified declarators

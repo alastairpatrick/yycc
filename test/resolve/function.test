@@ -7,25 +7,25 @@ EXPECT_AST
 BEGIN Function parameters of array type are adjusted to reference to array (1)
 int foo(int x[]);
 EXPECT_AST
-[["fun","E",["F","Si",["Bl",["A","Si"]]],"foo"]]
+[["fun","E",["F","Si",["Bl",["Qt",["A","Si"]]]],"foo"]]
 
 
 BEGIN Function parameters of array type are adjusted to reference to array (2)
 int foo(int x[2]);
 EXPECT_AST
-[["fun","E",["F","Si",["Bl",["A","Si",2]]],"foo"]]
+[["fun","E",["F","Si",["Bl",["Qt",["A","Si",2]]]],"foo"]]
 
 
 BEGIN Function parameters of array type are adjusted to reference to array (3)
 int foo(int x[2][3]);
 EXPECT_AST
-[["fun","E",["F","Si",["Bl",["A",["A","Si",3],2]]],"foo"]]
+[["fun","E",["F","Si",["Bl",["Qt",["A",["A","Si",3],2]]]],"foo"]]
 
 
 BEGIN Qualified array type parameter
 int foo(int x[const volatile restrict 1]);
 EXPECT_AST
-[["fun","E",["F","Si",["Bl",["Qcrv",["A","Si",1]]]],"foo"]]
+[["fun","E",["F","Si",["Bl",["Qcrtv",["A","Si",1]]]],"foo"]]
 
 
 BEGIN Error on qualified array type parameter that is not outer-most
@@ -33,13 +33,13 @@ int foo(int x[2][const volatile restrict 3]);
 EXPECT_MESSAGE
 :1:18: error unexpected token 'const'
 EXPECT_AST
-[["fun","E",["F","Si",["Bl",["A",["A","Si"],2]]],"foo"]]
+[["fun","E",["F","Si",["Bl",["Qt",["A",["A","Si"],2]]]],"foo"]]
 
 
 BEGIN Static array type parameter
 int foo(int x[static 1]);
 EXPECT_AST
-[["fun","E",["F","Si",["Bl",["A","Si",1]]],"foo"]]
+[["fun","E",["F","Si",["Bl",["Qt",["A","Si",1]]]],"foo"]]
 
 
 BEGIN Function parameters of typedef array type are adjusted to pointer
@@ -48,7 +48,7 @@ int foo(T x);
 typedef int T[];
 EXPECT_GLOBALS
 [["typedef",["A","Si"],"T"]
-,["fun","E",["F","Si",["Bl",["A","Si"]]],"foo"]]
+,["fun","E",["F","Si",["Bl",["Qt",["A","Si"]]]],"foo"]]
 
 
 BEGIN typeof parameter

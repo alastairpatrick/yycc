@@ -104,7 +104,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
     const Type* adjust_parameter_type(const Type* param_type) {
         if (auto array_type = dynamic_cast<const ArrayType*>(param_type->unqualified())) {
             // Instead of tranforming array type parameters to pointer type, pass arrays by reference.
-            param_type = ReferenceType::of(param_type, ReferenceType::Kind::LVALUE, false);
+            param_type = ReferenceType::of(param_type, ReferenceType::Kind::LVALUE);
 
             // C99 6.7.5.3p7
             // param_type = QualifiedType::of(array_type->element_type->pointer_to(), param_type->qualifiers());
@@ -347,7 +347,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
     }
 
     virtual const Type* visit(const ReferenceType* type) override {
-        return ReferenceType::of(resolve(type->base_type), type->kind, type->captured);
+        return ReferenceType::of(resolve(type->base_type), type->kind);
     }
 
     virtual const Type* visit(const QualifiedType* type) override {

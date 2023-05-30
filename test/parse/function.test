@@ -119,13 +119,13 @@ EXPECT_AST
 BEGIN Function with reference parameter (1)
 void foo(int &x);
 EXPECT_AST
-[["fun","E",["F","V",["Bl","Si"]],"foo"]]
+[["fun","E",["F","V",["Bl",["Qt","Si"]]],"foo"]]
 
 
 BEGIN Function with reference parameter (2)
 void foo(int &(x));
 EXPECT_AST
-[["fun","E",["F","V",["Bl","Si"]],"foo"]]
+[["fun","E",["F","V",["Bl",["Qt","Si"]]],"foo"]]
 
 
 BEGIN Pointer to reference is invalid
@@ -133,7 +133,7 @@ void foo(int &*x);
 EXPECT_MESSAGE
 :1:15: error expected ')' but got '*'
 EXPECT_AST
-[["fun","E",["F","V",["Bl","Si"]],"foo"]]
+[["fun","E",["F","V",["Bl",["Qt","Si"]]],"foo"]]
 
 
 BEGIN Reference to reference is invalid (1)
@@ -141,7 +141,7 @@ void foo(int & &x);
 EXPECT_MESSAGE
 :1:16: error expected ')' but got '&'
 EXPECT_AST
-[["fun","E",["F","V",["Bl","Si"]],"foo"]]
+[["fun","E",["F","V",["Bl",["Qt","Si"]]],"foo"]]
 
 
 BEGIN Reference to reference is invalid (2)
@@ -149,7 +149,7 @@ void foo(int &(&x));
 EXPECT_MESSAGE
 :1:16: error expected ')' but got '&'
 EXPECT_AST
-[["fun","E",["F","V",["Bl","Si"]],"foo"]]
+[["fun","E",["F","V",["Bl",["Qt","Si"]]],"foo"]]
 
 
 BEGIN Array of reference parameter is invalid
@@ -157,31 +157,25 @@ void foo(int &x[4]);
 EXPECT_MESSAGE
 :1:16: error expected ')' but got '['
 EXPECT_AST
-[["fun","E",["F","V",["Bl","Si"]],"foo"]]
+[["fun","E",["F","V",["Bl",["Qt","Si"]]],"foo"]]
 
 
 BEGIN Function return type may be reference
 int& foo();
 EXPECT_AST
-[["fun","E",["F",["Bl","Si"]],"foo"]]
+[["fun","E",["F",["Bl",["Qt","Si"]]],"foo"]]
 
 
 BEGIN Function with rvalue reference parameter (1)
 void foo(int &&x);
 EXPECT_AST
-[["fun","E",["F","V",["Br","Si"]],"foo"]]
+[["fun","E",["F","V",["Br",["Qt","Si"]]],"foo"]]
 
 
 BEGIN Function with rvalue reference parameter (2)
 void foo(int &&(x));
 EXPECT_AST
-[["fun","E",["F","V",["Br","Si"]],"foo"]]
-
-
-BEGIN Function with captured reference parameter
-void foo(int & std::captured x);
-EXPECT_AST
-[["fun","E",["F","V",["Blc","Si"]],"foo"]]
+[["fun","E",["F","V",["Br",["Qt","Si"]]],"foo"]]
 
 
 BEGIN Function that can throw
