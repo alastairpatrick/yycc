@@ -731,6 +731,12 @@ struct Emitter: Visitor, ValueResolver {
                 reference_type = nullptr;
             }
 
+            if (reference_type && initial_value.qualifiers > type->qualifiers()) {
+                message(Severity::ERROR, declarator->location) << "binding reference of type '" << PrintType(reference_type) << "' to value of type '"
+                                                               << initial_value.error_type() << "' discards type qualifier\n";
+                                                      
+            }
+
             if (reference_type) {
                 entity->value = initial_value;
                 entity->value.was_lvalue_ref = reference_type->kind == ReferenceType::Kind::LVALUE;

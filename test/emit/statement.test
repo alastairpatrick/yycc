@@ -615,6 +615,14 @@ EXPECT_MESSAGE
 END
 
 
+BEGIN Cannot return reference to less qualified lvalue
+int x;
+volatile int& f() {
+    return x;
+}
+END
+
+
 REM ******** SwitchStatement ********
 
 BEGIN Switch with default
