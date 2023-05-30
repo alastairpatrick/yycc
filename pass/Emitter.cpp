@@ -785,6 +785,8 @@ struct Emitter: Visitor, ValueResolver {
     }
 
     virtual VisitDeclaratorOutput visit(Declarator* declarator, Function* function, const VisitDeclaratorInput& input) override {
+        auto& context = TranslationUnitContext::it;
+
         if (declarator != declarator->primary) return VisitDeclaratorOutput();
 
         auto llvm_function = get_address(function->value);
@@ -794,8 +796,20 @@ struct Emitter: Visitor, ValueResolver {
             auto unqualified_param_type = param->type->unqualified();
 
             if (auto reference_type = unqualified_type_cast<ReferenceType>(unqualified_param_type)) {
-                if (!reference_type->captured) {
+                if (!reference_type->captured && options.emit_parameter_attributes) {
+                    LLVMAddAttributeAtIndex(llvm_function, i + 1, module->noalias_attribute());
                     LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nocapture_attribute());
+                    LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nonnull_attribute());
+                    LLVMAddAttributeAtIndex(llvm_function, i + 1, module->noundef_attribute());
+
+                    auto size = LLVMStoreSizeOfType(context->llvm_target_data, reference_type->base_type->llvm_type());
+                    if (size) {
+                        LLVMAddAttributeAtIndex(llvm_function, i + 1, module->dereferenceable_attribute(size));
+                    }
+
+                    if (reference_type->base_type->qualifiers() & QUALIFIER_CONST) {
+                        LLVMAddAttributeAtIndex(llvm_function, i + 1, module->readonly_attribute());
+                    }
                 }
             }
         }

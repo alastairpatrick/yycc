@@ -31,7 +31,7 @@ define void @f() {
   ret void
 }
 
-define void @destructor(ptr nocapture %0) {
+define void @destructor(ptr %0) {
   ret void
 }
 
@@ -437,7 +437,7 @@ define i32 @g() {
   ret i32 %1
 }
 
-define i32 @f(ptr nocapture %0) {
+define i32 @f(ptr %0) {
   ret i32 7
 }
 END
@@ -461,7 +461,7 @@ define i32 @g(ptr %0) {
   ret i32 %3
 }
 
-define i32 @f(ptr nocapture %0) {
+define i32 @f(ptr %0) {
   ret i32 7
 }
 END
@@ -490,7 +490,7 @@ define void @g() {
   ret void
 }
 
-define %S @f(ptr nocapture %0) {
+define %S @f(ptr %0) {
   %s = alloca %S, align 8
   %2 = load %S, ptr %s, align 1
   ret %S %2
@@ -546,7 +546,7 @@ void g() {
     f(1.0);
 }
 EXPECT_IR
-define void @f(ptr nocapture %0) {
+define void @f(ptr %0) {
   ret void
 }
 
@@ -575,7 +575,7 @@ void g() {
     f(1.0);
 }
 EXPECT_IR
-define void @f(ptr nocapture %0) {
+define void @f(ptr %0) {
   ret void
 }
 
@@ -606,7 +606,7 @@ void g() {
     f(&&x);
 }
 EXPECT_IR
-define void @f(ptr nocapture %0) {
+define void @f(ptr %0) {
   ret void
 }
 

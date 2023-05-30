@@ -224,7 +224,7 @@ define void @f() {
   br label %5
 }
 
-declare void @destructor(ptr nocapture)
+declare void @destructor(ptr)
 
 declare void @destructor_wrapper(ptr)
 END
@@ -303,7 +303,7 @@ target:                                           ; preds = %0
   unreachable
 }
 
-declare void @destructor(ptr nocapture)
+declare void @destructor(ptr)
 
 declare void @destructor_wrapper(ptr)
 END
@@ -347,7 +347,7 @@ target:                                           ; preds = %target, %0
   unreachable
 }
 
-declare void @destructor(ptr nocapture)
+declare void @destructor(ptr)
 
 declare void @destructor_wrapper(ptr)
 END
@@ -545,7 +545,7 @@ define void @f(%S %0) {
   br label %5
 }
 
-define void @destructor(ptr nocapture %0) {
+define void @destructor(ptr %0) {
   ret void
 }
 

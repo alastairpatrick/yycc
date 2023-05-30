@@ -54,7 +54,7 @@ destructor_wrapper.exit:
   ret void
 }
 
-declare void @destructor(ptr nocapture) local_unnamed_addr
+declare void @destructor(ptr) local_unnamed_addr
 END
 
 
@@ -77,7 +77,7 @@ destructor_wrapper.exit:
   ret void
 }
 
-declare void @destructor(ptr nocapture) local_unnamed_addr
+declare void @destructor(ptr) local_unnamed_addr
 END
 
 
@@ -101,7 +101,7 @@ destructor_wrapper.exit:
   ret void
 }
 
-declare void @destructor(ptr nocapture) local_unnamed_addr
+declare void @destructor(ptr) local_unnamed_addr
 END
 
 
@@ -137,7 +137,7 @@ destructor_wrapper.exit:                          ; preds = %3, %0
   ret void
 }
 
-declare void @destructor(ptr nocapture) local_unnamed_addr
+declare void @destructor(ptr) local_unnamed_addr
 END
 
 
@@ -160,7 +160,7 @@ destructor_wrapper.exit:
   ret void
 }
 
-declare void @destructor(ptr nocapture) local_unnamed_addr
+declare void @destructor(ptr) local_unnamed_addr
 END
 
 
@@ -172,13 +172,13 @@ struct S {
 void f(S &&s) {
 }
 EXPECT_IR
-define void @f(ptr nocapture %0) local_unnamed_addr {
+define void @f(ptr %0) local_unnamed_addr {
 destructor_wrapper.exit:
   tail call void @destructor(ptr nonnull %0)
   ret void
 }
 
-declare void @destructor(ptr nocapture) local_unnamed_addr
+declare void @destructor(ptr) local_unnamed_addr
 END
 
 
@@ -219,7 +219,7 @@ destructor_wrapper.exit4:
   ret void
 }
 
-declare void @destructor(ptr nocapture) local_unnamed_addr
+declare void @destructor(ptr) local_unnamed_addr
 END
 
 
@@ -247,7 +247,7 @@ destructor_wrapper.exit:
   ret void
 }
 
-declare void @destructor(ptr nocapture) local_unnamed_addr
+declare void @destructor(ptr) local_unnamed_addr
 END
 
 
@@ -271,7 +271,7 @@ destructor_wrapper.exit4:
   ret void
 }
 
-declare void @destructor(ptr nocapture) local_unnamed_addr
+declare void @destructor(ptr) local_unnamed_addr
 END
 
 
@@ -296,7 +296,7 @@ destructor_wrapper.exit:
   ret void
 }
 
-declare void @destructor(ptr nocapture) local_unnamed_addr
+declare void @destructor(ptr) local_unnamed_addr
 END
 
 
@@ -313,7 +313,7 @@ void f() {
 EXPECT_IR
 %S = type { i32 }
 
-declare void @e(ptr nocapture) local_unnamed_addr
+declare void @e(ptr) local_unnamed_addr
 
 define void @f() local_unnamed_addr {
 destructor_wrapper.exit:
@@ -324,7 +324,7 @@ destructor_wrapper.exit:
   ret void
 }
 
-declare void @destructor(ptr nocapture) local_unnamed_addr
+declare void @destructor(ptr) local_unnamed_addr
 END
 
 

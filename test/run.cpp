@@ -187,9 +187,11 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
                 if (test_type >= TestType::EMIT) {
                     module.entity_pass();
 
-                    EmitOptions options;
-                    options.initialize_variables = false;
-                    options.emit_helpers = test_type >= TestType::MIDDLE_END;
+                    EmitOptions options = {
+                        .initialize_variables = false,
+                        .emit_helpers = test_type >= TestType::MIDDLE_END,
+                        .emit_parameter_attributes = false,
+                    };
 
                     module.emit_pass(options);
                     

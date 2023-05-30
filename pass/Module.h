@@ -8,6 +8,7 @@
 struct EmitOptions {
     bool initialize_variables = true;
     bool emit_helpers = true;
+    bool emit_parameter_attributes = true;
 };
 
 const Type* get_expr_type(const Expr* expr);
@@ -46,10 +47,14 @@ struct Module {
     Value call_is_constant_intrinsic(LLVMBuilderRef builder, LLVMValueRef value, LLVMTypeRef type);
     void call_sideeffect_intrinsic(LLVMBuilderRef builder);
 
+    unsigned get_enum_attribute_kind(const char* name);
     LLVMAttributeRef create_enum_attribute(const char* name);
+    LLVMAttributeRef dereferenceable_attribute(uint64_t size);
+    LLVMAttributeRef noalias_attribute();
     LLVMAttributeRef nocapture_attribute();
     LLVMAttributeRef nonnull_attribute();
     LLVMAttributeRef noundef_attribute();
+    LLVMAttributeRef readonly_attribute();
 
     void resolve_pass(const vector<Declaration*>& declarations, Scope& file_scope);
     void entity_pass();
@@ -60,9 +65,12 @@ struct Module {
 
 private:
     Value cached_indeterminate_bool{};
+    unsigned cached_dereferenceable_kind{};
+    LLVMAttributeRef cached_noalias_attribute{};
     LLVMAttributeRef cached_nocapture_attribute{};
     LLVMAttributeRef cached_nonnull_attribute{};
     LLVMAttributeRef cached_noundef_attribute{};
+    LLVMAttributeRef cached_readonly_attribute{};
 };
 
 #endif

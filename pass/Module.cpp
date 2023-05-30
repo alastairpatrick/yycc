@@ -66,10 +66,27 @@ void Module::call_sideeffect_intrinsic(LLVMBuilderRef builder) {
     function.call(builder, nullptr, 0);
 }
 
+unsigned Module::get_enum_attribute_kind(const char* name) {
+    return LLVMGetEnumAttributeKindForName(name, strlen(name));
+}
+
 LLVMAttributeRef Module::create_enum_attribute(const char* name) {
     auto context = TranslationUnitContext::it;
-    auto kind = LLVMGetEnumAttributeKindForName(name, strlen(name));
+    auto kind = get_enum_attribute_kind(name);
     return LLVMCreateEnumAttribute(context->llvm_context, kind, 0);
+}
+
+LLVMAttributeRef Module::dereferenceable_attribute(uint64_t size) {
+    auto context = TranslationUnitContext::it;
+    if (!cached_dereferenceable_kind) {
+        cached_dereferenceable_kind = get_enum_attribute_kind("dereferenceable");
+    }
+    return LLVMCreateEnumAttribute(context->llvm_context, cached_dereferenceable_kind, size);
+}
+
+LLVMAttributeRef Module::noalias_attribute() {
+    if (cached_noalias_attribute) return cached_noalias_attribute;
+    return cached_noalias_attribute = create_enum_attribute("noalias");
 }
 
 LLVMAttributeRef Module::nocapture_attribute() {
@@ -85,6 +102,11 @@ LLVMAttributeRef Module::nonnull_attribute() {
 LLVMAttributeRef Module::noundef_attribute() {
     if (cached_nonnull_attribute) return cached_nonnull_attribute;
     return cached_nonnull_attribute = create_enum_attribute("noundef");
+}
+
+LLVMAttributeRef Module::readonly_attribute() {
+    if (cached_readonly_attribute) return cached_readonly_attribute;
+    return cached_readonly_attribute = create_enum_attribute("readonly");
 }
 
 void Module::middle_end_passes(const char* passes) {

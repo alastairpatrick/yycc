@@ -15,7 +15,7 @@ void g() {
     f(x = 1);
 }
 EXPECT_IR
-define void @f(ptr nocapture %0) {
+define void @f(ptr %0) {
   ret void
 }
 
@@ -36,7 +36,7 @@ void g() {
     f(x += 1);
 }
 EXPECT_IR
-define void @f(ptr nocapture %0) {
+define void @f(ptr %0) {
   ret void
 }
 
@@ -59,7 +59,7 @@ void g() {
     f(++x);
 }
 EXPECT_IR
-define void @f(ptr nocapture %0) {
+define void @f(ptr %0) {
   ret void
 }
 
@@ -478,7 +478,7 @@ define void @f() {
   ret void
 }
 
-define void @destructor(ptr nocapture %0) {
+define void @destructor(ptr %0) {
   ret void
 }
 

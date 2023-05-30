@@ -184,7 +184,7 @@ define ptr @f() {
   unreachable
 }
 
-declare void @destructor(ptr nocapture)
+declare void @destructor(ptr)
 
 declare void @destructor_wrapper(ptr)
 END
@@ -251,7 +251,7 @@ define ptr @f() {
   unreachable
 }
 
-declare void @destructor(ptr nocapture)
+declare void @destructor(ptr)
 
 declare void @destructor_wrapper(ptr)
 END
@@ -323,7 +323,7 @@ catch:                                            ; preds = %0
   br label %1
 }
 
-declare void @destructor(ptr nocapture)
+declare void @destructor(ptr)
 
 declare void @destructor_wrapper(ptr)
 END
