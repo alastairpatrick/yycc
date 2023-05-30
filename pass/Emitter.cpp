@@ -730,8 +730,7 @@ struct Emitter: Visitor, ValueResolver {
                 reference_type = nullptr;
             }
 
-            // todo: fix, e.g. const int & < volatile int& yet discards qualifiers 
-            if (reference_type && initial_value.qualifiers > type->qualifiers()) {
+            if (reference_type && discards_qualifiers(initial_value.qualifiers, type->qualifiers())) {
                 message(Severity::ERROR, declarator->location) << "binding reference of type '" << PrintType(reference_type) << "' to value of type '"
                                                                << initial_value.error_type() << "' discards type qualifier\n";
                                                       
@@ -1016,8 +1015,7 @@ struct Emitter: Visitor, ValueResolver {
                     if (value.kind != ValueKind::LVALUE) {
                         message(Severity::ERROR, statement->expr->location) << "cannot return reference of type '" << PrintType(function_type->return_type) << "' to rvalue\n";
                         return_value = context->llvm_null;
-                    } else if (value.qualifiers > return_reference_type->base_type->qualifiers()) {
-                        // todo: fix, e.g. const int & < volatile int& yet discards qualifiers 
+                    } else if (discards_qualifiers(value.qualifiers, return_reference_type->base_type->qualifiers())) {
                         message(Severity::ERROR, statement->expr->location) << "binding reference type '" << PrintType(return_reference_type)
                                                                             << "' to value of type '" << value.error_type() << "' discards type qualifier\n";
                     } else {
@@ -1624,7 +1622,7 @@ struct Emitter: Visitor, ValueResolver {
                         } else if (param_value.type->unqualified() != expected_type->unqualified()) {
                             message(Severity::ERROR, param_location) << "lvalue type '" << param_value.error_type() << "' incompatible with parameter reference type '"
                                                                      << PrintType(function_type->parameter_types[i]) << "'\n";
-                        } else if ((param_value.qualifiers | expected_type->qualifiers()) > expected_type->qualifiers()) {
+                        } else if (discards_qualifiers(param_value.qualifiers, expected_type->qualifiers())) {
                             message(Severity::ERROR, param_location) << "lvalue type '" << param_value.error_type() << "' has more type qualifiers than parameter reference type '"
                                                                      << PrintType(function_type->parameter_types[i]) << "'\n";
                         }

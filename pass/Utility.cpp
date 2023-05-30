@@ -20,8 +20,7 @@ ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest
         }
     }
 
-    // todo: fix, e.g. const int & < volatile int& yet discards qualifiers 
-    if ((result == ConvKind::IMPLICIT) && (dest_base_type->qualifiers() < source_base_type->qualifiers())) {
+    if ((result == ConvKind::IMPLICIT) && discards_qualifiers(source_base_type->qualifiers(), dest_base_type->qualifiers())) {
         result = ConvKind::C_IMPLICIT;
     }
 

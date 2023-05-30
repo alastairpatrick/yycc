@@ -20,6 +20,10 @@ ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest
 bool is_string_initializer(const ResolvedArrayType* array_type, const InitializerExpr* initializer);
 bool values_are_aliases(LLVMValueRef a, LLVMValueRef b);
 
+inline bool discards_qualifiers(QualifierSet from, QualifierSet to) {
+    return (from | to) > to;
+}
+
 inline bool is_void_type(const Type* type) {
     return type->unqualified() == &VoidType::it;
 }
