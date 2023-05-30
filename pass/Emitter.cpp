@@ -7,6 +7,7 @@
 #include "TranslationUnitContext.h"
 #include "TypeVisitor.h"
 #include "TypeConverter.h"
+#include "Utility.h"
 #include "Visitor.h"
 
 struct Emitter;
@@ -660,10 +661,7 @@ struct Emitter: Visitor, ValueResolver {
             if (auto array_type = unqualified_type_cast<ResolvedArrayType>(dest_type)) {
                 // C99 6.7.8p14,15
                 auto int_element_type = unqualified_type_cast<IntegerType>(array_type->element_type->unqualified());
-                if (int_element_type &&
-                    initializer->elements.size() == 1 &&
-                    dynamic_cast<StringConstant*>(initializer->elements[0]))
-                {
+                if (is_string_initializer(array_type, initializer)) {
                     return convert_to_type(initializer->elements[0], dest_type, ConvKind::IMPLICIT);
                 }
 

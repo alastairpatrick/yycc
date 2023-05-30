@@ -8,6 +8,7 @@
 #include "parse/IdentifierMap.h"
 #include "parse/Type.h"
 #include "TypeVisitor.h"
+#include "Utility.h"
 
 struct ResolvePass: DepthFirstVisitor, TypeVisitor {
     Module& result;
@@ -140,11 +141,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
 
                     if (auto init_expr = dynamic_cast<InitializerExpr*>(initializer)) {
                         // C99 6.7.8p14,15
-                        auto int_element_type = dynamic_cast<const IntegerType*>(array_type->element_type->unqualified());
-                        if (int_element_type &&
-                            init_expr->elements.size() == 1 &&
-                            dynamic_cast<StringConstant*>(init_expr->elements[0]))
-                        {
+                        if (is_string_initializer(array_type, init_expr)) {
                             initializer = init_expr->elements[0];
                         } else {
                             // C99 6.7.8p22

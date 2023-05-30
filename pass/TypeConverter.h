@@ -2,15 +2,10 @@
 #define VISIT_VALUE_WRANGLER_H
 
 #include "TypeVisitor.h"
+#include "Utility.h"
 #include "Value.h"
 
 struct Module;
-
-enum class ConvKind {
-    IMPLICIT,
-    C_IMPLICIT, // conversions that need not be explicit in C
-    EXPLICIT,
-};
 
 struct ExprValue: Value {
     const LocationNode* node{};
@@ -30,14 +25,6 @@ struct ExprValue: Value {
         return ExprValue(Value::bit_cast(type), node);
     }
 };
-
-template <typename T, typename U>
-inline const T* unqualified_type_cast(const U* type) {
-    assert(type->qualifiers() == 0);
-    return dynamic_cast<const T*>(type);
-}
-
-ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type);
 
 struct ValueResolver {
     virtual LLVMValueRef get_value(ExprValue value, bool for_move_expr) = 0;
