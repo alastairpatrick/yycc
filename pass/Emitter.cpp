@@ -149,7 +149,7 @@ struct Emitter: Visitor, ValueResolver {
     }
 
     virtual LLVMValueRef get_value(ExprValue value, bool for_move_expr = false) override {
-        if (value.type == &VoidType::it) {
+        if (is_void_type(value.type)) {
             return nullptr;
         }
 
@@ -335,7 +335,7 @@ struct Emitter: Visitor, ValueResolver {
             auto llvm_value = next_phi = LLVMBuildPhi(builder, context->llvm_pointer_type, "exc");
 
             if (throw_type) {
-                if (return_type != &VoidType::it) {
+                if (!is_void_type(return_type)) {
                     llvm_value = LLVMBuildInsertValue(builder, LLVMGetUndef(throw_type->llvm_type()), llvm_value, 0, "");
                 }
 
@@ -525,7 +525,7 @@ struct Emitter: Visitor, ValueResolver {
         if (no_exception_block != current_block) return context->llvm_null;
 
         auto actual_instructions = count_block_instructions(current_block);
-        auto expected_instructions = return_type == &VoidType::it ? 0 : 1;
+        auto expected_instructions = is_void_type(return_type) ? 0 : 1;
         if (actual_instructions != expected_instructions) return context->llvm_null;
 
 
@@ -545,15 +545,15 @@ struct Emitter: Visitor, ValueResolver {
             return_type = throw_type->base_type->unqualified();
         }
 
-        if (!return_value && return_type != &VoidType::it) {
+        if (!return_value && !is_void_type(return_type)) {
             return_value = LLVMConstNull(return_type->llvm_type());
         }
 
-        if (!throw_type && return_type == &VoidType::it) {
+        if (!throw_type && is_void_type(return_type)) {
             LLVMBuildRetVoid(builder);
         } else {
             if (throw_type) {
-                if (return_type != &VoidType::it) {
+                if (!is_void_type(return_type)) {
                     return_value = LLVMBuildInsertValue(builder, LLVMGetUndef(throw_type->llvm_type()), return_value, 1, "");
                     return_value = LLVMBuildInsertValue(builder, return_value, exception, 0, "");
                 } else {
@@ -971,10 +971,10 @@ struct Emitter: Visitor, ValueResolver {
         LLVMValueRef exception{};
         LLVMValueRef return_value{};
 
-        if (return_type == &VoidType::it) {
+        if (is_void_type(return_type)) {
             if (statement->expr) {
                 auto type = get_expr_type(statement->expr);
-                if (type->unqualified() != &VoidType::it) {
+                if (!is_void_type(type)) {
                     message(Severity::ERROR, statement->expr->location) << "void function '" << *function_declarator->identifier << "' should not return a value\n";
                     function_declarator->message_see_declaration("return type");
                 }
@@ -1600,7 +1600,7 @@ struct Emitter: Visitor, ValueResolver {
             auto llvm_result = LLVMBuildCall2(builder, function_type->llvm_type(), get_address(function_value), llvm_params.data(), llvm_params.size(), "");
 
             if (throw_type) {
-                auto exception = result_type == &VoidType::it ? llvm_result : LLVMBuildExtractValue(builder, llvm_result, 0, "exc");
+                auto exception = is_void_type(result_type) ? llvm_result : LLVMBuildExtractValue(builder, llvm_result, 0, "exc");
                 auto compare = LLVMBuildICmp(builder, LLVMIntEQ, exception, context->llvm_null, "");
                 module->call_expect_i1_intrinsic(builder, compare, context->llvm_true);
 
@@ -1621,7 +1621,7 @@ struct Emitter: Visitor, ValueResolver {
                 LLVMAddIncoming(phi, &exception, &current_block, 1);
 
                 LLVMPositionBuilderAtEnd(builder, no_exception_block);
-                llvm_result = result_type == &VoidType::it ? nullptr : LLVMBuildExtractValue(builder, llvm_result, 1, "");
+                llvm_result = is_void_type(result_type) ? nullptr : LLVMBuildExtractValue(builder, llvm_result, 1, "");
             }
 
             if (result_reference_type) {
@@ -1686,17 +1686,17 @@ struct Emitter: Visitor, ValueResolver {
 
         LLVMPositionBuilderAtEnd(builder, alt_blocks[0]);
         auto then_rvalue = convert_to_rvalue(expr->then_expr, result_type, ConvKind::IMPLICIT);
-        if (result_type != &VoidType::it) alt_values[0] = then_rvalue;
+        if (!is_void_type(result_type)) alt_values[0] = then_rvalue;
         LLVMBuildBr(builder, merge_block);
 
         LLVMPositionBuilderAtEnd(builder, alt_blocks[1]);
         auto else_rvalue = convert_to_rvalue(expr->else_expr, result_type, ConvKind::IMPLICIT);
-        if (result_type != &VoidType::it) alt_values[1] = else_rvalue;
+        if (!is_void_type(result_type)) alt_values[1] = else_rvalue;
         LLVMBuildBr(builder, merge_block);
 
         LLVMPositionBuilderAtEnd(builder, merge_block);
         Value result;
-        if (result_type != &VoidType::it) {
+        if (!is_void_type(result_type)) {
             auto phi_value = LLVMBuildPhi(builder, result_type->llvm_type(), "");
             LLVMAddIncoming(phi_value, alt_values, alt_blocks, 2);
             result = Value(result_type, phi_value);
@@ -1820,7 +1820,7 @@ struct Emitter: Visitor, ValueResolver {
 
     ExprValue emit_object_of_member_expr(MemberExpr* expr) {
         auto object = emit_expr(expr->object);
-        if (auto pointer_type = unqualified_type_cast<PointerType>(object.type)) {
+        if (auto pointer_type = unqualified_type_cast<PointerType>(object.type->unqualified())) {
             object = ExprValue(ValueKind::LVALUE, pointer_type->base_type, get_value(object), expr->object);
         }
         return object;
@@ -1829,16 +1829,16 @@ struct Emitter: Visitor, ValueResolver {
     virtual VisitExpressionOutput visit(MemberExpr* expr) override {
         if (!expr->member) return VisitExpressionOutput(Value::of_zero_int());
 
-        auto object_type = get_expr_type(expr->object)->unqualified();
+        auto object_type = get_expr_type(expr->object);
 
-        if (auto pointer_type = unqualified_type_cast<PointerType>(object_type)) {
-            object_type = pointer_type->base_type->unqualified();
+        if (auto pointer_type = unqualified_type_cast<PointerType>(object_type->unqualified())) {
+            object_type = pointer_type->base_type;
         }
 
-        if (auto struct_type = unqualified_type_cast<StructuredType>(object_type)) {
+        if (auto struct_type = unqualified_type_cast<StructuredType>(object_type->unqualified())) {
             VisitExpressionOutput output;
 
-            auto result_type = expr->member->type;
+            auto result_type = QualifiedType::of(expr->member->type, object_type->qualifiers());
             if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
             if (auto member_variable = expr->member->variable()) {

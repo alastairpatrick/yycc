@@ -122,6 +122,45 @@ EXPECT_MESSAGE
 END
 
 
+BEGIN Cannot assign to const struct member variable (1)
+struct S {
+    const int x;
+};
+void f() {
+    S s;
+    s.x = 2;
+}
+EXPECT_MESSAGE
+:6:9: error cannot modify lvalue with const qualified type 'int const'
+END
+
+
+BEGIN Cannot assign to const struct member variable (2)
+struct S {
+    int x;
+};
+void f() {
+    const S s;
+    s.x = 2;
+}
+EXPECT_MESSAGE
+:6:9: error cannot modify lvalue with const qualified type 'int const'
+END
+
+
+BEGIN Cannot assign to const struct member variable (3)
+struct S {
+    int x;
+};
+void f() {
+    const S* p;
+    p->x = 2;
+}
+EXPECT_MESSAGE
+:6:10: error cannot modify lvalue with const qualified type 'int const'
+END
+
+
 REM ******** Integer ********
 
 BEGIN Assign integer parameter value

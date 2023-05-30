@@ -2,14 +2,6 @@
 
 #include "parse/Constant.h"
 
-// C99 6.7.8p14,15
-bool is_string_initializer(const ResolvedArrayType* array_type, const InitializerExpr* initializer) {
-    auto int_element_type = unqualified_type_cast<IntegerType>(array_type->element_type->unqualified());
-    return (int_element_type &&
-        initializer->elements.size() == 1 &&
-        dynamic_cast<StringConstant*>(initializer->elements[0]));
-}
-
 ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type) {
     auto unqualified_source_base_type = source_base_type->unqualified();
     auto unqualified_dest_base_type = dest_base_type->unqualified();
@@ -39,3 +31,12 @@ ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest
 
     return result;
 }
+
+// C99 6.7.8p14,15
+bool is_string_initializer(const ResolvedArrayType* array_type, const InitializerExpr* initializer) {
+    auto int_element_type = unqualified_type_cast<IntegerType>(array_type->element_type->unqualified());
+    return (int_element_type &&
+        initializer->elements.size() == 1 &&
+        dynamic_cast<StringConstant*>(initializer->elements[0]));
+}
+
