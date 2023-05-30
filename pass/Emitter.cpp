@@ -789,6 +789,8 @@ struct Emitter: Visitor, ValueResolver {
 
         if (declarator != declarator->primary) return VisitDeclaratorOutput();
 
+        auto function_type = unqualified_type_cast<FunctionType>(declarator->type);
+
         auto llvm_function = get_address(function->value);
         for (size_t i = 0; i < function->parameters.size(); ++i) {
             auto param = function->parameters[i];
@@ -798,9 +800,14 @@ struct Emitter: Visitor, ValueResolver {
             if (auto reference_type = unqualified_type_cast<ReferenceType>(unqualified_param_type)) {
                 if (options.emit_parameter_attributes) {
                     LLVMAddAttributeAtIndex(llvm_function, i + 1, module->noalias_attribute());
-                    LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nocapture_attribute());
                     LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nonnull_attribute());
                     LLVMAddAttributeAtIndex(llvm_function, i + 1, module->noundef_attribute());
+
+                    if (!(reference_type->base_type->qualifiers() & QUALIFIER_VOLATILE) &&
+                        (reference_type->kind == ReferenceType::Kind::RVALUE || !unqualified_type_cast<ReferenceType>(function_type->return_type->unqualified())))
+                    {
+                        LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nocapture_attribute());
+                    }
 
                     auto size = LLVMStoreSizeOfType(context->llvm_target_data, reference_type->base_type->llvm_type());
                     if (size) {
