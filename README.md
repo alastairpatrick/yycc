@@ -95,13 +95,18 @@ int& h(int x) {
 	int& lvalue_reference_var = x;
 }
 ```
-By default, reference types parameters have nocapture semantics so, among other things, their address may not be taken. The "captured" variant of reference type does not have nocapture semantics.
+Reference types parameters have nocapture semantics so, among other things, their address must not escape the callee and the callee's behavior must not depend on the bits of the address.
 ```c
-int& f(int& a, int& nocapture b) {
-    // int* p = &a;	// ERROR; "a" has nocapture semantics
-	// return a;	// ERROR; "a" has nocapture semantics
-    int* q = &b;
-    return b;
+void f(int& a, int& b) {
+    transient int* p = &a;	// DANGER; "p" has nocapture semantics
+}
+```
+Taking the address of a reference types value yields pointer to transient. The idea is that the transient qualifier will need to be discarded using loud syntax before anything can be done with the poimnter that results in undefined behavior.
+
+There is an exception. Reference type parameters do not get nocapture semantics if the return type is also a reference type. This allows such a function to return one of its referenced type parameters without breaking nocapture semantics.
+```c
+Builder& f(Builder& b) {
+    return b;  // b is not nocapture so no undefined behavior
 }
 ```
 
