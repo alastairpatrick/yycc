@@ -149,6 +149,10 @@ struct Emitter: Visitor, ValueResolver {
     }
 
     virtual LLVMValueRef get_value(ExprValue value, bool for_move_expr = false) override {
+        if ((value.type->qualifiers() & (QUALIFIER_TRANSIENT | QUALIFIER_VOLATILE)) == (QUALIFIER_TRANSIENT | QUALIFIER_VOLATILE)) {
+            message(Severity::ERROR, value.node->location) << "cannot load value of type '" << value.error_type() << "' with both 'transient' and 'volatile' qualifiers\n";
+        }
+
         if (is_void_type(value.type)) {
             return nullptr;
         }
@@ -175,6 +179,9 @@ struct Emitter: Visitor, ValueResolver {
                 message(Severity::ERROR, assignment_location) << "cannot modify lvalue with const qualified type '" << dest.error_type() << "'\n";
             } else if (dest.kind != ValueKind::LVALUE) {
                 message(Severity::ERROR, assignment_location) << "expression is not assignable\n";
+            } else if ((dest.type->qualifiers() & (QUALIFIER_VOLATILE | QUALIFIER_TRANSIENT)) == (QUALIFIER_VOLATILE | QUALIFIER_TRANSIENT)) {
+                message(Severity::ERROR, assignment_location) << "cannot modify lvalue of type '" << dest.error_type()
+                                                              << "' qualified with both 'transient' and 'volatile'\n";
             } else {
                 dest.dangerously_store(builder, source_rvalue);
             }
@@ -812,8 +819,8 @@ struct Emitter: Visitor, ValueResolver {
                     LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nonnull_attribute());
                     LLVMAddAttributeAtIndex(llvm_function, i + 1, module->noundef_attribute());
 
-                    if (!(reference_type->base_type->qualifiers() & QUALIFIER_VOLATILE) &&
-                        (reference_type->kind == ReferenceType::Kind::RVALUE || !unqualified_type_cast<ReferenceType>(function_type->return_type->unqualified())))
+                    if (reference_type->kind == ReferenceType::Kind::RVALUE ||
+                        !unqualified_type_cast<ReferenceType>(function_type->return_type->unqualified()))
                     {
                         LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nocapture_attribute());
                     }
@@ -1020,11 +1027,15 @@ struct Emitter: Visitor, ValueResolver {
             call_pending_destructors_at_all_scopes();
         } else {
             if (statement->expr) {
-                auto value = emit_expr(statement->expr, { .pend_temporary_destructor = false }).unqualified();
+                auto value = emit_expr(statement->expr, { .pend_temporary_destructor = false });
                 if (return_reference_type) {
+                    // todo: error if reference base type and lvalue type are different
                     if (value.kind != ValueKind::LVALUE) {
                         message(Severity::ERROR, statement->expr->location) << "cannot return reference of type '" << PrintType(function_type->return_type) << "' to rvalue\n";
                         return_value = context->llvm_null;
+                    } else if (return_reference_type->base_type->unqualified() != value.type->unqualified()) {
+                        message(Severity::ERROR, statement->expr->location) << "cannot bind reference type '" << PrintType(return_reference_type)
+                                                                            << "' to value of type '" << value.error_type() << "'\n";
                     } else if (discards_qualifiers(value.qualifiers, return_reference_type->base_type->qualifiers())) {
                         message(Severity::ERROR, statement->expr->location) << "binding reference type '" << PrintType(return_reference_type)
                                                                             << "' to value of type '" << value.error_type() << "' discards type qualifier\n";
@@ -1035,7 +1046,7 @@ struct Emitter: Visitor, ValueResolver {
                     return_value = get_value(value);
                 } else {
                     pend_destructor(value);
-                    return_value = convert_to_rvalue(value, return_type->unqualified(), ConvKind::IMPLICIT);
+                    return_value = convert_to_rvalue(value.unqualified(), return_type->unqualified(), ConvKind::IMPLICIT);
                 }
             } else {
                 message(Severity::ERROR, statement->location) << "non-void function '" << *function_declarator->identifier << "' should return a value\n";

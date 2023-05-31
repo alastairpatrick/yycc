@@ -845,6 +845,15 @@ define i32 @f() {
 END
 
 
+BEGIN Cannot load value of volatile and transient qualified entity
+int f(volatile std::transient int x) {
+    return x;
+}
+EXPECT_MESSAGE
+:2:12: error cannot load value of type 'int transient volatile' with both 'transient' and 'volatile' qualifiers
+END
+
+
 REM ******** MemberExpr ********
 
 BEGIN Load value of struct member variable

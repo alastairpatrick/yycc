@@ -585,6 +585,16 @@ EXPECT_MESSAGE
 END
 
 
+BEGIN Cannot return reference to lvalue of wrong type
+short x;
+int& f() {
+    return x;
+}
+EXPECT_MESSAGE
+:3:12: error cannot bind reference type 'int&' to value of type 'short'
+END
+
+
 BEGIN Cannot return reference to more qualified lvalue
 const int x;
 volatile int& f() {
@@ -595,7 +605,7 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN Cannot return reference to less qualified lvalue
+BEGIN Can return reference to less qualified lvalue
 int x;
 volatile int& f() {
     return x;

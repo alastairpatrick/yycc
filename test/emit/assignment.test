@@ -74,7 +74,7 @@ define void @g() {
 END
 
 
-BEGIN Cannot assign to const variable
+BEGIN Cannot assign to const qualified variable
 void f() {
     const int x = 1;
     x = 2;
@@ -158,6 +158,16 @@ void f() {
 }
 EXPECT_MESSAGE
 :6:10: error cannot modify lvalue with const qualified type 'int const'
+END
+
+
+BEGIN Cannot assign to volatile transient qualified variable
+void f() {
+    volatile std::transient int x;
+    x = 2;
+}
+EXPECT_MESSAGE
+:3:7: error cannot modify lvalue of type 'int transient volatile' qualified with both 'transient' and 'volatile'
 END
 
 
