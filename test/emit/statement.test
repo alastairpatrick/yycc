@@ -581,7 +581,7 @@ const int& f() {
     return 1;
 }
 EXPECT_MESSAGE
-:2:12: error cannot return reference of type 'int const&' to rvalue
+:2:12: error cannot bind reference type 'int const&' to rvalue
 END
 
 

@@ -707,6 +707,36 @@ struct Emitter: Visitor, ValueResolver {
         return convert_to_type(emit_expr(expr, emit_flags).unqualified(), dest_type, ConvKind::IMPLICIT);
     }
 
+    std::string message_declarator(const Declarator* declarator) {
+        if (!declarator) return "";
+        return string(declarator->message_kind()) + " '" + string(*declarator->identifier) + "' of ";
+    }
+
+    bool can_bind_reference_to_lvalue(const ReferenceType* type, Value value, const Declarator* declarator, const Location& location) {
+        auto context = TranslationUnitContext::it;
+
+        if (value.kind != ValueKind::LVALUE) {
+            message(Severity::ERROR, location) << "cannot bind " << message_declarator(declarator)
+                                               << "reference type '" << PrintType(type) << "' to rvalue\n";
+            return false;
+        }
+        
+        if (type->base_type->unqualified() != value.type->unqualified()) {
+            message(Severity::ERROR, location) << "cannot bind " << message_declarator(declarator) << "reference type '"
+                                               << PrintType(type) << "' to value of type '" << value.error_type() << "'\n";
+            return false;
+        }
+        
+        if (discards_qualifiers(value.qualifiers, type->base_type->qualifiers())) {
+            message(Severity::ERROR, location) << "binding " <<message_declarator(declarator)
+                                               << "reference type '" << PrintType(type)
+                                               << "' to value of type '" << value.error_type() << "' discards type qualifier\n";
+            return false;
+        }
+        
+        return true;
+    }
+
     void emit_variable(Declarator* declarator, Variable* entity) {
         auto type = declarator->primary->type;
         auto reference_type = unqualified_type_cast<ReferenceType>(type->unqualified());
@@ -731,16 +761,8 @@ struct Emitter: Visitor, ValueResolver {
                 reference_type = nullptr;
             }
 
-            if (reference_type && initial_value.kind != ValueKind::LVALUE) {
-                message(Severity::ERROR, declarator->location) << declarator->message_kind() << " '" << *declarator->identifier
-                                                               << "' of reference type '" << PrintType(reference_type) << "' was not initialized with an lvalue\n";
+            if (reference_type && !can_bind_reference_to_lvalue(reference_type, initial_value, declarator, declarator->location)) {
                 reference_type = nullptr;
-            }
-
-            if (reference_type && discards_qualifiers(initial_value.qualifiers, type->qualifiers())) {
-                message(Severity::ERROR, declarator->location) << "binding reference of type '" << PrintType(reference_type) << "' to value of type '"
-                                                               << initial_value.error_type() << "' discards type qualifier\n";
-                                                      
             }
 
             if (reference_type) {
@@ -1029,18 +1051,10 @@ struct Emitter: Visitor, ValueResolver {
             if (statement->expr) {
                 auto value = emit_expr(statement->expr, { .pend_temporary_destructor = false });
                 if (return_reference_type) {
-                    // todo: error if reference base type and lvalue type are different
-                    if (value.kind != ValueKind::LVALUE) {
-                        message(Severity::ERROR, statement->expr->location) << "cannot return reference of type '" << PrintType(function_type->return_type) << "' to rvalue\n";
-                        return_value = context->llvm_null;
-                    } else if (return_reference_type->base_type->unqualified() != value.type->unqualified()) {
-                        message(Severity::ERROR, statement->expr->location) << "cannot bind reference type '" << PrintType(return_reference_type)
-                                                                            << "' to value of type '" << value.error_type() << "'\n";
-                    } else if (discards_qualifiers(value.qualifiers, return_reference_type->base_type->qualifiers())) {
-                        message(Severity::ERROR, statement->expr->location) << "binding reference type '" << PrintType(return_reference_type)
-                                                                            << "' to value of type '" << value.error_type() << "' discards type qualifier\n";
-                    } else {
+                    if (can_bind_reference_to_lvalue(return_reference_type, value, nullptr, statement->expr->location)) {
                         return_value = get_address(value);
+                    } else {
+                        return_value = context->llvm_null;
                     }
                 } else if (value.type->unqualified() == return_type->unqualified()) {
                     return_value = get_value(value);
