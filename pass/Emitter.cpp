@@ -796,8 +796,18 @@ struct Emitter: Visitor, ValueResolver {
 
             auto unqualified_param_type = param->type->unqualified();
 
-            if (auto reference_type = unqualified_type_cast<ReferenceType>(unqualified_param_type)) {
-                if (options.emit_parameter_attributes) {
+            if (options.emit_parameter_attributes) {
+                if (auto pointer_type = unqualified_type_cast<PointerType>(unqualified_param_type)) {
+                    if ((pointer_type->qualifiers() & (QUALIFIER_TRANSIENT | QUALIFIER_VOLATILE)) == QUALIFIER_TRANSIENT) {
+                        LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nocapture_attribute());
+                    }
+
+                    if (pointer_type->base_type->qualifiers() & QUALIFIER_CONST) {
+                        LLVMAddAttributeAtIndex(llvm_function, i + 1, module->readonly_attribute());
+                    }
+                }
+
+                if (auto reference_type = unqualified_type_cast<ReferenceType>(unqualified_param_type)) {
                     LLVMAddAttributeAtIndex(llvm_function, i + 1, module->noalias_attribute());
                     LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nonnull_attribute());
                     LLVMAddAttributeAtIndex(llvm_function, i + 1, module->noundef_attribute());
