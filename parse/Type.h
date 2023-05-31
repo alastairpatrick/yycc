@@ -308,7 +308,7 @@ struct TypeDefType: Type {
     virtual void print(ostream& stream) const override;
 };
 
-struct NestedType: Type {
+struct NestedType: ASTNode, Type {
     const Type* enclosing_type;
     const Identifier identifier;
     const Location location;
