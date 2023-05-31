@@ -712,12 +712,18 @@ struct Emitter: Visitor, ValueResolver {
         return string(declarator->message_kind()) + " '" + string(*declarator->identifier) + "' of ";
     }
 
-    bool can_bind_reference_to_lvalue(const ReferenceType* type, Value value, const Declarator* declarator, const Location& location) {
+    bool can_bind_reference_to_value(const ReferenceType* type, Value value, const Declarator* declarator, const Location& location) {
         auto context = TranslationUnitContext::it;
 
-        if (value.kind != ValueKind::LVALUE) {
+        if (type->kind == ReferenceType::Kind::LVALUE && value.kind != ValueKind::LVALUE) {
             message(Severity::ERROR, location) << "cannot bind " << message_declarator(declarator)
                                                << "reference type '" << PrintType(type) << "' to rvalue\n";
+            return false;
+        }
+        
+        if (type->kind == ReferenceType::Kind::RVALUE && value.kind != ValueKind::RVALUE) {
+            message(Severity::ERROR, location) << "cannot bind " << message_declarator(declarator)
+                                               << "reference type '" << PrintType(type) << "' to lvalue; consider '&&' move expression\n";
             return false;
         }
         
@@ -761,7 +767,7 @@ struct Emitter: Visitor, ValueResolver {
                 reference_type = nullptr;
             }
 
-            if (reference_type && !can_bind_reference_to_lvalue(reference_type, initial_value, declarator, declarator->location)) {
+            if (reference_type && !can_bind_reference_to_value(reference_type, initial_value, declarator, declarator->location)) {
                 reference_type = nullptr;
             }
 
@@ -1051,7 +1057,7 @@ struct Emitter: Visitor, ValueResolver {
             if (statement->expr) {
                 auto value = emit_expr(statement->expr, { .pend_temporary_destructor = false });
                 if (return_reference_type) {
-                    if (can_bind_reference_to_lvalue(return_reference_type, value, nullptr, statement->expr->location)) {
+                    if (can_bind_reference_to_value(return_reference_type, value, nullptr, statement->expr->location)) {
                         return_value = get_address(value);
                     } else {
                         return_value = context->llvm_null;
@@ -1645,25 +1651,11 @@ struct Emitter: Visitor, ValueResolver {
                         param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT);
                         make_addressable(param_value);
                         llvm_params[i] = get_address(param_value);
-                    } else if (param_value.kind != ValueKind::LVALUE) {
-                        message(Severity::ERROR, param_location) << "rvalue type '" << param_value.error_type() << "' incompatible with non-const parameter reference type '"
-                                                                 << PrintType(function_type->parameter_types[i]) << "'\n";
-                        pause_messages();
-                        llvm_params[i] = LLVMConstNull(reference_type->llvm_type());
-                    } else {
-                        if (reference_type->kind == ReferenceType::Kind::RVALUE && param_value.kind == ValueKind::LVALUE) {
-                            message(Severity::ERROR, param_location) << "cannot pass lvalue to rvalue reference parameter type '"
-                                                                     << PrintType(function_type->parameter_types[i]) << "'; consider '&&' move expression\n";
-                        } else if (param_value.type->unqualified() != expected_type->unqualified()) {
-                            message(Severity::ERROR, param_location) << "lvalue type '" << param_value.error_type() << "' incompatible with parameter reference type '"
-                                                                     << PrintType(function_type->parameter_types[i]) << "'\n";
-                        } else if (discards_qualifiers(param_value.qualifiers, expected_type->qualifiers())) {
-                            message(Severity::ERROR, param_location) << "lvalue type '" << param_value.error_type() << "' has more type qualifiers than parameter reference type '"
-                                                                     << PrintType(function_type->parameter_types[i]) << "'\n";
-                        }
-
+                    } else if (can_bind_reference_to_value(reference_type, param_value, nullptr, param_location)) {
                         param_value = param_value.unqualified();
                         llvm_params[i] = get_address(param_value);
+                    } else {
+                        llvm_params[i] = context->llvm_null;
                     }
                 } else {
                     param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT);
