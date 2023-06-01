@@ -82,11 +82,11 @@ public:
     }
 
     bool is_const() const {
-        return !has_address && LLVMIsConstant(llvm);
+        return llvm && !has_address && LLVMIsConstant(llvm);
     }
 
     bool is_const_integer() const{
-        return !has_address && LLVMIsAConstantInt(llvm);
+        return llvm && !has_address && LLVMIsAConstantInt(llvm);
     }
 
     LLVMValueRef get_const() const{

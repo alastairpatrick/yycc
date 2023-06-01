@@ -142,19 +142,18 @@ define %S @f(i1 %0, %S %1, %S %2) {
   %b = alloca %S, align 8
   store %S %2, ptr %b, align 4
   %4 = load i1, ptr %c, align 1
-  br i1 %4, label %5, label %7
+  br i1 %4, label %5, label %6
 
 5:                                                ; preds = %3
-  %6 = load %S, ptr %a, align 4
-  br label %9
+  br label %7
 
-7:                                                ; preds = %3
-  %8 = load %S, ptr %b, align 4
-  br label %9
+6:                                                ; preds = %3
+  br label %7
 
-9:                                                ; preds = %7, %5
-  %10 = phi %S [ %6, %5 ], [ %8, %7 ]
-  ret %S %10
+7:                                                ; preds = %6, %5
+  %8 = phi ptr [ %a, %5 ], [ %b, %6 ]
+  %9 = load %S, ptr %8, align 4
+  ret %S %9
 }
 END
 
@@ -225,6 +224,50 @@ int g(_Bool c) {
 }
 EXPECT_MESSAGE
 :3:14: error incompatible conditional operand types 'void' and 'int'
+END
+
+
+BEGIN Condition expression can yield lvalue (1)
+void f() {
+    int a, b;
+    (1 ? a : b) = 7;
+}
+EXPECT_IR
+define void @f() {
+  %b = alloca i32, align 4
+  %a = alloca i32, align 4
+  store i32 7, ptr %a, align 4
+  ret void
+}
+END
+
+
+BEGIN Condition expression can yield lvalue (2)
+void f(int c) {
+    int a, b;
+    (c ? a : b) = 7;
+}
+EXPECT_IR
+define void @f(i32 %0) {
+  %b = alloca i32, align 4
+  %a = alloca i32, align 4
+  %c = alloca i32, align 4
+  store i32 %0, ptr %c, align 4
+  %2 = load i32, ptr %c, align 4
+  %3 = trunc i32 %2 to i1
+  br i1 %3, label %4, label %5
+
+4:                                                ; preds = %1
+  br label %6
+
+5:                                                ; preds = %1
+  br label %6
+
+6:                                                ; preds = %5, %4
+  %7 = phi ptr [ %a, %4 ], [ %b, %5 ]
+  store i32 7, ptr %7, align 4
+  ret void
+}
 END
 
 

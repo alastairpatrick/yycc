@@ -1753,21 +1753,36 @@ struct Emitter: Visitor, ValueResolver {
         LLVMValueRef alt_values[2];
 
         LLVMPositionBuilderAtEnd(builder, alt_blocks[0]);
-        auto then_rvalue = convert_to_rvalue(expr->then_expr, result_type, ConvKind::IMPLICIT);
-        if (!is_void_type(result_type)) alt_values[0] = then_rvalue;
+        auto then_value = convert_to_type(expr->then_expr, result_type, ConvKind::IMPLICIT);
         LLVMBuildBr(builder, merge_block);
 
         LLVMPositionBuilderAtEnd(builder, alt_blocks[1]);
-        auto else_rvalue = convert_to_rvalue(expr->else_expr, result_type, ConvKind::IMPLICIT);
-        if (!is_void_type(result_type)) alt_values[1] = else_rvalue;
+        auto else_value = convert_to_type(expr->else_expr, result_type, ConvKind::IMPLICIT);
         LLVMBuildBr(builder, merge_block);
+
+        auto result_kind = ValueKind::RVALUE;
+        auto llvm_result_type = result_type->llvm_type();
+        if (!is_void_type(result_type)) {
+            if (then_value.kind == ValueKind::LVALUE && else_value.kind == ValueKind::LVALUE) {
+                result_kind = ValueKind::LVALUE;
+                llvm_result_type = context->llvm_pointer_type;
+                alt_values[0] = get_address(then_value);
+                alt_values[1] = get_address(else_value);
+            } else {
+                LLVMPositionBuilderAtEnd(builder, alt_blocks[0]);
+                alt_values[0] = get_value(then_value);
+                LLVMPositionBuilderAtEnd(builder, alt_blocks[1]);
+                alt_values[1] = get_value(else_value);
+            }
+        }
 
         LLVMPositionBuilderAtEnd(builder, merge_block);
         Value result;
         if (!is_void_type(result_type)) {
-            auto phi_value = LLVMBuildPhi(builder, result_type->llvm_type(), "");
+            auto phi_value = LLVMBuildPhi(builder, llvm_result_type, "");
             LLVMAddIncoming(phi_value, alt_values, alt_blocks, 2);
-            result = Value(result_type, phi_value);
+
+            result = Value(result_kind, result_type, phi_value);
         } else {
             result = Value(result_type);
         }
