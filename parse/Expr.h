@@ -36,9 +36,9 @@ struct BinaryExpr: Expr {
 
 struct CallExpr: Expr {
     Expr* function{};
-    vector<Expr*> parameters;
+    vector<Expr*> arguments;
 
-    CallExpr(Expr* function, vector<Expr*>&& parameters, const Location& location);
+    CallExpr(Expr* function, vector<Expr*>&& arguments, const Location& location);
     virtual VisitExpressionOutput accept(Visitor& visitor) override;
     virtual void print(ostream& stream) const override;
 };

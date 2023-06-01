@@ -1602,19 +1602,19 @@ struct Emitter: Visitor, ValueResolver {
                 function_declarator = entity_expr->declarator;
             }
 
-            size_t actual_num_params = expr->parameters.size();
+            size_t actual_num_args = expr->arguments.size();
 
             Value object_value;
             MemberExpr* member_expr = dynamic_cast<MemberExpr*>(expr->function);
             if (member_expr) {
                 function_declarator = member_expr->member;
                 object_value = emit_object_of_member_expr(member_expr);
-                ++actual_num_params;
+                ++actual_num_args;
             }
 
             size_t expected_num_params = function_type->parameter_types.size();
-            if (actual_num_params != expected_num_params) {
-                message(Severity::ERROR, expr->location) << "expected " << expected_num_params << " parameter(s) but got " << actual_num_params << "\n";
+            if (actual_num_args != expected_num_params) {
+                message(Severity::ERROR, expr->location) << "expected " << expected_num_params << " parameter(s) but got " << actual_num_args << "\n";
 
                 if (function_declarator) {
                     function_declarator->message_see_declaration("prototype");
@@ -1623,49 +1623,48 @@ struct Emitter: Visitor, ValueResolver {
                 return VisitExpressionOutput(Value::of_recover(result_type));
             }
 
-            vector<LLVMValueRef> llvm_params(expected_num_params);
+            vector<LLVMValueRef> llvm_args(expected_num_params);
             vector<Location> arg_locations(expected_num_params);
 
             size_t param_expr_idx{};
             for (size_t i = 0; i < expected_num_params; ++i) {
-                ExprValue param_value;
+                ExprValue arg_value;
                 if (member_expr && i == 0) {
-                    param_value = ExprValue(object_value, member_expr->object);
+                    arg_value = ExprValue(object_value, member_expr->object);
                 } else {
-                    auto param_expr = expr->parameters[param_expr_idx++];
-                    param_value = emit_expr(param_expr);
+                    auto param_expr = expr->arguments[param_expr_idx++];
+                    arg_value = emit_expr(param_expr);
                 }
 
-                auto param_location = arg_locations[i] = param_value.node->location;
+                auto arg_location = arg_locations[i] = arg_value.node->location;
 
                 auto expected_type = function_type->parameter_types[i];
 
-                bool expect_captured{};
                 const ReferenceType* reference_type{};
                 if (reference_type = unqualified_type_cast<ReferenceType>(expected_type->unqualified())) {
                     expected_type = reference_type->base_type;
                 }
 
                 if (reference_type) {
-                    if (param_value.kind == ValueKind::RVALUE && (reference_type->kind == ReferenceType::Kind::RVALUE || expected_type->qualifiers() & QUALIFIER_CONST || (member_expr && i == 0))) {
-                        param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT);
-                        make_addressable(param_value);
-                        llvm_params[i] = get_address(param_value);
-                    } else if (can_bind_reference_to_value(reference_type, param_value, nullptr, param_location)) {
-                        param_value = param_value.unqualified();
-                        llvm_params[i] = get_address(param_value);
+                    if (arg_value.kind == ValueKind::RVALUE && (reference_type->kind == ReferenceType::Kind::RVALUE || expected_type->qualifiers() & QUALIFIER_CONST || (member_expr && i == 0))) {
+                        arg_value = convert_to_type(arg_value.unqualified(), expected_type, ConvKind::IMPLICIT);
+                        make_addressable(arg_value);
+                        llvm_args[i] = get_address(arg_value);
+                    } else if (can_bind_reference_to_value(reference_type, arg_value, nullptr, arg_location)) {
+                        arg_value = arg_value.unqualified();
+                        llvm_args[i] = get_address(arg_value);
                     } else {
-                        llvm_params[i] = context->llvm_null;
+                        llvm_args[i] = context->llvm_null;
                     }
                 } else {
-                    param_value = convert_to_type(param_value.unqualified(), expected_type, ConvKind::IMPLICIT);
-                    llvm_params[i] = get_value(param_value);
+                    arg_value = convert_to_type(arg_value.unqualified(), expected_type, ConvKind::IMPLICIT);
+                    llvm_args[i] = get_value(arg_value);
                 }
             }
 
-            check_reference_parameter_aliasing(llvm_params, function_type->parameter_types, arg_locations);
+            check_reference_parameter_aliasing(llvm_args, function_type->parameter_types, arg_locations);
 
-            auto llvm_result = LLVMBuildCall2(builder, function_type->llvm_type(), get_address(function_value), llvm_params.data(), llvm_params.size(), "");
+            auto llvm_result = LLVMBuildCall2(builder, function_type->llvm_type(), get_address(function_value), llvm_args.data(), llvm_args.size(), "");
 
             if (throw_type) {
                 auto exception = is_void_type(result_type) ? llvm_result : LLVMBuildExtractValue(builder, llvm_result, 0, "exc");

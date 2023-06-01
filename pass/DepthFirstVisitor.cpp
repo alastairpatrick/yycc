@@ -144,8 +144,8 @@ VisitExpressionOutput DepthFirstVisitor::visit(BinaryExpr* expr) {
 
 VisitExpressionOutput DepthFirstVisitor::visit(CallExpr* expr) {
     expr->function = accept_expr(expr->function).expr;
-    for (auto& parameter: expr->parameters) {
-        parameter = accept_expr(parameter).expr;
+    for (auto& arg: expr->arguments) {
+        arg = accept_expr(arg).expr;
     }
     return VisitExpressionOutput(expr);
 }

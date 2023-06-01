@@ -91,8 +91,8 @@ void BinaryExpr::print(ostream& stream) const {
 }
 
 
-CallExpr::CallExpr(Expr* function, vector<Expr*>&& parameters, const Location& location)
-    : Expr(location), function(function), parameters(move(parameters)) {
+CallExpr::CallExpr(Expr* function, vector<Expr*>&& arguments, const Location& location)
+    : Expr(location), function(function), arguments(move(arguments)) {
 }
 
 VisitExpressionOutput CallExpr::accept(Visitor& visitor) {
@@ -102,8 +102,8 @@ VisitExpressionOutput CallExpr::accept(Visitor& visitor) {
 void CallExpr::print(ostream& stream) const {
     stream << "[\"call\", " << function;
 
-    for (auto param: parameters) {
-        stream  << ", " << param;
+    for (auto arg: arguments) {
+        stream  << ", " << arg;
     }
 
     stream << ']';
