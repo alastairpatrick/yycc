@@ -1626,14 +1626,14 @@ struct Emitter: Visitor, ValueResolver {
             vector<LLVMValueRef> llvm_args(expected_num_params);
             vector<Location> arg_locations(expected_num_params);
 
-            size_t param_expr_idx{};
+            size_t arg_expr_idx{};
             for (size_t i = 0; i < expected_num_params; ++i) {
                 ExprValue arg_value;
                 if (member_expr && i == 0) {
                     arg_value = ExprValue(object_value, member_expr->object);
                 } else {
-                    auto param_expr = expr->arguments[param_expr_idx++];
-                    arg_value = emit_expr(param_expr);
+                    auto arg_expr = expr->arguments[arg_expr_idx++];
+                    arg_value = emit_expr(arg_expr);
                 }
 
                 auto arg_location = arg_locations[i] = arg_value.node->location;
