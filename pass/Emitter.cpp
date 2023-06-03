@@ -150,7 +150,7 @@ struct Emitter: Visitor, ValueResolver {
 
     virtual LLVMValueRef get_value(ExprValue value, bool for_move_expr = false) override {
         if ((value.type->qualifiers() & (QUALIFIER_TRANSIENT | QUALIFIER_VOLATILE)) == (QUALIFIER_TRANSIENT | QUALIFIER_VOLATILE)) {
-            message(Severity::ERROR, value.node->location) << "cannot load value of type '" << value.error_type() << "' with both 'transient' and 'volatile' qualifiers\n";
+            message(Severity::ERROR, value.node->location) << "cannot load value of type '" << value.message_type() << "' with both 'transient' and 'volatile' qualifiers\n";
         }
 
         if (is_void_type(value.type)) {
@@ -176,11 +176,11 @@ struct Emitter: Visitor, ValueResolver {
     void store(Value dest, LLVMValueRef source_rvalue, const Location& assignment_location) {
         if (outcome == EmitOutcome::IR) {
             if (dest.type->qualifiers() & QUALIFIER_CONST) {
-                message(Severity::ERROR, assignment_location) << "cannot modify lvalue with const qualified type '" << dest.error_type() << "'\n";
+                message(Severity::ERROR, assignment_location) << "cannot modify lvalue with const qualified type '" << dest.message_type() << "'\n";
             } else if (dest.kind != ValueKind::LVALUE) {
                 message(Severity::ERROR, assignment_location) << "expression is not assignable\n";
             } else if ((dest.type->qualifiers() & (QUALIFIER_VOLATILE | QUALIFIER_TRANSIENT)) == (QUALIFIER_VOLATILE | QUALIFIER_TRANSIENT)) {
-                message(Severity::ERROR, assignment_location) << "cannot modify lvalue of type '" << dest.error_type()
+                message(Severity::ERROR, assignment_location) << "cannot modify lvalue of type '" << dest.message_type()
                                                               << "' qualified with both 'transient' and 'volatile'\n";
             } else {
                 dest.dangerously_store(builder, source_rvalue);
@@ -729,14 +729,14 @@ struct Emitter: Visitor, ValueResolver {
         
         if (type->base_type->unqualified() != value.type->unqualified()) {
             message(Severity::ERROR, location) << "cannot bind " << message_declarator(declarator) << "reference type '"
-                                               << PrintType(type) << "' to value of type '" << value.error_type() << "'\n";
+                                               << PrintType(type) << "' to value of type '" << value.message_type() << "'\n";
             return false;
         }
         
         if (discards_qualifiers(value.qualifiers, type->base_type->qualifiers())) {
             message(Severity::ERROR, location) << "binding " <<message_declarator(declarator)
                                                << "reference type '" << PrintType(type)
-                                               << "' to value of type '" << value.error_type() << "' discards type qualifier\n";
+                                               << "' to value of type '" << value.message_type() << "' discards type qualifier\n";
             return false;
         }
         
@@ -1173,7 +1173,7 @@ struct Emitter: Visitor, ValueResolver {
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
         if (value.kind != ValueKind::LVALUE) {
-            message(Severity::ERROR, expr->location) << "cannot take address of rvalue of type '" << value.error_type() << "'\n";
+            message(Severity::ERROR, expr->location) << "cannot take address of rvalue of type '" << value.message_type() << "'\n";
             return VisitExpressionOutput(Value::of_recover(result_type));
         }
 
@@ -1698,7 +1698,7 @@ struct Emitter: Visitor, ValueResolver {
             }
         }
 
-        message(Severity::ERROR, expr->location) << "type '" << function_value.error_type() << "' is not a function or function pointer\n";
+        message(Severity::ERROR, expr->location) << "type '" << function_value.message_type() << "' is not a function or function pointer\n";
 
         return VisitExpressionOutput();
     }
@@ -1813,7 +1813,7 @@ struct Emitter: Visitor, ValueResolver {
                 LLVMBuildGEP2(builder, array_type->llvm_type(), get_address(value), indices, 2, "")));
         }
 
-        message(Severity::ERROR, expr->location) << "cannot dereference value of type '" << value.error_type() << "'\n";
+        message(Severity::ERROR, expr->location) << "cannot dereference value of type '" << value.message_type() << "'\n";
         return VisitExpressionOutput(value);
     }
 

@@ -120,7 +120,7 @@ public:
         return result;
     }
 
-    PrintType error_type() const;
+    PrintType message_type() const;
 };
 
 #endif

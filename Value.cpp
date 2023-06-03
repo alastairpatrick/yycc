@@ -93,13 +93,11 @@ void Value::make_addressable(LLVMBuilderRef alloc_builder, LLVMBuilderRef store_
     has_address = true;
 }
 
-PrintType Value::error_type() const {
-    auto error_type = type;
+PrintType Value::message_type() const {
+    auto message_type = QualifiedType::of(type, qualifiers);
 
-    error_type = QualifiedType::of(error_type, qualifiers);
+    if (was_lvalue_ref) message_type = ReferenceType::of(message_type, ReferenceType::Kind::LVALUE);
+    if (was_rvalue_ref) message_type = ReferenceType::of(message_type, ReferenceType::Kind::RVALUE);
 
-    if (was_lvalue_ref) error_type = ReferenceType::of(error_type, ReferenceType::Kind::LVALUE);
-    if (was_rvalue_ref) error_type = ReferenceType::of(error_type, ReferenceType::Kind::RVALUE);
-
-    return PrintType(error_type);
+    return PrintType(message_type);
 }
