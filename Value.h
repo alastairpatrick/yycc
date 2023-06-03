@@ -3,13 +3,15 @@
 
 #include "parse/Type.h"
 
+struct BitField;
+
 enum class EmitOutcome {
     TYPE,
     FOLD,
     IR,
 };
 
-// Must only be thrown if the emit outcome is FOLD.
+// May only be thrown if the emit outcome is FOLD.
 struct FoldError {
     bool error_reported;
 
@@ -23,8 +25,6 @@ enum class ValueKind: uint8_t {
     RVALUE,
     LVALUE,
 };
-
-struct BitField;
 
 struct Value {
 private:
@@ -94,7 +94,6 @@ public:
         return llvm;
     }
 
-    // Use ValueWrangler::get_address instead
     LLVMValueRef dangerously_get_address() const{
         assert(llvm);
         assert(has_address);
@@ -102,10 +101,8 @@ public:
         return llvm;
     }
 
-    // Use ValueWrangler::get_value instead
     LLVMValueRef dangerously_get_value(LLVMBuilderRef builder, EmitOutcome outcome) const;
 
-    // Use ValueWrangler::store instead
     void dangerously_store(LLVMBuilderRef builder, LLVMValueRef new_rvalue) const;
 
     void make_addressable(LLVMBuilderRef alloc_builder, LLVMBuilderRef store_builder);
