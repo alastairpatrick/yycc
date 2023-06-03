@@ -801,6 +801,30 @@ define i32 @f() {
 END
 
 
+BEGIN Dereference global array
+int a[1];
+int f() {
+    return *a;
+}
+EXPECT_IR
+@a = global [1 x i32] zeroinitializer
+
+define i32 @f() {
+  %1 = load i32, ptr @a, align 4
+  ret i32 %1
+}
+END
+
+
+BEGIN Dereference value of invalid type
+int f() {
+    return *1;
+}
+EXPECT_MESSAGE
+:2:12: error cannot dereference value of type 'int'
+END
+
+
 BEGIN Dereference operator yields an lvalue
 int* p;
 void f() {

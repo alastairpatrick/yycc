@@ -1790,16 +1790,31 @@ struct Emitter: Visitor, ValueResolver {
     }
 
     virtual VisitExpressionOutput visit(DereferenceExpr* expr) override {
+        auto context = TranslationUnitContext::it;
+
         auto value = emit_expr(expr->expr).unqualified();
 
-        // todo: type could also be an array
-        // todo error rather than crash if it's an invalid type
-        auto pointer_type = unqualified_type_cast<PointerType>(value.type);
+        if (auto pointer_type = unqualified_type_cast<PointerType>(value.type)) {
+            auto result_type = pointer_type->base_type;
+            if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-        auto result_type = pointer_type->base_type;
-        if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
+            return VisitExpressionOutput(Value(ValueKind::LVALUE, result_type, get_value(value)));
+        }
 
-        return VisitExpressionOutput(Value(ValueKind::LVALUE, result_type, get_value(value)));
+        if (auto array_type = unqualified_type_cast<ResolvedArrayType>(value.type)) {
+            auto result_type = array_type->element_type;
+            if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
+
+            LLVMValueRef indices[2] = { context->llvm_zero_size, context->llvm_zero_size };
+
+            return VisitExpressionOutput(Value(
+                ValueKind::LVALUE,
+                result_type,
+                LLVMBuildGEP2(builder, array_type->llvm_type(), get_address(value), indices, 2, "")));
+        }
+
+        message(Severity::ERROR, expr->location) << "cannot dereference value of type '" << value.error_type() << "'\n";
+        return VisitExpressionOutput(value);
     }
 
     virtual VisitExpressionOutput visit(EntityExpr* expr) override {
