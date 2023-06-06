@@ -44,17 +44,17 @@ public:
     Value() = default;
 
     explicit Value(const Type* type)
-        : kind(ValueKind::TYPE_ONLY), type(type), qualifiers(type->qualifiers()) {
+        : kind(ValueKind::TYPE_ONLY), type(type->unqualified()), qualifiers(type->qualifiers()) {
         assert(type);
     }
 
     Value(const Type* type, LLVMValueRef llvm)
-        : kind(ValueKind::RVALUE), llvm(llvm), type(type), qualifiers(type->qualifiers()) {
+        : kind(ValueKind::RVALUE), llvm(llvm), type(type->unqualified()), qualifiers(type->qualifiers()) {
         assert(type);
     }
 
     Value(ValueKind kind, const Type* type, LLVMValueRef llvm)
-        : kind(kind), llvm(llvm), type(type), qualifiers(type->qualifiers()) {
+        : kind(kind), llvm(llvm), type(type->unqualified()), qualifiers(type->qualifiers()) {
         assert(type);
         assert(llvm);
         has_address = kind == ValueKind::LVALUE;

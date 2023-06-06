@@ -149,7 +149,7 @@ struct Emitter: Visitor, ValueResolver {
     }
 
     virtual LLVMValueRef get_value(ExprValue value, bool for_move_expr = false) override {
-        if ((value.type->qualifiers() & (QUALIFIER_TRANSIENT | QUALIFIER_VOLATILE)) == (QUALIFIER_TRANSIENT | QUALIFIER_VOLATILE)) {
+        if ((value.qualifiers & (QUALIFIER_TRANSIENT | QUALIFIER_VOLATILE)) == (QUALIFIER_TRANSIENT | QUALIFIER_VOLATILE)) {
             message(Severity::ERROR, value.node->location) << "cannot load value of type '" << value.message_type() << "' with both 'transient' and 'volatile' qualifiers\n";
         }
 
@@ -175,11 +175,11 @@ struct Emitter: Visitor, ValueResolver {
 
     void store(Value dest, LLVMValueRef source_rvalue, const Location& assignment_location) {
         if (outcome == EmitOutcome::IR) {
-            if (dest.type->qualifiers() & QUALIFIER_CONST) {
+            if (dest.qualifiers & QUALIFIER_CONST) {
                 message(Severity::ERROR, assignment_location) << "cannot modify lvalue with const qualified type '" << dest.message_type() << "'\n";
             } else if (dest.kind != ValueKind::LVALUE) {
                 message(Severity::ERROR, assignment_location) << "expression is not assignable\n";
-            } else if ((dest.type->qualifiers() & (QUALIFIER_VOLATILE | QUALIFIER_TRANSIENT)) == (QUALIFIER_VOLATILE | QUALIFIER_TRANSIENT)) {
+            } else if ((dest.qualifiers & (QUALIFIER_VOLATILE | QUALIFIER_TRANSIENT)) == (QUALIFIER_VOLATILE | QUALIFIER_TRANSIENT)) {
                 message(Severity::ERROR, assignment_location) << "cannot modify lvalue of type '" << dest.message_type()
                                                               << "' qualified with both 'transient' and 'volatile'\n";
             } else {
@@ -1168,7 +1168,7 @@ struct Emitter: Visitor, ValueResolver {
 
     virtual VisitExpressionOutput visit(AddressExpr* expr) override {
         auto value = emit_expr(expr->expr);
-        auto result_type = value.type->pointer_to();
+        auto result_type = QualifiedType::of(value.type, value.qualifiers)->pointer_to();
 
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
@@ -2108,7 +2108,8 @@ SwitchConstruct::~SwitchConstruct() {
 const Type* get_expr_type(const Expr* expr) {
     static const EmitOptions options;
     Emitter emitter(nullptr, EmitOutcome::TYPE, options);
-    return emitter.emit_expr(const_cast<Expr*>(expr)).type;
+    auto value = emitter.emit_expr(const_cast<Expr*>(expr));
+    return QualifiedType::of(value.type, value.qualifiers);
 }
 
 Value fold_expr(const Expr* expr) {

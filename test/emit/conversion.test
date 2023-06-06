@@ -294,6 +294,16 @@ int* f() {
 END
 
 
+BEGIN Qualified array to pointer conversion
+const int a[2];
+int* f() {
+    return a;
+}
+EXPECT_MESSAGE
+:3:12: contextual error conversion from type 'int const[2]' to type 'int*' requires explicit cast
+END
+
+
 BEGIN Error on converting array to pointer with different base types
 float a[2];
 int* f() {
