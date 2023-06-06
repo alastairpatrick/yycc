@@ -501,7 +501,7 @@ struct Emitter: Visitor, ValueResolver {
     }
 
     ExprValue convert_to_type(Expr* expr, const Type* dest_type, ConvKind kind) {
-        auto value = emit_expr(expr).unqualified();
+        auto value = emit_expr(expr);
         return convert_to_type(value, dest_type, kind);
     }
 
@@ -704,7 +704,7 @@ struct Emitter: Visitor, ValueResolver {
             return emit_scalar_initializer(dest_type, initializer);
         }
 
-        return convert_to_type(emit_expr(expr, emit_flags).unqualified(), dest_type, ConvKind::IMPLICIT);
+        return convert_to_type(emit_expr(expr, emit_flags), dest_type, ConvKind::IMPLICIT);
     }
 
     std::string message_declarator(const Declarator* declarator) {
@@ -1066,7 +1066,7 @@ struct Emitter: Visitor, ValueResolver {
                     return_value = get_value(value);
                 } else {
                     pend_destructor(value);
-                    return_value = convert_to_rvalue(value.unqualified(), return_type->unqualified(), ConvKind::IMPLICIT);
+                    return_value = convert_to_rvalue(value, return_type->unqualified(), ConvKind::IMPLICIT);
                 }
             } else {
                 message(Severity::ERROR, statement->location) << "non-void function '" << *function_declarator->identifier << "' should return a value\n";
@@ -1097,7 +1097,7 @@ struct Emitter: Visitor, ValueResolver {
             default_block = construct.break_block;
         }
 
-        auto expr_value = emit_full_expr(statement->expr).unqualified();
+        auto expr_value = emit_full_expr(statement->expr);
         auto switch_value = LLVMBuildSwitch(builder, get_value(expr_value), default_block, statement->cases.size());
 
         for (auto case_expr: statement->cases) {
@@ -1123,7 +1123,7 @@ struct Emitter: Visitor, ValueResolver {
     }
 
     virtual VisitStatementOutput visit(ThrowStatement* statement) override {
-        auto value = emit_expr(statement->expr, { .pend_temporary_destructor = false }).unqualified();
+        auto value = emit_expr(statement->expr, { .pend_temporary_destructor = false });
 
         auto phi = emit_throw(innermost_scope, statement->location);
 
@@ -1511,7 +1511,7 @@ struct Emitter: Visitor, ValueResolver {
     virtual VisitExpressionOutput visit(BinaryExpr* expr) override {
         auto op = expr->op;
         Value intermediate;
-        auto left_value = emit_expr(expr->left).unqualified();
+        auto left_value = emit_expr(expr->left);
 
         if (op == TOK_AND_OP || op == TOK_OR_OP) {
             intermediate = emit_logical_binary_operation(expr, left_value);
@@ -1519,7 +1519,7 @@ struct Emitter: Visitor, ValueResolver {
             left_value = convert_array_to_pointer(left_value);
             auto left_pointer_type = unqualified_type_cast<PointerType>(left_value.type);
 
-            auto right_value = emit_expr(expr->right).unqualified();
+            auto right_value = emit_expr(expr->right);
             right_value = convert_array_to_pointer(right_value);
             auto right_pointer_type = unqualified_type_cast<PointerType>(right_value.type);
 
@@ -1576,7 +1576,7 @@ struct Emitter: Visitor, ValueResolver {
             throw FoldError(true);
         }
 
-        auto function_value = emit_expr(expr->function).unqualified();
+        auto function_value = emit_expr(expr->function);
 
         if (auto pointer_type = unqualified_type_cast<PointerType>(function_value.type)) {
             function_value = ExprValue(ValueKind::LVALUE, pointer_type->base_type, get_value(function_value), expr->function);
@@ -1647,17 +1647,16 @@ struct Emitter: Visitor, ValueResolver {
 
                 if (reference_type) {
                     if (arg_value.kind == ValueKind::RVALUE && (reference_type->kind == ReferenceType::Kind::RVALUE || expected_type->qualifiers() & QUALIFIER_CONST || (member_expr && i == 0))) {
-                        arg_value = convert_to_type(arg_value.unqualified(), expected_type, ConvKind::IMPLICIT);
+                        arg_value = convert_to_type(arg_value, expected_type, ConvKind::IMPLICIT);
                         make_addressable(arg_value);
                         llvm_args[i] = get_address(arg_value);
                     } else if (can_bind_reference_to_value(reference_type, arg_value, nullptr, arg_location)) {
-                        arg_value = arg_value.unqualified();
                         llvm_args[i] = get_address(arg_value);
                     } else {
                         llvm_args[i] = context->llvm_null;
                     }
                 } else {
-                    arg_value = convert_to_type(arg_value.unqualified(), expected_type, ConvKind::IMPLICIT);
+                    arg_value = convert_to_type(arg_value, expected_type, ConvKind::IMPLICIT);
                     llvm_args[i] = get_value(arg_value);
                 }
             }
@@ -1792,7 +1791,7 @@ struct Emitter: Visitor, ValueResolver {
     virtual VisitExpressionOutput visit(DereferenceExpr* expr) override {
         auto context = TranslationUnitContext::it;
 
-        auto value = emit_expr(expr->expr).unqualified();
+        auto value = emit_expr(expr->expr);
 
         if (auto pointer_type = unqualified_type_cast<PointerType>(value.type)) {
             auto result_type = pointer_type->base_type;
@@ -1885,7 +1884,7 @@ struct Emitter: Visitor, ValueResolver {
     }
 
     virtual VisitExpressionOutput visit(IncDecExpr* expr) override {
-        auto lvalue = emit_expr(expr->expr).unqualified();
+        auto lvalue = emit_expr(expr->expr);
         auto before_rvalue = get_value(lvalue);
 
         const Type* result_type = lvalue.type;
@@ -1912,7 +1911,7 @@ struct Emitter: Visitor, ValueResolver {
         message(Severity::ERROR, expr->location) << "too many braces around initializer\n";
 
         if (expr->elements.size()) {
-            return VisitExpressionOutput(emit_expr(expr->elements[0]).unqualified());
+            return VisitExpressionOutput(emit_expr(expr->elements[0]));
         } else {
             return VisitExpressionOutput(Value::of_zero_int());
         }
@@ -1973,8 +1972,8 @@ struct Emitter: Visitor, ValueResolver {
     }
 
     virtual VisitExpressionOutput visit(SequenceExpr* expr) override {
-        auto left_value = emit_expr(expr->left).unqualified();
-        auto right_value = emit_expr(expr->right, { .pend_temporary_destructor = false }).unqualified();
+        auto left_value = emit_expr(expr->left);
+        auto right_value = emit_expr(expr->right, { .pend_temporary_destructor = false });
         return VisitExpressionOutput(right_value);
     }
 
@@ -2001,8 +2000,8 @@ struct Emitter: Visitor, ValueResolver {
     virtual VisitExpressionOutput visit(SubscriptExpr* expr) override {
         auto context = TranslationUnitContext::it;
 
-        auto left_value = emit_expr(expr->left).unqualified();
-        auto index_value = emit_expr(expr->right).unqualified();
+        auto left_value = emit_expr(expr->left);
+        auto index_value = emit_expr(expr->right);
 
         if (unqualified_type_cast<IntegerType>(left_value.type)) {
             swap(left_value, index_value);

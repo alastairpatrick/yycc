@@ -17,10 +17,6 @@ struct ExprValue: Value {
     ExprValue(const Type* type, LLVMValueRef llvm, const LocationNode* node): Value(type, llvm), node(node) {}
     ExprValue(ValueKind kind, const Type* type, LLVMValueRef llvm, const LocationNode* node): Value(kind, type, llvm), node(node) {}
 
-    ExprValue unqualified() const {
-        return ExprValue(Value::unqualified(), node);
-    }
-
     ExprValue bit_cast(const Type* type) const {
         return ExprValue(Value::bit_cast(type), node);
     }

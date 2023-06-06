@@ -107,10 +107,6 @@ public:
 
     void make_addressable(LLVMBuilderRef alloc_builder, LLVMBuilderRef store_builder);
 
-    Value unqualified() const {
-        return bit_cast(type->unqualified());
-    }
-
     Value bit_cast(const Type* type) const {
         auto result(*this);
         result.type = type;
