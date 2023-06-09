@@ -167,7 +167,7 @@ EXPECT_GLOBALS
 ,["var","ES",["A","C",4],"a"]]
 
 
-BEGIN Struct binds to prior declation
+BEGIN Struct binds to prior declaration
 struct S {};
 struct T {
     struct S x;
@@ -322,10 +322,18 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN Reference variable as struct member
+BEGIN Lvalue reference variable as struct member
 struct S {
     int &x;
 };
+EXPECT_GLOBALS
+[["typedef",["STRUCT",[["x",["Bl",["Qt","Si"]]]]],"S"]]
+
+
+BEGIN Rvalue reference variable as struct member
+struct S {
+    int &&x;
+};
 EXPECT_MESSAGE
-:2:9: error member 'x' cannot have reference type 'int&'
+:2:9: error member 'x' cannot have rvalue reference type 'int&&'
 END

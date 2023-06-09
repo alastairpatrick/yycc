@@ -533,7 +533,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 // C11 6.7.2.1p13 anonymous structs and unions
                 if (dynamic_cast<const StructuredType*>(member_declaration->type) && member_declaration->declarators.empty()) {
                     auto variable = new Variable(Linkage::NONE, StorageDuration::AGGREGATE);
-                    auto member_declarator = new Declarator(member_declaration, member_declaration->type, empty_interned_string, variable, member_declaration->location);
+                    auto member_declarator = identifiers.add_declarator(AddScope::TOP, member_declaration, member_declaration->type, {}, variable, member_declaration->location);
                     member_declaration->declarators.push_back(member_declarator);
                 }
 

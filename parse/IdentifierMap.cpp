@@ -14,30 +14,18 @@ Declarator* IdentifierMap::add_declarator(AddScope add_scope,
                                           DeclaratorDelegate* delegate,
                                           const Location& location,
                                           Declarator* primary) {
-    if (identifier.text->empty()) return new Declarator(declaration, type, identifier.text, delegate, location);
-
-    if (add_scope == AddScope::FILE) {
-        return add_declarator_internal(scopes.back(), declaration, type, identifier, delegate, location, primary);
-    } else if (add_scope == AddScope::TOP) {
-        return add_declarator_internal(scopes.front(), declaration, type, identifier, delegate, location, primary);
+    auto scope = (add_scope == AddScope::FILE) ? scopes.back() : scopes.front();
+    if (identifier.text->empty()) {
+        // Unnamed parameters and anonymous structs & unions
+        return new Declarator(declaration, type, scope, identifier.text, delegate, location);
     } else {
-        auto file_or_block_scope = scopes.front();
-        for (; file_or_block_scope && file_or_block_scope->kind == ScopeKind::STRUCTURED; file_or_block_scope = file_or_block_scope->parent);
-
-        Declarator* declarator = add_declarator_internal(file_or_block_scope, declaration, type, identifier, delegate, location, primary);
-        primary = declarator->primary;
-
-        if (add_scope == AddScope::FILE_OR_BLOCK_AND_TOP) {
-            declarator = add_declarator_internal(scopes.front(), declaration, type, identifier, delegate, location, primary);
-        }
-
-        return declarator;
+        return add_declarator_internal(declaration, type, scope, identifier, delegate, location, primary);
     }
 }
 
-Declarator* IdentifierMap::add_declarator_internal(Scope* scope,
-                                                   const Declaration* declaration,
+Declarator* IdentifierMap::add_declarator_internal(const Declaration* declaration,
                                                    const Type* type,
+                                                   Scope* scope,
                                                    const Identifier& identifier,
                                                    DeclaratorDelegate* delegate,
                                                    const Location& location,
@@ -72,8 +60,7 @@ Declarator* IdentifierMap::add_declarator_internal(Scope* scope,
     }
 
     if (!new_declarator) {
-        new_declarator = new Declarator(declaration, type, identifier_for_scope, delegate, location);
-        new_declarator->scope = scope;
+        new_declarator = new Declarator(declaration, type, scope, identifier_for_scope, delegate, location);
 
         if (existing_declarator) {
             assert(!primary || existing_declarator->primary == primary);

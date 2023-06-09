@@ -8,8 +8,6 @@
 enum class AddScope {
     FILE,
     TOP,
-    FILE_OR_BLOCK,
-    FILE_OR_BLOCK_AND_TOP,
 };
 
 struct IdentifierMap {
@@ -27,9 +25,9 @@ struct IdentifierMap {
                                const Location& location,
                                Declarator* primary = nullptr);
 
-    Declarator* add_declarator_internal(Scope* scope,
-                                        const Declaration* declaration,
+    Declarator* add_declarator_internal(const Declaration* declaration,
                                         const Type* type,
+                                        Scope* scope,
                                         const Identifier& identifier,
                                         DeclaratorDelegate* delegate,
                                         const Location& location,

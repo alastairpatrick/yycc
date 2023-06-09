@@ -63,8 +63,8 @@ ostream& operator<<(ostream& stream, const vector<Declaration*>& items) {
     return stream << ']';
 }
 
-Declarator::Declarator(const Declaration* declaration, const Type* type, InternedString identifier, DeclaratorDelegate* delegate, const Location& location)
-    : primary(this), LocationNode(location), declaration(declaration), type(type), identifier(identifier), delegate(delegate) {
+Declarator::Declarator(const Declaration* declaration, const Type* type, Scope* scope, InternedString identifier, DeclaratorDelegate* delegate, const Location& location)
+    : primary(this), LocationNode(location), declaration(declaration), type(type), scope(scope), identifier(identifier), delegate(delegate) {
 }
 
 EnumConstant* Declarator::enum_constant() {

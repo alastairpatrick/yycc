@@ -123,16 +123,16 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         if (!secondary) {
             auto output = Base::visit(primary, primary_variable, input);
 
-            if (auto reference_type = dynamic_cast<const ReferenceType*>(primary->type)) {
-                if (primary_variable->storage_duration != StorageDuration::AUTO) {
-                    message(Severity::ERROR, primary->location) << primary->message_kind() << " '" << *primary->identifier
-                                                                << "' cannot have reference type '" << PrintType(primary->type) << "'\n";
-                    primary->type = reference_type->base_type;
-                }
-            }
-
-            if (primary->scope && primary->scope->kind == ScopeKind::PROTOTYPE) {
+            if (primary->scope->kind == ScopeKind::PROTOTYPE) {
                 primary->type = adjust_parameter_type(primary->type);
+            } else {
+                if (auto reference_type = dynamic_cast<const ReferenceType*>(primary->type)) {
+                    if (reference_type->kind == ReferenceType::Kind::RVALUE) {
+                        message(Severity::ERROR, primary->location) << primary->message_kind() << " '" << *primary->identifier
+                                                                    << "' cannot have rvalue reference type '" << PrintType(primary->type) << "'\n";
+                        primary->type = ReferenceType::of(reference_type->base_type, ReferenceType::Kind::LVALUE);
+                    }
+                }
             }
 
             if (primary_variable->initializer) {

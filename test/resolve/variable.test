@@ -105,12 +105,25 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN Global reference variable
-const int x = 1;
-const int &y = x;
-int f() {
-    return y;
+BEGIN Local rvalue reference type variable
+void f(int x) {
+    int&& y = x;
 }
 EXPECT_MESSAGE
-:2:11: error variable 'y' cannot have reference type 'int const&'
+:2:8: error variable 'y' cannot have rvalue reference type 'int&&'
+END
+
+
+BEGIN Global lvalue reference type variable
+const int x = 1;
+const int &y = x;
+EXPECT_GLOBALS
+[["var","ES",["Qc","Si"],"x",1],["var","ES",["Bl",["Qct","Si"]],"y","Nx"]]
+
+
+BEGIN Global rvalue reference type variable
+const int x = 1;
+const int &&y = x;
+EXPECT_MESSAGE
+:2:11: error variable 'y' cannot have rvalue reference type 'int const&&'
 END
