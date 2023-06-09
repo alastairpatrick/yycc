@@ -8,7 +8,6 @@ Declarator* IdentifierMap::lookup_declarator(const Identifier& identifier) const
 }
 
 Declarator* IdentifierMap::add_declarator(AddScope add_scope,
-                                          const Declaration* declaration,
                                           const Type* type,
                                           const Identifier& identifier,
                                           DeclaratorDelegate* delegate,
@@ -17,14 +16,13 @@ Declarator* IdentifierMap::add_declarator(AddScope add_scope,
     auto scope = (add_scope == AddScope::FILE) ? scopes.back() : scopes.front();
     if (identifier.text->empty()) {
         // Unnamed parameters and anonymous structs & unions
-        return new Declarator(declaration, type, scope, identifier.text, delegate, location);
+        return new Declarator(type, scope, identifier.text, delegate, location);
     } else {
-        return add_declarator_internal(declaration, type, scope, identifier, delegate, location, primary);
+        return add_declarator_internal(type, scope, identifier, delegate, location, primary);
     }
 }
 
-Declarator* IdentifierMap::add_declarator_internal(const Declaration* declaration,
-                                                   const Type* type,
+Declarator* IdentifierMap::add_declarator_internal(const Type* type,
                                                    Scope* scope,
                                                    const Identifier& identifier,
                                                    DeclaratorDelegate* delegate,
@@ -52,7 +50,6 @@ Declarator* IdentifierMap::add_declarator_internal(const Declaration* declaratio
             new_declarator = existing_declarator;
             assert(new_declarator->identifier == identifier_for_scope);
 
-            new_declarator->declaration = declaration;
             new_declarator->type = type;
             new_declarator->delegate = delegate;
             new_declarator->location = location;
@@ -60,7 +57,7 @@ Declarator* IdentifierMap::add_declarator_internal(const Declaration* declaratio
     }
 
     if (!new_declarator) {
-        new_declarator = new Declarator(declaration, type, scope, identifier_for_scope, delegate, location);
+        new_declarator = new Declarator(type, scope, identifier_for_scope, delegate, location);
 
         if (existing_declarator) {
             assert(!primary || existing_declarator->primary == primary);

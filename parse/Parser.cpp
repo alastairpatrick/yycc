@@ -54,7 +54,7 @@ void Parser::handle_declaration_directive() {
         if (pp_token == TOK_IDENTIFIER) {
             auto id = preprocessor.identifier;
 
-            auto declarator = identifiers.add_declarator(AddScope::TOP, nullptr, nullptr, id, nullptr, preprocessor.location());
+            auto declarator = identifiers.add_declarator(AddScope::TOP, nullptr, id, nullptr, preprocessor.location());
             if (token == TOK_PP_TYPE) {
                 TypeDelegate* type_delegate = new TypeDelegate;
                 type_delegate->type_def_type.declarator = declarator->primary;
@@ -533,7 +533,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 // C11 6.7.2.1p13 anonymous structs and unions
                 if (dynamic_cast<const StructuredType*>(member_declaration->type) && member_declaration->declarators.empty()) {
                     auto variable = new Variable(Linkage::NONE, StorageDuration::AGGREGATE);
-                    auto member_declarator = identifiers.add_declarator(AddScope::TOP, member_declaration, member_declaration->type, {}, variable, member_declaration->location);
+                    auto member_declarator = identifiers.add_declarator(AddScope::TOP, member_declaration->type, {}, variable, member_declaration->location);
                     member_declaration->declarators.push_back(member_declarator);
                 }
 
@@ -610,7 +610,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
                 }
 
                 auto enum_constant = new EnumConstant(enum_type, constant);
-                auto declarator = identifiers.add_declarator(AddScope::TOP, declaration, enum_type, identifier, enum_constant, location);
+                auto declarator = identifiers.add_declarator(AddScope::TOP, enum_type, identifier, enum_constant, location);
 
                 if (declarator) {
                     enum_type->constants.push_back(declarator);
@@ -640,7 +640,7 @@ const Type* Parser::parse_structured_type(Declaration* declaration) {
 
 Declarator* Parser::declare_tag_type(AddScope add_scope, Declaration* declaration, const Identifier& identifier, TagType* type, const Location& location) {
     auto delegate = new TypeDelegate;
-    auto declarator = identifiers.add_declarator(add_scope, declaration, type, identifier, delegate, location);
+    auto declarator = identifiers.add_declarator(add_scope, type, identifier, delegate, location);
     delegate->type_def_type.declarator = declarator->primary;
     type->tag = declarator;
     return declarator;
@@ -755,11 +755,11 @@ Declarator* Parser::parse_declarator(Declaration* declaration, const Type* type,
     Declarator* file_declarator{};  // an additional declarator at file scope if appropriate
     Declarator* primary_declarator{};
     if (scope == ScopeKind::BLOCK && declaration->storage_class == StorageClass::EXTERN) {
-        file_declarator = identifiers.add_declarator(AddScope::FILE, declaration, type, declarator_transform.identifier, delegate, location);
+        file_declarator = identifiers.add_declarator(AddScope::FILE, type, declarator_transform.identifier, delegate, location);
         primary_declarator = file_declarator->primary;
     }
 
-    auto declarator = identifiers.add_declarator(add_scope, declaration, type, declarator_transform.identifier, delegate, location, primary_declarator);
+    auto declarator = identifiers.add_declarator(add_scope, type, declarator_transform.identifier, delegate, location, primary_declarator);
 
     if (auto type_delegate = dynamic_cast<TypeDelegate*>(delegate)) {
         type_delegate->type_def_type.declarator = declarator->primary;

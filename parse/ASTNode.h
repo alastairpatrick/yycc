@@ -59,7 +59,7 @@ struct Declarator: LocationNode {
     DeclaratorDelegate* delegate{};
     DeclaratorStatus status = DeclaratorStatus::UNRESOLVED;
     
-    Declarator(const Declaration* declaration, const Type* type, Scope* scope, InternedString identifier, DeclaratorDelegate* delegate, const Location& location);
+    Declarator(const Type* type, Scope* scope, InternedString identifier, DeclaratorDelegate* delegate, const Location& location);
 
     EnumConstant* enum_constant();
     Entity* entity() const;
@@ -72,11 +72,6 @@ struct Declarator: LocationNode {
     void message_see_declaration(const char* declaration_kind = nullptr) const;
     VisitDeclaratorOutput accept(Visitor& visitor, const VisitDeclaratorInput& input);
     void print(ostream& stream) const;
-
-private:
-    friend class DeclarationMarker;
-    friend class IdentifierMap;
-    const Declaration* declaration{};
 };
 
 enum class LabelKind {

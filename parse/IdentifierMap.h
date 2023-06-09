@@ -18,15 +18,13 @@ struct IdentifierMap {
 
     Declarator* lookup_declarator(const Identifier& identifier) const;
     Declarator* add_declarator(AddScope add_scope,
-                               const Declaration* declaration,
                                const Type* type,
                                const Identifier& identifier,
                                DeclaratorDelegate* delegate,
                                const Location& location,
                                Declarator* primary = nullptr);
 
-    Declarator* add_declarator_internal(const Declaration* declaration,
-                                        const Type* type,
+    Declarator* add_declarator_internal(const Type* type,
                                         Scope* scope,
                                         const Identifier& identifier,
                                         DeclaratorDelegate* delegate,
