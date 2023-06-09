@@ -750,6 +750,12 @@ struct Emitter: Visitor, ValueResolver {
             type = reference_type->base_type;
         }
 
+        if (reference_type && !entity->initializer) {
+            message(Severity::ERROR, declarator->location) << declarator->message_kind() << " '" << *declarator->identifier
+                                                            << "' of reference type '" << PrintType(reference_type) << "' must have initializer\n";
+            reference_type = nullptr;
+        }
+
         if (entity->storage_duration == StorageDuration::AUTO) {
             auto structured_type = unqualified_type_cast<StructuredType>(type->unqualified());
 
@@ -759,12 +765,6 @@ struct Emitter: Visitor, ValueResolver {
                 initial_value =  emit_initializer(type, entity->initializer, { .pend_temporary_destructor = false });
             } else if (options.initialize_variables || (structured_type && structured_type->destructor)) {
                 initial_value = Value(type, default_value(type));
-            }
-
-            if (reference_type && !entity->initializer) {
-                message(Severity::ERROR, declarator->location) << declarator->message_kind() << " '" << *declarator->identifier
-                                                               << "' of reference type '" << PrintType(reference_type) << "' must have initializer\n";
-                reference_type = nullptr;
             }
 
             if (reference_type && !can_bind_reference_to_value(reference_type, initial_value, declarator, declarator->location)) {
