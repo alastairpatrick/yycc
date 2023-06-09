@@ -3,8 +3,13 @@
 
 #include "Visitor.h"
 
+struct Module;
+
 struct DepthFirstVisitor: Visitor {
     typedef DepthFirstVisitor Base;
+    
+    void accept_module(Module* module);
+    void accept_scope(Scope* scope);
 
     virtual VisitDeclaratorOutput visit(Declarator* declarator, Variable* variable, const VisitDeclaratorInput& input) override;
     virtual VisitDeclaratorOutput visit(Declarator* declarator, Function* function, const VisitDeclaratorInput& input) override;

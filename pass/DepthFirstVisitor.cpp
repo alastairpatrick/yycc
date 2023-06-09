@@ -1,6 +1,20 @@
 #include "DepthFirstVisitor.h"
 
+#include "Module.h"
 #include "parse/Declaration.h"
+
+void DepthFirstVisitor::accept_module(Module* module) {
+    accept_scope(module->file_scope);
+    for (auto scope: module->type_scopes) {
+        accept_scope(scope);
+    }
+}
+
+void DepthFirstVisitor::accept_scope(Scope* scope) {
+    for (auto declarator: scope->declarators) {
+        accept_declarator(declarator);
+    }
+}
 
 /* Declarations */
 
