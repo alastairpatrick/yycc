@@ -585,8 +585,8 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN Rvalue passed to const parameter by lvalue reference is converted
-void f(const int&) {}
+BEGIN Rvalue passed to const parameter by rvalue reference is converted
+void f(const int&&) {}
 void g() {
     f(1.0);
 }
@@ -633,7 +633,7 @@ define void @g() {
 END
 
 
-BEGIN Cannot pass lvalue directly to reference parameter
+BEGIN Cannot pass lvalue directly to non-const rvalue reference parameter
 void f(int&&) {}
 void g() {
     int x;
@@ -641,6 +641,26 @@ void g() {
 }
 EXPECT_MESSAGE
 :4:7: error cannot bind reference type 'int&&' to lvalue; consider '&&' move expression
+END
+
+
+BEGIN Can pass lvalue to const rvalue reference parameter
+void f(const int&&) {}
+void g() {
+    int x = 1;
+    f(x);
+}
+EXPECT_IR
+define void @f(ptr %0) {
+  ret void
+}
+
+define void @g() {
+  %x = alloca i32, align 4
+  store i32 1, ptr %x, align 4
+  call void @f(ptr %x)
+  ret void
+}
 END
 
 
@@ -752,6 +772,73 @@ void f() {
 }
 EXPECT_MESSAGE
 :6:7: error cannot modify lvalue with const qualified type 'struct S const'
+END
+
+
+BEGIN Callee calls destuctor on non-const rvalue reference argument
+struct S {
+    void destructor(S&);
+};
+void f(S&&) {
+}
+void g() {
+    S s;
+    f(&&s);
+}
+EXPECT_IR
+%S = type {}
+
+define void @f(ptr %0) {
+  call void @destructor_wrapper(ptr %0)
+  ret void
+}
+
+define void @g() {
+  %1 = alloca %S, align 8
+  %s = alloca %S, align 8
+  store %S zeroinitializer, ptr %s, align 1
+  %2 = load %S, ptr %s, align 1
+  store %S zeroinitializer, ptr %s, align 1
+  store %S %2, ptr %1, align 1
+  call void @f(ptr %1)
+  call void @destructor_wrapper(ptr %s)
+  ret void
+}
+
+declare void @destructor(ptr)
+
+declare void @destructor_wrapper(ptr)
+END
+
+
+BEGIN Caller calls destuctor on const rvalue reference argument
+struct S {
+    void destructor(S&);
+};
+void f(const S&&) {
+}
+void g() {
+    S s;
+    f(s);
+}
+EXPECT_IR
+%S = type {}
+
+define void @f(ptr %0) {
+  ret void
+}
+
+define void @g() {
+  %s = alloca %S, align 8
+  store %S zeroinitializer, ptr %s, align 1
+  call void @f(ptr %s)
+  call void @destructor_wrapper(ptr %s)
+  ret void
+}
+
+declare void @destructor(ptr)
+
+declare void @destructor_wrapper(ptr)
 END
 
 

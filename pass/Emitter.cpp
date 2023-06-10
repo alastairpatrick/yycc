@@ -84,8 +84,6 @@ struct Emitter: Visitor, ValueResolver {
     SwitchConstruct* innermost_switch{};
     InternedString this_string;
     Value this_value;
-    LLVMTypeRef destructor_wrapper_type{};
-    unordered_map<const StructuredType*, TypedFunctionRef> destructor_wrappers;
     unordered_map<const Type*, LLVMValueRef> default_values;
     LLVMBasicBlockRef last_unreachable_block{};
 
@@ -219,11 +217,12 @@ struct Emitter: Visitor, ValueResolver {
         return last_unreachable_block = append_block();
     }
 
+    // todo: move to Module
     TypedFunctionRef destructor_wrapper(const StructuredType* type) {
         auto context = TranslationUnitContext::it;
 
-        auto it = destructor_wrappers.find(type);
-        if (it != destructor_wrappers.end()) return it->second;
+        auto it = module->destructor_wrappers.find(type);
+        if (it != module->destructor_wrappers.end()) return it->second;
 
         auto function = type->destructor->function();
 
@@ -235,7 +234,7 @@ struct Emitter: Visitor, ValueResolver {
         TypedFunctionRef ref;
         ref.type = LLVMFunctionType(context->llvm_void_type, param_types, 1, false);
         ref.function = LLVMAddFunction(module->llvm_module, "destructor_wrapper", ref.type);
-        destructor_wrappers[type] = ref;
+        module->destructor_wrappers[type] = ref;
 
         if (!options.emit_helpers) return ref;
 
@@ -598,13 +597,15 @@ struct Emitter: Visitor, ValueResolver {
 
                 auto llvm_param = LLVMGetParam(function, i);
 
-                if (auto reference_type = dynamic_cast<const ReferenceType*>(param->type->unqualified())) {
+                if (auto reference_type = unqualified_type_cast<ReferenceType>(param->type->unqualified())) {
                     param_entity->value = Value(ValueKind::LVALUE, reference_type->base_type, llvm_param);
                     param_entity->value.returnable_ref = reference_type->kind == ReferenceType::Kind::LVALUE;
                     param_entity->value.was_lvalue_ref = reference_type->kind == ReferenceType::Kind::LVALUE;
                     param_entity->value.was_rvalue_ref = reference_type->kind == ReferenceType::Kind::RVALUE;
 
-                    if (reference_type->kind == ReferenceType::Kind::RVALUE) {
+                    if (reference_type->kind == ReferenceType::Kind::RVALUE &&
+                        !(reference_type->base_type->qualifiers() & QUALIFIER_CONST))
+                    {
                         pend_destructor(param_entity->value);
                     }
                 } else {
@@ -1630,7 +1631,7 @@ struct Emitter: Visitor, ValueResolver {
                     arg_value = ExprValue(object_value, member_expr->object);
                 } else {
                     auto arg_expr = expr->arguments[arg_expr_idx++];
-                    arg_value = emit_expr(arg_expr);
+                    arg_value = emit_expr(arg_expr, { .pend_temporary_destructor = false });
                 }
 
                 auto arg_location = arg_locations[i] = arg_value.node->location;
@@ -1638,12 +1639,15 @@ struct Emitter: Visitor, ValueResolver {
                 auto expected_type = function_type->parameter_types[i];
 
                 const ReferenceType* reference_type{};
+                bool rvalue_reference{};
                 if (reference_type = unqualified_type_cast<ReferenceType>(expected_type->unqualified())) {
+                    rvalue_reference = reference_type->kind == ReferenceType::Kind::RVALUE;
                     expected_type = reference_type->base_type;
                 }
 
+
                 if (reference_type) {
-                    if (arg_value.kind == ValueKind::RVALUE && (reference_type->kind == ReferenceType::Kind::RVALUE || expected_type->qualifiers() & QUALIFIER_CONST || (member_expr && i == 0))) {
+                    if (arg_value.kind == ValueKind::RVALUE && (rvalue_reference || (member_expr && i == 0))) {
                         arg_value = convert_to_type(arg_value, expected_type, ConvKind::IMPLICIT);
                         make_addressable(arg_value);
                         llvm_args[i] = get_address(arg_value);
@@ -1655,6 +1659,12 @@ struct Emitter: Visitor, ValueResolver {
                 } else {
                     arg_value = convert_to_type(arg_value, expected_type, ConvKind::IMPLICIT);
                     llvm_args[i] = get_value(arg_value);
+                }
+
+                if (arg_value.kind == ValueKind::RVALUE &&
+                    (!reference_type || (rvalue_reference && reference_type->base_type->qualifiers() & QUALIFIER_CONST)))
+                {
+                    pend_destructor(arg_value);
                 }
             }
 

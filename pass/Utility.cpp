@@ -24,8 +24,8 @@ bool can_bind_reference_to_value(const ReferenceType* type, Value value, const D
             return false;
         }
     }
-        
-    if (type->kind == ReferenceType::Kind::RVALUE && value.kind != ValueKind::RVALUE) {
+
+    if (type->kind == ReferenceType::Kind::RVALUE && !(type->base_type->qualifiers() & QUALIFIER_CONST) && value.kind != ValueKind::RVALUE) {
         message(Severity::ERROR, location) << "cannot bind " << message_declarator(declarator)
                                             << "reference type '" << PrintType(type) << "' to lvalue; consider '&&' move expression\n";
         return false;
