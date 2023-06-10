@@ -1051,6 +1051,43 @@ void f() {
 END
 
 
+BEGIN Global reference variable (1)
+int x;
+int& r1 = x;
+int f() { return r1; }
+EXPECT_IR
+@x = global i32 0
+
+define i32 @f() {
+  %1 = load i32, ptr @x, align 4
+  ret i32 %1
+}
+END
+
+
+BEGIN Global reference variable (2)
+int x;
+int& r2 = r1;
+int& r1 = x;
+int f() { return r2; }
+EXPECT_IR
+@x = global i32 0
+
+define i32 @f() {
+  %1 = load i32, ptr @x, align 4
+  ret i32 %1
+}
+END
+
+
+BEGIN Global reference variable cannot be initialized with rvalue
+int& r1 = 2;
+int f() { return r1; }
+EXPECT_MESSAGE
+:1:11: error cannot bind variable 'r1' of reference type 'int&' to rvalue
+END
+
+
 BEGIN Global variable of type struct containing initializers (1)
 struct S {
     int x;

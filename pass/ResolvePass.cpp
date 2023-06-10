@@ -675,7 +675,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
                 if (!acyclic_declarator || (declarator->type->partition() != TypePartition::INCOMPLETE && acyclic_declarator->type->partition() == TypePartition::INCOMPLETE)) {
                     acyclic_declarator = declarator;
                 }
-            } catch (ResolutionCycle) {
+            } catch (ResolutionCycle&) {
                 if (!is_trivially_cyclic(primary, declarator->type)) {
                     message(Severity::ERROR, declarator->location) << "recursive definition of '" << *declarator->identifier << "'\n";
                     pause_messages();
@@ -697,7 +697,7 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
 
                 try {
                     secondary->type = resolve(secondary->type);
-                } catch (ResolutionCycle) {
+                } catch (ResolutionCycle&) {
                     message(Severity::ERROR, secondary->location) << "recursive definition of '" << *secondary->identifier << "'\n";
                     pause_messages();
                 }
@@ -718,7 +718,14 @@ struct ResolvePass: DepthFirstVisitor, TypeVisitor {
         }
 
         primary->next = nullptr;
-        primary->accept(*this, VisitDeclaratorInput());
+        
+        try {
+            primary->accept(*this, VisitDeclaratorInput());
+        } catch (ResolutionCycle&) {
+            message(Severity::ERROR, primary->location) << "recursive definition of '" << *primary->identifier << "'\n";
+            pause_messages();
+        }
+
         primary->status = DeclaratorStatus::RESOLVED;
 
         return VisitDeclaratorOutput();

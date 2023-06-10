@@ -707,42 +707,6 @@ struct Emitter: Visitor, ValueResolver {
         return convert_to_type(emit_expr(expr, emit_flags), dest_type, ConvKind::IMPLICIT);
     }
 
-    std::string message_declarator(const Declarator* declarator) {
-        if (!declarator) return "";
-        return string(declarator->message_kind()) + " '" + string(*declarator->identifier) + "' of ";
-    }
-
-    bool can_bind_reference_to_value(const ReferenceType* type, Value value, const Declarator* declarator, const Location& location) {
-        auto context = TranslationUnitContext::it;
-
-        if (type->kind == ReferenceType::Kind::LVALUE && value.kind != ValueKind::LVALUE) {
-            message(Severity::ERROR, location) << "cannot bind " << message_declarator(declarator)
-                                               << "reference type '" << PrintType(type) << "' to rvalue\n";
-            return false;
-        }
-        
-        if (type->kind == ReferenceType::Kind::RVALUE && value.kind != ValueKind::RVALUE) {
-            message(Severity::ERROR, location) << "cannot bind " << message_declarator(declarator)
-                                               << "reference type '" << PrintType(type) << "' to lvalue; consider '&&' move expression\n";
-            return false;
-        }
-        
-        if (type->base_type->unqualified() != value.type->unqualified()) {
-            message(Severity::ERROR, location) << "cannot bind " << message_declarator(declarator) << "reference type '"
-                                               << PrintType(type) << "' to value of type '" << value.message_type() << "'\n";
-            return false;
-        }
-        
-        if (discards_qualifiers(value.qualifiers, type->base_type->qualifiers())) {
-            message(Severity::ERROR, location) << "binding " <<message_declarator(declarator)
-                                               << "reference type '" << PrintType(type)
-                                               << "' to value of type '" << value.message_type() << "' discards type qualifier\n";
-            return false;
-        }
-        
-        return true;
-    }
-
     void emit_variable(Declarator* declarator, Variable* entity) {
         auto type = declarator->primary->type;
         auto reference_type = unqualified_type_cast<ReferenceType>(type->unqualified());
@@ -788,7 +752,7 @@ struct Emitter: Visitor, ValueResolver {
                 pend_destructor(entity->value);
             }
 
-        } else if (entity->storage_duration == StorageDuration::STATIC) {
+        } else if (entity->storage_duration == StorageDuration::STATIC && !reference_type) {
             auto global = get_address(entity->value);
 
             LLVMValueRef llvm_initial = default_value(type);
@@ -1820,6 +1784,11 @@ struct Emitter: Visitor, ValueResolver {
         auto declarator = expr->declarator->primary;
         auto result_type = declarator->type;
 
+        auto reference_type = unqualified_type_cast<ReferenceType>(result_type->unqualified());
+        if (reference_type) {
+            result_type = reference_type->base_type;
+        }
+
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
         if (auto enum_constant = declarator->enum_constant()) {
@@ -1840,7 +1809,9 @@ struct Emitter: Visitor, ValueResolver {
         }
 
         if (auto variable = declarator->variable()) {
-            if (outcome == EmitOutcome::FOLD && variable->initializer && (declarator->type->qualifiers() & QUALIFIER_CONST)) {
+            if (outcome == EmitOutcome::FOLD && variable->initializer && 
+                ((declarator->type->qualifiers() & QUALIFIER_CONST) || reference_type))
+            {
                 try {
                     ScopedMessagePauser pauser;
                     return VisitExpressionOutput(convert_to_type(emit_expr(variable->initializer), result_type, ConvKind::IMPLICIT));

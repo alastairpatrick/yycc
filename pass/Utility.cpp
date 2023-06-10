@@ -1,6 +1,43 @@
 #include "Utility.h"
-
+#include "Message.h"
 #include "parse/Constant.h"
+#include "TranslationUnitContext.h"
+
+std::string message_declarator(const Declarator* declarator) {
+    if (!declarator) return "";
+    return string(declarator->message_kind()) + " '" + string(*declarator->identifier) + "' of ";
+}
+
+bool can_bind_reference_to_value(const ReferenceType* type, Value value, const Declarator* declarator, const Location& location) {
+    auto context = TranslationUnitContext::it;
+
+    if (type->kind == ReferenceType::Kind::LVALUE && value.kind != ValueKind::LVALUE) {
+        message(Severity::ERROR, location) << "cannot bind " << message_declarator(declarator)
+                                            << "reference type '" << PrintType(type) << "' to rvalue\n";
+        return false;
+    }
+        
+    if (type->kind == ReferenceType::Kind::RVALUE && value.kind != ValueKind::RVALUE) {
+        message(Severity::ERROR, location) << "cannot bind " << message_declarator(declarator)
+                                            << "reference type '" << PrintType(type) << "' to lvalue; consider '&&' move expression\n";
+        return false;
+    }
+        
+    if (type->base_type->unqualified() != value.type->unqualified()) {
+        message(Severity::ERROR, location) << "cannot bind " << message_declarator(declarator) << "reference type '"
+                                            << PrintType(type) << "' to value of type '" << value.message_type() << "'\n";
+        return false;
+    }
+        
+    if (discards_qualifiers(value.qualifiers, type->base_type->qualifiers())) {
+        message(Severity::ERROR, location) << "binding " <<message_declarator(declarator)
+                                            << "reference type '" << PrintType(type)
+                                            << "' to value of type '" << value.message_type() << "' discards type qualifier\n";
+        return false;
+    }
+        
+    return true;
+}
 
 ConvKind check_pointer_conversion(const Type* source_base_type, const Type* dest_base_type) {
     auto unqualified_source_base_type = source_base_type->unqualified();

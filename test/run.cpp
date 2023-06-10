@@ -1,6 +1,7 @@
 #include "nlohmann/json.hpp"
 
 #include "FileCache.h"
+#include "Message.h"
 #include "parse/ASTNode.h"
 #include "parse/Expr.h"
 #include "parse/Declaration.h"
@@ -184,7 +185,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
                 Module module;
                 module.resolve_pass(declarations, *identifiers.file_scope());
 
-                if (test_type >= TestType::EMIT) {
+                if (test_type >= TestType::EMIT && context.highest_severity == Severity::INFO) {
                     module.entity_pass();
 
                     EmitOptions options = {
@@ -195,7 +196,7 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
 
                     module.emit_pass(options);
                     
-                    if (test_type >= TestType::MIDDLE_END) {
+                    if (test_type >= TestType::MIDDLE_END && context.highest_severity == Severity::INFO) {
                         module.middle_end_passes("default<O2>");
                     }
 

@@ -1,9 +1,13 @@
 #include "Module.h"
 #include "DepthFirstVisitor.h"
+#include "Message.h"
 #include "parse/Declaration.h"
+#include "TranslationUnitContext.h"
+#include "Utility.h"
 
 // This pass creates LLVM globals for all variables with static duration and LLVM functions, including those nested within functions.
-struct EntityPass: DepthFirstVisitor {
+
+struct EntityPass1: DepthFirstVisitor {
     string prefix;
     LLVMModuleRef llvm_module{};
 
@@ -14,6 +18,9 @@ struct EntityPass: DepthFirstVisitor {
         if (entity->storage_duration != StorageDuration::STATIC) return VisitDeclaratorOutput();
 
         if (entity->value.kind == ValueKind::LVALUE) return VisitDeclaratorOutput();
+
+        auto reference_type = unqualified_type_cast<ReferenceType>(primary->type->unqualified());
+        if (reference_type) return VisitDeclaratorOutput();
 
         auto prefixed_name(prefix);
         prefixed_name += *primary->identifier;
@@ -42,7 +49,7 @@ struct EntityPass: DepthFirstVisitor {
         auto llvm_function = LLVMAddFunction(llvm_module, prefixed_name.c_str(), primary->type->llvm_type());
         entity->value = Value(ValueKind::LVALUE, primary->type, llvm_function);
 
-        EntityPass pass;
+        EntityPass1 pass;
         pass.llvm_module = llvm_module;
         pass.prefix = prefixed_name + '.';
 
@@ -50,16 +57,36 @@ struct EntityPass: DepthFirstVisitor {
 
         return VisitDeclaratorOutput();
     }
+};
 
-    void accept_scope(const Scope* scope) {
-        for (auto declarator: scope->declarators) {
-            accept_declarator(declarator);
+struct EntityPass2: DepthFirstVisitor {
+    virtual VisitDeclaratorOutput visit(Declarator* primary, Variable* variable, const VisitDeclaratorInput& input) override {
+        auto context = TranslationUnitContext::it;
+
+        primary = primary->primary;
+        variable = primary->variable();
+        
+        if (variable->storage_duration != StorageDuration::STATIC) return VisitDeclaratorOutput();
+
+        if (variable->value.kind == ValueKind::LVALUE) return VisitDeclaratorOutput();
+
+        auto reference_type = unqualified_type_cast<ReferenceType>(primary->type->unqualified());
+        if (!reference_type) return VisitDeclaratorOutput();
+
+        auto value = fold_expr(variable->initializer);
+
+        if (!can_bind_reference_to_value(reference_type, value, primary, variable->initializer->location)) {
+            value = Value(ValueKind::LVALUE, reference_type->base_type, context->llvm_null);
         }
+
+        variable->value = value;
+
+        return VisitDeclaratorOutput();
     }
 };
 
 void Module::entity_pass() {
-    EntityPass pass;
+    EntityPass1 pass;
     pass.llvm_module = llvm_module;
 
     Identifier destructor_id = { .text = intern_string("destructor") };
@@ -78,4 +105,7 @@ void Module::entity_pass() {
 
         pass.accept_scope(scope);
     }
+
+    EntityPass2 pass2;
+    pass2.accept_module(this);
 }
