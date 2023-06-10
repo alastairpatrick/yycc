@@ -119,7 +119,7 @@ EXPECT_MESSAGE
 END
 
 
-BEGIN Static initializer can reference a const qualified global (1)
+BEGIN Static initializer can be a const qualified global (1)
 const int x = 4;
 int y = x;
 EXPECT_IR
@@ -128,7 +128,7 @@ EXPECT_IR
 END
 
 
-BEGIN Static initializer can reference a const qualified global (2)
+BEGIN Static initializer can be a const qualified global (2)
 #var x
 int y = x;
 const int x = 4;
@@ -138,7 +138,7 @@ EXPECT_IR
 END
 
 
-BEGIN Static initializer can reference a const qualified global where the initializer has a different type from the global itself
+BEGIN Static initializer can be a const qualified global where the initializer has a different type from the global itself
 const int x = 4.0;
 int y = x;
 EXPECT_IR
@@ -1015,6 +1015,22 @@ define i32 @f(i32 %0) {
 END
 
 
+BEGIN Local reference variable initialized with const global
+const int g = 2;
+int f() {
+    const int &r = g;
+    return r;
+}
+EXPECT_IR
+@g = constant i32 2
+
+define i32 @f() {
+  %1 = load i32, ptr @g, align 4
+  ret i32 %1
+}
+END
+
+
 BEGIN Local reference variable without initializer
 void f() {
     int &r;
@@ -1091,6 +1107,19 @@ int& r1 = 2;
 int f() { return r1; }
 EXPECT_MESSAGE
 :1:11: error cannot bind variable 'r1' of reference type 'int&' to rvalue
+END
+
+
+BEGIN Local static reference variable initialized with local
+int f() {
+    int x;
+    static int& r = x;
+    return r;
+}
+EXPECT_MESSAGE
+:3:21: error variable 'x' is not a constant
+:2:9: ... see definition of variable 'x'
+:3:21: error cannot bind variable 'r' of reference type 'int&' to rvalue
 END
 
 
