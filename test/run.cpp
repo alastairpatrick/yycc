@@ -182,19 +182,19 @@ static bool test_case(TestType test_type, const string sections[NUM_SECTIONS], c
             auto declarations = parse_declarations(identifiers, test_type == TestType::PREPARSE, sections[INPUT]);
 
             if (test_type >= TestType::RESOLVE) {
-                Module module;
+                EmitOptions options = {
+                    .initialize_variables = false,
+                    .emit_helpers = test_type >= TestType::MIDDLE_END,
+                    .emit_parameter_attributes = false,
+                };
+
+                Module module(options);
                 module.resolve_pass(declarations, *identifiers.file_scope());
 
                 if (test_type >= TestType::EMIT && context.highest_severity == Severity::INFO) {
                     module.entity_pass();
 
-                    EmitOptions options = {
-                        .initialize_variables = false,
-                        .emit_helpers = test_type >= TestType::MIDDLE_END,
-                        .emit_parameter_attributes = false,
-                    };
-
-                    module.emit_pass(options);
+                    module.emit_pass();
                     
                     if (test_type >= TestType::MIDDLE_END && context.highest_severity == Severity::INFO) {
                         module.middle_end_passes("default<O2>");

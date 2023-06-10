@@ -1,15 +1,72 @@
 #include "Module.h"
+#include "parse/Declaration.h"
 #include "LLVM.h"
 #include "parse/Type.h"
 #include "TranslationUnitContext.h"
 
-Module::Module() {
+Module::Module(const EmitOptions& options): options(options) {
     auto context = TranslationUnitContext::it;
     llvm_module = LLVMModuleCreateWithNameInContext("my_module", context->llvm_context);
+    builder = LLVMCreateBuilderInContext(context->llvm_context);
 }
 
 Module::~Module() {
+    LLVMDisposeBuilder(builder);
     LLVMDisposeModule(llvm_module);
+}
+
+TypedFunctionRef Module::destructor_wrapper(const StructuredType* type, LLVMValueRef default_value) {
+    auto context = TranslationUnitContext::it;
+
+    auto it = destructor_wrappers.find(type);
+    if (it != destructor_wrappers.end()) return it->second;
+
+    auto function = type->destructor->function();
+
+    auto old_block = LLVMGetInsertBlock(builder);
+
+    LLVMTypeRef param_types[] = {
+        context->llvm_pointer_type,
+    };
+    TypedFunctionRef ref;
+    ref.type = LLVMFunctionType(context->llvm_void_type, param_types, 1, false);
+    ref.function = LLVMAddFunction(llvm_module, "destructor_wrapper", ref.type);
+    destructor_wrappers[type] = ref;
+
+    if (!options.emit_helpers) return ref;
+
+    LLVMSetLinkage(ref.function, LLVMInternalLinkage);
+    LLVMAddAttributeAtIndex(ref.function, 1, nocapture_attribute());
+
+    auto llvm_type = type->llvm_type();
+    auto receiver = LLVMGetParam(ref.function, 0);
+
+    auto entry_block = LLVMAppendBasicBlockInContext(context->llvm_context, ref.function, "");
+    LLVMPositionBuilderAtEnd(builder, entry_block);
+
+    auto current_state = LLVMBuildLoad2(builder, llvm_type, receiver, "");
+    auto indeterminate = indeterminate_bool();
+    auto selected = LLVMBuildSelect(builder, indeterminate.dangerously_get_value(builder, EmitOutcome::IR),
+                                              current_state,
+                                              default_value, "");
+
+    auto is_const = call_is_constant_intrinsic(builder, selected, type->llvm_type());
+
+    auto destructor_block = LLVMAppendBasicBlockInContext(context->llvm_context, ref.function, "");
+    auto skip_block = LLVMAppendBasicBlockInContext(context->llvm_context, ref.function, "");
+
+    LLVMBuildCondBr(builder, is_const.dangerously_get_value(builder, EmitOutcome::IR), skip_block, destructor_block);
+
+    LLVMPositionBuilderAtEnd(builder, destructor_block);
+    LLVMBuildCall2(builder, type->destructor->type->llvm_type(), function->value.dangerously_get_address(), &receiver, 1, "");
+    LLVMBuildBr(builder, skip_block);
+
+    LLVMPositionBuilderAtEnd(builder, skip_block);
+    LLVMBuildRetVoid(builder);
+
+    LLVMPositionBuilderAtEnd(builder, old_block);
+
+    return ref;
 }
 
 Value Module::indeterminate_bool() {

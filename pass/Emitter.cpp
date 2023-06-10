@@ -68,7 +68,6 @@ struct GoToLabel {
 struct Emitter: Visitor, ValueResolver {
     Module* module{};
     Emitter* parent{};
-    const EmitOptions& options;
     EmitOutcome outcome{};
     ValueKind fold_kind = ValueKind::RVALUE;
 
@@ -90,8 +89,8 @@ struct Emitter: Visitor, ValueResolver {
     LLVMValueRef last_throw_branch{};
     LLVMValueRef last_throw_exception{};
 
-    Emitter(Module* module, EmitOutcome outcome, const EmitOptions& options)
-        : module(module), outcome(outcome), options(options) {
+    Emitter(Module* module, EmitOutcome outcome)
+        : module(module), outcome(outcome) {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
 
         this_string = intern_string("this");
@@ -122,7 +121,7 @@ struct Emitter: Visitor, ValueResolver {
         
         LLVMValueRef value{};
         if (auto struct_type = unqualified_type_cast<StructType>(type->unqualified())) {
-            Emitter initializer_emitter(module, EmitOutcome::FOLD, options);
+            Emitter initializer_emitter(module, EmitOutcome::FOLD);
 
             vector<LLVMValueRef> values;
             for (auto declaration: struct_type->declarations) {
@@ -217,61 +216,6 @@ struct Emitter: Visitor, ValueResolver {
         return last_unreachable_block = append_block();
     }
 
-    // todo: move to Module
-    TypedFunctionRef destructor_wrapper(const StructuredType* type) {
-        auto context = TranslationUnitContext::it;
-
-        auto it = module->destructor_wrappers.find(type);
-        if (it != module->destructor_wrappers.end()) return it->second;
-
-        auto function = type->destructor->function();
-
-        auto old_block = LLVMGetInsertBlock(builder);
-
-        LLVMTypeRef param_types[] = {
-            context->llvm_pointer_type,
-        };
-        TypedFunctionRef ref;
-        ref.type = LLVMFunctionType(context->llvm_void_type, param_types, 1, false);
-        ref.function = LLVMAddFunction(module->llvm_module, "destructor_wrapper", ref.type);
-        module->destructor_wrappers[type] = ref;
-
-        if (!options.emit_helpers) return ref;
-
-        LLVMSetLinkage(ref.function, LLVMInternalLinkage);
-        LLVMAddAttributeAtIndex(ref.function, 1, module->nocapture_attribute());
-
-        auto llvm_type = type->llvm_type();
-        auto receiver = LLVMGetParam(ref.function, 0);
-
-        auto entry_block = LLVMAppendBasicBlockInContext(context->llvm_context, ref.function, "");
-        LLVMPositionBuilderAtEnd(builder, entry_block);
-
-        auto current_state = LLVMBuildLoad2(builder, llvm_type, receiver, "");
-        auto indeterminate = module->indeterminate_bool();
-        auto selected = LLVMBuildSelect(builder, indeterminate.dangerously_get_value(builder, outcome),
-                                                  current_state,
-                                                  default_value(type), "");
-
-        auto is_const = module->call_is_constant_intrinsic(builder, selected, type->llvm_type());
-
-        auto destructor_block = LLVMAppendBasicBlockInContext(context->llvm_context, ref.function, "");
-        auto skip_block = LLVMAppendBasicBlockInContext(context->llvm_context, ref.function, "");
-
-        LLVMBuildCondBr(builder, is_const.dangerously_get_value(builder, outcome), skip_block, destructor_block);
-
-        LLVMPositionBuilderAtEnd(builder, destructor_block);
-        LLVMBuildCall2(builder, type->destructor->type->llvm_type(), get_address(function->value), &receiver, 1, "");
-        LLVMBuildBr(builder, skip_block);
-
-        LLVMPositionBuilderAtEnd(builder, skip_block);
-        LLVMBuildRetVoid(builder);
-
-        LLVMPositionBuilderAtEnd(builder, old_block);
-
-        return ref;
-    }
-
     LLVMValueRef call_destructor_immediately(Value value) {
         auto context = TranslationUnitContext::it;
 
@@ -283,7 +227,7 @@ struct Emitter: Visitor, ValueResolver {
         auto destructor = structured_type->destructor;
         if (!destructor) return nullptr;
 
-        auto wrapper = destructor_wrapper(structured_type);
+        auto wrapper = module->destructor_wrapper(structured_type, default_value(structured_type));
         auto arg = value.dangerously_get_address();
         return LLVMBuildCall2(builder, wrapper.type, wrapper.function, &arg, 1, "");
     }
@@ -731,7 +675,7 @@ struct Emitter: Visitor, ValueResolver {
             if (entity->initializer) {
                 EmitterScope scope(this);
                 initial_value =  emit_initializer(type, entity->initializer, { .pend_temporary_destructor = false });
-            } else if (options.initialize_variables || (structured_type && structured_type->destructor)) {
+            } else if (module->options.initialize_variables || (structured_type && structured_type->destructor)) {
                 initial_value = Value(type, default_value(type));
             }
 
@@ -762,7 +706,7 @@ struct Emitter: Visitor, ValueResolver {
 
             LLVMValueRef llvm_initial = default_value(type);
             if (entity->initializer) {
-                Emitter initializer_emitter(module, EmitOutcome::FOLD, options);
+                Emitter initializer_emitter(module, EmitOutcome::FOLD);
 
                 Value value;
                 try {
@@ -798,7 +742,7 @@ struct Emitter: Visitor, ValueResolver {
 
             auto unqualified_param_type = param->type->unqualified();
 
-            if (options.emit_parameter_attributes) {
+            if (module->options.emit_parameter_attributes) {
                 if (auto pointer_type = unqualified_type_cast<PointerType>(unqualified_param_type)) {
                     if ((pointer_type->qualifiers() & (QUALIFIER_TRANSIENT | QUALIFIER_VOLATILE)) == QUALIFIER_TRANSIENT) {
                         LLVMAddAttributeAtIndex(llvm_function, i + 1, module->nocapture_attribute());
@@ -833,7 +777,7 @@ struct Emitter: Visitor, ValueResolver {
         }
           
         if (function->body) {
-            Emitter function_emitter(module, EmitOutcome::IR, options);
+            Emitter function_emitter(module, EmitOutcome::IR);
             function_emitter.parent = this;
             function_emitter.emit_function_definition(declarator, function);
         }
@@ -2126,15 +2070,13 @@ SwitchConstruct::~SwitchConstruct() {
 }
 
 const Type* get_expr_type(const Expr* expr) {
-    static const EmitOptions options;
-    Emitter emitter(nullptr, EmitOutcome::TYPE, options);
+    Emitter emitter(nullptr, EmitOutcome::TYPE);
     auto value = emitter.emit_expr(const_cast<Expr*>(expr));
     return QualifiedType::of(value.type, value.qualifiers);
 }
 
 Value fold_expr(const Expr* expr, ValueKind kind) {
-    static const EmitOptions options;
-    Emitter emitter(nullptr, EmitOutcome::FOLD, options);
+    Emitter emitter(nullptr, EmitOutcome::FOLD);
     emitter.fold_kind = kind;
 
     try {
@@ -2144,8 +2086,8 @@ Value fold_expr(const Expr* expr, ValueKind kind) {
     }
 }
 
-void Module::emit_pass(const EmitOptions& options) {
-    Emitter emitter(this, EmitOutcome::IR, options);
+void Module::emit_pass() {
+    Emitter emitter(this, EmitOutcome::IR);
 
     emitter.accept_scope(file_scope);
     for (auto scope: type_scopes) {

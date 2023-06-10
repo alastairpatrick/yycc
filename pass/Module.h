@@ -24,10 +24,12 @@ struct TypedFunctionRef {
 };
 
 struct Module {
+    const EmitOptions& options;
     Scope* file_scope;
     vector<Scope*> type_scopes;
 
     LLVMModuleRef llvm_module{};
+    LLVMBuilderRef builder{};
 
     // Maps from a constant to a constant global initialized with that constant. Intended only to pool strings.
     // Note that LLVM internally performs constant uniqueing, ensuring that constants with the same type and
@@ -39,8 +41,10 @@ struct Module {
 
     unordered_set<LLVMValueRef> destructor_placeholder_functions;
 
-    Module();
+    Module(const EmitOptions& options);
     ~Module();
+
+    TypedFunctionRef destructor_wrapper(const StructuredType* type, LLVMValueRef default_value);
 
     Value indeterminate_bool();
     TypedFunctionRef lookup_intrinsic(const char* name, LLVMTypeRef* param_types, unsigned num_params);
@@ -61,7 +65,7 @@ struct Module {
 
     void resolve_pass(const vector<Declaration*>& declarations, Scope& file_scope);
     void entity_pass();
-    void emit_pass(const EmitOptions& options);
+    void emit_pass();
     void middle_end_passes(const char* passes);
     void substitution_pass();
     void back_end_passes();

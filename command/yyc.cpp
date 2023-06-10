@@ -42,10 +42,10 @@ int main(int argc, const char* argv[]) {
         declarations.insert(declarations.end(), parsed.begin(), parsed.end());
     }
 
-    Module module;
+    Module module({});
     module.resolve_pass(declarations, *identifiers.file_scope());
     module.entity_pass();
-    module.emit_pass({});
+    module.emit_pass();
     module.middle_end_passes("default<O3>");
 
     char* error{};
