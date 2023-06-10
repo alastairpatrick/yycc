@@ -33,10 +33,11 @@ public:
     const Type* type{};
     ValueKind kind = ValueKind::INVALID;
     struct {
-        bool is_null_literal  : 1 = false;
-        bool has_address      : 1 = false;
-        bool was_lvalue_ref   : 1 = false;
-        bool was_rvalue_ref   : 1 = false;
+        bool is_null_literal    : 1 = false;
+        bool has_address        : 1 = false;
+        bool scoped_lifetime    : 1 = false;
+        bool was_lvalue_ref     : 1 = false;
+        bool was_rvalue_ref     : 1 = false;
     };
     QualifierSet qualifiers{};
     BitField* bit_field{};

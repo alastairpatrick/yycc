@@ -614,6 +614,8 @@ struct Emitter: Visitor, ValueResolver {
                     pend_destructor(param_entity->value);
                 }
 
+                param_entity->value.scoped_lifetime = true;
+
                 if (param->identifier == this_string) {
                     this_value = param_entity->value;
                 }
@@ -741,7 +743,8 @@ struct Emitter: Visitor, ValueResolver {
                 entity->value.was_rvalue_ref = reference_type->kind == ReferenceType::Kind::RVALUE;
             } else {
                 entity->value = allocate_auto_storage(type, c_str(declarator->identifier));
-                
+                entity->value.scoped_lifetime = true;
+
                 if (initial_value.is_valid()) {
                     auto llvm_initial = initial_value.dangerously_get_value(builder, outcome);
                     if (!LLVMIsUndef(llvm_initial)) {
@@ -769,8 +772,6 @@ struct Emitter: Visitor, ValueResolver {
                 }
             }
             LLVMSetInitializer(global, llvm_initial);
-
-            entity->value = Value(ValueKind::LVALUE, type, global);
         }
     }
 
@@ -1573,6 +1574,11 @@ struct Emitter: Visitor, ValueResolver {
             if (member_expr) {
                 function_declarator = member_expr->member;
                 object_value = emit_object_of_member_expr(member_expr);
+
+                if (member_expr->op == TOK_PTR_OP) {
+                    object_value = Value(object_value.type->pointer_to(), object_value.dangerously_get_address());
+                }
+
                 ++actual_num_args;
             }
 
@@ -1920,6 +1926,8 @@ struct Emitter: Visitor, ValueResolver {
                                                                                   member_variable->member->gep_indices.data(), member_variable->member->gep_indices.size(),
                                                                                   expr->identifier.c_str()));
                 output.value.bit_field = member_variable->member->bit_field.get();
+                output.value.scoped_lifetime = object.scoped_lifetime;
+
                 return output;
             }
             
@@ -1996,10 +2004,13 @@ struct Emitter: Visitor, ValueResolver {
 
             LLVMValueRef indices[2] = { context->llvm_zero_size, get_value(index_value) };
 
-            return VisitExpressionOutput(Value(
+            auto value = Value(
                 ValueKind::LVALUE,
                 result_type,
-                LLVMBuildGEP2(builder, array_type->llvm_type(), get_address(left_value), indices, 2, "")));
+                LLVMBuildGEP2(builder, array_type->llvm_type(), get_address(left_value), indices, 2, ""));
+            value.scoped_lifetime = left_value.scoped_lifetime;
+
+            return VisitExpressionOutput(value);
         }
 
         return VisitExpressionOutput();

@@ -1000,7 +1000,7 @@ define void @f(ptr %0) {
 END
 
 
-BEGIN Local reference variable
+BEGIN Local reference variable initialized with value type parameter
 int f(int x) {
     int &r = x;
     return r;
@@ -1011,6 +1011,22 @@ define i32 @f(i32 %0) {
   store i32 %0, ptr %x, align 4
   %2 = load i32, ptr %x, align 4
   ret i32 %2
+}
+END
+
+
+BEGIN Local reference variable initialized with lvalue reference type parameter
+int f(int &x) {
+    const int &r = x;
+    return r;
+}
+END
+
+
+BEGIN Local reference variable initialized with rvalue reference type parameter
+int f(int &&x) {
+    const int &r = x;
+    return r;
 }
 END
 
@@ -1067,6 +1083,15 @@ void f() {
 END
 
 
+BEGIN Local reference variable initialized with dereferenced pointer
+void f(int* p) {
+    int &r = *p;
+}
+EXPECT_MESSAGE
+:2:9: error cannot prove lvalue of type 'int' has scoped lifetime
+END
+
+
 BEGIN Global reference variable (1)
 int x;
 int& r1 = x;
@@ -1099,6 +1124,20 @@ END
 BEGIN Global const reference variable
 const int x = 2;
 const int& r = x;
+END
+
+
+BEGIN Global const reference variable initialized with array element
+const int a[2] = {3, 4};
+const int& r = a[1];
+int f() { return r; }
+EXPECT_IR
+@a = global [2 x i32] [i32 3, i32 4]
+
+define i32 @f() {
+  %1 = load i32, ptr getelementptr inbounds ([2 x i32], ptr @a, i64 0, i32 1), align 4
+  ret i32 %1
+}
 END
 
 

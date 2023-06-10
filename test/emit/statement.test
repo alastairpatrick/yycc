@@ -553,7 +553,7 @@ declare void @destructor_wrapper(ptr)
 END
 
 
-BEGIN Return value has reference type
+BEGIN Return global as reference return type
 int x;
 const int& f() {
     return x;
@@ -576,7 +576,35 @@ define i32 @g() {
 END
 
 
-BEGIN Rvalue return value has reference type
+BEGIN Return lvalue reference parameter as reference return type
+int& f(int &x) {
+    return x;
+}
+EXPECT_IR
+define ptr @f(ptr %0) {
+  ret ptr %0
+}
+END
+
+
+BEGIN Return member of lvalue reference parameter as reference return type
+struct S {
+    int x;
+};
+int& f(S &s) {
+    return s.x;
+}
+EXPECT_IR
+%S = type { i32 }
+
+define ptr @f(ptr %0) {
+  %x = getelementptr inbounds %S, ptr %0, i32 0, i32 0
+  ret ptr %x
+}
+END
+
+
+BEGIN Cannot return rvalue as reference return type
 const int& f() {
     return 1;
 }

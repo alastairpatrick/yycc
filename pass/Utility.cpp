@@ -11,10 +11,18 @@ std::string message_declarator(const Declarator* declarator) {
 bool can_bind_reference_to_value(const ReferenceType* type, Value value, const Declarator* declarator, const Location& location) {
     auto context = TranslationUnitContext::it;
 
-    if (type->kind == ReferenceType::Kind::LVALUE && value.kind != ValueKind::LVALUE) {
-        message(Severity::ERROR, location) << "cannot bind " << message_declarator(declarator)
-                                            << "reference type '" << PrintType(type) << "' to rvalue\n";
-        return false;
+    if (type->kind == ReferenceType::Kind::LVALUE) {
+        if (value.kind != ValueKind::LVALUE) {
+            message(Severity::ERROR, location) << "cannot bind " << message_declarator(declarator)
+                                                << "reference type '" << PrintType(type) << "' to rvalue\n";
+            return false;
+        }
+
+        if (!value.scoped_lifetime) {
+            message(Severity::ERROR, location) << "cannot prove lvalue of type '" << value.message_type()
+                                               << "' has scoped lifetime\n";
+            return false;
+        }
     }
         
     if (type->kind == ReferenceType::Kind::RVALUE && value.kind != ValueKind::RVALUE) {
@@ -22,7 +30,7 @@ bool can_bind_reference_to_value(const ReferenceType* type, Value value, const D
                                             << "reference type '" << PrintType(type) << "' to lvalue; consider '&&' move expression\n";
         return false;
     }
-        
+
     if (type->base_type->unqualified() != value.type->unqualified()) {
         message(Severity::ERROR, location) << "cannot bind " << message_declarator(declarator) << "reference type '"
                                             << PrintType(type) << "' to value of type '" << value.message_type() << "'\n";
@@ -77,7 +85,7 @@ bool is_string_initializer(const ResolvedArrayType* array_type, const Initialize
         dynamic_cast<StringConstant*>(initializer->elements[0]));
 }
 
-static bool follow_geps(LLVMValueRef haystack, LLVMValueRef needle) {
+static bool values_are_aliases_internal(LLVMValueRef haystack, LLVMValueRef needle) {
     for (;;) {
         if (needle == haystack) return true;
 
@@ -89,5 +97,5 @@ static bool follow_geps(LLVMValueRef haystack, LLVMValueRef needle) {
 }
 
 bool values_are_aliases(LLVMValueRef a, LLVMValueRef b) {
-    return follow_geps(a, b) || follow_geps(b, a);
+    return values_are_aliases_internal(a, b) || values_are_aliases_internal(b, a);
 }

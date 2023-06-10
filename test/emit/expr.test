@@ -488,7 +488,7 @@ END
 
 BEGIN Call member function (2)
 struct S {
-  int f(S &this) {
+  int f(S *this) {
     return 7;
   }
 };
@@ -505,6 +505,8 @@ define i32 @g(ptr %0) {
 }
 
 define i32 @f(ptr %0) {
+  %this = alloca ptr, align 8
+  store ptr %0, ptr %this, align 8
   ret i32 7
 }
 END
@@ -575,11 +577,11 @@ struct S {
     return 7;
   }
 };
-int g(const S* p) {
-  return p->f();
+int g(const S& r) {
+  return r.f();
 }
 EXPECT_MESSAGE
-:7:10: error binding reference type 'struct S&' to value of type 'struct S const' discards type qualifier
+:7:10: error binding reference type 'struct S&' to value of type 'struct S const&' discards type qualifier
 END
 
 
@@ -700,18 +702,6 @@ void g() {
 }
 EXPECT_MESSAGE
 :9:7: error arguments 1 and 2 cannot be aliases
-END
-
-
-BEGIN Non-const reference parameter may not alias the same object as another reference parameter (2)
-void f(int &a, int& b) {
-}
-void g() {
-    int x;
-    f(x, *&x);
-}
-EXPECT_MESSAGE
-:5:7: error arguments 1 and 2 cannot be aliases
 END
 
 

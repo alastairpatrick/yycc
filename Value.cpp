@@ -8,13 +8,11 @@ Value Value::of_zero_int() {
 }
 
 Value Value::of_recover(const Type* type) {
+    auto context = TranslationUnitContext::it;
     type = type->unqualified();
 
-    // Too late to fail properly here.
-    assert(!dynamic_cast<const FunctionType*>(type));
-
-    if (type == &VoidType::it) {
-        return Value(type);
+    if (type == &VoidType::it || dynamic_cast<const FunctionType*>(type)) {
+        return Value(ValueKind::LVALUE, type, context->llvm_null);
     } else {
         return of_null(type);
     }
