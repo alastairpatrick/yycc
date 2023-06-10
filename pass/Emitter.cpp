@@ -83,7 +83,6 @@ struct Emitter: Visitor, ValueResolver {
     SwitchConstruct* innermost_switch{};
     InternedString this_string;
     Value this_value;
-    unordered_map<const Type*, LLVMValueRef> default_values;
     LLVMBasicBlockRef last_unreachable_block{};
 
     LLVMValueRef last_throw_branch{};
@@ -113,9 +112,10 @@ struct Emitter: Visitor, ValueResolver {
         return value.dangerously_get_address();
     }
 
+    // todo: move to Module
     LLVMValueRef default_value(const Type* type) {
-        auto it = default_values.find(type);
-        if (it != default_values.end()) return it->second;
+        auto it = module->default_values.find(type);
+        if (it != module->default_values.end()) return it->second;
 
         auto llvm_type = type->llvm_type();
         
@@ -142,7 +142,7 @@ struct Emitter: Visitor, ValueResolver {
             value = LLVMConstNull(llvm_type);
         }
 
-        return default_values[type] = value;
+        return module->default_values[type] = value;
     }
 
     virtual LLVMValueRef get_value(ExprValue value, bool for_move_expr = false) override {

@@ -36,6 +36,8 @@ struct Module {
     // value are the same instance.
     unordered_map<LLVMValueRef, LLVMValueRef> reified_constants;
 
+    unordered_map<const Type*, LLVMValueRef> default_values;
+
     LLVMTypeRef destructor_wrapper_type{};
     unordered_map<const StructuredType*, TypedFunctionRef> destructor_wrappers;
 
