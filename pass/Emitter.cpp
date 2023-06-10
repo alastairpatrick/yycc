@@ -66,15 +66,15 @@ struct GoToLabel {
 };
 
 struct Emitter: Visitor, ValueResolver {
-    const EmitOptions& options;
     Module* module{};
+    Emitter* parent{};
+    const EmitOptions& options;
+    EmitOutcome outcome{};
+    ValueKind fold_kind = ValueKind::RVALUE;
+
     LLVMBuilderRef builder{};
     LLVMBuilderRef temp_builder{};
-    EmitOutcome outcome{};
     LLVMBasicBlockRef entry_block{};
-
-    Emitter* parent{};
-
     Declarator* function_declarator{};
     const FunctionType* function_type{};
     LLVMValueRef function{};
@@ -1810,7 +1810,7 @@ struct Emitter: Visitor, ValueResolver {
 
         if (auto variable = declarator->variable()) {
             if (outcome == EmitOutcome::FOLD && variable->initializer && 
-                ((declarator->type->qualifiers() & QUALIFIER_CONST) || reference_type))
+                ((fold_kind == ValueKind::RVALUE && declarator->type->qualifiers() & QUALIFIER_CONST) || reference_type))
             {
                 try {
                     ScopedMessagePauser pauser;
@@ -2082,9 +2082,11 @@ const Type* get_expr_type(const Expr* expr) {
     return QualifiedType::of(value.type, value.qualifiers);
 }
 
-Value fold_expr(const Expr* expr) {
+Value fold_expr(const Expr* expr, ValueKind kind) {
     static const EmitOptions options;
     Emitter emitter(nullptr, EmitOutcome::FOLD, options);
+    emitter.fold_kind = kind;
+
     try {
         return emitter.emit_expr(const_cast<Expr*>(expr));
     } catch (FoldError&) {

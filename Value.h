@@ -5,7 +5,7 @@
 
 struct BitField;
 
-enum class EmitOutcome {
+enum class EmitOutcome: uint8_t {
     TYPE,
     FOLD,
     IR,

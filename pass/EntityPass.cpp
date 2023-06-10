@@ -73,7 +73,7 @@ struct EntityPass2: DepthFirstVisitor {
         auto reference_type = unqualified_type_cast<ReferenceType>(primary->type->unqualified());
         if (!reference_type) return VisitDeclaratorOutput();
 
-        auto value = fold_expr(variable->initializer);
+        auto value = fold_expr(variable->initializer, ValueKind::LVALUE);
 
         if (!can_bind_reference_to_value(reference_type, value, primary, variable->initializer->location)) {
             value = Value(ValueKind::LVALUE, reference_type->base_type, context->llvm_null);

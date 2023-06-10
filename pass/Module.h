@@ -12,7 +12,7 @@ struct EmitOptions {
 };
 
 const Type* get_expr_type(const Expr* expr);
-Value fold_expr(const Expr* expr);
+Value fold_expr(const Expr* expr, ValueKind kind = ValueKind::RVALUE);
 
 struct TypedFunctionRef {
     LLVMTypeRef type{};

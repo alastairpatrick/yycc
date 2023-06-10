@@ -1080,6 +1080,12 @@ define i32 @f() {
 END
 
 
+BEGIN Global const reference variable
+const int x = 2;
+const int& r = x;
+END
+
+
 BEGIN Global reference variable cannot be initialized with rvalue
 int& r1 = 2;
 int f() { return r1; }
