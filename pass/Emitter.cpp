@@ -600,6 +600,7 @@ struct Emitter: Visitor, ValueResolver {
 
                 if (auto reference_type = dynamic_cast<const ReferenceType*>(param->type->unqualified())) {
                     param_entity->value = Value(ValueKind::LVALUE, reference_type->base_type, llvm_param);
+                    param_entity->value.returnable_ref = reference_type->kind == ReferenceType::Kind::LVALUE;
                     param_entity->value.was_lvalue_ref = reference_type->kind == ReferenceType::Kind::LVALUE;
                     param_entity->value.was_rvalue_ref = reference_type->kind == ReferenceType::Kind::RVALUE;
 
@@ -988,7 +989,29 @@ struct Emitter: Visitor, ValueResolver {
             call_pending_destructors(*scope);
         }
     }
+    /*
+    bool check_derived_from_lvalue_reference_parameter(LLVMValueRef value) {
+        vector<LLVMValueRef> params(LLVMCountParams(function));
+        LLVMGetParams(function, params.data());
 
+        do {
+            auto it = std::find(params.begin(), params.end(), value);
+            if (it != params.end()) {
+                size_t param_idx = it - params.begin();
+                return function_declarator
+                return true;
+            }
+
+            auto opcode = LLVMGetInstructionOpcode(value);
+            if (opcode == LLVMGetElementPtr) {
+                value = LLVMGetOperand(value, 0);
+                continue;
+            }
+        } while (false);
+
+        return false;
+    }
+    */
     virtual VisitStatementOutput visit(ReturnStatement* statement) override {
         auto context = TranslationUnitContext::it;
 
@@ -1024,6 +1047,10 @@ struct Emitter: Visitor, ValueResolver {
                 if (return_reference_type) {
                     if (can_bind_reference_to_value(return_reference_type, value, nullptr, statement->expr->location)) {
                         return_value = get_address(value);
+                        if (!value.returnable_ref) {
+                            message(Severity::ERROR, statement->expr->location) << "cannot prove lifetime exceeds caller scope\n";
+                            return_value = context->llvm_null;
+                        }
                     } else {
                         return_value = context->llvm_null;
                     }
@@ -1926,6 +1953,7 @@ struct Emitter: Visitor, ValueResolver {
                                                                                   member_variable->member->gep_indices.data(), member_variable->member->gep_indices.size(),
                                                                                   expr->identifier.c_str()));
                 output.value.bit_field = member_variable->member->bit_field.get();
+                output.value.returnable_ref = object.returnable_ref;
                 output.value.scoped_lifetime = object.scoped_lifetime;
 
                 return output;
@@ -2008,6 +2036,7 @@ struct Emitter: Visitor, ValueResolver {
                 ValueKind::LVALUE,
                 result_type,
                 LLVMBuildGEP2(builder, array_type->llvm_type(), get_address(left_value), indices, 2, ""));
+            value.returnable_ref = left_value.returnable_ref;
             value.scoped_lifetime = left_value.scoped_lifetime;
 
             return VisitExpressionOutput(value);

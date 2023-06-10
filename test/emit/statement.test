@@ -604,12 +604,52 @@ define ptr @f(ptr %0) {
 END
 
 
+BEGIN Return element of lvalue reference array parameter as reference return type
+int& f(int a[3]) {
+    return a[1];
+}
+EXPECT_IR
+define ptr @f(ptr %0) {
+  %2 = getelementptr [3 x i32], ptr %0, i64 0, i32 1
+  ret ptr %2
+}
+END
+
+
 BEGIN Cannot return rvalue as reference return type
 const int& f() {
     return 1;
 }
 EXPECT_MESSAGE
 :2:12: error cannot bind reference type 'int const&' to rvalue
+END
+
+
+BEGIN Cannot return by-value parameter as reference return type
+int& f(int x) {
+    return x;
+}
+EXPECT_MESSAGE
+:2:12: error cannot prove lifetime exceeds caller scope
+END
+
+
+BEGIN Cannot return rvalue reference parameter as reference return type
+int& f(int &&x) {
+    return x;
+}
+EXPECT_MESSAGE
+:2:12: error cannot prove lifetime exceeds caller scope
+END
+
+
+BEGIN Cannot return local variable as reference return type
+int& f() {
+    int x;
+    return x;
+}
+EXPECT_MESSAGE
+:3:12: error cannot prove lifetime exceeds caller scope
 END
 
 

@@ -27,6 +27,7 @@ struct EntityPass1: DepthFirstVisitor {
 
         auto global = LLVMAddGlobal(llvm_module, primary->type->llvm_type(), prefixed_name.c_str());
         entity->value = Value(ValueKind::LVALUE, primary->type, global);
+        entity->value.returnable_ref = true;
         entity->value.scoped_lifetime = true;
 
         LLVMSetGlobalConstant(global, primary->type->qualifiers() & QUALIFIER_CONST);
