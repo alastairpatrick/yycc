@@ -1131,6 +1131,8 @@ struct Emitter: Visitor, ValueResolver {
     }
 
     Value emit_logical_binary_operation(BinaryExpr* expr, ExprValue left_value) {
+        auto context = TranslationUnitContext::it;
+
         auto result_type = IntegerType::of_bool();
         if (outcome == EmitOutcome::TYPE) return Value(result_type);
 
@@ -1144,30 +1146,50 @@ struct Emitter: Visitor, ValueResolver {
                 return Value(result_type, LLVMBuildOr(builder, llvm_left, llvm_right, ""));
             }
         }
-
+        
+        auto llvm_left_bool = convert_to_rvalue(left_value, IntegerType::of_bool(), ConvKind::IMPLICIT);
+        if (llvm_left_bool == context->llvm_false) {
+            if (expr->op == TOK_AND_OP) {
+                return Value(result_type, llvm_left_bool);
+            } else {
+                return Value(result_type, convert_to_rvalue(expr->right, result_type, ConvKind::IMPLICIT));
+            }
+        } else if (llvm_left_bool == context->llvm_true) {
+            if (expr->op == TOK_AND_OP) {
+                return Value(result_type, convert_to_rvalue(expr->right, result_type, ConvKind::IMPLICIT));
+            } else {
+                return Value(result_type, llvm_left_bool);
+            }
+        }
+        
         LLVMBasicBlockRef alt_blocks[2] = {
             LLVMGetInsertBlock(builder),
             append_block(),
         };
         auto merge_block = append_block();
 
-        LLVMValueRef alt_values[2];
-        auto condition_rvalue = convert_to_rvalue(left_value, IntegerType::of_bool(), ConvKind::IMPLICIT);
-        alt_values[0] = condition_rvalue;
-
         LLVMBasicBlockRef then_block = expr->op == TOK_AND_OP ? alt_blocks[1] : merge_block;
         LLVMBasicBlockRef else_block = expr->op == TOK_AND_OP ? merge_block : alt_blocks[1];
-        LLVMBuildCondBr(builder, alt_values[0], then_block, else_block);
+        LLVMBuildCondBr(builder, llvm_left_bool, then_block, else_block);
 
         LLVMPositionBuilderAtEnd(builder, alt_blocks[1]);
-        alt_values[1] = convert_to_rvalue(expr->right, result_type, ConvKind::IMPLICIT);
+        auto llvm_right_bool = convert_to_rvalue(expr->right, result_type, ConvKind::IMPLICIT);
         LLVMBuildBr(builder, merge_block);
 
         LLVMPositionBuilderAtEnd(builder, merge_block);
-        Value result;
-        auto phi_value = LLVMBuildPhi(builder, result_type->llvm_type(), "");
-        LLVMAddIncoming(phi_value, alt_values, alt_blocks, 2);
-        return Value(result_type, phi_value);
+
+        if (llvm_right_bool == context->llvm_false) {
+            return Value(result_type, expr->op == TOK_AND_OP ? llvm_right_bool : llvm_left_bool);
+        } else if (llvm_right_bool == context->llvm_true) {
+            return Value(result_type, expr->op == TOK_AND_OP ? llvm_left_bool : llvm_right_bool);
+        } else {
+            LLVMValueRef alt_values[2];
+            alt_values[0] = llvm_left_bool;
+            alt_values[1] = llvm_right_bool;
+            auto phi_value = LLVMBuildPhi(builder, result_type->llvm_type(), "");
+            LLVMAddIncoming(phi_value, alt_values, alt_blocks, 2);
+            return Value(result_type, phi_value);
+        }
     }
 
     const Type* promote_integer(const Type* type) {

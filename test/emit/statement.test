@@ -576,12 +576,35 @@ define i32 @g() {
 END
 
 
-BEGIN Return lvalue reference parameter as reference return type
+BEGIN Return lvalue reference parameter as reference return type (1)
 int& f(int &x) {
     return x;
 }
 EXPECT_IR
 define ptr @f(ptr %0) {
+  ret ptr %0
+}
+END
+
+
+BEGIN Return lvalue reference parameter as reference return type (2)
+int& f(int &x) {
+    int y = 2;
+    int& z = (y || 1) ? x : y;
+    return z;
+}
+EXPECT_IR
+define ptr @f(ptr %0) {
+  %y = alloca i32, align 4
+  store i32 2, ptr %y, align 4
+  %2 = load i32, ptr %y, align 4
+  %3 = trunc i32 %2 to i1
+  br i1 %3, label %5, label %4
+
+4:                                                ; preds = %1
+  br label %5
+
+5:                                                ; preds = %4, %1
   ret ptr %0
 }
 END

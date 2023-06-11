@@ -336,6 +336,73 @@ EXPECT_IR
 END
 
 
+BEGIN Logical AND with constant false left operand
+_Bool f(_Bool x) {
+    return 0 && x;
+}
+EXPECT_IR
+define i1 @f(i1 %0) {
+  %x = alloca i1, align 1
+  store i1 %0, ptr %x, align 1
+  ret i1 false
+}
+END
+
+
+BEGIN Logical AND with constant true left operand
+_Bool f(_Bool x) {
+    return 1 && x;
+}
+EXPECT_IR
+define i1 @f(i1 %0) {
+  %x = alloca i1, align 1
+  store i1 %0, ptr %x, align 1
+  %2 = load i1, ptr %x, align 1
+  ret i1 %2
+}
+END
+
+
+BEGIN Logical AND with constant false right operand
+_Bool f(_Bool x) {
+    return x && 0;
+}
+EXPECT_IR
+define i1 @f(i1 %0) {
+  %x = alloca i1, align 1
+  store i1 %0, ptr %x, align 1
+  %2 = load i1, ptr %x, align 1
+  br i1 %2, label %3, label %4
+
+3:                                                ; preds = %1
+  br label %4
+
+4:                                                ; preds = %3, %1
+  ret i1 false
+}
+END
+
+
+BEGIN Logical AND with constant true right operand
+_Bool f(_Bool x) {
+    return x && 1;
+}
+EXPECT_IR
+define i1 @f(i1 %0) {
+  %x = alloca i1, align 1
+  store i1 %0, ptr %x, align 1
+  %2 = load i1, ptr %x, align 1
+  br i1 %2, label %3, label %4
+
+3:                                                ; preds = %1
+  br label %4
+
+4:                                                ; preds = %3, %1
+  ret i1 %2
+}
+END
+
+
 BEGIN Logical OR
 _Bool f(int* x) {
     float y[1];
@@ -361,31 +428,98 @@ define i1 @f(ptr %0) {
 END
 
 
-BEGIN Logical AND constant expression (1)
+BEGIN Logical OR constant expression (1)
 int x = 0 || 0;
 EXPECT_IR
 @x = global i32 0
 END
 
 
-BEGIN Logical AND constant expression (2)
+BEGIN Logical OR constant expression (2)
 int x = 0 || 1;
 EXPECT_IR
 @x = global i32 1
 END
 
 
-BEGIN Logical AND constant expression (3)
+BEGIN Logical OR constant expression (3)
 int x = 1 || 0;
 EXPECT_IR
 @x = global i32 1
 END
 
 
-BEGIN Logical AND constant expression (4)
+BEGIN Logical OR constant expression (4)
 int x = 1 || 1;
 EXPECT_IR
 @x = global i32 1
+END
+
+
+BEGIN Logical OR with constant false left operand
+_Bool f(_Bool x) {
+    return 0 || x;
+}
+EXPECT_IR
+define i1 @f(i1 %0) {
+  %x = alloca i1, align 1
+  store i1 %0, ptr %x, align 1
+  %2 = load i1, ptr %x, align 1
+  ret i1 %2
+}
+END
+
+
+BEGIN Logical OR with constant true left operand
+_Bool f(_Bool x) {
+    return 1 || x;
+}
+EXPECT_IR
+define i1 @f(i1 %0) {
+  %x = alloca i1, align 1
+  store i1 %0, ptr %x, align 1
+  ret i1 true
+}
+END
+
+
+BEGIN Logical OR with constant false right operand
+_Bool f(_Bool x) {
+    return x || 0;
+}
+EXPECT_IR
+define i1 @f(i1 %0) {
+  %x = alloca i1, align 1
+  store i1 %0, ptr %x, align 1
+  %2 = load i1, ptr %x, align 1
+  br i1 %2, label %4, label %3
+
+3:                                                ; preds = %1
+  br label %4
+
+4:                                                ; preds = %3, %1
+  ret i1 %2
+}
+END
+
+
+BEGIN Logical OR with constant true right operand
+_Bool f(_Bool x) {
+    return x || 1;
+}
+EXPECT_IR
+define i1 @f(i1 %0) {
+  %x = alloca i1, align 1
+  store i1 %0, ptr %x, align 1
+  %2 = load i1, ptr %x, align 1
+  br i1 %2, label %4, label %3
+
+3:                                                ; preds = %1
+  br label %4
+
+4:                                                ; preds = %3, %1
+  ret i1 true
+}
 END
 
 
