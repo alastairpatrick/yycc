@@ -1016,22 +1016,21 @@ Statement* Parser::parse_statement() {
 
           return new IfElseStatement(condition, then_statement, else_statement, location);
 
-      } case TOK_RETURN:
-        case TOK_THROW: {
-          auto op = token;
+      } case TOK_RETURN: {
           consume();
-
           Expr* expr{};
           if (token != ';') {
-              expr = parse_expr(SEQUENCE_PRECEDENCE);
+              expr = parse_initializer();
           }
           consume_required(';');
 
-          if (op == TOK_RETURN) {
-              return new ReturnStatement(expr, location);
-          } else {
-              return new ThrowStatement(expr, location);
-          }
+          return new ReturnStatement(expr, location);
+
+      } case TOK_THROW: {
+          consume();
+          Expr* expr = parse_expr(SEQUENCE_PRECEDENCE);
+          consume_required(';');
+          return new ThrowStatement(expr, location);
 
       } case TOK_SWITCH: {
           consume();

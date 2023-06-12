@@ -533,7 +533,7 @@ jump_statement
 	| CONTINUE ';'
 	| BREAK ';'
 	| RETURN ';'
-	| RETURN expression ';'
+	| RETURN initializer ';'        // CHANGED expression to initializer
     | THROW expression ';'          // ADDITION
 	;
 

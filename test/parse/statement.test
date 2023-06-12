@@ -75,6 +75,12 @@ EXPECT_AST
 ["return", 7]
 
 
+BEGIN Parses initializer return statement
+return { 7 };
+EXPECT_AST
+["return", ["Init", 7]]
+
+
 BEGIN Parses identifier labelled statement
 a: b:
     return 7;
