@@ -922,6 +922,25 @@ EXPECT_MESSAGE
 END
 
 
+REM ******** CastExpr ********
+
+
+BEGIN Cast expression with initializer
+struct S {
+    int x, y;
+};
+S f() {
+    return (S) { 1, 2 };
+}
+EXPECT_IR
+%S = type { i32, i32 }
+
+define %S @f() {
+  ret %S { i32 1, i32 2 }
+}
+END
+
+
 REM ******** DereferenceExpr ********
 
 

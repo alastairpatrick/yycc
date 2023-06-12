@@ -1652,8 +1652,11 @@ struct Emitter: Visitor, ValueResolver {
     virtual VisitExpressionOutput visit(CastExpr* expr) override {
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(expr->type);
 
-        auto value = convert_to_type(expr->expr, expr->type, ConvKind::EXPLICIT);
-        return VisitExpressionOutput(value);
+        if (dynamic_cast<InitializerExpr*>(expr->expr)) {
+            return VisitExpressionOutput(emit_initializer(expr->type, expr->expr));
+        } else {
+            return VisitExpressionOutput(convert_to_type(expr->expr, expr->type, ConvKind::EXPLICIT));
+        }
     }
 
     virtual VisitExpressionOutput visit(ConditionExpr* expr) override {
