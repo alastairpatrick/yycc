@@ -81,7 +81,6 @@ struct Emitter: Visitor, ValueResolver {
     size_t next_scope_id{};
     EmitterScope* innermost_scope{};
     SwitchConstruct* innermost_switch{};
-    InternedString this_string;
     Value this_value;
     LLVMBasicBlockRef last_unreachable_block{};
 
@@ -91,8 +90,6 @@ struct Emitter: Visitor, ValueResolver {
     Emitter(Module* module, EmitOutcome outcome)
         : module(module), outcome(outcome) {
         auto llvm_context = TranslationUnitContext::it->llvm_context;
-
-        this_string = intern_string("this");
 
         if (outcome != EmitOutcome::TYPE) {
             builder = LLVMCreateBuilderInContext(llvm_context);
@@ -529,7 +526,7 @@ struct Emitter: Visitor, ValueResolver {
 
                 param_entity->value.scoped_lifetime = true;
 
-                if (param->identifier == this_string) {
+                if (param->identifier == module->this_string) {
                     this_value = param_entity->value;
                 }
             }

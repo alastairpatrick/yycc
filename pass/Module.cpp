@@ -9,6 +9,8 @@ Module::Module(const EmitOptions& options): options(options) {
     auto context = TranslationUnitContext::it;
     llvm_module = LLVMModuleCreateWithNameInContext("my_module", context->llvm_context);
     builder = LLVMCreateBuilderInContext(context->llvm_context);
+
+    this_string = intern_string("this");
 }
 
 Module::~Module() {
