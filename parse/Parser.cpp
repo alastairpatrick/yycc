@@ -1423,7 +1423,7 @@ Expr* Parser::continue_postfix_expr(Expr* expr) {
             vector<Expr*> parameters;
             if (token != ')') {
                 while (token) {
-                    parameters.push_back(parse_expr(ASSIGN_PRECEDENCE));
+                    parameters.push_back(parse_initializer());
                     if (!consume(',')) break;
                 }
             }

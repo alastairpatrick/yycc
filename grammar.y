@@ -77,8 +77,8 @@ postfix_expression
 	;
 
 argument_expression_list
-	: assignment_expression
-	| argument_expression_list ',' assignment_expression
+	: initializer
+	| argument_expression_list ',' initializer      // CHANGED assignment_expression to initializer
 	;
 
 unary_expression

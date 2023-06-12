@@ -842,6 +842,77 @@ declare void @destructor_wrapper(ptr)
 END
 
 
+BEGIN Call with initializer argument (1)
+void f(int);
+void g() {
+    f({1});
+}
+EXPECT_IR
+declare void @f(i32)
+
+define void @g() {
+  call void @f(i32 1)
+  ret void
+}
+END
+
+
+BEGIN Call with initializer argument (2)
+struct S {
+    int x, y;
+};
+void f(S s);
+void g() {
+    f({1, 2});
+}
+EXPECT_IR
+%S = type { i32, i32 }
+
+declare void @f(%S)
+
+define void @g() {
+  call void @f(%S { i32 1, i32 2 })
+  ret void
+}
+END
+
+
+BEGIN Call with initializer argument (3)
+struct S {
+    int x, y;
+};
+void f(S&& s);
+void g() {
+    f({1, 2});
+}
+EXPECT_IR
+%S = type { i32, i32 }
+
+declare void @f(ptr)
+
+define void @g() {
+  %1 = alloca %S, align 8
+  store %S { i32 1, i32 2 }, ptr %1, align 4
+  call void @f(ptr %1)
+  ret void
+}
+END
+
+
+BEGIN Call with initializer argument (4)
+struct S {
+    int x, y;
+};
+void f(S& s);
+void g() {
+    f({1, 2});
+}
+EXPECT_MESSAGE
+:6:8: error too many braces around initializer
+:6:8: error cannot bind reference type 'struct S&' to rvalue
+END
+
+
 BEGIN Integer may not be called
 void f() {
     1();

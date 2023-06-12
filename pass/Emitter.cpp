@@ -571,6 +571,8 @@ struct Emitter: Visitor, ValueResolver {
     }
 
     ExprValue emit_initializer(const Type* dest_type, Expr* expr, EmitFlags emit_flags = EmitFlags()) {
+        dest_type = dest_type->unqualified();
+
         if (auto uninitializer = dynamic_cast<UninitializedExpr*>(expr)) {
             return ExprValue(dest_type, LLVMGetUndef(dest_type->llvm_type()), expr);
         }
@@ -1561,25 +1563,28 @@ struct Emitter: Visitor, ValueResolver {
 
             size_t arg_expr_idx{};
             for (size_t i = 0; i < expected_num_params; ++i) {
+                const ReferenceType* reference_type{};
+                bool lvalue_reference{}, rvalue_reference{};
+                auto expected_type = function_type->parameter_types[i];
+                if (reference_type = unqualified_type_cast<ReferenceType>(expected_type->unqualified())) {
+                    lvalue_reference = reference_type->kind == ReferenceType::Kind::LVALUE;
+                    rvalue_reference = reference_type->kind == ReferenceType::Kind::RVALUE;
+                    expected_type = reference_type->base_type;
+                }
+
                 ExprValue arg_value;
                 if (member_expr && i == 0) {
                     arg_value = ExprValue(object_value, member_expr->object);
                 } else {
                     auto arg_expr = expr->arguments[arg_expr_idx++];
-                    arg_value = emit_expr(arg_expr, { .pend_temporary_destructor = false });
+                    if (lvalue_reference) {
+                        arg_value = emit_expr(arg_expr, { .pend_temporary_destructor = false });
+                    } else {
+                        arg_value = emit_initializer(expected_type, arg_expr, { .pend_temporary_destructor = false });
+                    }
                 }
 
                 auto arg_location = arg_locations[i] = arg_value.node->location;
-
-                auto expected_type = function_type->parameter_types[i];
-
-                const ReferenceType* reference_type{};
-                bool rvalue_reference{};
-                if (reference_type = unqualified_type_cast<ReferenceType>(expected_type->unqualified())) {
-                    rvalue_reference = reference_type->kind == ReferenceType::Kind::RVALUE;
-                    expected_type = reference_type->base_type;
-                }
-
 
                 if (reference_type) {
                     if (arg_value.kind == ValueKind::RVALUE && (rvalue_reference || (member_expr && i == 0))) {
