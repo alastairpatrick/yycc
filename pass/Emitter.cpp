@@ -1094,7 +1094,7 @@ struct Emitter: Visitor, ValueResolver {
         auto result_type = left_value.type->unqualified();
         if (outcome == EmitOutcome::TYPE) return VisitExpressionOutput(result_type);
 
-        auto right_value = emit_expr(expr->right, { .pend_temporary_destructor = false });
+        auto right_value = emit_initializer(result_type, expr->right, { .pend_temporary_destructor = false });
         call_destructor_immediately(left_value);
         store_and_pend_destructor(left_value, right_value, expr->location);
 

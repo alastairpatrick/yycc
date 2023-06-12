@@ -172,12 +172,12 @@ conditional_expression
 
 assignment_expression
 	: conditional_expression
-	| unary_expression assignment_operator assignment_expression
+	| unary_expression other_assignment_operator assignment_expression
+	| unary_expression '=' initializer          // CHANGED assignment_expression to initializer
 	;
 
-assignment_operator
-	: '='
-	| MUL_ASSIGN
+other_assignment_operator
+	: MUL_ASSIGN
 	| DIV_ASSIGN
 	| MOD_ASSIGN
 	| ADD_ASSIGN

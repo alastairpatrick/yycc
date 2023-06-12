@@ -292,6 +292,12 @@ EXPECT_AST
 ["=", 1, ["=", 2, 3]]
 
 
+BEGIN Assignment expression with initializer (1)
+1 = {2}
+EXPECT_AST
+["=",1,["Init",2]]
+
+
 BEGIN Left side of assignment cannot be cast expression
 (int) 1 = 2
 EXPECT_MESSAGE

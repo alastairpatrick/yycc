@@ -1243,14 +1243,18 @@ Expr* Parser::continue_parse_expr(Expr* expr, OperatorPrec min_prec, Identifier*
                 break;
             }
 
-            auto right = parse_expr(next_min_prec);
 
             if (op == '=') {
+                assert(next_min_prec == ASSIGN_PRECEDENCE);
+                auto right = parse_initializer();
                 expr = new AssignExpr(expr, right, location);
-            } else if (op ==',') {
-                expr = new SequenceExpr(expr, right, location);
             } else {
-                expr = new BinaryExpr(expr, right, op, location);
+                auto right = parse_expr(next_min_prec);
+                if (op ==',') {
+                    expr = new SequenceExpr(expr, right, location);
+                } else {
+                    expr = new BinaryExpr(expr, right, op, location);
+                }
             }
         }
     }

@@ -51,6 +51,39 @@ define void @g() {
 END
 
 
+BEGIN Assign initializer (1)
+void f(int x) {
+    x = {1};
+}
+EXPECT_IR
+define void @f(i32 %0) {
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  store i32 1, ptr %x, align 4
+  ret void
+}
+END
+
+
+BEGIN Assign initializer (1)
+struct S {
+    int x, y;
+};
+void f(S s) {
+    s = {1, 2};
+}
+EXPECT_IR
+%S = type { i32, i32 }
+
+define void @f(%S %0) {
+  %s = alloca %S, align 8
+  store %S %0, ptr %s, align 4
+  store %S { i32 1, i32 2 }, ptr %s, align 4
+  ret void
+}
+END
+
+
 BEGIN Preincrement yields an lvalue (1)
 void f(int&) {
 }
