@@ -111,7 +111,8 @@ public:
 
     Value bit_cast(const Type* type) const {
         auto result(*this);
-        result.type = type;
+        result.qualifiers = type->qualifiers();
+        result.type = type->unqualified();
         return result;
     }
 

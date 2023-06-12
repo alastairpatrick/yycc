@@ -729,6 +729,33 @@ volatile int& f() {
 END
 
 
+BEGIN Return initializer expression (1)
+int f() {
+    return { 1 };
+}
+EXPECT_IR
+define i32 @f() {
+  ret i32 1
+}
+END
+
+
+BEGIN Return initializer expression (2)
+struct S {
+    int x, y;
+};
+S f() {
+    return { 1, 2 };
+}
+EXPECT_IR
+%S = type { i32, i32 }
+
+define %S @f() {
+  ret %S { i32 1, i32 2 }
+}
+END
+
+
 REM ******** SwitchStatement ********
 
 BEGIN Switch with default

@@ -952,8 +952,9 @@ struct Emitter: Visitor, ValueResolver {
             call_pending_destructors_at_all_scopes();
         } else {
             if (statement->expr) {
-                auto value = emit_expr(statement->expr, { .pend_temporary_destructor = false });
                 if (return_reference_type) {
+                    auto value = emit_expr(statement->expr, { .pend_temporary_destructor = false });
+
                     if (can_bind_reference_to_value(return_reference_type, value, nullptr, statement->expr->location)) {
                         return_value = get_address(value);
                         if (!value.returnable_ref) {
@@ -963,11 +964,15 @@ struct Emitter: Visitor, ValueResolver {
                     } else {
                         return_value = context->llvm_null;
                     }
-                } else if (value.type->unqualified() == return_type->unqualified()) {
-                    return_value = get_value(value);
                 } else {
-                    pend_destructor(value);
-                    return_value = convert_to_rvalue(value, return_type->unqualified(), ConvKind::IMPLICIT);
+                    auto value = emit_initializer(return_type->unqualified(), statement->expr, { .pend_temporary_destructor = false });
+
+                    if (value.type->unqualified() == return_type->unqualified()) {
+                        return_value = get_value(value);
+                    } else {
+                        pend_destructor(value);
+                        return_value = convert_to_rvalue(value, return_type->unqualified(), ConvKind::IMPLICIT);
+                    }
                 }
             } else {
                 message(Severity::ERROR, statement->location) << "non-void function '" << *function_declarator->identifier << "' should return a value\n";
