@@ -610,6 +610,31 @@ define ptr @f(ptr %0) {
 END
 
 
+BEGIN Return lvalue reference parameter as reference return type (3)
+int& f(int c, int &x, int& y) {
+    return c ? x : y;
+}
+EXPECT_IR
+define ptr @f(i32 %0, ptr %1, ptr %2) {
+  %c = alloca i32, align 4
+  store i32 %0, ptr %c, align 4
+  %4 = load i32, ptr %c, align 4
+  %5 = trunc i32 %4 to i1
+  br i1 %5, label %6, label %7
+
+6:                                                ; preds = %3
+  br label %8
+
+7:                                                ; preds = %3
+  br label %8
+
+8:                                                ; preds = %7, %6
+  %9 = phi ptr [ %1, %6 ], [ %2, %7 ]
+  ret ptr %9
+}
+END
+
+
 BEGIN Return member of lvalue reference parameter as reference return type
 struct S {
     int x;

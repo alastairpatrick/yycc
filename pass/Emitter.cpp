@@ -1718,6 +1718,8 @@ struct Emitter: Visitor, ValueResolver {
             LLVMAddIncoming(phi_value, alt_values, alt_blocks, 2);
 
             result = Value(result_kind, result_type, phi_value);
+            result.scoped_lifetime = then_value.scoped_lifetime && else_value.scoped_lifetime;
+            result.returnable_ref = then_value.returnable_ref && else_value.returnable_ref;
         } else {
             result = Value(result_type);
         }
