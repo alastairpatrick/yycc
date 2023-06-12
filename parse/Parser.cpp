@@ -1377,23 +1377,31 @@ Expr* Parser::parse_sub_expr(SubExpressionKind kind, Identifier* or_label) {
 
     location = preprocessor.location();
     if (!result && consume('(')) {
-        if (kind >= SubExpressionKind::CAST) {
+        if (kind >= SubExpressionKind::POSTFIX) {
             if (auto type = parse_type(true)) {
                 consume_required(')');
 
-                if (token != '.') {
-                    auto expr = parse_sub_expr(SubExpressionKind::CAST);
-
-                    if (operator_flags(token) & OP_ASSIGN) {
-                        message(Severity::ERROR, preprocessor.location()) << "cast expression is not assignable\n";
-                    }
-
-                    result = new CastExpr(type, expr, location);
+                if (token == '{') {
+                    result = new CastExpr(type, parse_initializer(), location);
                 } else {
-                    consume();
-                    if (require(TOK_IDENTIFIER)) {
-                        result = new MemberExpr(TokenKind('.'), type, preprocessor.identifier, preprocessor.location());
+                    if (kind < SubExpressionKind::CAST) {
+                        message(Severity::ERROR, location) << "cast expression not allowed here\n";
+                    }
+                    
+                    if (token != '.') {
+                        auto expr = parse_sub_expr(SubExpressionKind::CAST);
+
+                        if (operator_flags(token) & OP_ASSIGN) {
+                            message(Severity::ERROR, preprocessor.location()) << "cast expression is not assignable\n";
+                        }
+
+                        result = new CastExpr(type, expr, location);
+                    } else {
                         consume();
+                        if (require(TOK_IDENTIFIER)) {
+                            result = new MemberExpr(TokenKind('.'), type, preprocessor.identifier, preprocessor.location());
+                            consume();
+                        }
                     }
                 }
             }

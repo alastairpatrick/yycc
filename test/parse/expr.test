@@ -387,6 +387,19 @@ EXPECT_AST
 ["cast",["P","Si"],0]
 
 
+BEGIN Cast expression with initializer
+(int) {7}
+EXPECT_AST
+["cast","Si",["Init",7]]
+
+
+BEGIN Cast expression is not a unary expression
+++(int) 7
+EXPECT_MESSAGE
+:1:3: error cast expression not allowed here
+END
+
+
 BEGIN Address operator
 &1
 EXPECT_AST
