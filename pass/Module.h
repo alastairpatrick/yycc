@@ -13,6 +13,7 @@ struct EmitOptions {
 
 const Type* get_expr_type(const Expr* expr);
 Value fold_expr(const Expr* expr, ValueKind kind = ValueKind::RVALUE);
+Value fold_initializer(const Type* dest_type, Expr* expr);
 
 struct TypedFunctionRef {
     LLVMTypeRef type{};
@@ -46,6 +47,7 @@ struct Module {
     Module(const EmitOptions& options);
     ~Module();
 
+    LLVMValueRef default_value(const Type* type);
     TypedFunctionRef destructor_wrapper(const StructuredType* type, LLVMValueRef default_value);
 
     Value indeterminate_bool();

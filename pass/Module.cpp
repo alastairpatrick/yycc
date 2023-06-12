@@ -3,6 +3,7 @@
 #include "LLVM.h"
 #include "parse/Type.h"
 #include "TranslationUnitContext.h"
+#include "Utility.h"
 
 Module::Module(const EmitOptions& options): options(options) {
     auto context = TranslationUnitContext::it;
@@ -13,6 +14,36 @@ Module::Module(const EmitOptions& options): options(options) {
 Module::~Module() {
     LLVMDisposeBuilder(builder);
     LLVMDisposeModule(llvm_module);
+}
+
+LLVMValueRef Module::default_value(const Type* type) {
+    auto it = default_values.find(type);
+    if (it != default_values.end()) return it->second;
+
+    auto llvm_type = type->llvm_type();
+        
+    LLVMValueRef value{};
+    if (auto struct_type = unqualified_type_cast<StructType>(type->unqualified())) {
+        vector<LLVMValueRef> values;
+        for (auto declaration: struct_type->declarations) {
+            for (auto member: declaration->declarators) {
+                if (auto member_variable = member->variable()) {
+                    if (member_variable->initializer) {
+                        values.push_back(fold_initializer(member->type, member_variable->initializer).get_const());
+                    } else {
+                        values.push_back(default_value(member->type));
+                    }
+                }
+            }
+        }
+
+        value = LLVMConstNamedStruct(llvm_type, values.data(), values.size());
+            
+    } else {
+        value = LLVMConstNull(llvm_type);
+    }
+
+    return default_values[type] = value;
 }
 
 TypedFunctionRef Module::destructor_wrapper(const StructuredType* type, LLVMValueRef default_value) {

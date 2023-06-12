@@ -112,39 +112,6 @@ struct Emitter: Visitor, ValueResolver {
         return value.dangerously_get_address();
     }
 
-    // todo: move to Module
-    LLVMValueRef default_value(const Type* type) {
-        auto it = module->default_values.find(type);
-        if (it != module->default_values.end()) return it->second;
-
-        auto llvm_type = type->llvm_type();
-        
-        LLVMValueRef value{};
-        if (auto struct_type = unqualified_type_cast<StructType>(type->unqualified())) {
-            Emitter initializer_emitter(module, EmitOutcome::FOLD);
-
-            vector<LLVMValueRef> values;
-            for (auto declaration: struct_type->declarations) {
-                for (auto member: declaration->declarators) {
-                    if (auto member_variable = member->variable()) {
-                        if (member_variable->initializer) {
-                            values.push_back(initializer_emitter.get_value(initializer_emitter.emit_initializer(member->type, member_variable->initializer)));
-                        } else {
-                            values.push_back(default_value(member->type));
-                        }
-                    }
-                }
-            }
-
-            value = LLVMConstNamedStruct(llvm_type, values.data(), values.size());
-            
-        } else {
-            value = LLVMConstNull(llvm_type);
-        }
-
-        return module->default_values[type] = value;
-    }
-
     virtual LLVMValueRef get_value(ExprValue value, bool for_move_expr = false) override {
         if ((value.qualifiers & (QUALIFIER_TRANSIENT | QUALIFIER_VOLATILE)) == (QUALIFIER_TRANSIENT | QUALIFIER_VOLATILE)) {
             message(Severity::ERROR, value.node->location) << "cannot load value of type '" << value.message_type() << "' with both 'transient' and 'volatile' qualifiers\n";
@@ -158,7 +125,7 @@ struct Emitter: Visitor, ValueResolver {
 
         if (value.kind == ValueKind::LVALUE) {
             if (for_move_expr) {
-                store(value, default_value(value.type->unqualified()), value.node->location);
+                store(value, module->default_value(value.type->unqualified()), value.node->location);
             } else {
                 auto structured_type = unqualified_type_cast<StructuredType>(value.type->unqualified());
                 if (structured_type && structured_type->destructor) {
@@ -227,7 +194,7 @@ struct Emitter: Visitor, ValueResolver {
         auto destructor = structured_type->destructor;
         if (!destructor) return nullptr;
 
-        auto wrapper = module->destructor_wrapper(structured_type, default_value(structured_type));
+        auto wrapper = module->destructor_wrapper(structured_type, module->default_value(structured_type));
         auto arg = value.dangerously_get_address();
         return LLVMBuildCall2(builder, wrapper.type, wrapper.function, &arg, 1, "");
     }
@@ -676,7 +643,7 @@ struct Emitter: Visitor, ValueResolver {
                 EmitterScope scope(this);
                 initial_value =  emit_initializer(type, entity->initializer, { .pend_temporary_destructor = false });
             } else if (module->options.initialize_variables || (structured_type && structured_type->destructor)) {
-                initial_value = Value(type, default_value(type));
+                initial_value = Value(type, module->default_value(type));
             }
 
             if (reference_type && !can_bind_reference_to_value(reference_type, initial_value, declarator, declarator->location)) {
@@ -704,7 +671,7 @@ struct Emitter: Visitor, ValueResolver {
         } else if (entity->storage_duration == StorageDuration::STATIC && !reference_type) {
             auto global = get_address(entity->value);
 
-            LLVMValueRef llvm_initial = default_value(type);
+            LLVMValueRef llvm_initial = module->default_value(type);
             if (entity->initializer) {
                 Emitter initializer_emitter(module, EmitOutcome::FOLD);
 
@@ -2103,6 +2070,16 @@ Value fold_expr(const Expr* expr, ValueKind kind) {
 
     try {
         return emitter.emit_expr(const_cast<Expr*>(expr));
+    } catch (FoldError&) {
+        return Value::of_recover(get_expr_type(expr));
+    }
+}
+
+Value fold_initializer(const Type* dest_type, Expr* expr) {
+    Emitter emitter(nullptr, EmitOutcome::FOLD);
+
+    try {
+        return emitter.emit_initializer(dest_type, expr);
     } catch (FoldError&) {
         return Value::of_recover(get_expr_type(expr));
     }
