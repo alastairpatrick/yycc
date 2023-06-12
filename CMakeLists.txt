@@ -45,7 +45,7 @@ add_library(yycc_lib STATIC
     "pass/EntityPass.cpp"
     "pass/Module.cpp"
     "pass/ResolvePass.cpp"
-    "pass/SubstitutionPass.cpp"
+    
     "pass/TypeConverter.cpp"
     "pass/Utility.cpp"
     "pass/Visitor.cpp"

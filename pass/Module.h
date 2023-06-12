@@ -42,7 +42,6 @@ struct Module {
     LLVMTypeRef destructor_wrapper_type{};
     unordered_map<const StructuredType*, TypedFunctionRef> destructor_wrappers;
 
-    unordered_set<LLVMValueRef> destructor_placeholder_functions;
     InternedString this_string;
 
     Module(const EmitOptions& options);
